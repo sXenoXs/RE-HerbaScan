@@ -24,7 +24,7 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Offline Processing Demo'),
@@ -45,24 +45,24 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
               children: [
                 // Status Overview
                 _buildStatusOverview(context, theme, offlineProvider),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Feature Status
                 _buildFeatureStatus(context, theme, offlineProvider),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Storage Information
                 _buildStorageInfo(context, theme, offlineProvider),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Actions
                 _buildActions(context, theme, offlineProvider),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Statistics
                 _buildStatistics(context, theme, offlineProvider),
               ],
@@ -93,7 +93,8 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
     );
   }
 
-  Widget _buildStatusOverview(BuildContext context, ThemeData theme, OfflineProvider offlineProvider) {
+  Widget _buildStatusOverview(
+      BuildContext context, ThemeData theme, OfflineProvider offlineProvider) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -154,9 +155,10 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
     );
   }
 
-  Widget _buildFeatureStatus(BuildContext context, ThemeData theme, OfflineProvider offlineProvider) {
+  Widget _buildFeatureStatus(
+      BuildContext context, ThemeData theme, OfflineProvider offlineProvider) {
     final features = offlineProvider.getOfflineFeatureStatus();
-    
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -177,9 +179,7 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
                   children: [
                     Icon(
                       entry.value ? Icons.check_circle : Icons.cancel,
-                      color: entry.value 
-                        ? Colors.green
-                        : Colors.red,
+                      color: entry.value ? Colors.green : Colors.red,
                       size: 20,
                     ),
                     const SizedBox(width: 12),
@@ -190,7 +190,8 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: entry.value ? Colors.green : Colors.red,
                         borderRadius: BorderRadius.circular(12),
@@ -207,14 +208,15 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
                   ],
                 ),
               );
-            }).toList(),
+            }),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStorageInfo(BuildContext context, ThemeData theme, OfflineProvider offlineProvider) {
+  Widget _buildStorageInfo(
+      BuildContext context, ThemeData theme, OfflineProvider offlineProvider) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -228,11 +230,19 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            _buildInfoRow('Total Scans', '${offlineProvider.offlineStats['totalScans'] ?? 0}'),
-            _buildInfoRow('Total Plants', '${offlineProvider.offlineStats['totalPlants'] ?? 0}'),
-            _buildInfoRow('DOH Plants', '${offlineProvider.offlineStats['dohPlants'] ?? 0}'),
-            _buildInfoRow('Pending Sync', '${offlineProvider.offlineStats['pendingSync'] ?? 0}'),
-            _buildInfoRow('AI Models', offlineProvider.offlineStats['aiInitialized'] == true ? 'Loaded' : 'Not Available'),
+            _buildInfoRow('Total Scans',
+                '${offlineProvider.offlineStats['totalScans'] ?? 0}'),
+            _buildInfoRow('Total Plants',
+                '${offlineProvider.offlineStats['totalPlants'] ?? 0}'),
+            _buildInfoRow('DOH Plants',
+                '${offlineProvider.offlineStats['dohPlants'] ?? 0}'),
+            _buildInfoRow('Pending Sync',
+                '${offlineProvider.offlineStats['pendingSync'] ?? 0}'),
+            _buildInfoRow(
+                'AI Models',
+                offlineProvider.offlineStats['aiInitialized'] == true
+                    ? 'Loaded'
+                    : 'Not Available'),
           ],
         ),
       ),
@@ -255,7 +265,8 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
     );
   }
 
-  Widget _buildActions(BuildContext context, ThemeData theme, OfflineProvider offlineProvider) {
+  Widget _buildActions(
+      BuildContext context, ThemeData theme, OfflineProvider offlineProvider) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -337,12 +348,13 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
-        tileColor: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+        tileColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
       ),
     );
   }
 
-  Widget _buildStatistics(BuildContext context, ThemeData theme, OfflineProvider offlineProvider) {
+  Widget _buildStatistics(
+      BuildContext context, ThemeData theme, OfflineProvider offlineProvider) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -430,7 +442,8 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
     );
   }
 
-  void _showClearDataDialog(BuildContext context, OfflineProvider offlineProvider) {
+  void _showClearDataDialog(
+      BuildContext context, OfflineProvider offlineProvider) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
