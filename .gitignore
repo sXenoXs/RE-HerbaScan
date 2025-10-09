@@ -1,0 +1,150 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# Additional build artifacts and temporary files
+*.cache.dill.track.dill
+*.compiler.options
+*.track.dill
+
+# Gradle build files
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+
+# Android specific
+android/local.properties
+android/**/*.iml
+android/.gradle/
+android/build/
+android/app/build/
+
+# iOS specific
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/Flutter/ephemeral/
+ios/build/
+ios/Pods/
+ios/Podfile.lock
+
+# macOS specific
+macos/Flutter/Generated.xcconfig
+macos/Flutter/ephemeral/
+macos/build/
+
+# Linux specific
+linux/flutter/ephemeral/
+linux/build/
+
+# Windows specific
+windows/flutter/ephemeral/
+windows/build/
+
+# Web specific
+web/flutter_service_worker.js
+
+# Test files (keep test structure but ignore generated test files)
+test/*.test.dart
+test/*_test.dart.bak
+
+# Documentation build files
+docs/_build/
+docs/build/
+
+# IDE specific
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+.vscode/extensions.json
+
+# OS specific
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# AI Model files (if too large for git)
+# Uncomment these if model files are too large for git
+# assets/models/*.tflite
+# assets/models/*.h5
+# assets/models/*.pkl
+
+# Generated documentation
+doc/api/
+coverage/
+test/coverage/
+
+# Package manager files
+.packages
+.pub-cache/
+.pub/
+
+# Flutter specific
+.flutter-plugins
+.flutter-plugins-dependencies
+.dart_tool/
+build/
+
+# GradCAM test results (optional - keep for development)
+# GRADCAM_TEST_RESULTS.md
