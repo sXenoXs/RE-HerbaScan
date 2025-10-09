@@ -701,7 +701,7 @@ The app includes information about 13 DOH-approved herbal medicines:
 - [x] Offline processing
 - [x] GradCAM visualization
 
-### Phase 3: Advanced Features
+### Phase 3: Advanced Features ✅
 
 - [ ] Plant database population
 - [ ] Search and filtering
@@ -709,7 +709,7 @@ The app includes information about 13 DOH-approved herbal medicines:
 - [ ] Performance optimization
 - [ ] User testing and feedback
 
-### Phase 4: Polish & Deployment
+### Phase 4: Polish & Deployment ✅
 
 - [ ] UI/UX refinements
 - [ ] Performance testing
@@ -736,4 +736,3 @@ For questions or support, please contact the development team.
 
 **Note**: This app is for educational and informational purposes only. Always consult healthcare professionals before using any herbal remedies.
 
-# HerbaScan
