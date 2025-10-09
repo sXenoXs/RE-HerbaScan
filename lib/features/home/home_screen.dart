@@ -32,7 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
@@ -105,7 +105,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
     final appProvider = Provider.of<AppProvider>(context);
     final plantProvider = Provider.of<PlantProvider>(context);
     final offlineProvider = Provider.of<OfflineProvider>(context);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text(AppLocalizations.of(context).appTitle),
@@ -128,29 +128,29 @@ class _HomeDashboardState extends State<HomeDashboard> {
             children: [
               // Welcome Section
               _buildWelcomeSection(context, theme),
-              
+
               const SizedBox(height: 16),
-              
+
               // Offline Status
               OfflineStatusCard(),
-              
+
               const SizedBox(height: 16),
-              
+
               // Quick Actions
               _buildQuickActions(context, theme),
-              
+
               const SizedBox(height: 24),
-              
+
               // Statistics
               _buildStatistics(context, theme, plantProvider),
-              
+
               const SizedBox(height: 24),
-              
+
               // Recent Scans
               _buildRecentScans(context, theme, plantProvider),
-              
+
               const SizedBox(height: 24),
-              
+
               // DOH Approved Plants Preview
               _buildDOHPreview(context, theme, plantProvider),
             ],
@@ -273,7 +273,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
   ) {
     return Card(
       child: InkWell(
-        key: ValueKey('action_card_${title}_${subtitle}'),
+        key: ValueKey('action_card_${title}_$subtitle'),
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
@@ -324,9 +324,10 @@ class _HomeDashboardState extends State<HomeDashboard> {
     );
   }
 
-  Widget _buildStatistics(BuildContext context, ThemeData theme, PlantProvider plantProvider) {
+  Widget _buildStatistics(
+      BuildContext context, ThemeData theme, PlantProvider plantProvider) {
     final stats = plantProvider.getStatistics();
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -374,7 +375,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
     );
   }
 
-  Widget _buildStatItem(ThemeData theme, String value, String label, IconData icon) {
+  Widget _buildStatItem(
+      ThemeData theme, String value, String label, IconData icon) {
     return Column(
       children: [
         Icon(
@@ -402,9 +404,10 @@ class _HomeDashboardState extends State<HomeDashboard> {
     );
   }
 
-  Widget _buildRecentScans(BuildContext context, ThemeData theme, PlantProvider plantProvider) {
+  Widget _buildRecentScans(
+      BuildContext context, ThemeData theme, PlantProvider plantProvider) {
     final recentScans = plantProvider.scanHistory.take(3).toList();
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -525,9 +528,10 @@ class _HomeDashboardState extends State<HomeDashboard> {
     );
   }
 
-  Widget _buildDOHPreview(BuildContext context, ThemeData theme, PlantProvider plantProvider) {
+  Widget _buildDOHPreview(
+      BuildContext context, ThemeData theme, PlantProvider plantProvider) {
     final dohPlants = plantProvider.dohApprovedPlants.take(4).toList();
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

@@ -39,7 +39,8 @@ class OfflineIndicator extends StatelessWidget {
   Widget _buildLoadingIndicator(BuildContext context) {
     return Container(
       margin: margin,
-      padding: padding ?? const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding:
+          padding ?? const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
         borderRadius: BorderRadius.circular(16),
@@ -74,10 +75,12 @@ class OfflineIndicator extends StatelessWidget {
     );
   }
 
-  Widget _buildOfflineIndicator(BuildContext context, OfflineProvider offlineProvider) {
+  Widget _buildOfflineIndicator(
+      BuildContext context, OfflineProvider offlineProvider) {
     return Container(
       margin: margin,
-      padding: padding ?? const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding:
+          padding ?? const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.error.withOpacity(0.1),
         borderRadius: BorderRadius.circular(16),
@@ -117,10 +120,12 @@ class OfflineIndicator extends StatelessWidget {
     );
   }
 
-  Widget _buildPendingSyncIndicator(BuildContext context, OfflineProvider offlineProvider) {
+  Widget _buildPendingSyncIndicator(
+      BuildContext context, OfflineProvider offlineProvider) {
     return Container(
       margin: margin,
-      padding: padding ?? const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding:
+          padding ?? const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.tertiary.withOpacity(0.1),
         borderRadius: BorderRadius.circular(16),
@@ -151,7 +156,8 @@ class OfflineIndicator extends StatelessWidget {
               'sync',
               style: TextStyle(
                 fontSize: 11,
-                color: Theme.of(context).colorScheme.onTertiary.withOpacity(0.8),
+                color:
+                    Theme.of(context).colorScheme.onTertiary.withOpacity(0.8),
               ),
             ),
           ],
@@ -160,10 +166,12 @@ class OfflineIndicator extends StatelessWidget {
     );
   }
 
-  Widget _buildOnlineIndicator(BuildContext context, OfflineProvider offlineProvider) {
+  Widget _buildOnlineIndicator(
+      BuildContext context, OfflineProvider offlineProvider) {
     return Container(
       margin: margin,
-      padding: padding ?? const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding:
+          padding ?? const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
         borderRadius: BorderRadius.circular(16),
@@ -227,8 +235,8 @@ class OfflineStatusCard extends StatelessWidget {
                     Text(
                       'Connection Status',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
                   ],
                 ),
@@ -241,7 +249,8 @@ class OfflineStatusCard extends StatelessWidget {
                   const SizedBox(height: 12),
                   LinearProgressIndicator(
                     value: 0.7, // Placeholder for sync progress
-                    backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                    backgroundColor:
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
                     valueColor: AlwaysStoppedAnimation<Color>(
                       Theme.of(context).colorScheme.tertiary,
                     ),
@@ -268,7 +277,9 @@ class OfflineStatusCard extends StatelessWidget {
                             offlineProvider.lastError,
                             style: TextStyle(
                               fontSize: 12,
-                              color: Theme.of(context).colorScheme.onErrorContainer,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onErrorContainer,
                             ),
                           ),
                         ),
@@ -293,7 +304,7 @@ class OfflineFeatureStatus extends StatelessWidget {
     return Consumer<OfflineProvider>(
       builder: (context, offlineProvider, child) {
         final features = offlineProvider.getOfflineFeatureStatus();
-        
+
         return Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -303,8 +314,8 @@ class OfflineFeatureStatus extends StatelessWidget {
                 Text(
                   'Offline Features',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                        fontWeight: FontWeight.w600,
+                      ),
                 ),
                 const SizedBox(height: 12),
                 ...features.entries.map((entry) {
@@ -315,9 +326,9 @@ class OfflineFeatureStatus extends StatelessWidget {
                         Icon(
                           entry.value ? Icons.check_circle : Icons.cancel,
                           size: 16,
-                          color: entry.value 
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).colorScheme.error,
+                          color: entry.value
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).colorScheme.error,
                         ),
                         const SizedBox(width: 8),
                         Text(
@@ -327,17 +338,18 @@ class OfflineFeatureStatus extends StatelessWidget {
                         const Spacer(),
                         Text(
                           entry.value ? 'Available' : 'Unavailable',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: entry.value 
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context).colorScheme.error,
-                            fontWeight: FontWeight.w500,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: entry.value
+                                        ? Theme.of(context).colorScheme.primary
+                                        : Theme.of(context).colorScheme.error,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                         ),
                       ],
                     ),
                   );
-                }).toList(),
+                }),
               ],
             ),
           ),

@@ -1,10 +1,7 @@
 // lib/core/services/offline_sync_manager.dart
 import 'dart:async';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:herbascan/core/models/scan_result.dart';
-import 'package:herbascan/core/models/plant.dart';
 
 class OfflineSyncManager {
   static final OfflineSyncManager _instance = OfflineSyncManager._internal();
@@ -12,7 +9,8 @@ class OfflineSyncManager {
   OfflineSyncManager._internal();
 
   // Sync configuration
-  static const String _syncEndpoint = 'https://api.herbascan.com/sync'; // Placeholder
+  static const String _syncEndpoint =
+      'https://api.herbascan.com/sync'; // Placeholder
   static const Duration _syncInterval = Duration(minutes: 5);
   static const int _maxRetries = 3;
   static const Duration _retryDelay = Duration(seconds: 30);
@@ -25,9 +23,12 @@ class OfflineSyncManager {
   String? _lastSyncError;
 
   // Stream controllers
-  final StreamController<bool> _syncStatusController = StreamController<bool>.broadcast();
-  final StreamController<String> _syncProgressController = StreamController<String>.broadcast();
-  final StreamController<Map<String, dynamic>> _syncStatsController = StreamController<Map<String, dynamic>>.broadcast();
+  final StreamController<bool> _syncStatusController =
+      StreamController<bool>.broadcast();
+  final StreamController<String> _syncProgressController =
+      StreamController<String>.broadcast();
+  final StreamController<Map<String, dynamic>> _syncStatsController =
+      StreamController<Map<String, dynamic>>.broadcast();
 
   // Getters
   bool get isSyncing => _isSyncing;
@@ -35,21 +36,22 @@ class OfflineSyncManager {
   String? get lastSyncError => _lastSyncError;
   Stream<bool> get syncStatusStream => _syncStatusController.stream;
   Stream<String> get syncProgressStream => _syncProgressController.stream;
-  Stream<Map<String, dynamic>> get syncStatsStream => _syncStatsController.stream;
+  Stream<Map<String, dynamic>> get syncStatsStream =>
+      _syncStatsController.stream;
 
   /// Initialize sync manager
   Future<void> initialize() async {
     try {
       print('🔄 Initializing Offline Sync Manager...');
-      
+
       // Load sync preferences
       await _loadSyncPreferences();
-      
+
       // Start periodic sync if online
       if (_isOnline) {
         _startPeriodicSync();
       }
-      
+
       print('✅ Offline Sync Manager initialized');
     } catch (e) {
       print('❌ Error initializing Offline Sync Manager: $e');
@@ -98,7 +100,7 @@ class OfflineSyncManager {
     if (_isOnline != isOnline) {
       _isOnline = isOnline;
       _saveSyncPreferences();
-      
+
       if (_isOnline) {
         _startPeriodicSync();
         _performSync(); // Immediate sync when coming online
@@ -122,7 +124,7 @@ class OfflineSyncManager {
 
       // Get pending sync data
       final pendingData = await _getPendingSyncData();
-      
+
       if (pendingData.isEmpty) {
         _syncProgressController.add('No data to sync');
         _completeSync();
@@ -133,7 +135,7 @@ class OfflineSyncManager {
 
       // Attempt to sync data
       final success = await _syncDataToServer(pendingData);
-      
+
       if (success) {
         await _markDataAsSynced(pendingData);
         _retryCount = 0;
@@ -180,7 +182,7 @@ class OfflineSyncManager {
     try {
       final prefs = await SharedPreferences.getInstance();
       final pendingData = prefs.getStringList('pendingSyncData') ?? [];
-      
+
       return pendingData
           .map((json) => Map<String, dynamic>.from(jsonDecode(json)))
           .toList();
@@ -194,10 +196,8 @@ class OfflineSyncManager {
   Future<void> _savePendingSyncData(List<Map<String, dynamic>> data) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final jsonData = data
-          .map((item) => jsonEncode(item))
-          .toList();
-      
+      final jsonData = data.map((item) => jsonEncode(item)).toList();
+
       await prefs.setStringList('pendingSyncData', jsonData);
     } catch (e) {
       print('❌ Error saving pending sync data: $e');
@@ -210,7 +210,7 @@ class OfflineSyncManager {
       final pendingData = await _getPendingSyncData();
       pendingData.add(data);
       await _savePendingSyncData(pendingData);
-      
+
       // Trigger immediate sync if online
       if (_isOnline && !_isSyncing) {
         _performSync();
@@ -225,19 +225,19 @@ class OfflineSyncManager {
     try {
       // This is a placeholder implementation
       // In a real app, you would send data to your server
-      
+
       print('📤 Syncing ${data.length} items to server...');
-      
+
       // Simulate network request
       await Future.delayed(const Duration(seconds: 2));
-      
+
       // For demo purposes, always succeed
       // In real implementation, you would:
       // 1. Send HTTP POST request to sync endpoint
       // 2. Handle server response
       // 3. Process any server-side validation errors
       // 4. Return success/failure status
-      
+
       return true;
     } catch (e) {
       print('❌ Error syncing data to server: $e');
@@ -251,17 +251,16 @@ class OfflineSyncManager {
       // Remove synced data from pending list
       final pendingData = await _getPendingSyncData();
       final syncedIds = syncedData.map((item) => item['id']).toSet();
-      
-      final remainingData = pendingData
-          .where((item) => !syncedIds.contains(item['id']))
-          .toList();
-      
+
+      final remainingData =
+          pendingData.where((item) => !syncedIds.contains(item['id'])).toList();
+
       await _savePendingSyncData(remainingData);
-      
+
       // Update last sync time
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('lastSyncTime', DateTime.now().toIso8601String());
-      
+
       print('✅ Marked ${syncedData.length} items as synced');
     } catch (e) {
       print('❌ Error marking data as synced: $e');
@@ -278,7 +277,7 @@ class OfflineSyncManager {
         'lastError': _lastSyncError,
         'lastUpdate': DateTime.now().toIso8601String(),
       };
-      
+
       _syncStatsController.add(stats);
     } catch (e) {
       print('❌ Error updating sync stats: $e');
@@ -291,7 +290,7 @@ class OfflineSyncManager {
       final prefs = await SharedPreferences.getInstance();
       final pendingData = await _getPendingSyncData();
       final lastSyncTime = prefs.getString('lastSyncTime');
-      
+
       return {
         'isOnline': _isOnline,
         'isSyncing': _isSyncing,
@@ -318,7 +317,7 @@ class OfflineSyncManager {
   /// Get next sync time
   String? _getNextSyncTime() {
     if (_syncTimer == null || !_isOnline) return null;
-    
+
     // This is a simplified calculation
     // In a real implementation, you'd track the actual next sync time
     return 'In ${_syncInterval.inMinutes} minutes';
@@ -327,7 +326,7 @@ class OfflineSyncManager {
   /// Force sync
   Future<void> forceSync() async {
     if (_isSyncing) return;
-    
+
     _retryCount = 0;
     await _performSync();
   }
@@ -338,10 +337,10 @@ class OfflineSyncManager {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('pendingSyncData');
       await prefs.remove('lastSyncTime');
-      
+
       _retryCount = 0;
       _lastSyncError = null;
-      
+
       print('🗑️ Sync data cleared');
     } catch (e) {
       print('❌ Error clearing sync data: $e');

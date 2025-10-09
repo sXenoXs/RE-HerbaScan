@@ -41,7 +41,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     if (widget.predictions.isEmpty) {
       return _buildErrorScreen();
     }
@@ -70,7 +70,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
         children: [
           // Plant identification result
           _buildPlantResultCard(theme, plantName, confidence),
-          
+
           // Tab bar
           TabBar(
             controller: _tabController,
@@ -85,7 +85,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
               ),
             ],
           ),
-          
+
           // Tab content
           Expanded(
             child: TabBarView(
@@ -124,8 +124,8 @@ class _PlantResultScreenState extends State<PlantResultScreen>
             Text(
               'Unable to identify the plant in the image',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey.shade600,
-              ),
+                    color: Colors.grey.shade600,
+                  ),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
@@ -139,7 +139,8 @@ class _PlantResultScreenState extends State<PlantResultScreen>
     );
   }
 
-  Widget _buildPlantResultCard(ThemeData theme, String plantName, double confidence) {
+  Widget _buildPlantResultCard(
+      ThemeData theme, String plantName, double confidence) {
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
@@ -186,9 +187,9 @@ class _PlantResultScreenState extends State<PlantResultScreen>
               ),
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Plant name
           Text(
             plantName,
@@ -198,9 +199,9 @@ class _PlantResultScreenState extends State<PlantResultScreen>
             ),
             textAlign: TextAlign.center,
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           // Confidence score
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -243,14 +244,14 @@ class _PlantResultScreenState extends State<PlantResultScreen>
         children: [
           // Top predictions
           _buildPredictionsCard(theme),
-          
+
           const SizedBox(height: 16),
-          
+
           // Plant information
           _buildPlantInfoCard(theme, topPrediction),
-          
+
           const SizedBox(height: 16),
-          
+
           // Scan metadata
           _buildMetadataCard(theme),
         ],
@@ -258,7 +259,8 @@ class _PlantResultScreenState extends State<PlantResultScreen>
     );
   }
 
-  Widget _buildGradCAMTab(ThemeData theme, String plantName, double confidence) {
+  Widget _buildGradCAMTab(
+      ThemeData theme, String plantName, double confidence) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -272,9 +274,9 @@ class _PlantResultScreenState extends State<PlantResultScreen>
             confidence: confidence,
             onRefresh: _regenerateGradCAM,
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // GradCAM info
           _buildGradCAMInfoCard(theme),
         ],
@@ -307,7 +309,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
               final prediction = entry.value;
               final confidence = (prediction['confidence'] ?? 0.0).toDouble();
               final plantName = prediction['plantName'] ?? 'Unknown';
-              
+
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Row(
@@ -370,7 +372,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                   ],
                 ),
               );
-            }).toList(),
+            }),
           ],
         ),
       ),
@@ -397,10 +399,16 @@ class _PlantResultScreenState extends State<PlantResultScreen>
               ],
             ),
             const SizedBox(height: 16),
-            _buildInfoRow('Scientific Name', prediction['scientificName'] ?? 'Unknown'),
-            _buildInfoRow('Confidence Level', _getConfidenceLevel((prediction['confidence'] ?? 0.0).toDouble())),
-            _buildInfoRow('Prediction Index', '${prediction['index'] ?? 'N/A'}'),
-            _buildInfoRow('Features', '${(prediction['features'] as Map?)?.length ?? 0} features detected'),
+            _buildInfoRow(
+                'Scientific Name', prediction['scientificName'] ?? 'Unknown'),
+            _buildInfoRow(
+                'Confidence Level',
+                _getConfidenceLevel(
+                    (prediction['confidence'] ?? 0.0).toDouble())),
+            _buildInfoRow(
+                'Prediction Index', '${prediction['index'] ?? 'N/A'}'),
+            _buildInfoRow('Features',
+                '${(prediction['features'] as Map?)?.length ?? 0} features detected'),
           ],
         ),
       ),
@@ -429,8 +437,10 @@ class _PlantResultScreenState extends State<PlantResultScreen>
             const SizedBox(height: 16),
             _buildInfoRow('Scan Time', DateTime.now().toString().split('.')[0]),
             _buildInfoRow('Image Path', widget.imagePath.split('/').last),
-            _buildInfoRow('GradCAM Available', widget.gradCAMPath != null ? 'Yes' : 'No'),
-            _buildInfoRow('Summary GradCAM', widget.summaryGradCAMPath != null ? 'Yes' : 'No'),
+            _buildInfoRow(
+                'GradCAM Available', widget.gradCAMPath != null ? 'Yes' : 'No'),
+            _buildInfoRow('Summary GradCAM',
+                widget.summaryGradCAMPath != null ? 'Yes' : 'No'),
           ],
         ),
       ),
@@ -438,7 +448,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
   }
 
   Widget _buildGradCAMInfoCard(ThemeData theme) {
-          return Card(
+    return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

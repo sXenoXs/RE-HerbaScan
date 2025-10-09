@@ -2,10 +2,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:herbascan/core/services/database_service.dart';
-import 'package:herbascan/core/models/plant.dart';
-import 'package:herbascan/core/models/scan_result.dart';
 
 class OfflineDataManager {
   static final OfflineDataManager _instance = OfflineDataManager._internal();
@@ -24,7 +21,7 @@ class OfflineDataManager {
 
       // Get application documents directory
       final appDir = await getApplicationDocumentsDirectory();
-      
+
       // Create offline data directory
       _offlineDataDir = Directory('${appDir.path}/offline_data');
       if (!await _offlineDataDir!.exists()) {
@@ -62,7 +59,7 @@ class OfflineDataManager {
 
       final file = File('${_imagesDir!.path}/$filename');
       await file.writeAsBytes(imageData);
-      
+
       print('💾 Image saved offline: $filename');
       return file.path;
     } catch (e) {
@@ -238,7 +235,7 @@ class OfflineDataManager {
       print('Export date: ${data['exportDate']}');
       print('Plants: ${data['plants']?.length ?? 0}');
       print('Scans: ${data['scanHistory']?.length ?? 0}');
-      
+
       // TODO: Implement actual import logic
     } catch (e) {
       print('❌ Error importing offline data: $e');
@@ -268,7 +265,7 @@ class OfflineDataManager {
   Future<bool> isOfflineDataAvailable() async {
     try {
       if (_offlineDataDir == null) return false;
-      
+
       final plants = await _databaseService.getAllPlants();
       return plants.isNotEmpty;
     } catch (e) {
@@ -311,13 +308,13 @@ class OfflineDataManager {
   Future<void> optimizeStorage() async {
     try {
       print('🔧 Optimizing offline storage...');
-      
+
       // Clean up old data
       await cleanupOldData();
-      
+
       // Rebuild database indexes (if needed)
       await _databaseService.database;
-      
+
       print('✅ Storage optimization completed');
     } catch (e) {
       print('❌ Error optimizing storage: $e');
