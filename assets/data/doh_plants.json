@@ -1,0 +1,265 @@
+[
+  {
+    "id": "1",
+    "commonName": "Lagundi",
+    "scientificName": "Vitex negundo",
+    "localName": "Lagundi",
+    "family": "Lamiaceae",
+    "genus": "Vitex",
+    "species": "V. negundo",
+    "isDOHApproved": true,
+    "morphology": "Shrub with palmate leaves, 3-5 leaflets, aromatic when crushed. Purple flowers in terminal spikes.",
+    "ecology": "Found in tropical lowlands and riverbanks. Thrives in sunny, well-drained moist soils.",
+    "habitat": "Common in Southeast Asian regions with high humidity.",
+    "medicinalUses": [
+      {
+        "condition": "Cough and Asthma",
+        "description": "Traditional treatment for respiratory ailments",
+        "effectiveness": "High",
+        "activeCompounds": ["Vitexin", "Isovitexin"],
+        "dosage": "1/2 cup 3x daily",
+        "duration": "7-10 days"
+      },
+      {
+        "condition": "Fever",
+        "description": "Antipyretic properties",
+        "effectiveness": "Medium",
+        "activeCompounds": ["Flavonoids"],
+        "dosage": "1/3 cup 3x daily",
+        "duration": "3-5 days"
+      }
+    ],
+    "preparationMethods": [
+      {
+        "id": "1",
+        "condition": "Cough and Asthma",
+        "title": "Lagundi Tea",
+        "description": "Traditional preparation for respiratory conditions",
+        "steps": [
+          "Boil 1 cup of water",
+          "Add 6-7 fresh lagundi leaves",
+          "Simmer for 10-15 minutes",
+          "Strain and let cool",
+          "Drink 1/2 cup 3x daily"
+        ],
+        "dosage": "1/2 cup",
+        "frequency": "3x daily",
+        "duration": "7-10 days",
+        "warnings": ["Not for pregnant women", "Consult doctor if symptoms persist"],
+        "preparationType": "decoction"
+      }
+    ],
+    "safetyWarnings": [
+      "Not for pregnant or nursing women",
+      "Consult healthcare provider before use",
+      "Discontinue if allergic reactions occur"
+    ],
+    "imagePath": "assets/images/lagundi.jpg",
+    "createdAt": "2024-01-01T00:00:00Z",
+    "updatedAt": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "2",
+    "commonName": "Sambong",
+    "scientificName": "Blumea balsamifera",
+    "localName": "Sambong",
+    "family": "Asteraceae",
+    "genus": "Blumea",
+    "species": "B. balsamifera",
+    "isDOHApproved": true,
+    "morphology": "Erect, half-woody, strongly aromatic shrub with simple, alternate leaves.",
+    "ecology": "Grows in open grasslands and secondary forests at low and medium altitudes.",
+    "habitat": "Common throughout the Philippines and Southeast Asia.",
+    "medicinalUses": [
+      {
+        "condition": "Kidney Stones",
+        "description": "Diuretic and antilithic properties",
+        "effectiveness": "High",
+        "activeCompounds": ["Sesquiterpenes", "Flavonoids"],
+        "dosage": "1/2 cup 3x daily",
+        "duration": "2-4 weeks"
+      }
+    ],
+    "preparationMethods": [
+      {
+        "id": "2",
+        "condition": "Kidney Stones",
+        "title": "Sambong Decoction",
+        "description": "Traditional preparation for kidney stone treatment",
+        "steps": [
+          "Boil 1 cup of water",
+          "Add 10-15 fresh sambong leaves",
+          "Simmer for 15-20 minutes",
+          "Strain and let cool",
+          "Drink 1/2 cup 3x daily"
+        ],
+        "dosage": "1/2 cup",
+        "frequency": "3x daily",
+        "duration": "2-4 weeks",
+        "warnings": ["Increase fluid intake", "Monitor kidney function"],
+        "preparationType": "decoction"
+      }
+    ],
+    "safetyWarnings": [
+      "Increase fluid intake while using",
+      "Monitor kidney function regularly",
+      "Not recommended for severe kidney disease"
+    ],
+    "imagePath": "assets/images/sambong.jpg",
+    "createdAt": "2024-01-01T00:00:00Z",
+    "updatedAt": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "3",
+    "commonName": "Akapulko",
+    "scientificName": "Cassia alata",
+    "localName": "Akapulko",
+    "family": "Fabaceae",
+    "genus": "Cassia",
+    "species": "C. alata",
+    "isDOHApproved": true,
+    "morphology": "Shrub with compound leaves, yellow flowers in terminal racemes.",
+    "ecology": "Grows in open areas, roadsides, and secondary forests.",
+    "habitat": "Common in tropical regions of the Philippines.",
+    "medicinalUses": [
+      {
+        "condition": "Skin Conditions",
+        "description": "Antifungal and antibacterial properties",
+        "effectiveness": "High",
+        "activeCompounds": ["Anthraquinones", "Saponins"],
+        "dosage": "Apply topically 2-3x daily",
+        "duration": "1-2 weeks"
+      }
+    ],
+    "preparationMethods": [
+      {
+        "id": "3",
+        "condition": "Skin Conditions",
+        "title": "Akapulko Poultice",
+        "description": "Topical application for skin infections",
+        "steps": [
+          "Crush fresh akapulko leaves",
+          "Apply directly to affected area",
+          "Cover with clean cloth",
+          "Leave for 30 minutes",
+          "Repeat 2-3x daily"
+        ],
+        "dosage": "Topical application",
+        "frequency": "2-3x daily",
+        "duration": "1-2 weeks",
+        "warnings": ["Test for skin sensitivity first", "Discontinue if irritation occurs"],
+        "preparationType": "poultice"
+      }
+    ],
+    "safetyWarnings": [
+      "Test for skin sensitivity before use",
+      "Discontinue if skin irritation occurs",
+      "Not for internal use"
+    ],
+    "imagePath": "assets/images/akapulko.jpg",
+    "createdAt": "2024-01-01T00:00:00Z",
+    "updatedAt": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "4",
+    "commonName": "Tsaang Gubat",
+    "scientificName": "Ehretia microphylla",
+    "localName": "Tsaang Gubat",
+    "family": "Boraginaceae",
+    "genus": "Ehretia",
+    "species": "E. microphylla",
+    "isDOHApproved": true,
+    "morphology": "Small shrub with small, serrated leaves and white flowers.",
+    "ecology": "Grows in secondary forests and open areas.",
+    "habitat": "Common in the Philippines and Southeast Asia.",
+    "medicinalUses": [
+      {
+        "condition": "Diarrhea",
+        "description": "Antidiarrheal properties",
+        "effectiveness": "High",
+        "activeCompounds": ["Tannins", "Flavonoids"],
+        "dosage": "1/2 cup 3x daily",
+        "duration": "3-5 days"
+      }
+    ],
+    "preparationMethods": [
+      {
+        "id": "4",
+        "condition": "Diarrhea",
+        "title": "Tsaang Gubat Tea",
+        "description": "Traditional preparation for diarrhea treatment",
+        "steps": [
+          "Boil 1 cup of water",
+          "Add 8-10 fresh tsaang gubat leaves",
+          "Simmer for 10 minutes",
+          "Strain and let cool",
+          "Drink 1/2 cup 3x daily"
+        ],
+        "dosage": "1/2 cup",
+        "frequency": "3x daily",
+        "duration": "3-5 days",
+        "warnings": ["Stay hydrated", "Consult doctor if symptoms persist"],
+        "preparationType": "decoction"
+      }
+    ],
+    "safetyWarnings": [
+      "Stay hydrated while using",
+      "Not for severe diarrhea",
+      "Consult doctor if symptoms worsen"
+    ],
+    "imagePath": "assets/images/tsaang_gubat.jpg",
+    "createdAt": "2024-01-01T00:00:00Z",
+    "updatedAt": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "5",
+    "commonName": "Ampalaya",
+    "scientificName": "Momordica charantia",
+    "localName": "Ampalaya",
+    "family": "Cucurbitaceae",
+    "genus": "Momordica",
+    "species": "M. charantia",
+    "isDOHApproved": true,
+    "morphology": "Climbing vine with deeply lobed leaves and yellow flowers.",
+    "ecology": "Grows in tropical and subtropical regions.",
+    "habitat": "Common in the Philippines and throughout Asia.",
+    "medicinalUses": [
+      {
+        "condition": "Diabetes",
+        "description": "Hypoglycemic properties",
+        "effectiveness": "High",
+        "activeCompounds": ["Charantin", "Polypeptide-p"],
+        "dosage": "1/2 cup juice 2x daily",
+        "duration": "Long-term use"
+      }
+    ],
+    "preparationMethods": [
+      {
+        "id": "5",
+        "condition": "Diabetes",
+        "title": "Ampalaya Juice",
+        "description": "Fresh juice preparation for diabetes management",
+        "steps": [
+          "Wash fresh ampalaya thoroughly",
+          "Remove seeds and cut into pieces",
+          "Blend with water",
+          "Strain the juice",
+          "Drink 1/2 cup 2x daily"
+        ],
+        "dosage": "1/2 cup",
+        "frequency": "2x daily",
+        "duration": "Long-term use",
+        "warnings": ["Monitor blood sugar levels", "May cause hypoglycemia"],
+        "preparationType": "juice"
+      }
+    ],
+    "safetyWarnings": [
+      "Monitor blood sugar levels regularly",
+      "May cause hypoglycemia",
+      "Not recommended during pregnancy"
+    ],
+    "imagePath": "assets/images/ampalaya.jpg",
+    "createdAt": "2024-01-01T00:00:00Z",
+    "updatedAt": "2024-01-01T00:00:00Z"
+  }
+]
