@@ -497,8 +497,6 @@ herbascan/
 │   └── features/          ✅ (15+ screens: Home, Scan, Browse, History, DOH,
 │                              Settings, Feedback, Dashboard, Help, etc.)
 ├── assets/                ✅ (models, images, data, animations, icons, fonts)
-│                              PROJECT_STATUS, PHASE5_SUMMARY, INTEGRATION_SUMMARY,
-│                              TESTING_GUIDE, README)
 └── Configuration          ✅ (pubspec.yaml, analysis_options.yaml)
 ```
 
