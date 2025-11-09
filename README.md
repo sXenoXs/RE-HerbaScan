@@ -268,7 +268,6 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 
 ---
 
-
 ### Phase 1: Core Foundation (Added Features ✅)
 
 **Date**: September 6, 2025
@@ -498,7 +497,6 @@ herbascan/
 │   └── features/          ✅ (15+ screens: Home, Scan, Browse, History, DOH,
 │                              Settings, Feedback, Dashboard, Help, etc.)
 ├── assets/                ✅ (models, images, data, animations, icons, fonts)
-├── Documentation          ✅ (CHANGELOG, SPECIFICATION, DEVELOPMENT_NOTES,
 │                              PROJECT_STATUS, PHASE5_SUMMARY, INTEGRATION_SUMMARY,
 │                              TESTING_GUIDE, README)
 └── Configuration          ✅ (pubspec.yaml, analysis_options.yaml)
@@ -1091,11 +1089,7 @@ The app includes information about 13 DOH-approved herbal medicines:
 
 ### Main Documentation Files
 - **README.md** (this file) - Project overview and setup
-- **CHANGELOG.md** - Version history and changes
-- **SPECIFICATION.md** - Technical specification
-- **DEVELOPMENT_NOTES.md** - Development log
-- **PROJECT_STATUS.md** - Current status dashboard
-- **SYSTEM_SUMMARY.md** - System overview
+
 - **Setup.md** - Flutter setup instructions
 
 ### Backend Documentation
@@ -1106,8 +1100,7 @@ The app includes information about 13 DOH-approved herbal medicines:
   - Postman testing guide
   - Troubleshooting
 - **backend/QUICK_START.md** - Quick deployment guide
-- **backend/DEPLOYMENT.md** - Detailed deployment instructions
-- **backend/PHASE2_GUIDE.md** - Phase 2 model extraction guide
+
 
 ### Testing Documentation
 - **TESTING_GUIDE.md** - User testing guide (50+ test cases)
