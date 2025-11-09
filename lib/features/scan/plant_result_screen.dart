@@ -1,21 +1,32 @@
 // lib/features/scan/plant_result_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:herbascan/core/widgets/gradcam_visualization.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
+import 'package:herbascan/core/providers/plant_provider.dart';
+import 'package:herbascan/core/models/scan_result.dart';
+import 'package:uuid/uuid.dart';
 import 'dart:io';
+import 'dart:typed_data';
 
 class PlantResultScreen extends StatefulWidget {
   final String imagePath;
   final List<Map<String, dynamic>> predictions;
-  final String? gradCAMPath;
-  final String? summaryGradCAMPath;
+  final String? gradCAMPath; // Legacy: file path (deprecated)
+  final String? summaryGradCAMPath; // Legacy: file path (deprecated)
+  final Uint8List? gradcamImageBytes; // New: image bytes
+  final String? method; // 'grad-cam' or 'cam'
+  final bool? fallbackUsed; // True if offline was fallback
 
   const PlantResultScreen({
     super.key,
     required this.imagePath,
     required this.predictions,
-    this.gradCAMPath,
-    this.summaryGradCAMPath,
+    this.gradCAMPath, // Legacy support
+    this.summaryGradCAMPath, // Legacy support
+    this.gradcamImageBytes, // New format
+    this.method,
+    this.fallbackUsed,
   });
 
   @override
@@ -25,11 +36,68 @@ class PlantResultScreen extends StatefulWidget {
 class _PlantResultScreenState extends State<PlantResultScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
+  bool _isSaved = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+
+    // CRITICAL FIX: Always show AI Explanation tabs if:
+    // 1. Fallback was used (HIGHEST PRIORITY - indicates CAM/GradCAM was attempted), OR
+    // 2. Method is set (grad-cam or cam), OR
+    // 3. Heatmap is available
+    // This ensures tabs show even when heatmap generation fails
+    final hasHeatmap =
+        widget.gradcamImageBytes != null || widget.gradCAMPath != null;
+    final hasValidMethod = widget.method != null &&
+        widget.method != 'classification_only' &&
+        widget.method != '';
+    final hasFallback = widget.fallbackUsed == true;
+
+    // PRIORITY LOGIC:
+    // 1. If fallback is used, ALWAYS show tabs (offline CAM was attempted)
+    // 2. Otherwise, show if method is valid or heatmap exists
+    // This is the most permissive approach - if fallback is used, we attempted CAM/GradCAM
+    final showAIExplanation = hasFallback || hasValidMethod || hasHeatmap;
+
+    // Debug logging BEFORE TabController initialization
+    print('🔍 [PlantResultScreen] initState - TabController Setup:');
+    print('   ════════════════════════════════════════════════════════');
+    print('   method: "${widget.method}"');
+    print('   fallbackUsed: ${widget.fallbackUsed}');
+    print('   hasHeatmap: $hasHeatmap');
+    print('   hasValidMethod: $hasValidMethod');
+    print('   hasFallback: $hasFallback (PRIORITY)');
+    print('   ────────────────────────────────────────────────────────');
+    print('   showAIExplanation: $showAIExplanation');
+    print('   TabController length will be: ${showAIExplanation ? 2 : 1}');
+    print('   ════════════════════════════════════════════════════════');
+
+    // CRITICAL: Initialize TabController with correct length
+    // If showAIExplanation is true, length must be 2 (Details + AI Explanation)
+    // If false, length is 1 (Details only)
+    _tabController = TabController(
+      length: showAIExplanation ? 2 : 1,
+      vsync: this,
+    );
+
+    // Debug logging AFTER TabController initialization
+    print('🔍 [PlantResultScreen] initState - TabController Created:');
+    print('   TabController.length: ${_tabController.length}');
+    print('   TabController.index: ${_tabController.index}');
+    print(
+        '   Result: ${_tabController.length == 2 ? "✅ 2 tabs (Details + AI Explanation)" : "❌ 1 tab (Details only)"}');
+    if (_tabController.length == 1 && hasFallback) {
+      print('   ⚠️ ERROR: Fallback is true but TabController length is 1!');
+      print('   ⚠️ This should not happen - tabs should be showing!');
+      print(
+          '   ⚠️ Check if fallbackUsed is being passed correctly to PlantResultScreen');
+    }
+
+    // Automatically save scan result when screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _saveResultsAutomatically();
+    });
   }
 
   @override
@@ -66,37 +134,83 @@ class _PlantResultScreenState extends State<PlantResultScreen>
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Plant identification result
-          _buildPlantResultCard(theme, plantName, confidence),
+      body: Builder(
+        builder: (context) {
+          // CRITICAL: Use TabController length to determine if tabs should show
+          // TabController was initialized in initState based on method/heatmap/fallback
+          // We MUST use the same length here to avoid TabController mismatch errors
+          final tabCount = _tabController.length;
+          final shouldShowTabs = tabCount == 2;
 
-          // Tab bar
-          TabBar(
-            controller: _tabController,
-            tabs: [
-              const Tab(
-                icon: Icon(Icons.info),
-                text: 'Details',
-              ),
-              Tab(
-                icon: const Icon(Icons.visibility),
-                text: 'AI Explanation',
+          // Re-check conditions for debugging (should match initState logic)
+          final hasHeatmap =
+              widget.gradcamImageBytes != null || widget.gradCAMPath != null;
+          final hasValidMethod = widget.method != null &&
+              widget.method != 'classification_only' &&
+              widget.method != '';
+          final hasFallback = widget.fallbackUsed == true;
+          // CRITICAL: Same priority logic as initState - fallback has highest priority
+          final expectedShowTabs = hasFallback || hasValidMethod || hasHeatmap;
+
+          // Debug logging
+          print('🔍 [PlantResultScreen] build() - Rendering UI:');
+          print('   method: "${widget.method}"');
+          print('   fallbackUsed: ${widget.fallbackUsed}');
+          print('   hasHeatmap: $hasHeatmap');
+          print('   hasValidMethod: $hasValidMethod');
+          print('   hasFallback: $hasFallback');
+          print('   expectedShowTabs: $expectedShowTabs');
+          print('   TabController.length: $tabCount');
+          print('   shouldShowTabs: $shouldShowTabs');
+          print(
+              '   gradcamImageBytes: ${widget.gradcamImageBytes != null ? "${widget.gradcamImageBytes!.length} bytes" : "null"}');
+          print('   gradCAMPath: ${widget.gradCAMPath}');
+
+          // WARNING if mismatch
+          if (expectedShowTabs != shouldShowTabs) {
+            print('⚠️ [PlantResultScreen] MISMATCH DETECTED:');
+            print('   Expected to show tabs: $expectedShowTabs');
+            print('   TabController says: $shouldShowTabs');
+            print('   This means TabController was initialized incorrectly!');
+          }
+
+          return Column(
+            children: [
+              // Plant identification result
+              _buildPlantResultCard(theme, plantName, confidence),
+
+              // Tab bar - ONLY show if TabController length is 2
+              // This is critical - TabBar requires TabController.length == 2
+              if (tabCount == 2)
+                TabBar(
+                  controller: _tabController,
+                  tabs: const [
+                    Tab(
+                      icon: Icon(Icons.info),
+                      text: 'Details',
+                    ),
+                    Tab(
+                      icon: Icon(Icons.visibility),
+                      text: 'AI Explanation',
+                    ),
+                  ],
+                ),
+
+              // Tab content - MUST match TabController length
+              Expanded(
+                child: tabCount == 2
+                    ? TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _buildDetailsTab(theme, topPrediction),
+                          _buildGradCAMTab(theme, plantName, confidence),
+                        ],
+                      )
+                    : _buildDetailsTab(theme, topPrediction),
               ),
             ],
-          ),
-
-          // Tab content
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildDetailsTab(theme, topPrediction),
-                _buildGradCAMTab(theme, plantName, confidence),
-              ],
-            ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -202,34 +316,47 @@ class _PlantResultScreenState extends State<PlantResultScreen>
 
           const SizedBox(height: 8),
 
-          // Confidence score
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: _getConfidenceColor(confidence).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: _getConfidenceColor(confidence).withOpacity(0.3),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.analytics,
-                  size: 16,
-                  color: _getConfidenceColor(confidence),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '${(confidence * 100).toStringAsFixed(1)}% Confidence',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: _getConfidenceColor(confidence),
+          // Confidence score and method badge
+          // Use Wrap to prevent overflow issues - Wrap automatically handles overflow
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              // Confidence badge
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: _getConfidenceColor(confidence).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: _getConfidenceColor(confidence).withOpacity(0.3),
                   ),
                 ),
-              ],
-            ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.analytics,
+                      size: 14,
+                      color: _getConfidenceColor(confidence),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${(confidence.clamp(0.0, 1.0) * 100).toStringAsFixed(1)}%',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: _getConfidenceColor(confidence),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Method badge - only show if method is set
+              if (widget.method != null) _buildMethodBadge(theme),
+            ],
           ),
         ],
       ),
@@ -267,11 +394,14 @@ class _PlantResultScreenState extends State<PlantResultScreen>
         children: [
           // GradCAM visualization
           GradCAMVisualization(
-            gradCAMPath: widget.gradCAMPath,
-            summaryGradCAMPath: widget.summaryGradCAMPath,
+            gradCAMPath: widget.gradCAMPath, // Legacy support
+            summaryGradCAMPath: widget.summaryGradCAMPath, // Legacy support
+            gradcamImageBytes: widget.gradcamImageBytes, // New format
             originalImagePath: widget.imagePath,
             plantName: plantName,
             confidence: confidence,
+            method: widget.method,
+            fallbackUsed: widget.fallbackUsed,
             onRefresh: _regenerateGradCAM,
           ),
 
@@ -438,9 +568,18 @@ class _PlantResultScreenState extends State<PlantResultScreen>
             _buildInfoRow('Scan Time', DateTime.now().toString().split('.')[0]),
             _buildInfoRow('Image Path', widget.imagePath.split('/').last),
             _buildInfoRow(
-                'GradCAM Available', widget.gradCAMPath != null ? 'Yes' : 'No'),
-            _buildInfoRow('Summary GradCAM',
-                widget.summaryGradCAMPath != null ? 'Yes' : 'No'),
+                'GradCAM Available',
+                (widget.gradcamImageBytes != null || widget.gradCAMPath != null)
+                    ? 'Yes'
+                    : 'No'),
+            if (widget.method != null)
+              _buildInfoRow(
+                  'Method',
+                  widget.method == 'grad-cam'
+                      ? 'Online (Grad-CAM)'
+                      : 'Offline (CAM)'),
+            if (widget.fallbackUsed == true)
+              _buildInfoRow('Fallback Used', 'Yes'),
           ],
         ),
       ),
@@ -540,11 +679,132 @@ class _PlantResultScreenState extends State<PlantResultScreen>
     );
   }
 
+  Future<void> _saveResultsAutomatically() async {
+    if (_isSaved) return;
+
+    try {
+      final plantProvider = Provider.of<PlantProvider>(context, listen: false);
+      final topPrediction = widget.predictions.first;
+
+      // Convert predictions to Prediction objects
+      final predictions = widget.predictions.map((pred) {
+        return Prediction(
+          plantId: pred['label'] ?? '',
+          plantName: pred['plantName'] ?? pred['label'] ?? 'Unknown',
+          scientificName: pred['scientificName'] ?? '',
+          confidence: (pred['confidence'] ?? 0.0).toDouble(),
+          features: (pred['features'] as Map<String, dynamic>?) ?? {},
+        );
+      }).toList();
+
+      // Get plant data from provider based on the predicted label
+      final plantLabel = topPrediction['label'] ?? '';
+      final plant = plantProvider.plants.where((p) {
+        return p.commonName.toLowerCase() == plantLabel.toLowerCase() ||
+            p.scientificName.toLowerCase() == plantLabel.toLowerCase();
+      }).firstOrNull;
+
+      // Create scan result
+      final scanResult = ScanResult(
+        id: const Uuid().v4(),
+        plant: plant,
+        confidenceScore: (topPrediction['confidence'] ?? 0.0).toDouble(),
+        predictions: predictions,
+        imagePath: widget.imagePath,
+        scanDate: DateTime.now(),
+        gradCAMPath: widget.gradCAMPath,
+        metadata: {
+          'gradCAMAvailable': widget.gradCAMPath != null,
+          'summaryGradCAMAvailable': widget.summaryGradCAMPath != null,
+          'scanTime': DateTime.now().toIso8601String(),
+        },
+        isOfflineScan: false,
+      );
+
+      // Save to database
+      await plantProvider.addScanResult(scanResult);
+
+      setState(() {
+        _isSaved = true;
+      });
+
+      print('✅ Scan result saved successfully');
+    } catch (e) {
+      print('❌ Error saving scan result: $e');
+    }
+  }
+
   void _saveResults() {
-    // TODO: Implement save functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Save functionality not implemented yet'),
+    if (_isSaved) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Scan already saved to history'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      _saveResultsAutomatically();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Scan saved to history successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
+  Widget _buildMethodBadge(ThemeData theme) {
+    if (widget.method == null) return const SizedBox.shrink();
+
+    final isOnline = widget.method == 'grad-cam';
+    final isFallback = widget.fallbackUsed == true;
+
+    Color badgeColor;
+    IconData badgeIcon;
+    String badgeText;
+
+    if (isOnline && !isFallback) {
+      badgeColor = Colors.green;
+      badgeIcon = Icons.cloud;
+      badgeText = 'Online';
+    } else if (isFallback) {
+      badgeColor = Colors.orange;
+      badgeIcon = Icons.sync_problem;
+      badgeText = 'Fallback'; // Short text to prevent overflow
+    } else {
+      badgeColor = Colors.blue;
+      badgeIcon = Icons.offline_bolt;
+      badgeText = 'Offline';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: badgeColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: badgeColor.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            badgeIcon,
+            size: 16,
+            color: badgeColor,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            badgeText,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: badgeColor,
+            ),
+          ),
+        ],
       ),
     );
   }

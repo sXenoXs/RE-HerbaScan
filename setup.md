@@ -123,10 +123,24 @@ After successful setup:
 - ✅ Plant identification (camera + gallery)
 - ✅ GradCAM visualization with working overlay controls
 - ✅ Offline processing capabilities
+- ✅ **Offline CAM heatmap generation** (fixed in v0.5.2)
 - ✅ Multi-language support (English/Filipino)
 - ✅ Scan history with metadata
 - ✅ Settings and preferences
 - ✅ Responsive UI with fixed overflow issues
+- ✅ Backend API for true Grad-CAM computation
+- ✅ Postman collection for API testing
+
+**Recent Fixes (v0.5.2)**:
+- ✅ Fixed offline CAM inference shape mismatch error
+- ✅ Corrected TFLite multiple outputs handling using `runForMultipleInputs()`
+- ✅ Verified feature maps extraction: `[1, 7, 7, 1280]`
+- ✅ Verified predictions extraction: `[1, 40]`
+
+**Backend API Testing**:
+- See `backend/README.md` → "🧪 Testing with Postman" for complete testing guide
+- Postman collection: `backend/HerbaScan_API.postman_collection.json`
+- Supports: Postman desktop, VS Code (REST Client, Thunder Client), curl
 
 ## Project Structure Overview
 
@@ -163,6 +177,86 @@ The app includes pre-trained models:
 3. **Class Labels**: `labels.json` and `labels.txt`
 
 **Model Files Location**: `assets/models/`
+
+### Backend Setup (Python FastAPI)
+
+HerbaScan includes a Python backend API for true Grad-CAM computation:
+
+**Location**: `backend/` directory
+
+#### Prerequisites
+- Python 3.8+ installed
+- Virtual environment (recommended)
+- Model files: `backend/models/mobilenetv2_rf.h5` and `backend/models/labels.json`
+
+#### Setup Steps
+
+1. **Navigate to backend directory**:
+   ```bash
+   cd backend
+   ```
+
+2. **Create virtual environment**:
+   ```bash
+   # Windows
+   python -m venv venv
+   venv\Scripts\activate
+   
+   # Mac/Linux
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
+
+3. **Install dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Place model files**:
+   - Copy `mobilenetv2_rf.h5` to `backend/models/`
+   - Copy `labels.json` to `backend/models/`
+
+5. **Run locally**:
+   ```bash
+   python main.py
+   # Or
+   uvicorn main:app --reload --host 0.0.0.0 --port 8000
+   ```
+
+6. **Test API**:
+   ```bash
+   curl http://localhost:8000/health
+   ```
+
+#### Backend Documentation
+
+For detailed backend setup, see:
+- **`backend/README.md`** - Complete backend documentation
+- **`backend/QUICK_START.md`** - Quick deployment guide
+- **Model Management**: `backend/README.md` → "🔄 Updating Models"
+- **Deployment**: `backend/README.md` → "🚀 Deployment to Railway"
+- **Phase 2**: `backend/README.md` → "Phase 2: Model Extraction & Conversion"
+- **Testing**: `backend/README.md` → "🧪 Testing with Postman"
+
+#### Phase 2: Model Extraction (For Flutter Assets)
+
+After setting up the backend, extract CAM weights and create multi-output TFLite model:
+
+```bash
+cd backend
+
+# Extract CAM weights
+python extract_cam_weights.py
+
+# Create multi-output TFLite model
+python create_multi_output_tflite.py
+
+# Copy to Flutter assets
+cp models/cam_weights.json ../assets/models/
+cp models/mobilenetv2_multi_output.tflite ../assets/models/
+```
+
+**For detailed instructions, see `backend/README.md` → "Phase 2: Model Extraction & Conversion"**
 
 ## Database Setup
 

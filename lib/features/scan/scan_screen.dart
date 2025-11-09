@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:camera/camera.dart';
+import 'dart:typed_data';
 import 'package:herbascan/core/providers/camera_provider.dart';
 import 'package:herbascan/core/providers/offline_provider.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
@@ -27,14 +28,15 @@ class _ScanScreenState extends State<ScanScreen> {
 
   void _resumeCamera() {
     final cameraProvider = Provider.of<CameraProvider>(context, listen: false);
-    if (cameraProvider.cameraController != null && cameraProvider.cameraController!.value.isInitialized) {
+    if (cameraProvider.cameraController != null &&
+        cameraProvider.cameraController!.value.isInitialized) {
       cameraProvider.cameraController!.resumePreview();
     }
   }
 
   Future<void> _initializeCameraAndModels() async {
     final cameraProvider = Provider.of<CameraProvider>(context, listen: false);
-    
+
     // Initialize the classifier first
     try {
       await cameraProvider.initializeClassifier();
@@ -47,7 +49,8 @@ class _ScanScreenState extends State<ScanScreen> {
   void dispose() {
     // Pause camera when leaving scan screen to prevent buffer warnings
     final cameraProvider = Provider.of<CameraProvider>(context, listen: false);
-    if (cameraProvider.cameraController != null && cameraProvider.cameraController!.value.isInitialized) {
+    if (cameraProvider.cameraController != null &&
+        cameraProvider.cameraController!.value.isInitialized) {
       cameraProvider.cameraController!.pausePreview();
     }
     super.dispose();
@@ -56,7 +59,7 @@ class _ScanScreenState extends State<ScanScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text(AppLocalizations.of(context).scanPlant),
@@ -68,11 +71,11 @@ class _ScanScreenState extends State<ScanScreen> {
           if (cameraProvider.hasError) {
             return _buildErrorState(context, theme, cameraProvider);
           }
-          
+
           if (!cameraProvider.isInitialized) {
             return _buildLoadingState(context, theme);
           }
-          
+
           return _buildCameraView(context, theme, cameraProvider);
         },
       ),
@@ -95,7 +98,8 @@ class _ScanScreenState extends State<ScanScreen> {
     );
   }
 
-  Widget _buildErrorState(BuildContext context, ThemeData theme, CameraProvider cameraProvider) {
+  Widget _buildErrorState(
+      BuildContext context, ThemeData theme, CameraProvider cameraProvider) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -135,7 +139,8 @@ class _ScanScreenState extends State<ScanScreen> {
     );
   }
 
-  Widget _buildCameraView(BuildContext context, ThemeData theme, CameraProvider cameraProvider) {
+  Widget _buildCameraView(
+      BuildContext context, ThemeData theme, CameraProvider cameraProvider) {
     return Stack(
       children: [
         // Camera Preview with tap-to-focus
@@ -151,7 +156,7 @@ class _ScanScreenState extends State<ScanScreen> {
             child: CameraPreview(cameraProvider.cameraController!),
           ),
         ),
-        
+
         // Overlay
         Positioned.fill(
           child: Container(
@@ -184,7 +189,39 @@ class _ScanScreenState extends State<ScanScreen> {
                           ),
                         ),
                       ),
-                      
+
+                      // Scanning Tips Button
+                      GestureDetector(
+                        onTap: _showScanningTips,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withValues(alpha: 0.8),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Icon(
+                                Icons.lightbulb_outline,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                              SizedBox(width: 6),
+                              Text(
+                                'Tips',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
                       // Gallery Button
                       GestureDetector(
                         onTap: _pickFromGallery,
@@ -204,7 +241,7 @@ class _ScanScreenState extends State<ScanScreen> {
                     ],
                   ),
                 ),
-                
+
                 // Center - Scanning Area
                 Expanded(
                   child: Center(
@@ -221,10 +258,12 @@ class _ScanScreenState extends State<ScanScreen> {
                       child: Stack(
                         children: [
                           // Scanning Animation
-                          if (cameraProvider.isCapturing || cameraProvider.isClassifying)
+                          if (cameraProvider.isCapturing ||
+                              cameraProvider.isClassifying)
                             const Center(
                               child: CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             ),
                         ],
@@ -232,7 +271,7 @@ class _ScanScreenState extends State<ScanScreen> {
                     ),
                   ),
                 ),
-                
+
                 // Bottom Controls
                 Container(
                   padding: const EdgeInsets.all(24),
@@ -244,7 +283,8 @@ class _ScanScreenState extends State<ScanScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 32),
                           child: Row(
                             children: [
-                              const Icon(Icons.remove, color: Colors.white, size: 20),
+                              const Icon(Icons.remove,
+                                  color: Colors.white, size: 20),
                               Expanded(
                                 child: Slider(
                                   value: cameraProvider.currentZoomLevel,
@@ -257,23 +297,25 @@ class _ScanScreenState extends State<ScanScreen> {
                                   inactiveColor: Colors.white.withOpacity(0.3),
                                 ),
                               ),
-                              const Icon(Icons.add, color: Colors.white, size: 20),
+                              const Icon(Icons.add,
+                                  color: Colors.white, size: 20),
                             ],
                           ),
                         ),
                       if (cameraProvider.maxZoomLevel > 1.0)
                         const SizedBox(height: 16),
-                      
+
                       // Instructions
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
                           color: Colors.black.withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          cameraProvider.isClassifying 
-                              ? 'Analyzing plant...' 
+                          cameraProvider.isClassifying
+                              ? 'Analyzing plant...'
                               : AppLocalizations.of(context).positionPlant,
                           style: const TextStyle(
                             color: Colors.white,
@@ -282,13 +324,14 @@ class _ScanScreenState extends State<ScanScreen> {
                           textAlign: TextAlign.center,
                         ),
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // Capture Button
                       GestureDetector(
-                        onTap: (cameraProvider.isCapturing || cameraProvider.isClassifying) 
-                            ? null 
+                        onTap: (cameraProvider.isCapturing ||
+                                cameraProvider.isClassifying)
+                            ? null
                             : _captureImage,
                         child: Container(
                           width: 72,
@@ -301,7 +344,8 @@ class _ScanScreenState extends State<ScanScreen> {
                               width: 4,
                             ),
                           ),
-                          child: (cameraProvider.isCapturing || cameraProvider.isClassifying)
+                          child: (cameraProvider.isCapturing ||
+                                  cameraProvider.isClassifying)
                               ? const Center(
                                   child: CircularProgressIndicator(
                                     strokeWidth: 3,
@@ -329,7 +373,7 @@ class _ScanScreenState extends State<ScanScreen> {
   void _toggleFlash(CameraProvider cameraProvider) {
     final currentMode = cameraProvider.currentFlashMode;
     FlashMode newMode;
-    
+
     switch (currentMode) {
       case FlashMode.off:
         newMode = FlashMode.always;
@@ -343,38 +387,78 @@ class _ScanScreenState extends State<ScanScreen> {
       default:
         newMode = FlashMode.off;
     }
-    
+
     cameraProvider.setFlashMode(newMode);
   }
 
   // Gallery image selection with GradCAM
   Future<void> _pickFromGallery() async {
     final cameraProvider = Provider.of<CameraProvider>(context, listen: false);
-    final offlineProvider = Provider.of<OfflineProvider>(context, listen: false);
+    final offlineProvider =
+        Provider.of<OfflineProvider>(context, listen: false);
     final image = await cameraProvider.pickImageFromGallery();
-    
+
     if (image != null) {
       try {
         // Process image with AI and GradCAM
-        final result = await cameraProvider.processPlantIdentificationWithGradCAM(
+        final result =
+            await cameraProvider.processPlantIdentificationWithGradCAM(
           cameraProvider.lastCapturedImageData!,
           offlineProvider: offlineProvider,
         );
-        
+
         if (!mounted) return;
-        
-        final predictions = result['predictions'] as List<Map<String, dynamic>>;
+
+        // Safely convert List<dynamic> to List<Map<String, dynamic>>
+        List<Map<String, dynamic>> predictions = [];
+        if (result['predictions'] != null) {
+          final rawPredictions = result['predictions'];
+          if (rawPredictions is List) {
+            predictions = rawPredictions
+                .map((item) => item is Map<String, dynamic>
+                    ? item
+                    : Map<String, dynamic>.from(item))
+                .toList()
+                .cast<Map<String, dynamic>>();
+          }
+        }
+        final gradcamImageBytes = result['gradcam_image'] as Uint8List?;
+        final method = result['method'] as String?;
+        final fallbackUsed = result['fallback_used'] as bool?;
+        // Legacy support
         final gradCAMPath = result['gradCAMPath'] as String?;
         final summaryGradCAMPath = result['summaryGradCAMPath'] as String?;
         
+        // Enhanced logging for debugging
+        print('🔍 [ScanScreen] Navigating to PlantResultScreen:');
+        print('   ════════════════════════════════════════════════════════');
+        print('   Method: "$method"');
+        print('   Fallback used: $fallbackUsed');
+        print('   Heatmap bytes present: ${gradcamImageBytes != null}');
+        if (gradcamImageBytes != null) {
+          print('   Heatmap size: ${gradcamImageBytes.length} bytes');
+        } else {
+          print('   ⚠️ WARNING: No heatmap bytes passed to PlantResultScreen!');
+        }
+        print('   Predictions count: ${predictions.length}');
+        if (predictions.isNotEmpty) {
+          print('   Top prediction: ${predictions.first['plantName']}');
+        }
+        print('   ════════════════════════════════════════════════════════');
+        print('   ✅ Will show tabs if: fallback=$fallbackUsed OR method="$method"');
+        print('   ✅ Expected: ${(fallbackUsed == true || (method != null && method != 'classification_only')) ? "SHOW TABS" : "NO TABS"}');
+
         if (predictions.isNotEmpty) {
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => PlantResultScreen(
                 predictions: predictions,
                 imagePath: image.path,
-                gradCAMPath: gradCAMPath,
-                summaryGradCAMPath: summaryGradCAMPath,
+                gradcamImageBytes: gradcamImageBytes, // New format
+                method: method, // Should be 'cam' when offline
+                fallbackUsed: fallbackUsed, // Should be true when offline
+                gradCAMPath: gradCAMPath, // Legacy support
+                summaryGradCAMPath: summaryGradCAMPath, // Legacy support
               ),
             ),
           );
@@ -387,7 +471,7 @@ class _ScanScreenState extends State<ScanScreen> {
         }
       } catch (e) {
         if (!mounted) return;
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error processing image: $e'),
@@ -401,23 +485,41 @@ class _ScanScreenState extends State<ScanScreen> {
   // Updated method with AI classification and GradCAM
   Future<void> _captureImage() async {
     final cameraProvider = Provider.of<CameraProvider>(context, listen: false);
-    final offlineProvider = Provider.of<OfflineProvider>(context, listen: false);
+    final offlineProvider =
+        Provider.of<OfflineProvider>(context, listen: false);
     final image = await cameraProvider.captureImage();
-    
+
     if (image != null) {
       try {
         // Process image with AI and GradCAM
-        final result = await cameraProvider.processPlantIdentificationWithGradCAM(
+        final result =
+            await cameraProvider.processPlantIdentificationWithGradCAM(
           cameraProvider.lastCapturedImageData!,
           offlineProvider: offlineProvider,
         );
-        
+
         if (!mounted) return;
-        
-        final predictions = result['predictions'] as List<Map<String, dynamic>>;
+
+        // Safely convert List<dynamic> to List<Map<String, dynamic>>
+        List<Map<String, dynamic>> predictions = [];
+        if (result['predictions'] != null) {
+          final rawPredictions = result['predictions'];
+          if (rawPredictions is List) {
+            predictions = rawPredictions
+                .map((item) => item is Map<String, dynamic>
+                    ? item
+                    : Map<String, dynamic>.from(item))
+                .toList()
+                .cast<Map<String, dynamic>>();
+          }
+        }
+        final gradcamImageBytes = result['gradcam_image'] as Uint8List?;
+        final method = result['method'] as String?;
+        final fallbackUsed = result['fallback_used'] as bool?;
+        // Legacy support
         final gradCAMPath = result['gradCAMPath'] as String?;
         final summaryGradCAMPath = result['summaryGradCAMPath'] as String?;
-        
+
         if (predictions.isNotEmpty) {
           // Navigate to results screen with predictions and GradCAM
           Navigator.of(context).push(
@@ -425,8 +527,11 @@ class _ScanScreenState extends State<ScanScreen> {
               builder: (context) => PlantResultScreen(
                 predictions: predictions,
                 imagePath: image.path,
-                gradCAMPath: gradCAMPath,
-                summaryGradCAMPath: summaryGradCAMPath,
+                gradcamImageBytes: gradcamImageBytes, // New format
+                method: method,
+                fallbackUsed: fallbackUsed,
+                gradCAMPath: gradCAMPath, // Legacy support
+                summaryGradCAMPath: summaryGradCAMPath, // Legacy support
               ),
             ),
           );
@@ -439,7 +544,7 @@ class _ScanScreenState extends State<ScanScreen> {
         }
       } catch (e) {
         if (!mounted) return;
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error processing image: $e'),
@@ -448,5 +553,212 @@ class _ScanScreenState extends State<ScanScreen> {
         );
       }
     }
+  }
+
+  void _showScanningTips() {
+    final theme = Theme.of(context);
+    final appLocalizations = AppLocalizations.of(context);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.75,
+          minChildSize: 0.5,
+          maxChildSize: 0.9,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(24),
+                  topRight: Radius.circular(24),
+                ),
+              ),
+              child: Column(
+                children: [
+                  // Handle bar
+                  Container(
+                    margin: const EdgeInsets.symmetric(vertical: 12),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.onSurface.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+
+                  // Header
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            Icons.lightbulb,
+                            color: theme.colorScheme.onPrimaryContainer,
+                            size: 28,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                appLocalizations.scanningTipsTitle,
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                'Get the best scanning results',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurface
+                                      .withOpacity(0.6),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const Divider(height: 1),
+
+                  // Tips List
+                  Expanded(
+                    child: ListView(
+                      controller: scrollController,
+                      padding: const EdgeInsets.all(24),
+                      children: [
+                        _buildTipCard(
+                          appLocalizations.useBrightLight,
+                          'Natural daylight works best. Avoid direct sunlight which can cause glare.',
+                          Icons.wb_sunny,
+                          theme.colorScheme.primary,
+                          theme,
+                        ),
+                        _buildTipCard(
+                          appLocalizations.holdSteady,
+                          'Keep your device stable to prevent blurry images. Use both hands.',
+                          Icons.pan_tool,
+                          theme.colorScheme.secondary,
+                          theme,
+                        ),
+                        _buildTipCard(
+                          appLocalizations.cleanLeaf,
+                          'Choose a healthy, mature leaf without damage or disease.',
+                          Icons.eco,
+                          Colors.green,
+                          theme,
+                        ),
+                        _buildTipCard(
+                          appLocalizations.singleLeafFocus,
+                          'Frame a single leaf in the center. Avoid multiple leaves.',
+                          Icons.center_focus_strong,
+                          Colors.orange,
+                          theme,
+                        ),
+                        _buildTipCard(
+                          appLocalizations.fillFrame,
+                          'Fill most of the frame with the leaf for better AI recognition.',
+                          Icons.crop_free,
+                          Colors.purple,
+                          theme,
+                        ),
+                        _buildTipCard(
+                          appLocalizations.plainBackground,
+                          'Use a plain, contrasting background (white paper works well).',
+                          Icons.image,
+                          Colors.teal,
+                          theme,
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Got it button
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text('Got it!'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildTipCard(String title, String description, IconData icon,
+      Color color, ThemeData theme) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: color.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: theme.textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
