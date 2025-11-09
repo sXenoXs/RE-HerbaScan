@@ -5,6 +5,11 @@ import 'package:herbascan/core/providers/language_provider.dart';
 import 'package:herbascan/core/providers/offline_provider.dart';
 import 'package:herbascan/core/widgets/offline_indicator.dart';
 import 'package:herbascan/features/offline/offline_demo_screen.dart';
+import 'package:herbascan/features/help/help_tutorial_screen.dart';
+import 'package:herbascan/features/metrics/performance_metrics_screen.dart';
+import 'package:herbascan/features/feedback/feedback_screen.dart';
+import 'package:herbascan/features/dashboard/performance_dashboard_screen.dart';
+import 'package:herbascan/features/testing/gradcam_testing_screen.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -13,7 +18,7 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text(AppLocalizations.of(context).settings),
@@ -27,22 +32,32 @@ class SettingsScreen extends StatelessWidget {
           _buildLanguageSetting(context, theme),
           _buildOfflineModeSetting(context, theme),
           _buildAutoSaveSetting(context, theme),
-          
+
           const SizedBox(height: 16),
-          
+
           // Offline Management
           _buildOfflineManagementSection(context, theme),
-          
+
           const SizedBox(height: 24),
-          
+
           // AI Settings
           _buildSectionHeader(context, theme, 'AI Settings'),
           _buildConfidenceScoresSetting(context, theme),
           _buildGradCAMSetting(context, theme),
           _buildTop3ResultsSetting(context, theme),
-          
+
           const SizedBox(height: 24),
-          
+
+          // Help & Support
+          _buildSectionHeader(context, theme, 'Help & Support'),
+          _buildHelpTutorialLink(context, theme),
+          _buildPerformanceMetricsLink(context, theme),
+          _buildFeedbackLink(context, theme),
+          _buildAppPerformanceLink(context, theme),
+          _buildGradCAMTestingLink(context, theme),
+
+          const SizedBox(height: 24),
+
           // About
           _buildSectionHeader(context, theme, 'About'),
           _buildAppVersionInfo(context, theme),
@@ -52,7 +67,8 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, ThemeData theme, String title) {
+  Widget _buildSectionHeader(
+      BuildContext context, ThemeData theme, String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(
@@ -67,7 +83,7 @@ class SettingsScreen extends StatelessWidget {
 
   Widget _buildThemeSetting(BuildContext context, ThemeData theme) {
     final appProvider = Provider.of<AppProvider>(context);
-    
+
     return Card(
       child: SwitchListTile(
         secondary: Icon(
@@ -85,7 +101,7 @@ class SettingsScreen extends StatelessWidget {
 
   Widget _buildLanguageSetting(BuildContext context, ThemeData theme) {
     final languageProvider = Provider.of<LanguageProvider>(context);
-    
+
     return Card(
       child: ListTile(
         leading: const Icon(Icons.language),
@@ -102,7 +118,7 @@ class SettingsScreen extends StatelessWidget {
   Widget _buildOfflineModeSetting(BuildContext context, ThemeData theme) {
     final appProvider = Provider.of<AppProvider>(context);
     final offlineProvider = Provider.of<OfflineProvider>(context);
-    
+
     return Card(
       child: SwitchListTile(
         secondary: const Icon(Icons.offline_bolt),
@@ -133,7 +149,7 @@ class SettingsScreen extends StatelessWidget {
 
   Widget _buildConfidenceScoresSetting(BuildContext context, ThemeData theme) {
     final appProvider = Provider.of<AppProvider>(context);
-    
+
     return Card(
       child: SwitchListTile(
         secondary: const Icon(Icons.analytics),
@@ -149,7 +165,7 @@ class SettingsScreen extends StatelessWidget {
 
   Widget _buildGradCAMSetting(BuildContext context, ThemeData theme) {
     final appProvider = Provider.of<AppProvider>(context);
-    
+
     return Card(
       child: SwitchListTile(
         secondary: const Icon(Icons.visibility),
@@ -165,7 +181,7 @@ class SettingsScreen extends StatelessWidget {
 
   Widget _buildTop3ResultsSetting(BuildContext context, ThemeData theme) {
     final appProvider = Provider.of<AppProvider>(context);
-    
+
     return Card(
       child: SwitchListTile(
         secondary: const Icon(Icons.list),
@@ -181,7 +197,7 @@ class SettingsScreen extends StatelessWidget {
 
   Widget _buildAppVersionInfo(BuildContext context, ThemeData theme) {
     final appProvider = Provider.of<AppProvider>(context);
-    
+
     return Card(
       child: ListTile(
         leading: const Icon(Icons.info),
@@ -193,7 +209,7 @@ class SettingsScreen extends StatelessWidget {
 
   Widget _buildModelVersionInfo(BuildContext context, ThemeData theme) {
     final appProvider = Provider.of<AppProvider>(context);
-    
+
     return Card(
       child: ListTile(
         leading: const Icon(Icons.psychology),
@@ -203,22 +219,118 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildHelpTutorialLink(BuildContext context, ThemeData theme) {
+    final appLocalizations = AppLocalizations.of(context);
+
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.help_outline),
+        title: Text(appLocalizations.helpAndTutorial),
+        subtitle: const Text('Learn how to get the best scanning results'),
+        trailing: const Icon(Icons.arrow_forward_ios),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const HelpTutorialScreen(),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildPerformanceMetricsLink(BuildContext context, ThemeData theme) {
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.analytics),
+        title: const Text('AI Performance Metrics'),
+        subtitle: const Text('View model accuracy and performance stats'),
+        trailing: const Icon(Icons.arrow_forward_ios),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const PerformanceMetricsScreen(),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildFeedbackLink(BuildContext context, ThemeData theme) {
+    final appLocalizations = AppLocalizations.of(context);
+
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.feedback_outlined),
+        title: Text(appLocalizations.sendFeedback),
+        subtitle: const Text('Help us improve HerbaScan'),
+        trailing: const Icon(Icons.arrow_forward_ios),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const FeedbackScreen(),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildAppPerformanceLink(BuildContext context, ThemeData theme) {
+    final appLocalizations = AppLocalizations.of(context);
+
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.speed),
+        title: Text(appLocalizations.appPerformance),
+        subtitle: Text(appLocalizations.viewPerformanceData),
+        trailing: const Icon(Icons.arrow_forward_ios),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const PerformanceDashboardScreen(),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildGradCAMTestingLink(BuildContext context, ThemeData theme) {
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.science),
+        title: const Text('Phase 5: GradCAM Testing'),
+        subtitle: const Text('Test online/offline modes and measure performance'),
+        trailing: const Icon(Icons.arrow_forward_ios),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const GradCAMTestingScreen(),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildOfflineManagementSection(BuildContext context, ThemeData theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionHeader(context, theme, 'Offline Management'),
-        
+
         // Offline Status Card
         OfflineStatusCard(),
-        
+
         const SizedBox(height: 16),
-        
+
         // Offline Features Status
         OfflineFeatureStatus(),
-        
+
         const SizedBox(height: 16),
-        
+
         // Offline Actions
         _buildOfflineActions(context, theme),
       ],
@@ -275,7 +387,8 @@ class SettingsScreen extends StatelessWidget {
               ListTile(
                 leading: const Icon(Icons.delete_forever),
                 title: const Text('Clear Offline Data'),
-                subtitle: const Text('Remove all offline scans and cached data'),
+                subtitle:
+                    const Text('Remove all offline scans and cached data'),
                 onTap: () {
                   _showClearDataDialog(context, offlineProvider);
                 },
@@ -300,7 +413,8 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  void _showOfflineStorageDialog(BuildContext context, OfflineProvider offlineProvider) {
+  void _showOfflineStorageDialog(
+      BuildContext context, OfflineProvider offlineProvider) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -309,13 +423,23 @@ class SettingsScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildStorageInfoRow('Total Scans', '${offlineProvider.offlineStats['totalScans'] ?? 0}'),
-            _buildStorageInfoRow('Total Plants', '${offlineProvider.offlineStats['totalPlants'] ?? 0}'),
-            _buildStorageInfoRow('DOH Plants', '${offlineProvider.offlineStats['dohPlants'] ?? 0}'),
-            _buildStorageInfoRow('Pending Sync', '${offlineProvider.offlineStats['pendingSync'] ?? 0}'),
-            _buildStorageInfoRow('Offline Mode', offlineProvider.isOfflineMode ? 'Enabled' : 'Disabled'),
-            _buildStorageInfoRow('Internet', offlineProvider.isOnline ? 'Connected' : 'Disconnected'),
-            _buildStorageInfoRow('AI Models', offlineProvider.offlineStats['aiInitialized'] == true ? 'Loaded' : 'Not Available'),
+            _buildStorageInfoRow('Total Scans',
+                '${offlineProvider.offlineStats['totalScans'] ?? 0}'),
+            _buildStorageInfoRow('Total Plants',
+                '${offlineProvider.offlineStats['totalPlants'] ?? 0}'),
+            _buildStorageInfoRow('DOH Plants',
+                '${offlineProvider.offlineStats['dohPlants'] ?? 0}'),
+            _buildStorageInfoRow('Pending Sync',
+                '${offlineProvider.offlineStats['pendingSync'] ?? 0}'),
+            _buildStorageInfoRow('Offline Mode',
+                offlineProvider.isOfflineMode ? 'Enabled' : 'Disabled'),
+            _buildStorageInfoRow('Internet',
+                offlineProvider.isOnline ? 'Connected' : 'Disconnected'),
+            _buildStorageInfoRow(
+                'AI Models',
+                offlineProvider.offlineStats['aiInitialized'] == true
+                    ? 'Loaded'
+                    : 'Not Available'),
           ],
         ),
         actions: [
@@ -344,7 +468,8 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  void _showClearDataDialog(BuildContext context, OfflineProvider offlineProvider) {
+  void _showClearDataDialog(
+      BuildContext context, OfflineProvider offlineProvider) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

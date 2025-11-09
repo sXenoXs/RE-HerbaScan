@@ -1,68 +1,68 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
+# ===========================================
+# HerbaScan - .gitignore
+# Flutter Mobile App + Python Backend
+# ===========================================
 
-# IntelliJ related
-*.iml
-*.ipr
-*.iws
-.idea/
-
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# ===========================================
+# Flutter / Dart
+# ===========================================
 
 # Flutter/Dart/Pub related
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
+.flutter-plugins
 .flutter-plugins-dependencies
+.flutter-plugins-dependencies.json
 .pub-cache/
 .pub/
-/build/
-/coverage/
+.packages
+# pubspec.lock - Keep this file for consistent dependencies
 
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
-
-# Additional build artifacts and temporary files
+# Flutter build files
+build/
+**/build/
 *.cache.dill.track.dill
 *.compiler.options
 *.track.dill
 
-# Gradle build files
-.gradle/
-gradle-app.setting
-!gradle-wrapper.jar
-!gradle-wrapper.properties
+# Flutter generated files
+*.g.dart
+*.freezed.dart
+*.mocks.dart
 
-# Android specific
+# Flutter coverage
+coverage/
+test/.test_coverage.dart
+test/coverage/
+
+# Symbolication and obfuscation
+app.*.symbols
+app.*.map.json
+
+# ===========================================
+# Android
+# ===========================================
+
+# Android Studio / Gradle
 android/local.properties
 android/**/*.iml
 android/.gradle/
 android/build/
 android/app/build/
+android/app/debug
+android/app/profile
+android/app/release
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+!gradle-wrapper.properties
 
-# iOS specific
+# ===========================================
+# iOS / macOS
+# ===========================================
+
+# iOS
 ios/Flutter/Generated.xcconfig
 ios/Flutter/flutter_export_environment.sh
 ios/Flutter/ephemeral/
@@ -70,52 +70,182 @@ ios/build/
 ios/Pods/
 ios/Podfile.lock
 
-# macOS specific
+# macOS
 macos/Flutter/Generated.xcconfig
 macos/Flutter/ephemeral/
 macos/build/
+.DS_Store
+.AppleDouble
+.LSOverride
 
-# Linux specific
+# ===========================================
+# Linux / Windows
+# ===========================================
+
+# Linux
 linux/flutter/ephemeral/
 linux/build/
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
 
-# Windows specific
+# Windows
 windows/flutter/ephemeral/
 windows/build/
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
 
-# Web specific
+# ===========================================
+# Web
+# ===========================================
+
 web/flutter_service_worker.js
 
-# Test files (keep test structure but ignore generated test files)
-test/*.test.dart
-test/*_test.dart.bak
+# ===========================================
+# Python / Backend
+# ===========================================
 
-# Documentation build files
-docs/_build/
-docs/build/
+# Python virtual environments
+venv/
+env/
+.venv/
+virtualenv/
+ENV/
+env.bak/
+venv.bak/
+backend/venv/
+backend/env/
+backend/.venv/
 
-# IDE specific
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.pyc
+
+# Python distribution / packaging
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Python testing / coverage
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints/
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# poetry
+poetry.lock
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath
+*.sage.py
+
+# Spyder
+.spyderproject
+.spyproject
+
+# Rope
+.ropeproject
+
+# mkdocs
+/site
+
+# Pyre
+.pyre/
+
+# pytype
+.pytype/
+
+# Cython
+cython_debug/
+
+# ===========================================
+# IDEs
+# ===========================================
+
+# IntelliJ / Android Studio
+*.iml
+*.ipr
+*.iws
+.idea/
+.atom/
+
+# VS Code (commented out - may want to track)
+# Uncomment if you want to ignore VS Code settings
+#.vscode/
 .vscode/settings.json
 .vscode/launch.json
 .vscode/tasks.json
 .vscode/extensions.json
 
-# OS specific
-Thumbs.db
-ehthumbs.db
-Desktop.ini
+# Other IDEs
+.swiftpm/
+migrate_working_dir/
 
-# Temporary files
-*.tmp
-*.temp
-*.bak
-*.swp
-*.swo
-*~
-
-# Logs
-*.log
-logs/
+# ===========================================
+# Environment & Configuration
+# ===========================================
 
 # Environment files
 .env
@@ -124,27 +254,80 @@ logs/
 .env.test
 .env.production
 
-# AI Model files (if too large for git)
-# Uncomment these if model files are too large for git
+# Railway deployment
+.railway/
+
+# ===========================================
+# Database Files
+# ===========================================
+
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+
+# ===========================================
+# Logs & Temporary Files
+# ===========================================
+
+# Logs
+*.log
+logs/
+.buildlog/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+tmp/
+temp/
+
+# ===========================================
+# HerbaScan Specific
+# ===========================================
+
+# GradCAM generated images and test results
+gradcam_images/
+gradcam_test_images/
+*.gradcam.png
+*.heatmap.png
+# Uncomment if you want to ignore test results
+# GRADCAM_TEST_RESULTS.md
+# TEST_RESULTS.md
+
+# Model training artifacts
+checkpoints/
+runs/
+wandb/
+
+# AI Model files (uncomment if too large for git)
 # assets/models/*.tflite
 # assets/models/*.h5
 # assets/models/*.pkl
+# backend/models/*.tflite
+# backend/models/*.h5
 
-# Generated documentation
+# ===========================================
+# Documentation & Build
+# ===========================================
+
+# Documentation build files
+docs/_build/
+docs/build/
 doc/api/
-coverage/
-test/coverage/
 
-# Package manager files
-.packages
-.pub-cache/
-.pub/
+# Test files (keep test structure but ignore generated test files)
+test/*.test.dart
+test/*_test.dart.bak
 
-# Flutter specific
-.flutter-plugins
-.flutter-plugins-dependencies
-.dart_tool/
-build/
+# ===========================================
+# Miscellaneous
+# ===========================================
 
-# GradCAM test results (optional - keep for development)
-# GRADCAM_TEST_RESULTS.md
+*.class
+.history
+.svn/

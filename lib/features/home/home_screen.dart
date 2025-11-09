@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:herbascan/core/providers/app_provider.dart';
 import 'package:herbascan/core/providers/plant_provider.dart';
-import 'package:herbascan/core/providers/offline_provider.dart';
 import 'package:herbascan/core/widgets/offline_indicator.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/features/scan/scan_screen.dart';
@@ -21,13 +19,23 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = [
-    const HomeDashboard(),
-    const BrowseScreen(),
-    const HistoryScreen(),
-    const DOHScreen(),
-    const SettingsScreen(),
-  ];
+  late final List<Widget> _screens;
+
+  @override
+  void initState() {
+    super.initState();
+    _screens = [
+      HomeDashboard(onNavigate: (index) {
+        setState(() {
+          _currentIndex = index;
+        });
+      }),
+      const BrowseScreen(),
+      const HistoryScreen(),
+      const DOHScreen(),
+      const SettingsScreen(),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +92,9 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class HomeDashboard extends StatefulWidget {
-  const HomeDashboard({super.key});
+  final Function(int)? onNavigate;
+
+  const HomeDashboard({super.key, this.onNavigate});
 
   @override
   State<HomeDashboard> createState() => _HomeDashboardState();
@@ -102,9 +112,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final appProvider = Provider.of<AppProvider>(context);
     final plantProvider = Provider.of<PlantProvider>(context);
-    final offlineProvider = Provider.of<OfflineProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -234,7 +242,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
               AppLocalizations.of(context).browsePlants,
               'Explore database',
               () {
-                // Navigate to browse screen
+                // Navigate to browse screen (index 1)
+                widget.onNavigate?.call(1);
               },
             ),
             _buildActionCard(
@@ -244,7 +253,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
               AppLocalizations.of(context).recentScans,
               'View history',
               () {
-                // Navigate to history screen
+                // Navigate to history screen (index 2)
+                widget.onNavigate?.call(2);
               },
             ),
             _buildActionCard(
@@ -254,7 +264,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
               AppLocalizations.of(context).dohPlants,
               'Official list',
               () {
-                // Navigate to DOH screen
+                // Navigate to DOH screen (index 3)
+                widget.onNavigate?.call(3);
               },
             ),
           ],
@@ -423,7 +434,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
             if (recentScans.isNotEmpty)
               TextButton(
                 onPressed: () {
-                  // Navigate to history screen
+                  // Navigate to history screen (index 2)
+                  widget.onNavigate?.call(2);
                 },
                 child: const Text('View All'),
               ),
@@ -546,7 +558,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
             ),
             TextButton(
               onPressed: () {
-                // Navigate to DOH screen
+                // Navigate to DOH screen (index 3)
+                widget.onNavigate?.call(3);
               },
               child: const Text('View All'),
             ),

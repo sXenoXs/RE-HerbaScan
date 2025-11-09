@@ -5,6 +5,7 @@ import 'package:herbascan/core/providers/language_provider.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/features/home/home_screen.dart';
 import 'package:herbascan/features/onboarding/onboarding_screen.dart';
+import 'package:herbascan/core/services/performance_monitor.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -53,10 +54,14 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<void> _navigateToNextScreen() async {
     await Future.delayed(const Duration(seconds: 3));
-    
+
+    // Stop tracking app start time
+    final performanceMonitor = PerformanceMonitor();
+    await performanceMonitor.stopTimer(PerformanceOperation.appStart);
+
     if (mounted) {
       final appProvider = Provider.of<AppProvider>(context, listen: false);
-      
+
       if (appProvider.isFirstLaunch) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const OnboardingScreen()),
@@ -79,7 +84,7 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
-    
+
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -113,13 +118,15 @@ class _SplashScreenState extends State<SplashScreen>
                             'EN',
                             'en',
                             languageProvider.isEnglish,
-                            () => languageProvider.changeLanguage(const Locale('en', 'US')),
+                            () => languageProvider
+                                .changeLanguage(const Locale('en', 'US')),
                           ),
                           _buildLanguageButton(
                             'FIL',
                             'fil',
                             languageProvider.isFilipino,
-                            () => languageProvider.changeLanguage(const Locale('fil', 'PH')),
+                            () => languageProvider
+                                .changeLanguage(const Locale('fil', 'PH')),
                           ),
                         ],
                       ),
@@ -127,7 +134,7 @@ class _SplashScreenState extends State<SplashScreen>
                   ],
                 ),
               ),
-              
+
               // Main Content
               Expanded(
                 child: Column(
@@ -165,9 +172,9 @@ class _SplashScreenState extends State<SplashScreen>
                         );
                       },
                     ),
-                    
+
                     const SizedBox(height: 32),
-                    
+
                     // App Title
                     AnimatedBuilder(
                       animation: _fadeAnimation,
@@ -185,9 +192,9 @@ class _SplashScreenState extends State<SplashScreen>
                         );
                       },
                     ),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     // Subtitle
                     AnimatedBuilder(
                       animation: _fadeAnimation,
@@ -208,9 +215,9 @@ class _SplashScreenState extends State<SplashScreen>
                         );
                       },
                     ),
-                    
+
                     const SizedBox(height: 48),
-                    
+
                     // Loading Indicator
                     AnimatedBuilder(
                       animation: _fadeAnimation,
@@ -221,7 +228,8 @@ class _SplashScreenState extends State<SplashScreen>
                             width: 40,
                             height: 40,
                             child: CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
                               strokeWidth: 3,
                             ),
                           ),
@@ -231,7 +239,7 @@ class _SplashScreenState extends State<SplashScreen>
                   ],
                 ),
               ),
-              
+
               // Version Info
               Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -241,7 +249,7 @@ class _SplashScreenState extends State<SplashScreen>
                     return FadeTransition(
                       opacity: _fadeAnimation,
                       child: Text(
-                        'Version 0.1.3',
+                        'Version 5.0.2',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: Colors.white.withOpacity(0.7),
                         ),
@@ -274,8 +282,8 @@ class _SplashScreenState extends State<SplashScreen>
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected 
-                ? Theme.of(context).colorScheme.primary 
+            color: isSelected
+                ? Theme.of(context).colorScheme.primary
                 : Colors.white,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             fontSize: 14,

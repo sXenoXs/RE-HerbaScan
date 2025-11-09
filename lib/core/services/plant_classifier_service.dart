@@ -2,7 +2,8 @@
 import 'package:tflite_flutter/tflite_flutter.dart';
 import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
-import 'package:herbascan/core/services/gradcam_service.dart';
+// Old GradCAM service removed - replaced with AdaptiveGradCAMService
+// import 'package:herbascan/core/services/gradcam_service.dart';
 
 class PlantClassifierService {
   late Interpreter _mobilenetInterpreter;
@@ -138,30 +139,15 @@ class PlantClassifierService {
       String? gradCAMPath;
       String? summaryGradCAMPath;
       
-      if (topPredictions.isNotEmpty) {
-        try {
-          // Get the top prediction class index
-          final topClassIndex = topPredictions.first['index'] as int;
-          
-          // Generate GradCAM for top prediction
-          gradCAMPath = await GradCAMService.generateGradCAM(
-            imageData: imageData,
-            predictions: predictions,
-            targetClassIndex: topClassIndex,
-          );
-          
-          // Generate summary GradCAM
-          summaryGradCAMPath = await GradCAMService.generateSummaryGradCAM(
-            imageData: imageData,
-            predictions: predictions,
-          );
-          
-          print('🔥 GradCAM visualizations generated');
-        } catch (e) {
-          print('⚠️ GradCAM generation failed: $e');
-          // Continue without GradCAM
-        }
-      }
+      // TODO: Update to use AdaptiveGradCAMService in Phase 4
+      // Old GradCAM service has been removed
+      // GradCAM visualization will be handled by AdaptiveGradCAMService
+      // in the scan flow (camera_provider -> plant_result_screen)
+      
+      // For now, skip GradCAM generation here
+      // This will be handled in Phase 4 integration
+      gradCAMPath = null;
+      summaryGradCAMPath = null;
       
       print('✅ Classification with GradCAM complete');
       return {

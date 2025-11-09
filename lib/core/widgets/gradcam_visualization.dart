@@ -1,22 +1,29 @@
 // lib/core/widgets/gradcam_visualization.dart
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'dart:typed_data';
 
 class GradCAMVisualization extends StatefulWidget {
-  final String? gradCAMPath;
-  final String? summaryGradCAMPath;
+  final String? gradCAMPath; // Legacy: file path (deprecated)
+  final String? summaryGradCAMPath; // Legacy: file path (deprecated)
+  final Uint8List? gradcamImageBytes; // New: image bytes
   final String originalImagePath;
   final String plantName;
   final double confidence;
+  final String? method; // 'grad-cam' or 'cam'
+  final bool? fallbackUsed; // True if offline was fallback
   final VoidCallback? onRefresh;
 
   const GradCAMVisualization({
     super.key,
-    this.gradCAMPath,
-    this.summaryGradCAMPath,
+    this.gradCAMPath, // Legacy support
+    this.summaryGradCAMPath, // Legacy support
+    this.gradcamImageBytes, // New format
     required this.originalImagePath,
     required this.plantName,
     required this.confidence,
+    this.method,
+    this.fallbackUsed,
     this.onRefresh,
   });
 
@@ -45,54 +52,26 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final hasHeatmap = widget.gradcamImageBytes != null || widget.gradCAMPath != null;
     
     return Card(
       elevation: 4,
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Row(
-              children: [
-                Icon(
-                  Icons.visibility,
-                  color: theme.primaryColor,
-                  size: 24,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Explainable AI - GradCAM',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Spacer(),
-                if (widget.onRefresh != null)
-                  IconButton(
-                    onPressed: widget.onRefresh,
-                    icon: const Icon(Icons.refresh),
-                    tooltip: 'Regenerate GradCAM',
-                  ),
-              ],
-            ),
-            
-            const SizedBox(height: 16),
-            
-            // Plant info
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: theme.primaryColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
+        // CRITICAL FIX: Use SingleChildScrollView to prevent overflow
+        // Especially important when heatmap is missing and error widget is shown
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min, // Use min to prevent overflow
+            children: [
+              // Header
+              Row(
                 children: [
                   Icon(
-                    Icons.local_florist,
+                    Icons.visibility,
                     color: theme.primaryColor,
-                    size: 20,
+                    size: 24,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -100,70 +79,118 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          widget.plantName,
-                          style: theme.textTheme.titleSmall?.copyWith(
+                          'Explainable AI - ${widget.method == 'grad-cam' ? 'Grad-CAM' : 'CAM'}',
+                          style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        Text(
-                          'Confidence: ${(widget.confidence * 100).toStringAsFixed(1)}%',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.primaryColor,
+                        if (widget.method != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: _buildMethodBadge(theme),
                           ),
-                        ),
                       ],
                     ),
                   ),
+                  if (widget.onRefresh != null)
+                    IconButton(
+                      onPressed: widget.onRefresh,
+                      icon: const Icon(Icons.refresh),
+                      tooltip: 'Regenerate GradCAM',
+                    ),
                 ],
               ),
-            ),
-            
-            const SizedBox(height: 16),
-            
-            // Tab bar
-            TabBar(
-              controller: _tabController,
-              tabs: const [
-                Tab(
-                  icon: Icon(Icons.image),
-                  text: 'Original',
+              
+              const SizedBox(height: 16),
+              
+              // Plant info
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                Tab(
-                  icon: Icon(Icons.thermostat),
-                  text: 'Heatmap',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.local_florist,
+                      color: theme.primaryColor,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.plantName,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            'Confidence: ${(widget.confidence.clamp(0.0, 1.0) * 100).toStringAsFixed(1)}%',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.primaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                Tab(
-                  icon: Icon(Icons.analytics),
-                  text: 'Summary',
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 16),
-            
-            // Tab content
-            SizedBox(
-              height: 300,
-              child: TabBarView(
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Tab bar
+              TabBar(
                 controller: _tabController,
-                children: [
-                  _buildOriginalImage(),
-                  _buildHeatmapImage(),
-                  _buildSummaryImage(),
+                tabs: const [
+                  Tab(
+                    icon: Icon(Icons.image),
+                    text: 'Original',
+                  ),
+                  Tab(
+                    icon: Icon(Icons.thermostat),
+                    text: 'Heatmap',
+                  ),
+                  Tab(
+                    icon: Icon(Icons.analytics),
+                    text: 'Summary',
+                  ),
                 ],
               ),
-            ),
-            
-            const SizedBox(height: 16),
-            
-            // Controls
-            _buildControls(),
-            
-            const SizedBox(height: 16),
-            
-            // Legend
-            _buildLegend(),
-          ],
+              
+              const SizedBox(height: 16),
+              
+              // Tab content - use SizedBox with explicit height
+              // CRITICAL: TabBarView requires explicit height, use smaller when heatmap missing
+              SizedBox(
+                height: hasHeatmap ? 280 : 220, // Reduced further to prevent overflow
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildOriginalImage(),
+                    _buildHeatmapImage(),
+                    _buildSummaryImage(),
+                  ],
+                ),
+              ),
+              
+              // Only show spacing if controls/legend will be shown
+              if (hasHeatmap) const SizedBox(height: 16),
+              
+              // Controls - only show if heatmap is available
+              _buildControls(),
+              
+              // Only show spacing if legend will be shown
+              if (hasHeatmap) const SizedBox(height: 8),
+              
+              // Legend - only show if heatmap is available
+              if (hasHeatmap) _buildLegend(),
+            ],
+          ),
         ),
       ),
     );
@@ -191,8 +218,130 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
   }
 
   Widget _buildHeatmapImage() {
-    if (widget.gradCAMPath == null) {
-      return _buildErrorWidget('GradCAM heatmap not available');
+    // Check if we have image bytes (new format)
+    final hasImageBytes = widget.gradcamImageBytes != null;
+    // Check if we have file path (legacy format)
+    final hasFilePath = widget.gradCAMPath != null;
+
+    // Debug logging
+    print('🔍 [GradCAMVisualization] _buildHeatmapImage:');
+    print('   method: ${widget.method}');
+    print('   hasImageBytes: $hasImageBytes');
+    print('   hasFilePath: $hasFilePath');
+    if (hasImageBytes) {
+      print('   imageBytes size: ${widget.gradcamImageBytes!.length} bytes');
+    }
+
+    if (!hasImageBytes && !hasFilePath) {
+      final methodName = widget.method == 'cam' ? 'CAM' : 'Grad-CAM';
+      print('   ⚠️ WARNING: No heatmap available for $methodName');
+      // CRITICAL FIX: Use LayoutBuilder to respect parent constraints
+      // TabBarView provides fixed constraints (220px), we must fit exactly
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final padding = 8.0; // Minimal padding
+          
+          // Fixed sizes that fit within 220px: icon(28) + spacing(4) + title(32) + spacing(4) + desc(40) + spacing(4) + image(70) + padding(16) = ~198px
+          final iconSize = 28.0;
+          final titleFontSize = 11.0;
+          final descFontSize = 9.0;
+          final spacing = 4.0;
+          final imageMaxHeight = 70.0; // Fixed size to prevent overflow
+          
+          return Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade300),
+              color: Colors.grey.shade100,
+            ),
+            // CRITICAL: Use SizedBox.expand to fill TabBarView constraints exactly
+            // Then use Center to center the content
+            child: SizedBox.expand(
+              child: Padding(
+                padding: EdgeInsets.all(padding),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min, // Critical: use min
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Icon - fixed size
+                    SizedBox(
+                      height: iconSize,
+                      child: Icon(
+                        Icons.warning_amber_rounded,
+                        size: iconSize,
+                        color: Colors.orange.shade300,
+                      ),
+                    ),
+                    SizedBox(height: spacing),
+                    // Title - fixed height
+                    SizedBox(
+                      height: 32, // Enough for 2 lines
+                      child: Text(
+                        '$methodName Heatmap Not Available',
+                        style: TextStyle(
+                          fontSize: titleFontSize,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade700,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    SizedBox(height: spacing),
+                    // Description - fixed height
+                    SizedBox(
+                      height: 40, // Enough for 3 lines of 9px font
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Text(
+                          widget.method == 'cam'
+                              ? 'Offline CAM heatmap generation failed. This may be due to model initialization issues or image processing errors.'
+                              : 'Grad-CAM heatmap generation failed. Please check your internet connection or try again.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: descFontSize,
+                            color: Colors.grey.shade600,
+                          ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: spacing),
+                    // Image - fixed size
+                    SizedBox(
+                      height: imageMaxHeight,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.file(
+                            File(widget.originalImagePath),
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Center(
+                                child: Icon(
+                                  Icons.image_not_supported,
+                                  size: 24,
+                                  color: Colors.grey.shade400,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      );
     }
 
     return Container(
@@ -202,43 +351,59 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
-        child: _showHeatmap 
-          ? Stack(
-              children: [
-                // Original image
-                Image.file(
-                  File(widget.originalImagePath),
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: double.infinity,
-                  errorBuilder: (context, error, stackTrace) {
-                    return _buildErrorWidget('Original image not found');
-                  },
-                ),
-                // Heatmap overlay
-                Opacity(
-                  opacity: _opacity,
-                  child: Image.file(
-                    File(widget.gradCAMPath!),
+        child: _showHeatmap
+            ? Stack(
+                children: [
+                  // Original image
+                  Image.file(
+                    File(widget.originalImagePath),
                     fit: BoxFit.cover,
                     width: double.infinity,
                     height: double.infinity,
                     errorBuilder: (context, error, stackTrace) {
-                      return _buildErrorWidget('GradCAM heatmap not found');
+                      return _buildErrorWidget('Original image not found');
                     },
                   ),
-                ),
-              ],
-            )
-          : Image.file(
-              File(widget.originalImagePath),
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-              errorBuilder: (context, error, stackTrace) {
-                return _buildErrorWidget('Original image not found');
-              },
-            ),
+                  // Heatmap overlay
+                  Opacity(
+                    opacity: _opacity,
+                    child: hasImageBytes
+                        ? Image.memory(
+                            widget.gradcamImageBytes!,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+                            errorBuilder: (context, error, stackTrace) {
+                              final methodName =
+                                  widget.method == 'cam' ? 'CAM' : 'Grad-CAM';
+                              return _buildErrorWidget(
+                                  'Failed to decode $methodName heatmap image');
+                            },
+                          )
+                        : Image.file(
+                            File(widget.gradCAMPath!),
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+                            errorBuilder: (context, error, stackTrace) {
+                              final methodName =
+                                  widget.method == 'cam' ? 'CAM' : 'Grad-CAM';
+                              return _buildErrorWidget(
+                                  '$methodName heatmap not found');
+                            },
+                          ),
+                  ),
+                ],
+              )
+            : Image.file(
+                File(widget.originalImagePath),
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
+                errorBuilder: (context, error, stackTrace) {
+                  return _buildErrorWidget('Original image not found');
+                },
+              ),
       ),
     );
   }
@@ -255,43 +420,43 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
-        child: _showHeatmap 
-          ? Stack(
-              children: [
-                // Original image
-                Image.file(
-                  File(widget.originalImagePath),
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: double.infinity,
-                  errorBuilder: (context, error, stackTrace) {
-                    return _buildErrorWidget('Original image not found');
-                  },
-                ),
-                // Summary heatmap overlay
-                Opacity(
-                  opacity: _opacity,
-                  child: Image.file(
-                    File(widget.summaryGradCAMPath!),
+        child: _showHeatmap
+            ? Stack(
+                children: [
+                  // Original image
+                  Image.file(
+                    File(widget.originalImagePath),
                     fit: BoxFit.cover,
                     width: double.infinity,
                     height: double.infinity,
                     errorBuilder: (context, error, stackTrace) {
-                      return _buildErrorWidget('Summary GradCAM not found');
+                      return _buildErrorWidget('Original image not found');
                     },
                   ),
-                ),
-              ],
-            )
-          : Image.file(
-              File(widget.originalImagePath),
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-              errorBuilder: (context, error, stackTrace) {
-                return _buildErrorWidget('Original image not found');
-              },
-            ),
+                  // Summary heatmap overlay
+                  Opacity(
+                    opacity: _opacity,
+                    child: Image.file(
+                      File(widget.summaryGradCAMPath!),
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                      errorBuilder: (context, error, stackTrace) {
+                        return _buildErrorWidget('Summary GradCAM not found');
+                      },
+                    ),
+                  ),
+                ],
+              )
+            : Image.file(
+                File(widget.originalImagePath),
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
+                errorBuilder: (context, error, stackTrace) {
+                  return _buildErrorWidget('Original image not found');
+                },
+              ),
       ),
     );
   }
@@ -327,9 +492,18 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
   }
 
   Widget _buildControls() {
+    // CRITICAL FIX: Only show controls if heatmap is available
+    // Don't show toggle when heatmap is missing (causes confusion)
+    final hasHeatmap = widget.gradcamImageBytes != null || widget.gradCAMPath != null;
+    
+    if (!hasHeatmap) {
+      // Don't show controls when heatmap is not available
+      return const SizedBox.shrink();
+    }
+    
     return Column(
       children: [
-        // Show heatmap toggle
+        // Show heatmap toggle - only when heatmap is available
         Row(
           children: [
             Icon(
@@ -356,9 +530,9 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
             ),
           ],
         ),
-        
+
         const SizedBox(height: 12),
-        
+
         // Opacity slider
         Row(
           children: [
@@ -385,7 +559,7 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
             ),
           ],
         ),
-        
+
         Slider(
           value: _opacity,
           min: 0.0,
@@ -430,9 +604,9 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
               ),
             ],
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           // Use Wrap to prevent overflow
           Wrap(
             spacing: 16,
@@ -443,9 +617,9 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
               _buildLegendItem(Colors.red, 'High Attention'),
             ],
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           Text(
             'The heatmap shows which parts of the image the AI model focused on when making its prediction. Red areas indicate high attention, while blue areas indicate low attention.',
             style: TextStyle(
@@ -481,6 +655,62 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
       ],
     );
   }
+
+  Widget _buildMethodBadge(ThemeData theme) {
+    if (widget.method == null) return const SizedBox.shrink();
+
+    final isOnline = widget.method == 'grad-cam';
+    final isFallback = widget.fallbackUsed == true;
+
+    Color badgeColor;
+    IconData badgeIcon;
+    String badgeText;
+
+    if (isOnline && !isFallback) {
+      badgeColor = Colors.green;
+      badgeIcon = Icons.cloud;
+      badgeText = 'Online (Grad-CAM)';
+    } else if (isFallback) {
+      badgeColor = Colors.orange;
+      badgeIcon = Icons.sync_problem;
+      badgeText = 'Offline (Fallback)';
+    } else {
+      badgeColor = Colors.blue;
+      badgeIcon = Icons.offline_bolt;
+      badgeText = 'Offline (CAM)';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: badgeColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: badgeColor.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            badgeIcon,
+            size: 14,
+            color: badgeColor,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            badgeText,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: badgeColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 /// Simple GradCAM preview widget for quick display
@@ -501,7 +731,7 @@ class GradCAMPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Card(
       elevation: 2,
       child: InkWell(
@@ -541,9 +771,7 @@ class GradCAMPreview extends StatelessWidget {
                     ),
                 ],
               ),
-              
               const SizedBox(height: 8),
-              
               if (gradCAMPath != null) ...[
                 Container(
                   height: 120,
@@ -571,9 +799,7 @@ class GradCAMPreview extends StatelessWidget {
                     ),
                   ),
                 ),
-                
                 const SizedBox(height: 8),
-                
                 Text(
                   'Tap to view detailed explanation',
                   style: TextStyle(

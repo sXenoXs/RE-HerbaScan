@@ -1,42 +1,523 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
+import 'package:herbascan/core/providers/plant_provider.dart';
+import 'package:herbascan/core/models/scan_result.dart';
+import 'package:herbascan/features/scan/plant_detail_screen.dart';
+import 'package:herbascan/features/scan/scan_screen.dart';
+import 'package:herbascan/core/services/usage_analytics.dart';
+import 'dart:io';
+import 'package:intl/intl.dart';
 
-class HistoryScreen extends StatelessWidget {
+class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
+
+  @override
+  State<HistoryScreen> createState() => _HistoryScreenState();
+}
+
+class _HistoryScreenState extends State<HistoryScreen> {
+  final UsageAnalytics _analytics = UsageAnalytics();
+  String _sortBy = 'recent'; // recent, oldest, confidence
+
+  @override
+  void initState() {
+    super.initState();
+    // Track history screen view
+    _analytics.trackHistoryViewed();
+  }
+
+  List<ScanResult> _sortScans(List<ScanResult> scans) {
+    List<ScanResult> sorted = List.from(scans);
+
+    switch (_sortBy) {
+      case 'recent':
+        sorted.sort((a, b) => b.scanDate.compareTo(a.scanDate));
+        break;
+      case 'oldest':
+        sorted.sort((a, b) => a.scanDate.compareTo(b.scanDate));
+        break;
+      case 'confidence':
+        sorted.sort((a, b) => b.confidenceScore.compareTo(a.confidenceScore));
+        break;
+    }
+
+    return sorted;
+  }
+
+  void _showDeleteConfirmation(BuildContext context, ScanResult scan) {
+    final appLocalizations = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Text(appLocalizations.confirmDelete),
+          content: Text(appLocalizations.deleteConfirmation),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+              child: Text(appLocalizations.cancel),
+            ),
+            TextButton(
+              onPressed: () {
+                final plantProvider =
+                    Provider.of<PlantProvider>(context, listen: false);
+                plantProvider.deleteScanResult(scan.id);
+                Navigator.of(dialogContext).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('Scan deleted'),
+                    backgroundColor: theme.colorScheme.error,
+                  ),
+                );
+              },
+              child: Text(
+                appLocalizations.delete,
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showDeleteAllConfirmation(BuildContext context) {
+    final appLocalizations = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Text(appLocalizations.confirmDelete),
+          content:
+              const Text('Are you sure you want to delete all scan history?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+              child: Text(appLocalizations.cancel),
+            ),
+            TextButton(
+              onPressed: () {
+                final plantProvider =
+                    Provider.of<PlantProvider>(context, listen: false);
+                plantProvider.clearScanHistory();
+                Navigator.of(dialogContext).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('All scans deleted'),
+                    backgroundColor: theme.colorScheme.error,
+                  ),
+                );
+              },
+              child: Text(
+                appLocalizations.deleteAll,
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+    final appLocalizations = AppLocalizations.of(context);
+    final plantProvider = Provider.of<PlantProvider>(context);
+    final sortedScans = _sortScans(plantProvider.scanHistory);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context).history),
+        title: Text(appLocalizations.scanHistory),
+        actions: [
+          if (sortedScans.isNotEmpty)
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.sort),
+              onSelected: (value) {
+                setState(() {
+                  _sortBy = value;
+                });
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'recent',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.access_time,
+                        color: _sortBy == 'recent'
+                            ? theme.colorScheme.primary
+                            : null,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Most Recent',
+                        style: TextStyle(
+                          fontWeight:
+                              _sortBy == 'recent' ? FontWeight.bold : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'oldest',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.history,
+                        color: _sortBy == 'oldest'
+                            ? theme.colorScheme.primary
+                            : null,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Oldest First',
+                        style: TextStyle(
+                          fontWeight:
+                              _sortBy == 'oldest' ? FontWeight.bold : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'confidence',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.trending_up,
+                        color: _sortBy == 'confidence'
+                            ? theme.colorScheme.primary
+                            : null,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Highest Confidence',
+                        style: TextStyle(
+                          fontWeight:
+                              _sortBy == 'confidence' ? FontWeight.bold : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          if (sortedScans.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.delete_sweep),
+              onPressed: () => _showDeleteAllConfirmation(context),
+              tooltip: appLocalizations.deleteAll,
+            ),
+        ],
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.history,
-              size: 64,
-              color: theme.colorScheme.primary,
+      body: plantProvider.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : sortedScans.isEmpty
+              ? _buildEmptyState(context, theme, appLocalizations)
+              : Column(
+                  children: [
+                    // Stats Header
+                    _buildStatsHeader(context, theme, sortedScans),
+
+                    // Scan List
+                    Expanded(
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: sortedScans.length,
+                        itemBuilder: (context, index) {
+                          final scan = sortedScans[index];
+                          return _buildScanCard(context, theme, scan);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context, ThemeData theme,
+      AppLocalizations appLocalizations) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.history,
+            size: 80,
+            color: theme.colorScheme.onSurface.withOpacity(0.3),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            appLocalizations.noScansYet,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
             ),
-            const SizedBox(height: 16),
-            Text(
-              'Scan History',
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            appLocalizations.startScanning,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.4),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'This feature will be implemented soon',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
-              ),
+          ),
+          const SizedBox(height: 32),
+          ElevatedButton.icon(
+            onPressed: () {
+              // Navigate to scan screen
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const ScanScreen(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.camera_alt),
+            label: Text(appLocalizations.scanPlant),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatsHeader(
+      BuildContext context, ThemeData theme, List<ScanResult> scans) {
+    final avgConfidence = scans.isEmpty
+        ? 0.0
+        : scans.map((s) => s.confidenceScore).reduce((a, b) => a + b) /
+            scans.length;
+
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            theme.colorScheme.primaryContainer,
+            theme.colorScheme.secondaryContainer,
           ],
         ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildStatItem(
+            theme,
+            '${scans.length}',
+            'Total Scans',
+            Icons.eco,
+          ),
+          Container(
+            width: 1,
+            height: 40,
+            color: theme.colorScheme.onPrimaryContainer.withOpacity(0.2),
+          ),
+          _buildStatItem(
+            theme,
+            '${(avgConfidence * 100).toStringAsFixed(1)}%',
+            'Avg Confidence',
+            Icons.analytics,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(
+      ThemeData theme, String value, String label, IconData icon) {
+    return Column(
+      children: [
+        Icon(
+          icon,
+          color: theme.colorScheme.onPrimaryContainer,
+          size: 28,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onPrimaryContainer,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onPrimaryContainer.withOpacity(0.7),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildScanCard(
+      BuildContext context, ThemeData theme, ScanResult scan) {
+    final appLocalizations = AppLocalizations.of(context);
+    final dateFormat = DateFormat('MMM dd, yyyy • HH:mm');
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: InkWell(
+        onTap: () {
+          if (scan.plant != null) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => PlantDetailScreen(plant: scan.plant!),
+              ),
+            );
+          }
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Row(
+            children: [
+              // Plant Image
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: scan.imagePath.isNotEmpty
+                    ? Image.file(
+                        File(scan.imagePath),
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return _buildPlaceholderImage(theme);
+                        },
+                      )
+                    : _buildPlaceholderImage(theme),
+              ),
+              const SizedBox(width: 16),
+              // Scan Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      scan.plant?.commonName ?? 'Unknown Plant',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      scan.plant?.scientificName ?? '',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontStyle: FontStyle.italic,
+                        color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.access_time,
+                          size: 14,
+                          color: theme.colorScheme.onSurface.withOpacity(0.5),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          dateFormat.format(scan.scanDate),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    _buildConfidenceBadge(
+                        theme, appLocalizations, scan.confidenceScore),
+                  ],
+                ),
+              ),
+              // Delete Button
+              IconButton(
+                icon: Icon(
+                  Icons.delete_outline,
+                  color: theme.colorScheme.error,
+                ),
+                onPressed: () => _showDeleteConfirmation(context, scan),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildConfidenceBadge(
+      ThemeData theme, AppLocalizations appLocalizations, double confidence) {
+    final percentage = (confidence * 100).toStringAsFixed(1);
+    final Color badgeColor;
+
+    if (confidence >= 0.8) {
+      badgeColor = const Color(0xFF48BB78); // Green
+    } else if (confidence >= 0.6) {
+      badgeColor = Colors.orange;
+    } else {
+      badgeColor = Colors.red;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: badgeColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: badgeColor,
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.verified,
+            size: 14,
+            color: badgeColor,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '$percentage% ${appLocalizations.confidence}',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: badgeColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlaceholderImage(ThemeData theme) {
+    return Center(
+      child: Icon(
+        Icons.local_florist,
+        size: 40,
+        color: theme.colorScheme.onSurfaceVariant.withOpacity(0.3),
       ),
     );
   }

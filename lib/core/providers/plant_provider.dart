@@ -3,10 +3,12 @@ import 'package:herbascan/core/models/plant.dart';
 import 'package:herbascan/core/models/scan_result.dart';
 import 'package:herbascan/core/services/plant_service.dart';
 import 'package:herbascan/core/services/database_service.dart';
+import 'package:herbascan/core/services/database_init_service.dart';
 
 class PlantProvider extends ChangeNotifier {
   final PlantService _plantService = PlantService();
   final DatabaseService _databaseService = DatabaseService();
+  late final DatabaseInitService _databaseInitService;
 
   List<Plant> _plants = [];
   List<ScanResult> _scanHistory = [];
@@ -30,11 +32,20 @@ class PlantProvider extends ChangeNotifier {
   String get selectedCondition => _selectedCondition;
 
   PlantProvider() {
+    _databaseInitService = DatabaseInitService(_databaseService);
     _initializeData();
   }
 
   // Initialize data
   Future<void> _initializeData() async {
+    // Initialize database with plant data on first run
+    try {
+      await _databaseInitService.initializeDatabase();
+      print('✅ Database initialized successfully');
+    } catch (e) {
+      print('❌ Error initializing database: $e');
+    }
+
     await loadPlants();
     await loadScanHistory();
     await loadDOHApprovedPlants();
@@ -119,8 +130,9 @@ class PlantProvider extends ChangeNotifier {
 
       // Condition filter
       if (_selectedCondition != 'all') {
-        final matchesCondition = plant.medicinalUses.any((use) =>
-            use.condition.toLowerCase().contains(_selectedCondition.toLowerCase()));
+        final matchesCondition = plant.medicinalUses.any((use) => use.condition
+            .toLowerCase()
+            .contains(_selectedCondition.toLowerCase()));
         if (!matchesCondition) return false;
       }
 
@@ -193,13 +205,17 @@ class PlantProvider extends ChangeNotifier {
   // Get statistics
   Map<String, dynamic> getStatistics() {
     final totalScans = _scanHistory.length;
-    final dohScans = _scanHistory.where((result) => 
-        result.plant?.isDOHApproved == true).length;
-    final highConfidenceScans = _scanHistory.where((result) => 
-        result.confidenceScore >= 0.8).length;
-    
+    final dohScans = _scanHistory
+        .where((result) => result.plant?.isDOHApproved == true)
+        .length;
+    final highConfidenceScans =
+        _scanHistory.where((result) => result.confidenceScore >= 0.8).length;
+
     final averageConfidence = totalScans > 0
-        ? _scanHistory.map((result) => result.confidenceScore).reduce((a, b) => a + b) / totalScans
+        ? _scanHistory
+                .map((result) => result.confidenceScore)
+                .reduce((a, b) => a + b) /
+            totalScans
         : 0.0;
 
     return {

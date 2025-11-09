@@ -10,8 +10,13 @@ import 'package:herbascan/core/providers/language_provider.dart';
 import 'package:herbascan/core/providers/offline_provider.dart';
 import 'package:herbascan/features/splash/splash_screen.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
+import 'package:herbascan/core/services/performance_monitor.dart';
 
 void main() {
+  // Start tracking app start time
+  final performanceMonitor = PerformanceMonitor();
+  performanceMonitor.startTimer(PerformanceOperation.appStart);
+  
   // Lock app to portrait orientation
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
