@@ -8,7 +8,7 @@ class AppProvider extends ChangeNotifier {
   bool _showGradCAM = true;
   bool _showTop3Results = false;
   bool _isDarkMode = false;
-  final String _appVersion = '5.0.2';
+  final String _appVersion = 'v0.5.2';
   final String _modelVersion = 'CNN v1.0';
   bool _isThemeChanging = false;
 
