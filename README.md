@@ -4,7 +4,7 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 
 ## 🚀 Current Development Status
 
-**Version**: 5.0.2  
+**Version**: v0.5.2  
 **Last Updated**: November 8, 2025
 **Project Phase**: Phase 6 In Progress (Offline CAM Fix)  
 **Overall Progress**: 52% Complete - 
@@ -525,7 +525,7 @@ herbascan/
 
 ## 📊 Progress Metrics
 
-- **Version**: 5.0.2
+- **Version**: v0.5.2
 - **Code Files Created**: 50+ files
 - **Lines of Code**: 8,000+ lines
 - **Features Implemented**: 40+ core features
@@ -604,7 +604,7 @@ HerbaScan is designed to work seamlessly in rural areas without internet connect
 
 ## 🔧 Development Notes
 
-### Recent Changes (Version 5.0.2)
+### Recent Changes (Version v0.5.2)
 
 - **User Feedback System**: Complete 5-star rating system with 6 categories
 - **Performance Monitoring**: Automatic tracking of all key operations
@@ -614,7 +614,7 @@ HerbaScan is designed to work seamlessly in rural areas without internet connect
 - **Testing Framework**: Complete TESTING_GUIDE.md with 50+ test cases
 - **Data Export**: JSON export capability for all metrics and feedback
 - **Integration Complete**: All services fully integrated with UI
-- **Version Update**: Updated from 0.1.3 to 5.0.2 across all files
+- **Version Update**: Updated from 0.1.3 to v0.5.2 across all files
 
 ### Known Issues
 
