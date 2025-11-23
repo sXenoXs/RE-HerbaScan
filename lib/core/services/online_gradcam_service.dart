@@ -1,6 +1,7 @@
 // lib/core/services/online_gradcam_service.dart
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:logger/logger.dart';
 
@@ -96,10 +97,32 @@ class OnlineGradCAMService {
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body) as Map<String, dynamic>;
 
+          // Debug logging
+          print('🔍 [OnlineGradCAM] Backend response received:');
+          print('   Response keys: ${data.keys.toList()}');
+          print('   gradcam_image present: ${data['gradcam_image'] != null}');
+          if (data['gradcam_image'] != null) {
+            final gradcamBase64 = data['gradcam_image'] as String;
+            print('   gradcam_image type: ${gradcamBase64.runtimeType}');
+            print('   gradcam_image length: ${gradcamBase64.length} chars');
+          }
+
           // Decode base64 gradcam image (backend returns base64-encoded PNG)
           if (data['gradcam_image'] != null) {
-            data['gradcam_image'] =
-                base64Decode(data['gradcam_image'] as String);
+            try {
+              final gradcamBase64 = data['gradcam_image'] as String;
+              print('   Decoding base64 gradcam image...');
+              data['gradcam_image'] = base64Decode(gradcamBase64);
+              final decodedBytes = data['gradcam_image'] as Uint8List;
+              print('   ✅ Decoded successfully: ${decodedBytes.length} bytes');
+            } catch (e) {
+              print('   ❌ Error decoding base64: $e');
+              _logger.e('Failed to decode base64 gradcam image: $e');
+              data['gradcam_image'] = null;
+            }
+          } else {
+            print('   ⚠️ WARNING: gradcam_image is null in backend response!');
+            _logger.w('Backend response does not contain gradcam_image');
           }
 
           _logger.i('Plant identified: ${data['plant_name']} '

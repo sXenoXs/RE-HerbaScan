@@ -2,7 +2,7 @@ name: herbascan
 description: "HerbaScan: A CNN-Based Mobile Application for Herbal Plant Recognition and Data Retrieval"
 publish_to: "none"
 
-version: 0.5.2+1
+version: 0.5.8+1
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
@@ -50,6 +50,9 @@ dependencies:
   # Utilities
   uuid: ^4.5.1
   logger: ^2.5.0
+
+  # Markdown rendering
+  flutter_markdown: ^0.6.18
 
   # Device Preview for testing different screen sizes
   device_preview: ^1.2.0

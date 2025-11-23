@@ -8,6 +8,8 @@ import 'package:herbascan/features/browse/browse_screen.dart';
 import 'package:herbascan/features/history/history_screen.dart';
 import 'package:herbascan/features/doh/doh_screen.dart';
 import 'package:herbascan/features/settings/settings_screen.dart';
+import 'package:herbascan/core/models/scan_result.dart';
+import 'dart:io';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -500,24 +502,45 @@ class _HomeDashboardState extends State<HomeDashboard> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withOpacity(0.1),
+              color: theme.colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              Icons.eco,
-              color: theme.colorScheme.primary,
-            ),
+            clipBehavior: Clip.antiAlias,
+            child: scan.imagePath.isNotEmpty
+                ? Image.file(
+                    File(scan.imagePath),
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return _buildPlaceholderImage(theme);
+                    },
+                  )
+                : _buildPlaceholderImage(theme),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  scan.plant?.commonName ?? 'Unknown Plant',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                Row(
+                  children: [
+                    Flexible(
+                      flex: 1,
+                      child: Text(
+                        scan.plant?.commonName ?? 
+                        scan.topPrediction?.plantName ?? 
+                        'Unknown Plant',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
+                      ),
+                    ),
+                    if (_getMethodLabel(scan) != null) ...[
+                      const SizedBox(width: 6),
+                      _buildMethodLabel(theme, _getMethodLabel(scan)!),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -536,6 +559,16 @@ class _HomeDashboardState extends State<HomeDashboard> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPlaceholderImage(ThemeData theme) {
+    return Center(
+      child: Icon(
+        Icons.local_florist,
+        size: 24,
+        color: theme.colorScheme.onSurfaceVariant.withOpacity(0.3),
       ),
     );
   }
@@ -596,7 +629,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
               ),
               const SizedBox(height: 8),
               Text(
-                '${dohPlants.length} ${AppLocalizations.of(context).clinicallyValidated}',
+                '${plantProvider.dohApprovedPlants.length} ${AppLocalizations.of(context).clinicallyValidated}',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: const Color(0xFF38A169),
                 ),
@@ -657,6 +690,64 @@ class _HomeDashboardState extends State<HomeDashboard> {
           },
         ),
       ],
+    );
+  }
+
+  /// Get method label from scan result metadata
+  /// Returns: "CAM", "GradCAM", "Fallback", or "Online"
+  String? _getMethodLabel(ScanResult scan) {
+    final method = scan.metadata['method'] as String?;
+    final fallbackUsed = scan.metadata['fallbackUsed'] as bool? ?? false;
+    
+    // If fallback was used, show "Fallback"
+    if (fallbackUsed == true) {
+      return 'Fallback';
+    }
+    
+    // Otherwise, show based on method
+    if (method == 'cam') {
+      return 'CAM';
+    } else if (method == 'grad-cam') {
+      return 'GradCAM';
+    }
+    
+    // Fallback: use isOfflineScan to determine
+    if (scan.isOfflineScan) {
+      return 'CAM';
+    }
+    
+    // If no method info, return null (don't show label)
+    return null;
+  }
+
+  /// Build method label widget
+  Widget _buildMethodLabel(ThemeData theme, String label) {
+    // Determine color based on label
+    Color labelColor;
+    if (label == 'CAM' || label == 'Fallback') {
+      labelColor = Colors.orange; // Orange for offline/fallback
+    } else {
+      labelColor = Colors.green; // Green for online/GradCAM
+    }
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: labelColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: labelColor.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Text(
+        '($label)',
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: labelColor,
+          fontWeight: FontWeight.w600,
+          fontSize: 10,
+        ),
+      ),
     );
   }
 }

@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/providers/plant_provider.dart';
 import 'package:herbascan/core/models/scan_result.dart';
-import 'package:herbascan/features/scan/plant_detail_screen.dart';
+import 'package:herbascan/features/scan/plant_result_screen.dart';
 import 'package:herbascan/features/scan/scan_screen.dart';
 import 'package:herbascan/core/services/usage_analytics.dart';
 import 'dart:io';
@@ -306,8 +306,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            theme.colorScheme.primaryContainer,
-            theme.colorScheme.secondaryContainer,
+            theme.colorScheme.primary,
+            theme.colorScheme.secondary,
           ],
         ),
         borderRadius: BorderRadius.circular(16),
@@ -324,7 +324,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           Container(
             width: 1,
             height: 40,
-            color: theme.colorScheme.onPrimaryContainer.withOpacity(0.2),
+            color: Colors.white.withOpacity(0.3),
           ),
           _buildStatItem(
             theme,
@@ -343,7 +343,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       children: [
         Icon(
           icon,
-          color: theme.colorScheme.onPrimaryContainer,
+          color: Colors.white,
           size: 28,
         ),
         const SizedBox(height: 8),
@@ -351,14 +351,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
           value,
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
-            color: theme.colorScheme.onPrimaryContainer,
+            color: Colors.white,
           ),
         ),
         const SizedBox(height: 4),
         Text(
           label,
           style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onPrimaryContainer.withOpacity(0.7),
+            color: Colors.white.withOpacity(0.9),
           ),
         ),
       ],
@@ -377,13 +377,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
       ),
       child: InkWell(
         onTap: () {
-          if (scan.plant != null) {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => PlantDetailScreen(plant: scan.plant!),
-              ),
-            );
-          }
+          // Navigate to PlantResultScreen to view full scan results
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => PlantResultScreen.fromScanResult(scan),
+            ),
+          );
         },
         borderRadius: BorderRadius.circular(16),
         child: Padding(
@@ -415,19 +414,38 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      scan.plant?.commonName ?? 'Unknown Plant',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      children: [
+                        Flexible(
+                          flex: 1,
+                          child: Text(
+                            scan.plant?.commonName ??
+                                scan.topPrediction?.plantName ??
+                                'Unknown Plant',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
+                          ),
+                        ),
+                        if (_getMethodLabel(scan) != null) ...[
+                          const SizedBox(width: 8),
+                          _buildMethodLabel(theme, _getMethodLabel(scan)!),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      scan.plant?.scientificName ?? '',
+                      scan.plant?.scientificName ??
+                          scan.topPrediction?.scientificName ??
+                          '',
                       style: theme.textTheme.bodySmall?.copyWith(
                         fontStyle: FontStyle.italic,
                         color: theme.colorScheme.onSurface.withOpacity(0.6),
                       ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                     const SizedBox(height: 8),
                     Row(
@@ -518,6 +536,64 @@ class _HistoryScreenState extends State<HistoryScreen> {
         Icons.local_florist,
         size: 40,
         color: theme.colorScheme.onSurfaceVariant.withOpacity(0.3),
+      ),
+    );
+  }
+
+  /// Get method label from scan result metadata
+  /// Returns: "CAM", "GradCAM", "Fallback", or "Online"
+  String? _getMethodLabel(ScanResult scan) {
+    final method = scan.metadata['method'] as String?;
+    final fallbackUsed = scan.metadata['fallbackUsed'] as bool? ?? false;
+
+    // If fallback was used, show "Fallback"
+    if (fallbackUsed == true) {
+      return 'Fallback';
+    }
+
+    // Otherwise, show based on method
+    if (method == 'cam') {
+      return 'CAM';
+    } else if (method == 'grad-cam') {
+      return 'GradCAM';
+    }
+
+    // Fallback: use isOfflineScan to determine
+    if (scan.isOfflineScan) {
+      return 'CAM';
+    }
+
+    // If no method info, return null (don't show label)
+    return null;
+  }
+
+  /// Build method label widget
+  Widget _buildMethodLabel(ThemeData theme, String label) {
+    // Determine color based on label
+    Color labelColor;
+    if (label == 'CAM' || label == 'Fallback') {
+      labelColor = Colors.orange; // Orange for offline/fallback
+    } else {
+      labelColor = Colors.green; // Green for online/GradCAM
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: labelColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: labelColor.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Text(
+        '($label)',
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: labelColor,
+          fontWeight: FontWeight.w600,
+          fontSize: 10,
+        ),
       ),
     );
   }

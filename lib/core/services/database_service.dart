@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:herbascan/core/models/plant.dart';
@@ -6,7 +7,7 @@ import 'package:herbascan/core/models/scan_result.dart';
 class DatabaseService {
   static Database? _database;
   static const String _databaseName = 'herbascan.db';
-  static const int _databaseVersion = 1;
+  static const int _databaseVersion = 2;
 
   // Table names
   static const String _plantsTable = 'plants';
@@ -40,6 +41,7 @@ class DatabaseService {
         common_name TEXT NOT NULL,
         scientific_name TEXT NOT NULL,
         local_name TEXT NOT NULL,
+        english_name TEXT NOT NULL DEFAULT '',
         family TEXT NOT NULL,
         genus TEXT NOT NULL,
         species TEXT NOT NULL,
@@ -103,16 +105,28 @@ class DatabaseService {
     ''');
 
     // Create indexes
-    await db.execute('CREATE INDEX idx_plants_doh ON $_plantsTable (is_doh_approved)');
-    await db.execute('CREATE INDEX idx_scan_history_date ON $_scanHistoryTable (scan_date)');
-    await db.execute('CREATE INDEX idx_medicinal_uses_plant ON $_medicinalUsesTable (plant_id)');
-    await db.execute('CREATE INDEX idx_preparation_methods_plant ON $_preparationMethodsTable (plant_id)');
+    await db.execute(
+        'CREATE INDEX idx_plants_doh ON $_plantsTable (is_doh_approved)');
+    await db.execute(
+        'CREATE INDEX idx_scan_history_date ON $_scanHistoryTable (scan_date)');
+    await db.execute(
+        'CREATE INDEX idx_medicinal_uses_plant ON $_medicinalUsesTable (plant_id)');
+    await db.execute(
+        'CREATE INDEX idx_preparation_methods_plant ON $_preparationMethodsTable (plant_id)');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     // Handle database upgrades here
     if (oldVersion < 2) {
-      // Example: Add new columns or tables
+      // Add english_name column to plants table
+      try {
+        await db.execute(
+            'ALTER TABLE $_plantsTable ADD COLUMN english_name TEXT NOT NULL DEFAULT ""');
+        print('✅ Added english_name column to plants table');
+      } catch (e) {
+        // Column might already exist
+        print('ℹ️ english_name column may already exist: $e');
+      }
     }
   }
 
@@ -125,13 +139,13 @@ class DatabaseService {
   Future<List<Plant>> getAllPlants() async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(_plantsTable);
-    
+
     List<Plant> plants = [];
     for (var map in maps) {
       final plant = await _mapToPlant(map);
       plants.add(plant);
     }
-    
+
     return plants;
   }
 
@@ -168,22 +182,25 @@ class DatabaseService {
 
   Future<Plant> _mapToPlant(Map<String, dynamic> map) async {
     final db = await database;
-    
+
     // Get medicinal uses
     final medicinalUsesMaps = await db.query(
       _medicinalUsesTable,
       where: 'plant_id = ?',
       whereArgs: [map['id']],
     );
-    
-    final medicinalUses = medicinalUsesMaps.map((useMap) => MedicinalUse(
-      condition: useMap['condition'] as String,
-      description: useMap['description'] as String,
-      effectiveness: useMap['effectiveness'] as String,
-      activeCompounds: (useMap['active_compounds'] as String).split(','),
-      dosage: useMap['dosage'] as String,
-      duration: useMap['duration'] as String,
-    )).toList();
+
+    final medicinalUses = medicinalUsesMaps
+        .map((useMap) => MedicinalUse(
+              condition: useMap['condition'] as String,
+              description: useMap['description'] as String,
+              effectiveness: useMap['effectiveness'] as String,
+              activeCompounds:
+                  (useMap['active_compounds'] as String).split(','),
+              dosage: useMap['dosage'] as String,
+              duration: useMap['duration'] as String,
+            ))
+        .toList();
 
     // Get preparation methods
     final preparationMethodsMaps = await db.query(
@@ -191,25 +208,28 @@ class DatabaseService {
       where: 'plant_id = ?',
       whereArgs: [map['id']],
     );
-    
-    final preparationMethods = preparationMethodsMaps.map((methodMap) => PreparationMethod(
-      id: methodMap['id'] as String,
-      condition: methodMap['condition'] as String,
-      title: methodMap['title'] as String,
-      description: methodMap['description'] as String,
-      steps: (methodMap['steps'] as String).split('|'),
-      dosage: methodMap['dosage'] as String,
-      frequency: methodMap['frequency'] as String,
-      duration: methodMap['duration'] as String,
-      warnings: (methodMap['warnings'] as String).split('|'),
-      preparationType: methodMap['preparation_type'] as String,
-    )).toList();
+
+    final preparationMethods = preparationMethodsMaps
+        .map((methodMap) => PreparationMethod(
+              id: methodMap['id'] as String,
+              condition: methodMap['condition'] as String,
+              title: methodMap['title'] as String,
+              description: methodMap['description'] as String,
+              steps: (methodMap['steps'] as String).split('|'),
+              dosage: methodMap['dosage'] as String,
+              frequency: methodMap['frequency'] as String,
+              duration: methodMap['duration'] as String,
+              warnings: (methodMap['warnings'] as String).split('|'),
+              preparationType: methodMap['preparation_type'] as String,
+            ))
+        .toList();
 
     return Plant(
       id: map['id'],
       commonName: map['common_name'],
       scientificName: map['scientific_name'],
       localName: map['local_name'],
+      englishName: map['english_name'] ?? '',
       family: map['family'],
       genus: map['genus'],
       species: map['species'],
@@ -229,15 +249,22 @@ class DatabaseService {
   // Scan history operations
   Future<void> saveScanResult(ScanResult result) async {
     final db = await database;
+
+    // Properly serialize predictions and metadata as JSON strings
+    final predictionsJson = jsonEncode(
+      result.predictions.map((p) => p.toJson()).toList(),
+    );
+    final metadataJson = jsonEncode(result.metadata);
+
     await db.insert(_scanHistoryTable, {
       'id': result.id,
       'plant_id': result.plant?.id,
       'confidence_score': result.confidenceScore,
-      'predictions': result.predictions.map((p) => p.toJson()).toList().toString(),
+      'predictions': predictionsJson,
       'image_path': result.imagePath,
       'scan_date': result.scanDate.toIso8601String(),
       'grad_cam_path': result.gradCAMPath,
-      'metadata': result.metadata.toString(),
+      'metadata': metadataJson,
       'is_offline_scan': result.isOfflineScan ? 1 : 0,
     });
   }
@@ -264,19 +291,49 @@ class DatabaseService {
       plant = await getPlantById(map['plant_id']);
     }
 
-    // Parse predictions (simplified for now)
-    final predictions = <Prediction>[];
+    // Parse predictions from JSON string
+    List<Prediction> predictions = [];
+    try {
+      if (map['predictions'] != null &&
+          map['predictions'].toString().isNotEmpty) {
+        final predictionsJson = jsonDecode(map['predictions'] as String);
+        if (predictionsJson is List) {
+          predictions = predictionsJson
+              .map((json) => Prediction.fromJson(json as Map<String, dynamic>))
+              .toList();
+        }
+      }
+    } catch (e) {
+      print('⚠️ Error parsing predictions: $e');
+      predictions = [];
+    }
+
+    // Parse metadata from JSON string
+    Map<String, dynamic> metadata = {};
+    try {
+      if (map['metadata'] != null && map['metadata'].toString().isNotEmpty) {
+        final metadataJson = jsonDecode(map['metadata'] as String);
+        if (metadataJson is Map) {
+          metadata = Map<String, dynamic>.from(metadataJson);
+        }
+      }
+    } catch (e) {
+      print('⚠️ Error parsing metadata: $e');
+      metadata = {};
+    }
+
+    // summaryGradCAMPath is stored in metadata, so it's already parsed above
 
     return ScanResult(
       id: map['id'],
       plant: plant,
-      confidenceScore: map['confidence_score'],
+      confidenceScore: map['confidence_score'] as double,
       predictions: predictions,
-      imagePath: map['image_path'],
-      scanDate: DateTime.parse(map['scan_date']),
-      gradCAMPath: map['grad_cam_path'],
-      metadata: {}, // TODO: Parse metadata
-      isOfflineScan: map['is_offline_scan'] == 1,
+      imagePath: map['image_path'] as String,
+      scanDate: DateTime.parse(map['scan_date'] as String),
+      gradCAMPath: map['grad_cam_path'] as String?,
+      metadata: metadata,
+      isOfflineScan: (map['is_offline_scan'] as int?) == 1,
     );
   }
 

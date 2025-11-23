@@ -254,6 +254,15 @@ migrate_working_dir/
 .env.test
 .env.production
 
+# API Keys and Secrets
+*_api_key*.dart
+*_secrets*.dart
+*_config_local*.dart
+api_keys.txt
+secrets.txt
+*.key
+*.pem
+
 # Railway deployment
 .railway/
 

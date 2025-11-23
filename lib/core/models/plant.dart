@@ -3,6 +3,7 @@ class Plant {
   final String commonName;
   final String scientificName;
   final String localName;
+  final String englishName; // English/common English name
   final String family;
   final String genus;
   final String species;
@@ -22,6 +23,7 @@ class Plant {
     required this.commonName,
     required this.scientificName,
     required this.localName,
+    required this.englishName,
     required this.family,
     required this.genus,
     required this.species,
@@ -44,6 +46,7 @@ class Plant {
       commonName: json['commonName'] ?? '',
       scientificName: json['scientificName'] ?? '',
       localName: json['localName'] ?? '',
+      englishName: json['englishName'] ?? '',
       family: json['family'] ?? '',
       genus: json['genus'] ?? '',
       species: json['species'] ?? '',
@@ -72,6 +75,7 @@ class Plant {
       'commonName': commonName,
       'scientificName': scientificName,
       'localName': localName,
+      'englishName': englishName,
       'family': family,
       'genus': genus,
       'species': species,
