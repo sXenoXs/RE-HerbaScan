@@ -533,16 +533,47 @@ class CameraProvider extends ChangeNotifier {
       }
 
       // Map predictions to expected format
+      // CRITICAL FIX: Backend returns 'class' and 'class_index', not 'label' and 'index'
+      print('🔍 [CameraProvider] Mapping backend predictions...');
+      print('   Raw predictions count: ${allPredictions.length}');
+
       final predictions = allPredictions.map((pred) {
+        // Backend returns 'class' field (e.g., "6Blumea balsamifera(BB)")
+        // Parse it to extract plant name
+        final rawClass = pred['class'] ?? pred['label'] ?? '';
+        final parsedName = _parsePlantNameFromLabel(rawClass);
+        final scientificName = _extractScientificName(rawClass);
+
+        // Backend returns 'class_index', not 'index'
+        final classIndex = pred['class_index'] ?? pred['index'] ?? 0;
+
+        // Debug logging for first prediction
+        if (allPredictions.indexOf(pred) == 0) {
+          print('   ════════════════════════════════════════════════════════');
+          print('   🔍 First prediction mapping:');
+          print('   Raw class from backend: "$rawClass"');
+          print('   Parsed plant name: "$parsedName"');
+          print('   Scientific name: "$scientificName"');
+          print('   Class index: $classIndex');
+          print('   Confidence: ${pred['confidence']}');
+          print('   ════════════════════════════════════════════════════════');
+        }
+
         return {
-          'label': pred['label'] ?? '',
-          'plantName': pred['label'] ?? 'Unknown',
+          'label': parsedName, // Use parsed name as label
+          'plantName': parsedName, // Use parsed name as plant name
           'confidence': pred['confidence'] ?? 0.0,
-          'index': pred['index'] ?? 0,
-          'scientificName': pred['scientificName'] ?? '',
+          'index': classIndex, // Use class_index from backend
+          'scientificName': scientificName, // Extracted scientific name
           'isDOHApproved': pred['isDOHApproved'] ?? false,
         };
       }).toList();
+
+      print('✅ [CameraProvider] Predictions mapped successfully');
+      if (predictions.isNotEmpty) {
+        print(
+            '   Top prediction: ${predictions.first['plantName']} (${(predictions.first['confidence'] * 100).toStringAsFixed(1)}%)');
+      }
 
       _lastPredictions = predictions;
 
@@ -554,7 +585,7 @@ class CameraProvider extends ChangeNotifier {
       // Track successful scan
       if (predictions.isNotEmpty && predictions.first['confidence'] > 0.5) {
         await _usageAnalytics
-            .trackSuccessfulScan(predictions.first['label'] ?? 'Unknown');
+            .trackSuccessfulScan(predictions.first['plantName'] ?? 'Unknown');
       } else {
         await _usageAnalytics.trackFailedScan();
       }
@@ -563,6 +594,19 @@ class CameraProvider extends ChangeNotifier {
       notifyListeners();
 
       // Enhanced logging for debugging
+      print('🔍 [CameraProvider] Adaptive result received:');
+      print('   Result keys: ${adaptiveResult.keys.toList()}');
+      print('   gradcam_image present: ${adaptiveResult['gradcam_image'] != null}');
+      if (adaptiveResult['gradcam_image'] != null) {
+        final img = adaptiveResult['gradcam_image'];
+        print('   gradcam_image type: ${img.runtimeType}');
+        if (img is Uint8List) {
+          print('   gradcam_image size: ${img.length} bytes');
+        }
+      } else {
+        print('   ⚠️ WARNING: gradcam_image is null in adaptive result!');
+      }
+      
       final gradcamImage = adaptiveResult['gradcam_image'];
       var method = adaptiveResult['method'] as String?;
       final fallbackUsed = adaptiveResult['fallback_used'] ?? false;
@@ -700,6 +744,58 @@ class CameraProvider extends ChangeNotifier {
   void clearPredictions() {
     _lastPredictions = [];
     notifyListeners();
+  }
+
+  /// Parse plant name from backend label format
+  /// Backend returns format like "6Blumea balsamifera(BB)" or "3Momordica charantia (MC)"
+  /// Returns: "Blumea balsamifera" (scientific name)
+  String _parsePlantNameFromLabel(String label) {
+    if (label.isEmpty) return 'Unknown';
+
+    try {
+      // Pattern: optional number prefix + scientific name + optional space + (abbreviation)
+      // Examples:
+      // - "6Blumea balsamifera(BB)" -> "Blumea balsamifera"
+      // - "3Momordica charantia (MC)" -> "Momordica charantia"
+      // - "36Blumea balsamifera(BB)" -> "Blumea balsamifera"
+
+      String cleaned = label;
+
+      // Step 1: Remove leading digits (number prefix)
+      cleaned = cleaned.replaceFirst(RegExp(r'^\d+'), '');
+
+      // Step 2: Remove abbreviation in parentheses at the end (e.g., "(BB)" or " (MC)")
+      cleaned = cleaned.replaceAll(RegExp(r'\s*\([^)]+\)\s*$'), '').trim();
+
+      // Step 3: Clean up any remaining whitespace
+      cleaned = cleaned.trim();
+
+      // If still empty, try alternative parsing
+      if (cleaned.isEmpty) {
+        // Fallback: Extract scientific name using regex
+        // Pattern: number + (scientific name with spaces) + optional (abbrev)
+        final match = RegExp(r'\d+([A-Z][a-zA-Z\s]+?)(?:\s*\([^)]+\))?$')
+            .firstMatch(label);
+        if (match != null) {
+          cleaned = match.group(1)?.trim() ?? '';
+        }
+      }
+
+      // Final check: if still empty, return "Unknown"
+      return cleaned.isNotEmpty ? cleaned : 'Unknown';
+    } catch (e) {
+      print('⚠️ Error parsing plant name from label "$label": $e');
+      return 'Unknown';
+    }
+  }
+
+  /// Extract scientific name from backend label format
+  /// Backend returns format like "6Blumea balsamifera(BB)"
+  /// Returns: "Blumea balsamifera" (same as parsed name for now)
+  String _extractScientificName(String label) {
+    // For now, scientific name is the same as parsed name
+    // In the future, we can map to database plants to get proper scientific names
+    return _parsePlantNameFromLabel(label);
   }
 
   // Dispose

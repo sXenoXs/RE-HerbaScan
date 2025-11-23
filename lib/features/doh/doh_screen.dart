@@ -5,7 +5,6 @@ import 'package:herbascan/core/providers/plant_provider.dart';
 import 'package:herbascan/core/models/plant.dart';
 import 'package:herbascan/features/scan/plant_detail_screen.dart';
 import 'package:herbascan/core/services/usage_analytics.dart';
-import 'dart:io';
 
 class DOHScreen extends StatefulWidget {
   const DOHScreen({super.key});
@@ -22,6 +21,11 @@ class _DOHScreenState extends State<DOHScreen> {
     super.initState();
     // Track DOH screen view
     _analytics.trackDOHScreenViewed();
+    // Refresh plants when screen opens (checks for missing plants and reloads)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final plantProvider = Provider.of<PlantProvider>(context, listen: false);
+      plantProvider.refreshPlants();
+    });
   }
 
   @override
@@ -37,8 +41,12 @@ class _DOHScreenState extends State<DOHScreen> {
       ),
       body: plantProvider.isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              child: Column(
+          : RefreshIndicator(
+              onRefresh: () async {
+                await plantProvider.refreshPlants();
+              },
+              child: SingleChildScrollView(
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // DOH Header Info
@@ -62,6 +70,7 @@ class _DOHScreenState extends State<DOHScreen> {
                 ],
               ),
             ),
+          ),
     );
   }
 
@@ -151,7 +160,7 @@ class _DOHScreenState extends State<DOHScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '$count ${appLocalizations.clinicallyValidated}',
+                    '$count validated plants',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -259,8 +268,8 @@ class _DOHScreenState extends State<DOHScreen> {
                     width: double.infinity,
                     color: theme.colorScheme.surfaceContainerHighest,
                     child: plant.imagePath.isNotEmpty
-                        ? Image.file(
-                            File(plant.imagePath),
+                        ? Image.asset(
+                            plant.imagePath,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
                               return _buildPlaceholderImage(theme);
@@ -318,37 +327,37 @@ class _DOHScreenState extends State<DOHScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      plant.commonName,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF38A169),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      plant.scientificName,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontStyle: FontStyle.italic,
-                        color: theme.colorScheme.onSurface.withOpacity(0.6),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const Spacer(),
-                    Text(
-                      plant.localName,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.5),
-                        fontSize: 10,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                   children: [
+                     Text(
+                       plant.commonName,
+                       style: theme.textTheme.titleSmall?.copyWith(
+                         fontWeight: FontWeight.bold,
+                         color: const Color(0xFF38A169),
+                       ),
+                       maxLines: 1,
+                       overflow: TextOverflow.ellipsis,
+                     ),
+                     const SizedBox(height: 2),
+                     Text(
+                       plant.scientificName,
+                       style: theme.textTheme.bodySmall?.copyWith(
+                         fontStyle: FontStyle.italic,
+                         color: theme.colorScheme.onSurface.withOpacity(0.6),
+                       ),
+                       maxLines: 1,
+                       overflow: TextOverflow.ellipsis,
+                     ),
+                     const Spacer(),
+                     Text(
+                       plant.englishName,
+                       style: theme.textTheme.bodySmall?.copyWith(
+                         color: theme.colorScheme.onSurface.withOpacity(0.5),
+                         fontSize: 10,
+                       ),
+                       maxLines: 1,
+                       overflow: TextOverflow.ellipsis,
+                     ),
+                   ],
                 ),
               ),
             ),

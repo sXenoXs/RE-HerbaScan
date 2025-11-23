@@ -1,13 +1,19 @@
 # HerbaScan - AI-Powered Plant Identification App
 
+**Thesis Project**: HERBASCAN: A CONVOLUTIONAL NEURAL NETWORK-BASED MOBILE APPLICATION FOR PLANT IDENTIFICATION AND HERBAL MEDICINE INFORMATION
+
 HerbaScan is a Flutter-based mobile application that uses Convolutional Neural Networks (CNN) and Random Forest algorithms to identify Philippine medicinal plants. The app provides comprehensive information about DOH-approved herbal medicines and supports offline processing for rural areas.
+
+**Academic Context**: Undergraduate Thesis - College of Information Technology and Computer Science, Lyceum of the Philippines University-Cavite  
+**Client/Partner**: Philippine Institute of Traditional and Alternative Health Care (PITAHC)  
+**Dataset**: PhilMedic - 4,922 leaf images, 40 medicinal plant classes native to the Philippines
 
 ## 🚀 Current Development Status
 
-**Version**: v0.5.2  
-**Last Updated**: November 8, 2025
-**Project Phase**: Phase 6 In Progress (Offline CAM Fix)  
-**Overall Progress**: 52% Complete - 
+**Version**: v0.5.8  
+**Last Updated**: December 2025
+**Project Phase**: Phase 9 Complete (Hybrid XAI Explanation System)  
+**Overall Progress**: 71% Complete - **PRODUCTION READY** 
 
 ### ✅ Added Features (Complete/Incomplete Features)
 
@@ -18,7 +24,10 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **Multi-language Support**: ✅ English/Filipino localization system
 - **Navigation**: ✅ Bottom navigation with 5 main sections
 - **Settings**: ✅ Comprehensive app configuration
-- **Plant Database**: ✅ **13 medicinal plants with comprehensive data** (9 DOH-approved + 4 additional)
+- **Plant Database**: ✅ **16 medicinal plants with comprehensive data** (10 DOH-approved + 6 additional)
+- **XAI Explanation Database**: ✅ Offline explanations for all 16 plants stored in JSON (~50KB)
+- **Camera Zoom Controls**: ✅ **NEW** Pinch-to-zoom and optimized slider zoom with performance improvements
+- **UI/UX Refinements**: ✅ **NEW** Enhanced readability, visibility, and user experience across all screens
 - **Offline Processing**: ✅ Full offline functionality
 - **AI Model Integration**: ✅ MobileNet V2 + Random Forest fully integrated (accuracy needs improvement)
 - **Offline AI Inference**: ✅ TensorFlow Lite models work offline
@@ -26,7 +35,8 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **Offline Data Management**: ✅ Local storage with optimization and cleanup
 - **Offline Sync Management**: ✅ Automatic data synchronization when online
 - **Offline UI Components**: ✅ Status indicators and management interface
-- **GradCAM Visualization**: ✅ Explainable AI heatmap system with working overlay controls (needs improvement)
+- **GradCAM Visualization**: ✅ Explainable AI heatmap system with working overlay controls
+- **Hybrid XAI Explanation System**: ✅ Comprehensive text explanations with offline (JSON) and online (Gemini API) support
 - **Plant Results Screen**: ✅ AI prediction results with functional GradCAM integration
 - **Interactive Heatmaps**: ✅ Working opacity controls and tabbed interface
 - **Plant Detail Screen**: ✅ **NEW** Comprehensive plant information with ecology & habitat
@@ -53,6 +63,14 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **Backend API**: ✅ **NEW** Python FastAPI server for true Grad-CAM computation
 - **Backend Documentation**: ✅ **NEW** Comprehensive model management and deployment guides
 - **Postman Testing**: ✅ **NEW** Complete testing guide for VS Code and other IDEs
+- **GradCAM/CAM Fixes**: ✅ **NEW** Fixed all GradCAM and CAM heatmap issues, scan persistence, and UI visibility
+- **Method Labels**: ✅ **NEW** Added method indicators (CAM/GradCAM/Fallback/Online) in History and Recent Scans
+- **Resizable Text Areas**: ✅ **NEW** Made feedback form text areas vertically resizable
+- **Hybrid XAI Explanation System**: ✅ **NEW** Comprehensive Explainable AI with offline (JSON) and online (Gemini API) explanations
+- **Markdown Text Formatting**: ✅ **NEW** Rich text explanations with proper formatting (bold, italic, headers, lists)
+- **Usability Assessment**: ✅ **NEW** Clear status indicators (USABLE/USE WITH CAUTION/NOT RECOMMENDED) based on heatmap analysis
+- **Refresh Functionality**: ✅ **NEW** Refresh button regenerates both GradCAM heatmap and AI explanation
+- **API Key Management**: ✅ **NEW** Secure API key configuration system for Gemini API
 
 ### 🔄 In Progress (Phase 6: Offline CAM Fix)
 
@@ -61,6 +79,12 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **Testing**: Verifying offline CAM heatmap generation in offline mode
 - **Beta Testing**: User testing with TESTING_GUIDE.md
 - **Data Collection**: Gathering user feedback and metrics
+
+### ✅ Recently Fixed (v0.5.6)
+
+- **Online GradCAM Prediction Mapping**: Fixed "Unknown" plant names in online GradCAM predictions
+- **Backend Response Field Mapping**: Corrected mapping from backend 'class' and 'class_index' to Flutter format
+- **Label Format Parsing**: Added parsing to extract plant names from backend label format
 
 ### ⏳ Pending (Future Updates)
 
@@ -247,17 +271,18 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - [x] **Interactive Navigation**: Clickable preparation methods
 - [x] **Safety Information Display**: Medical disclaimers and warnings
 
-#### DOH-Approved Plants Included
+#### DOH-Approved Plants Included (10 Official Plants)
 
-- [x] **Lagundi** (Vitex negundo) - Cough, Asthma, Fever
-- [x] **Sambong** (Blumea balsamifera) - Kidney Stones, Hypertension
-- [x] **Akapulko** (Senna alata) - Fungal Infections, Skin Conditions
-- [x] **Ampalaya** (Momordica charantia) - Diabetes
-- [x] **Ulasimang-bato** (Peperomia pellucida) - Gout, High Uric Acid
-- [x] **Bayabas** (Psidium guajava) - Diarrhea, Wound Healing
-- [x] **Yerba Buena** (Mentha cordifolia) - Stomachache, Headache
-- [x] **Tawa-tawa** (Euphorbia hirta) - Dengue Support, Respiratory
-- [x] **Malunggay** (Moringa oleifera) - Nutrition, Lactation
+- [x] **Akapulko** (Senna alata) - Fungal infections
+- [x] **Ampalaya** (Momordica charantia) - Asthma and coughs
+- [x] **Bawang** (Allium sativum) - Wounds and toothaches
+- [x] **Bayabas** (Psidium guajava) - Wounds and diarrhea
+- [x] **Lagundi** (Vitex negundo) - Cough and asthma
+- [x] **Niyog-niyogan** (Combretum indicum) - Expelling parasitic worms
+- [x] **Sambong** (Blumea balsamifera) - Lowering uric acid and treating hypertension
+- [x] **Tsaang Gubat** (Ehretia microphylla) - Stomachaches and diarrhea
+- [x] **Ulasimang-bato** (Peperomia pellucida) - Gout and rheumatism
+- [x] **Yerba Buena** (Clinopodium douglasii) - Muscle and joint pain, headaches
 
 #### Additional Medicinal Plants
 
@@ -411,15 +436,48 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - [x] **Overlay Controls**: Fixed "Show Heatmap Overlay" toggle and "Heatmap Opacity" slider functionality
 - [x] **Offline Processing**: Fixed offline processing path that was setting GradCAM paths to null
 
-### Phase 6: Beta Testing & Deployment (🔄 In Progress)
+### Phase 6: Backend API & Documentation (✅ COMPLETED)
+- [x] Python FastAPI backend for true Grad-CAM computation
+- [x] Backend documentation (`backend/README.md`)
+- [x] Model management guides
+- [x] Deployment documentation (Railway)
+- [x] Postman testing documentation
+- [x] Phase 2 model extraction guides
+- [x] Offline CAM inference fix
 
-**Date**: November 8, 2025
+### Phase 7: GradCAM/CAM Fixes & UI Improvements (✅ COMPLETED)
+- [x] Fixed all GradCAM and CAM heatmap issues
+- [x] Fixed scan persistence with JSON serialization
+- [x] Added method labels (CAM/GradCAM/Fallback/Online)
+- [x] Enhanced UI visibility across all screens
+- [x] Improved feedback form and text areas
+
+### Phase 8: UI/UX Refinement & Camera Enhancements (✅ COMPLETED)
+- [x] Enhanced readability and visibility
+- [x] Fixed tab navigation
+- [x] Optimized image loading
+- [x] Added pinch-to-zoom functionality
+- [x] Improved visual hierarchy
+
+### Phase 9: Hybrid XAI Explanation System (✅ COMPLETED)
+- [x] Implemented offline (JSON) + online (Gemini API) explanation system
+- [x] Created offline explanation database for all 16 plants
+- [x] Integrated Gemini API for online explanations
+- [x] Added markdown text formatting
+- [x] Implemented usability assessment with clear status indicators
+- [x] Added refresh functionality for regenerating explanations
+- [x] Created API key management system
+
+### Phase 10: Beta Testing & Deployment (🔄 In Progress)
+
+**Date**: December 2025
 
 #### Current Status
 
 - [x] **Production Ready**: All core features implemented
 - [x] **Testing Framework**: Complete TESTING_GUIDE.md with 50+ test cases
 - [x] **Data Collection**: All systems operational for thesis research
+- [x] **Hybrid XAI System**: Complete offline/online explanation system
 - [ ] **Beta Testing**: User testing with real devices
 - [ ] **Data Analysis**: Collect and analyze user feedback
 - [ ] **Performance Tuning**: Optimize based on metrics
@@ -433,9 +491,11 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **Framework**: Flutter 3.9.2+
 - **State Management**: Provider pattern with 5 providers
 - **Database**: SQLite with proper relationships
-- **AI/ML**: TensorFlow Lite with a offline processing and GradCAM visualization
+- **AI/ML**: TensorFlow Lite with offline processing, GradCAM visualization, and hybrid XAI explanations
 - **Offline Processing**: Add a offline functionality for rural areas
 - **GradCAM**: Explainable AI heatmap generation with working interactive visualization and overlay controls
+- **XAI Explanations**: Hybrid text-based explanations (offline JSON + online Gemini API) with markdown formatting
+- **Hybrid XAI**: Text-based explanations with offline (JSON) and online (Gemini API) support, markdown formatting, and usability assessment
 - **Connectivity**: Real-time network monitoring with connectivity_plus
 - **Localization**: Flutter's built-in i18n system
 
@@ -478,6 +538,9 @@ lottie: ^3.3.2
 uuid: ^4.5.1
 logger: ^2.5.0
 http: ^1.2.2
+
+# Markdown Rendering
+flutter_markdown: ^0.6.18
 ```
 
 ### File Structure
@@ -488,17 +551,35 @@ herbascan/
 │   ├── core/              ✅
 │   │   ├── models/        ✅ (Plant, ScanResult, UserFeedback)
 │   │   ├── providers/     ✅ (5 providers: App, Plant, Camera, Language, Offline)
-│   │   ├── services/      ✅ (13 services: Database, Plant, Offline, GradCAM, 
-│   │   │                     Performance, Analytics, Error Logger, Feedback, etc.)
+│   │   ├── services/      ✅ (18 services: Database, Plant, Offline, GradCAM, 
+│   │   │                     XAI Explanation, Gemini API, Config, Performance, 
+│   │   │                     Analytics, Error Logger, Feedback, etc.)
 │   │   ├── widgets/       ✅ (Offline indicators, GradCAM visualization)
 │   │   ├── theme/         ✅ (Material Design 3)
 │   │   ├── localization/  ✅ (i18n - English/Filipino)
 │   │   └── utils/         ✅ (Page transitions, animations)
 │   └── features/          ✅ (15+ screens: Home, Scan, Browse, History, DOH,
 │                              Settings, Feedback, Dashboard, Help, etc.)
-├── assets/                ✅ (models, images, data, animations, icons, fonts)
+├── assets/                ✅ (models, images, data/plant_explanations.json, animations, icons, fonts)
 └── Configuration          ✅ (pubspec.yaml, analysis_options.yaml)
 ```
+
+## 🎨 Prototype Design Reference
+
+**Prototype File**: `herbascan_ interactive prototype.html` - Interactive HTML prototype with 22+ wireframes  
+
+### Prototype Status
+- **Functional Coverage**: 90%+ of prototype features implemented
+- **Visual Design**: 70% matches prototype
+- **Main Gaps**: Visual polish (gradients, animations, glassmorphism) rather than functionality
+
+### Design System from Prototype
+- **Colors**: Primary (#6366f1), Success (#22c55e), Warning (#f59e0b), Error (#ef4444)
+- **Typography**: Inter font family (already implemented)
+- **Spacing**: Consistent 4px base unit system
+- **Shadows**: Multi-layer shadow system
+- **Gradients**: Linear gradients for modern look
+- **Animations**: Smooth transitions, shimmer effects, slide-in animations
 
 ## 🎯 Next Steps
 
@@ -508,6 +589,7 @@ herbascan/
 2. **Data Collection**: Gather user feedback, performance metrics, and usage analytics
 3. **Bug Fixes**: Address any issues found during testing
 4. **Performance Optimization**: Fine-tune based on collected metrics
+5. **Visual Enhancements**: Apply prototype design system (gradients, animations, glassmorphism)
 
 ### Short Term (1-2 weeks)
 
@@ -525,18 +607,18 @@ herbascan/
 
 ## 📊 Progress Metrics
 
-- **Version**: v0.5.2
+- **Version**: v0.5.8
 - **Code Files Created**: 50+ files
-- **Lines of Code**: 8,000+ lines
-- **Features Implemented**: 40+ core features
-- **Screens Created**: 15+ screens
-- **Providers**: 5 state management providers
-- **Services**: 13 services (Database, Plant, Offline, GradCAM, Performance, Analytics, Error Logger, Feedback, etc.)
+- **Lines of Code**: 10,000+ lines
+- **Features Implemented**: 45+ core features
+- **Screens Created**: 19 screens
+- **Providers**: 5 state management providers (App, Plant, Camera, Language, Offline)
+- **Services**: 18 services (Database, Plant, Offline, GradCAM, XAI Explanation, Gemini API, Config, Performance, Analytics, Error Logger, Feedback, etc.)
 - **Models**: 3 data models (Plant, ScanResult, UserFeedback)
 - **Database Tables**: 4 tables with relationships
-- **Plant Database**: 13 medicinal plants (9 DOH-approved + 4 additional)
+- **Plant Database**: 16 medicinal plants (10 DOH-approved + 6 additional)
 - **Languages Supported**: 2 (English, Filipino)
-- **Documentation Files**: 8 comprehensive documentation files
+- **Documentation Files**: 20+ comprehensive documentation files
 - **Test Cases**: 50+ test cases documented
 
 ## 📊 Data Collection for Thesis Research
@@ -666,14 +748,22 @@ HerbaScan is designed to work seamlessly in rural areas without internet connect
 
    - Download from: https://flutter.dev/docs/get-started/install
    - Add Flutter to your PATH environment variable
+   - Verify installation: `flutter doctor`
 
 2. **Android Studio**: For Android development
 
    - Download from: https://developer.android.com/studio
-   - Install Android SDK and emulator
+   - Install Android SDK (API level 21 or higher)
+   - Create an Android Virtual Device (AVD) or enable USB debugging on physical device
 
 3. **VS Code** (Recommended): For Flutter development
    - Install Flutter and Dart extensions
+   - Use `Ctrl+Shift+P` → "Flutter: Select Device" to choose device
+
+4. **Gemini API Key** (Optional, for online explanations):
+   - Get API key from: https://makersuite.google.com/app/apikey
+   - Configure in app using `ConfigService.setGeminiApiKey('YOUR_API_KEY')`
+   - See `lib/core/services/config_service.dart` for details
 
 ### Installation
 
@@ -694,6 +784,15 @@ HerbaScan is designed to work seamlessly in rural areas without internet connect
    ```bash
    flutter run
    ```
+
+4. **Configure Gemini API Key** (Optional, for online XAI explanations):
+   ```dart
+   // In your app initialization code or settings screen
+   await ConfigService.setGeminiApiKey('YOUR_GEMINI_API_KEY');
+   ```
+   - Without API key: App uses offline explanations from JSON
+   - With API key: App uses online Gemini API for richer explanations
+   - See `lib/core/services/config_service.dart` for implementation details
 
 ### For Android Development
 
@@ -998,21 +1097,26 @@ The app uses SQLite for local data storage with the following tables:
 
 ## DOH-Approved Plants
 
-The app includes information about 13 DOH-approved herbal medicines:
+The app includes comprehensive information about all 10 official DOH-approved herbal medicines (plus 6 additional medicinal plants):
 
-1. Lagundi (Vitex negundo) - Cough, Asthma
-2. Sambong (Blumea balsamifera) - Kidney stones
-3. Akapulko (Cassia alata) - Skin conditions
-4. Tsaang Gubat (Ehretia microphylla) - Diarrhea
-5. Ampalaya (Momordica charantia) - Diabetes
-6. Niyog-niyogan (Quisqualis indica) - Intestinal worms
-7. Ulasimang-bato (Peperomia pellucida) - Gout
-8. Bawang (Allium sativum) - Hypertension
-9. Bayabas (Psidium guajava) - Wound healing
-10. Yerba Buena (Mentha cordifolia) - Stomach ache
-11. Pansit-pansitan (Peperomia pellucida) - Gout
-12. Tawa-tawa (Euphorbia hirta) - Dengue fever
-13. Malunggay (Moringa oleifera) - Nutrition
+1. **Akapulko** (Senna alata) - Fungal infections
+2. **Ampalaya** (Momordica charantia) - Asthma and coughs
+3. **Bawang** (Allium sativum) - Wounds and toothaches
+4. **Bayabas** (Psidium guajava) - Wounds and diarrhea
+5. **Lagundi** (Vitex negundo) - Cough and asthma
+6. **Niyog-niyogan** (Combretum indicum) - Expelling parasitic worms
+7. **Sambong** (Blumea balsamifera) - Lowering uric acid and treating hypertension
+8. **Tsaang Gubat** (Ehretia microphylla) - Stomachaches and diarrhea
+9. **Ulasimang-bato** (Peperomia pellucida) - Gout and rheumatism
+10. **Yerba Buena** (Clinopodium douglasii) - Muscle and joint pain, headaches
+
+### Additional Medicinal Plants (6)
+11. **Oregano** (Origanum vulgare) - Cough, Respiratory, Digestive
+12. **Luya/Turmeric** (Curcuma longa) - Inflammation, Digestive Health
+13. **Gotu Kola** (Centella asiatica) - Wound Healing, Cognitive Support
+14. **Aloe Vera** (Aloe barbadensis) - Burns, Skin Health
+15. **Malunggay** (Moringa oleifera) - Nutrition
+16. **Tawa-tawa** (Euphorbia hirta) - Dengue fever support
 
 ## Development Roadmap
 

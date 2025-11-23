@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:camera/camera.dart';
 import 'dart:typed_data';
+import 'dart:async';
 import 'package:herbascan/core/providers/camera_provider.dart';
 import 'package:herbascan/core/providers/offline_provider.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
@@ -15,6 +16,10 @@ class ScanScreen extends StatefulWidget {
 }
 
 class _ScanScreenState extends State<ScanScreen> {
+  double _baseZoomLevel = 1.0;
+  Timer? _zoomUpdateTimer;
+  double? _pendingZoomLevel;
+
   @override
   void initState() {
     super.initState();
@@ -23,6 +28,31 @@ class _ScanScreenState extends State<ScanScreen> {
     // Resume camera preview if it was paused
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _resumeCamera();
+    });
+  }
+
+  void _updateZoomLevel(CameraProvider cameraProvider, double zoomLevel) {
+    // This method is only used for slider zoom updates with throttling
+
+    // For slider, use throttling
+    // Store the pending zoom level
+    _pendingZoomLevel = zoomLevel;
+
+    // Cancel any existing timer
+    _zoomUpdateTimer?.cancel();
+
+    // Update immediately for responsive feel
+    cameraProvider.setZoomLevel(zoomLevel);
+
+    // Throttle subsequent rapid updates to every 30ms for smoother performance
+    _zoomUpdateTimer = Timer(const Duration(milliseconds: 30), () {
+      // Only update if there's a pending value different from current
+      if (_pendingZoomLevel != null &&
+          (_pendingZoomLevel! - cameraProvider.currentZoomLevel).abs() > 0.01) {
+        cameraProvider.setZoomLevel(_pendingZoomLevel!);
+      }
+      _pendingZoomLevel = null;
+      _zoomUpdateTimer = null;
     });
   }
 
@@ -47,6 +77,8 @@ class _ScanScreenState extends State<ScanScreen> {
 
   @override
   void dispose() {
+    // Cancel zoom update timer
+    _zoomUpdateTimer?.cancel();
     // Pause camera when leaving scan screen to prevent buffer warnings
     final cameraProvider = Provider.of<CameraProvider>(context, listen: false);
     if (cameraProvider.cameraController != null &&
@@ -143,225 +175,255 @@ class _ScanScreenState extends State<ScanScreen> {
       BuildContext context, ThemeData theme, CameraProvider cameraProvider) {
     return Stack(
       children: [
-        // Camera Preview with tap-to-focus
+        // Camera Preview
         Positioned.fill(
-          child: GestureDetector(
-            onTapUp: (TapUpDetails details) {
-              final offset = Offset(
-                details.localPosition.dx / context.size!.width,
-                details.localPosition.dy / context.size!.height,
-              );
-              cameraProvider.setFocusPoint(offset);
-            },
-            child: CameraPreview(cameraProvider.cameraController!),
-          ),
+          child: CameraPreview(cameraProvider.cameraController!),
         ),
 
-        // Overlay
+        // Overlay with gesture detection
         Positioned.fill(
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.3),
-            ),
-            child: Column(
-              children: [
-                // Top Controls
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Flash Toggle
-                      GestureDetector(
-                        onTap: () => _toggleFlash(cameraProvider),
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Icon(
-                            cameraProvider.currentFlashMode == FlashMode.off
-                                ? Icons.flash_off
-                                : Icons.flash_on,
-                            color: Colors.white,
-                            size: 24,
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTapUp: (TapUpDetails details) {
+              // Only handle tap if it's not on an interactive element
+              final RenderBox? box = context.findRenderObject() as RenderBox?;
+              if (box != null) {
+                final offset = Offset(
+                  details.localPosition.dx / box.size.width,
+                  details.localPosition.dy / box.size.height,
+                );
+                cameraProvider.setFocusPoint(offset);
+              }
+            },
+            onScaleStart: (ScaleStartDetails details) {
+              // Cancel any pending zoom updates from slider to avoid conflicts
+              _zoomUpdateTimer?.cancel();
+              _zoomUpdateTimer = null;
+              _pendingZoomLevel = null;
+
+              // Store the current zoom level when pinch starts
+              _baseZoomLevel = cameraProvider.currentZoomLevel;
+            },
+            onScaleUpdate: (ScaleUpdateDetails details) {
+              // Calculate new zoom level based on scale factor
+              final newZoom = _baseZoomLevel * details.scale;
+              // Clamp zoom level between min and max
+              final clampedZoom = newZoom.clamp(
+                cameraProvider.minZoomLevel,
+                cameraProvider.maxZoomLevel,
+              );
+              // Direct update for pinch gestures - no throttling, no delays
+              cameraProvider.setZoomLevel(clampedZoom);
+            },
+            onScaleEnd: (ScaleEndDetails details) {
+              // Update base zoom level after pinch ends for next gesture
+              _baseZoomLevel = cameraProvider.currentZoomLevel;
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.3),
+              ),
+              child: Column(
+                children: [
+                  // Top Controls
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Flash Toggle
+                        GestureDetector(
+                          onTap: () => _toggleFlash(cameraProvider),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Icon(
+                              cameraProvider.currentFlashMode == FlashMode.off
+                                  ? Icons.flash_off
+                                  : Icons.flash_on,
+                              color: Colors.white,
+                              size: 24,
+                            ),
                           ),
                         ),
-                      ),
 
-                      // Scanning Tips Button
-                      GestureDetector(
-                        onTap: _showScanningTips,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.withValues(alpha: 0.8),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Icon(
-                                Icons.lightbulb_outline,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                              SizedBox(width: 6),
-                              Text(
-                                'Tips',
-                                style: TextStyle(
+                        // Scanning Tips Button
+                        GestureDetector(
+                          onTap: _showScanningTips,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withValues(alpha: 0.8),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                Icon(
+                                  Icons.lightbulb_outline,
                                   color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
+                                  size: 20,
+                                ),
+                                SizedBox(width: 6),
+                                Text(
+                                  'Tips',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        // Gallery Button
+                        GestureDetector(
+                          onTap: _pickFromGallery,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Icon(
+                              Icons.photo_library,
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Center - Scanning Area
+                  Expanded(
+                    child: Center(
+                      child: Container(
+                        width: 250,
+                        height: 250,
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: Colors.white,
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(125),
+                        ),
+                        child: Stack(
+                          children: [
+                            // Scanning Animation
+                            if (cameraProvider.isCapturing ||
+                                cameraProvider.isClassifying)
+                              const Center(
+                                child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
                                 ),
                               ),
-                            ],
-                          ),
+                          ],
                         ),
-                      ),
-
-                      // Gallery Button
-                      GestureDetector(
-                        onTap: _pickFromGallery,
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Icon(
-                            Icons.photo_library,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Center - Scanning Area
-                Expanded(
-                  child: Center(
-                    child: Container(
-                      width: 250,
-                      height: 250,
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: Colors.white,
-                          width: 2,
-                        ),
-                        borderRadius: BorderRadius.circular(125),
-                      ),
-                      child: Stack(
-                        children: [
-                          // Scanning Animation
-                          if (cameraProvider.isCapturing ||
-                              cameraProvider.isClassifying)
-                            const Center(
-                              child: CircularProgressIndicator(
-                                valueColor:
-                                    AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            ),
-                        ],
                       ),
                     ),
                   ),
-                ),
 
-                // Bottom Controls
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    children: [
-                      // Zoom slider
-                      if (cameraProvider.maxZoomLevel > 1.0)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 32),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.remove,
-                                  color: Colors.white, size: 20),
-                              Expanded(
-                                child: Slider(
-                                  value: cameraProvider.currentZoomLevel,
-                                  min: cameraProvider.minZoomLevel,
-                                  max: cameraProvider.maxZoomLevel,
-                                  onChanged: (value) {
-                                    cameraProvider.setZoomLevel(value);
-                                  },
-                                  activeColor: Colors.white,
-                                  inactiveColor: Colors.white.withOpacity(0.3),
+                  // Bottom Controls
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      children: [
+                        // Zoom slider
+                        if (cameraProvider.maxZoomLevel > 1.0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 32),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.remove,
+                                    color: Colors.white, size: 20),
+                                Expanded(
+                                  child: Slider(
+                                    value: cameraProvider.currentZoomLevel,
+                                    min: cameraProvider.minZoomLevel,
+                                    max: cameraProvider.maxZoomLevel,
+                                    onChanged: (value) {
+                                      _updateZoomLevel(cameraProvider, value);
+                                    },
+                                    activeColor: Colors.white,
+                                    inactiveColor:
+                                        Colors.white.withOpacity(0.3),
+                                  ),
                                 ),
-                              ),
-                              const Icon(Icons.add,
-                                  color: Colors.white, size: 20),
-                            ],
-                          ),
-                        ),
-                      if (cameraProvider.maxZoomLevel > 1.0)
-                        const SizedBox(height: 16),
-
-                      // Instructions
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.5),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          cameraProvider.isClassifying
-                              ? 'Analyzing plant...'
-                              : AppLocalizations.of(context).positionPlant,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Capture Button
-                      GestureDetector(
-                        onTap: (cameraProvider.isCapturing ||
-                                cameraProvider.isClassifying)
-                            ? null
-                            : _captureImage,
-                        child: Container(
-                          width: 72,
-                          height: 72,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white,
-                              width: 4,
+                                const Icon(Icons.add,
+                                    color: Colors.white, size: 20),
+                              ],
                             ),
                           ),
-                          child: (cameraProvider.isCapturing ||
-                                  cameraProvider.isClassifying)
-                              ? const Center(
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 3,
-                                  ),
-                                )
-                              : const Icon(
-                                  Icons.camera_alt,
-                                  color: Colors.black,
-                                  size: 32,
-                                ),
+                        if (cameraProvider.maxZoomLevel > 1.0)
+                          const SizedBox(height: 16),
+
+                        // Instructions
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.5),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            cameraProvider.isClassifying
+                                ? 'Analyzing plant...'
+                                : AppLocalizations.of(context).positionPlant,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
                         ),
-                      ),
-                    ],
+
+                        const SizedBox(height: 24),
+
+                        // Capture Button
+                        GestureDetector(
+                          onTap: (cameraProvider.isCapturing ||
+                                  cameraProvider.isClassifying)
+                              ? null
+                              : _captureImage,
+                          child: Container(
+                            width: 72,
+                            height: 72,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white,
+                                width: 4,
+                              ),
+                            ),
+                            child: (cameraProvider.isCapturing ||
+                                    cameraProvider.isClassifying)
+                                ? const Center(
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 3,
+                                    ),
+                                  )
+                                : const Icon(
+                                    Icons.camera_alt,
+                                    color: Colors.black,
+                                    size: 32,
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -428,7 +490,7 @@ class _ScanScreenState extends State<ScanScreen> {
         // Legacy support
         final gradCAMPath = result['gradCAMPath'] as String?;
         final summaryGradCAMPath = result['summaryGradCAMPath'] as String?;
-        
+
         // Enhanced logging for debugging
         print('🔍 [ScanScreen] Navigating to PlantResultScreen:');
         print('   ════════════════════════════════════════════════════════');
@@ -445,8 +507,10 @@ class _ScanScreenState extends State<ScanScreen> {
           print('   Top prediction: ${predictions.first['plantName']}');
         }
         print('   ════════════════════════════════════════════════════════');
-        print('   ✅ Will show tabs if: fallback=$fallbackUsed OR method="$method"');
-        print('   ✅ Expected: ${(fallbackUsed == true || (method != null && method != 'classification_only')) ? "SHOW TABS" : "NO TABS"}');
+        print(
+            '   ✅ Will show tabs if: fallback=$fallbackUsed OR method="$method"');
+        print(
+            '   ✅ Expected: ${(fallbackUsed == true || (method != null && method != 'classification_only')) ? "SHOW TABS" : "NO TABS"}');
 
         if (predictions.isNotEmpty) {
           Navigator.of(context).push(
@@ -599,12 +663,12 @@ class _ScanScreenState extends State<ScanScreen> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.primaryContainer,
+                            color: theme.colorScheme.primary,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
                             Icons.lightbulb,
-                            color: theme.colorScheme.onPrimaryContainer,
+                            color: Colors.white,
                             size: 28,
                           ),
                         ),

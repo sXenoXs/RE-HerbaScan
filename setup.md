@@ -122,20 +122,34 @@ After successful setup:
 **Current Features Ready for Testing**:
 - ✅ Plant identification (camera + gallery)
 - ✅ GradCAM visualization with working overlay controls
+- ✅ Hybrid XAI Explanation System (offline JSON + online Gemini API)
 - ✅ Offline processing capabilities
-- ✅ **Offline CAM heatmap generation** (fixed in v0.5.2)
+- ✅ Offline CAM heatmap generation (fixed in v0.5.2)
 - ✅ Multi-language support (English/Filipino)
 - ✅ Scan history with metadata
 - ✅ Settings and preferences
 - ✅ Responsive UI with fixed overflow issues
 - ✅ Backend API for true Grad-CAM computation
 - ✅ Postman collection for API testing
+- ✅ Markdown-formatted explanations with usability assessment
 
-**Recent Fixes (v0.5.2)**:
+**Recent Features (v0.5.8)**:
+- ✅ Hybrid XAI Explanation System with offline/online routing
+- ✅ Gemini API integration for online explanations
+- ✅ Offline explanation database (plant_explanations.json)
+- ✅ Markdown text formatting for rich explanations
+- ✅ Usability assessment with clear status indicators
+- ✅ Refresh functionality for regenerating explanations
+- ✅ API key management system
+
+**Recent Fixes (v0.5.2-v0.5.8)**:
 - ✅ Fixed offline CAM inference shape mismatch error
 - ✅ Corrected TFLite multiple outputs handling using `runForMultipleInputs()`
 - ✅ Verified feature maps extraction: `[1, 7, 7, 1280]`
 - ✅ Verified predictions extraction: `[1, 40]`
+- ✅ Fixed Gemini API model name (gemini-pro → gemini-1.5-flash)
+- ✅ Fixed text overflow in SnackBar
+- ✅ Optimized markdown spacing
 
 **Backend API Testing**:
 - See `backend/README.md` → "🧪 Testing with Postman" for complete testing guide
@@ -188,6 +202,7 @@ HerbaScan includes a Python backend API for true Grad-CAM computation:
 - Python 3.8+ installed
 - Virtual environment (recommended)
 - Model files: `backend/models/mobilenetv2_rf.h5` and `backend/models/labels.json`
+- Railway account (for deployment) - Optional but recommended
 
 #### Setup Steps
 
@@ -262,11 +277,43 @@ cp models/mobilenetv2_multi_output.tflite ../assets/models/
 
 The app uses SQLite for local storage. The database is created automatically on first run with the following tables:
 
-- `plants` - Plant information (DOH-approved medicinal plants)
+- `plants` - Plant information (16 medicinal plants: 10 DOH-approved + 6 additional)
 - `medicinal_uses` - Medicinal applications and therapeutic uses
 - `preparation_methods` - Preparation instructions and dosage guidelines
 - `scan_history` - User scan results with GradCAM paths and metadata
-- `plant_details` - Detailed plant characteristics and taxonomy
+
+**Plant Database**: The app automatically initializes with 16 plants on first launch:
+- 10 DOH-approved plants (Akapulko, Ampalaya, Bawang, Bayabas, Lagundi, Niyog-niyogan, Sambong, Tsaang Gubat, Ulasimang-bato, Yerba Buena)
+- 6 additional medicinal plants (Oregano, Luya/Turmeric, Gotu Kola, Aloe Vera, Malunggay, Tawa-tawa)
+
+## XAI Explanation System Setup
+
+### Offline Explanations
+- **Location**: `assets/data/plant_explanations.json`
+- **Size**: ~50KB
+- **Content**: Pre-written explanations for all 16 plants
+- **Format**: JSON with identification, medicinal_uses, and usability fields
+- **Status**: ✅ Automatically included in app assets
+
+### Online Explanations (Gemini API)
+- **Service**: `lib/core/services/gemini_api_service.dart`
+- **Model**: gemini-1.5-flash
+- **Configuration**: `lib/core/services/config_service.dart`
+- **API Key Setup**:
+  1. Get API key from: https://makersuite.google.com/app/apikey
+  2. Configure in app:
+     ```dart
+     await ConfigService.setGeminiApiKey('YOUR_API_KEY_HERE');
+     ```
+  3. Or set programmatically in app initialization
+- **Storage**: API key stored securely in SharedPreferences
+- **Fallback**: If API key not configured or API fails, app uses offline explanations
+
+### Explanation Features
+- **Markdown Formatting**: Rich text with bold, italic, headers, lists
+- **Usability Assessment**: Clear status (USABLE/USE WITH CAUTION/NOT RECOMMENDED)
+- **Heatmap Integration**: Explanations reference GradCAM/CAM patterns
+- **Refresh Functionality**: Regenerate both heatmap and explanation
 
 
 ## Development Tips
@@ -293,4 +340,42 @@ The app uses SQLite for local storage. The database is created automatically on 
 
 ---
 
-**Need help?** Check the main README.md, PROJECT_STATUS.md, or contact the development team.
+## Key Configuration Files
+
+### API Configuration
+- **Gemini API Key**: `lib/core/services/config_service.dart`
+  - Get key from: https://makersuite.google.com/app/apikey
+  - Set using: `ConfigService.setGeminiApiKey('YOUR_KEY')`
+  - Stored in: SharedPreferences
+
+### Backend API URL
+- **Location**: `lib/core/services/online_gradcam_service.dart`
+- **Default**: Set to your Railway deployment URL
+- **Format**: `https://YOUR-APP.up.railway.app`
+
+### Offline Explanation Data
+- **Location**: `assets/data/plant_explanations.json`
+- **Update**: Edit JSON file and rebuild app
+- **Format**: See existing entries for structure
+
+## Troubleshooting
+
+### XAI Explanation Issues
+
+**Offline explanations not showing:**
+- Check `assets/data/plant_explanations.json` exists
+- Verify JSON format is valid
+- Check `pubspec.yaml` includes `assets/data/` in assets list
+
+**Online explanations not working:**
+- Verify Gemini API key is configured: `ConfigService.isGeminiApiKeyConfigured()`
+- Check internet connectivity
+- Verify API key is valid at https://makersuite.google.com/app/apikey
+- Check app logs for API errors
+
+**Markdown not rendering:**
+- Verify `flutter_markdown: ^0.6.18` in `pubspec.yaml`
+- Run `flutter pub get`
+- Check for markdown syntax errors in explanation text
+
+

@@ -11,6 +11,7 @@ import 'package:herbascan/features/feedback/feedback_screen.dart';
 import 'package:herbascan/features/dashboard/performance_dashboard_screen.dart';
 import 'package:herbascan/features/testing/gradcam_testing_screen.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
+import 'package:herbascan/core/providers/plant_provider.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -55,6 +56,12 @@ class SettingsScreen extends StatelessWidget {
           _buildFeedbackLink(context, theme),
           _buildAppPerformanceLink(context, theme),
           _buildGradCAMTestingLink(context, theme),
+
+          const SizedBox(height: 24),
+
+          // Database Management
+          _buildSectionHeader(context, theme, 'Database'),
+          _buildDatabaseResetOption(context, theme),
 
           const SizedBox(height: 24),
 
@@ -510,6 +517,83 @@ class SettingsScreen extends StatelessWidget {
             child: const Text(
               'Clear',
               style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDatabaseResetOption(BuildContext context, ThemeData theme) {
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.refresh, color: Colors.orange),
+        title: const Text('Reset Plant Database'),
+        subtitle: const Text('Clear and reload all plant data (fixes missing plants)'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () {
+          _showDatabaseResetDialog(context);
+        },
+      ),
+    );
+  }
+
+  void _showDatabaseResetDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset Plant Database'),
+        content: const Text(
+          'This will clear the plant database and reload all 16 plants (10 DOH + 6 additional). '
+          'This will fix missing plants. Continue?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              final plantProvider = Provider.of<PlantProvider>(context, listen: false);
+              
+              // Show loading
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (context) => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+
+              try {
+                await plantProvider.forceReinitializeDatabase();
+                if (context.mounted) {
+                  Navigator.of(context).pop(); // Close loading
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('✅ Database reset successfully! All 16 plants loaded.'),
+                      backgroundColor: Colors.green,
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  Navigator.of(context).pop(); // Close loading
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('❌ Error resetting database: $e'),
+                      backgroundColor: Colors.red,
+                      duration: const Duration(seconds: 5),
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text(
+              'Reset',
+              style: TextStyle(color: Colors.orange),
             ),
           ),
         ],

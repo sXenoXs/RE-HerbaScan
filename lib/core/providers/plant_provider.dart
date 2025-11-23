@@ -39,6 +39,7 @@ class PlantProvider extends ChangeNotifier {
   // Initialize data
   Future<void> _initializeData() async {
     // Initialize database with plant data on first run
+    // This will also check for and add any missing plants
     try {
       await _databaseInitService.initializeDatabase();
       print('✅ Database initialized successfully');
@@ -49,6 +50,41 @@ class PlantProvider extends ChangeNotifier {
     await loadPlants();
     await loadScanHistory();
     await loadDOHApprovedPlants();
+  }
+
+  // Refresh plants and check for database updates
+  Future<void> refreshPlants() async {
+    try {
+      print('🔄 Refreshing plants...');
+      // Check for and add any missing plants
+      await _databaseInitService.updateDatabaseWithMissingPlants();
+      print('✅ Database update check completed');
+      // Reload plants from database
+      await loadPlants();
+      await loadDOHApprovedPlants();
+      print(
+          '✅ Plants reloaded: ${_plants.length} total, ${_dohApprovedPlants.length} DOH');
+    } catch (e) {
+      print('❌ Error refreshing plants: $e');
+      rethrow;
+    }
+  }
+
+  // Force reinitialize database (clears and repopulates)
+  Future<void> forceReinitializeDatabase() async {
+    try {
+      print('🔄 Force reinitializing database...');
+      await _databaseInitService.repopulateDatabase();
+      print('✅ Database reinitialized');
+      // Reload plants from database
+      await loadPlants();
+      await loadDOHApprovedPlants();
+      print(
+          '✅ Plants reloaded: ${_plants.length} total, ${_dohApprovedPlants.length} DOH');
+    } catch (e) {
+      print('❌ Error force reinitializing database: $e');
+      rethrow;
+    }
   }
 
   // Load all plants
@@ -81,8 +117,15 @@ class PlantProvider extends ChangeNotifier {
   // Load scan history
   Future<void> loadScanHistory() async {
     try {
+      print('🔄 Loading scan history from database...');
       _scanHistory = await _databaseService.getScanHistory();
+      print('✅ Scan history loaded: ${_scanHistory.length} scans');
+      if (_scanHistory.isNotEmpty) {
+        print(
+            '   First scan: ${_scanHistory.first.plant?.commonName ?? _scanHistory.first.topPrediction?.plantName ?? "Unknown"} (${_scanHistory.first.confidenceScore})');
+      }
     } catch (e) {
+      print('❌ Error loading scan history: $e');
       _scanHistory = [];
     }
     notifyListeners();
@@ -172,11 +215,23 @@ class PlantProvider extends ChangeNotifier {
   // Add scan result
   Future<void> addScanResult(ScanResult result) async {
     try {
+      print('💾 Saving scan result to database...');
+      print('   ID: ${result.id}');
+      print(
+          '   Plant: ${result.plant?.commonName ?? result.topPrediction?.plantName ?? "Unknown"}');
+      print('   Confidence: ${result.confidenceScore}');
+      print('   Predictions: ${result.predictions.length}');
+      print('   Metadata: ${result.metadata}');
+
       await _databaseService.saveScanResult(result);
       _scanHistory.insert(0, result);
       notifyListeners();
+
+      print(
+          '✅ Scan result saved successfully. Total scans: ${_scanHistory.length}');
     } catch (e) {
-      // Handle error
+      print('❌ Error saving scan result: $e');
+      rethrow;
     }
   }
 

@@ -5,7 +5,9 @@ import 'package:herbascan/core/widgets/gradcam_visualization.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/providers/plant_provider.dart';
 import 'package:herbascan/core/models/scan_result.dart';
+import 'package:herbascan/core/services/adaptive_gradcam_service.dart';
 import 'package:uuid/uuid.dart';
+import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -17,6 +19,7 @@ class PlantResultScreen extends StatefulWidget {
   final Uint8List? gradcamImageBytes; // New: image bytes
   final String? method; // 'grad-cam' or 'cam'
   final bool? fallbackUsed; // True if offline was fallback
+  final bool isFromHistory; // True if opened from history (don't auto-save)
 
   const PlantResultScreen({
     super.key,
@@ -27,7 +30,52 @@ class PlantResultScreen extends StatefulWidget {
     this.gradcamImageBytes, // New format
     this.method,
     this.fallbackUsed,
+    this.isFromHistory = false, // Default to false for new scans
   });
+
+  /// Factory constructor to create PlantResultScreen from ScanResult
+  /// Used when viewing scan results from history
+  factory PlantResultScreen.fromScanResult(ScanResult scanResult) {
+    // Convert Prediction objects to Map format
+    final predictions = scanResult.predictions.map((pred) {
+      return {
+        'label': pred.plantName,
+        'plantName': pred.plantName,
+        'scientificName': pred.scientificName,
+        'confidence': pred.confidence,
+        'index': 0, // Not stored in Prediction, use 0
+        'isDOHApproved': false, // Will be determined from plant if available
+      };
+    }).toList();
+
+    // Try to load GradCAM image from file path if it exists
+    Uint8List? gradcamImageBytes;
+    if (scanResult.gradCAMPath != null) {
+      try {
+        final file = File(scanResult.gradCAMPath!);
+        if (file.existsSync()) {
+          gradcamImageBytes = file.readAsBytesSync();
+        }
+      } catch (e) {
+        print('⚠️ Error loading GradCAM image from path: $e');
+      }
+    }
+
+    // Get method and fallback info from metadata
+    final method = scanResult.metadata['method'] as String?;
+    final fallbackUsed = scanResult.metadata['fallbackUsed'] as bool? ?? false;
+
+    return PlantResultScreen(
+      imagePath: scanResult.imagePath,
+      predictions: predictions,
+      gradCAMPath: scanResult.gradCAMPath,
+      summaryGradCAMPath: scanResult.metadata['summaryGradCAMPath'] as String?,
+      gradcamImageBytes: gradcamImageBytes,
+      method: method,
+      fallbackUsed: fallbackUsed,
+      isFromHistory: true, // Mark as from history to disable auto-save
+    );
+  }
 
   @override
   State<PlantResultScreen> createState() => _PlantResultScreenState();
@@ -38,9 +86,23 @@ class _PlantResultScreenState extends State<PlantResultScreen>
   late TabController _tabController;
   bool _isSaved = false;
 
+  // Regenerated GradCAM state
+  Uint8List? _regeneratedGradcamImageBytes;
+  String? _regeneratedMethod;
+  bool? _regeneratedFallbackUsed;
+  bool _isRegenerating = false;
+
+  final AdaptiveGradCAMService _adaptiveGradCAMService =
+      AdaptiveGradCAMService();
+
   @override
   void initState() {
     super.initState();
+
+    // If opened from history, mark as already saved (don't auto-save)
+    if (widget.isFromHistory) {
+      _isSaved = true;
+    }
 
     // CRITICAL FIX: Always show AI Explanation tabs if:
     // 1. Fallback was used (HIGHEST PRIORITY - indicates CAM/GradCAM was attempted), OR
@@ -96,7 +158,10 @@ class _PlantResultScreenState extends State<PlantResultScreen>
 
     // Automatically save scan result when screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _saveResultsAutomatically();
+      // Only auto-save if not from history
+      if (!widget.isFromHistory) {
+        _saveResultsAutomatically();
+      }
     });
   }
 
@@ -388,6 +453,12 @@ class _PlantResultScreenState extends State<PlantResultScreen>
 
   Widget _buildGradCAMTab(
       ThemeData theme, String plantName, double confidence) {
+    // Get scientific name and predictions from top prediction
+    final topPrediction = widget.predictions.isNotEmpty
+        ? widget.predictions.first
+        : <String, dynamic>{};
+    final scientificName = topPrediction['scientificName'] as String?;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -396,12 +467,17 @@ class _PlantResultScreenState extends State<PlantResultScreen>
           GradCAMVisualization(
             gradCAMPath: widget.gradCAMPath, // Legacy support
             summaryGradCAMPath: widget.summaryGradCAMPath, // Legacy support
-            gradcamImageBytes: widget.gradcamImageBytes, // New format
+            // Use regenerated data if available, otherwise use original
+            gradcamImageBytes:
+                _regeneratedGradcamImageBytes ?? widget.gradcamImageBytes,
             originalImagePath: widget.imagePath,
             plantName: plantName,
+            scientificName: scientificName,
             confidence: confidence,
-            method: widget.method,
-            fallbackUsed: widget.fallbackUsed,
+            predictions: widget.predictions,
+            // Use regenerated method if available, otherwise use original
+            method: _regeneratedMethod ?? widget.method,
+            fallbackUsed: _regeneratedFallbackUsed ?? widget.fallbackUsed,
             onRefresh: _regenerateGradCAM,
           ),
 
@@ -568,7 +644,8 @@ class _PlantResultScreenState extends State<PlantResultScreen>
             _buildInfoRow('Scan Time', DateTime.now().toString().split('.')[0]),
             _buildInfoRow('Image Path', widget.imagePath.split('/').last),
             _buildInfoRow(
-                'GradCAM Available',
+                // Show "CAM Available" for offline CAM, "GradCAM Available" for online GradCAM
+                widget.method == 'cam' ? 'CAM Available' : 'GradCAM Available',
                 (widget.gradcamImageBytes != null || widget.gradCAMPath != null)
                     ? 'Yes'
                     : 'No'),
@@ -587,6 +664,15 @@ class _PlantResultScreenState extends State<PlantResultScreen>
   }
 
   Widget _buildGradCAMInfoCard(ThemeData theme) {
+    // Determine if using CAM (offline) or GradCAM (online)
+    final isCAM = widget.method == 'cam';
+    final methodName = isCAM ? 'CAM' : 'GradCAM';
+
+    // Description text based on method
+    final description = isCAM
+        ? 'CAM (Class Activation Mapping) shows which parts of the image the AI model focused on when making its prediction. This offline method uses feature maps to highlight important regions without requiring gradient computation.'
+        : 'GradCAM (Gradient-weighted Class Activation Mapping) shows which parts of the image the AI model focused on when making its prediction. This helps explain why the model made its decision.';
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -598,7 +684,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                 Icon(Icons.help_outline, color: theme.primaryColor),
                 const SizedBox(width: 8),
                 Text(
-                  'About GradCAM',
+                  'About $methodName',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -607,7 +693,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
             ),
             const SizedBox(height: 16),
             Text(
-              'GradCAM (Gradient-weighted Class Activation Mapping) shows which parts of the image the AI model focused on when making its prediction. This helps explain why the model made its decision.',
+              '$description',
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 12),
@@ -661,13 +747,101 @@ class _PlantResultScreenState extends State<PlantResultScreen>
     return 'Low';
   }
 
-  void _regenerateGradCAM() {
-    // TODO: Implement GradCAM regeneration
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('GradCAM regeneration not implemented yet'),
-      ),
-    );
+  Future<void> _regenerateGradCAM() async {
+    if (_isRegenerating) {
+      // Already regenerating, ignore
+      return;
+    }
+
+    setState(() {
+      _isRegenerating = true;
+    });
+
+    try {
+      // Show loading indicator
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  'Regenerating GradCAM and explanation...',
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ),
+            ],
+          ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      // Read image bytes
+      final imageFile = File(widget.imagePath);
+      if (!await imageFile.exists()) {
+        throw Exception('Image file not found');
+      }
+      final imageBytes = await imageFile.readAsBytes();
+
+      // Regenerate using AdaptiveGradCAMService
+      final result = await _adaptiveGradCAMService.identifyPlant(
+        imagePath: widget.imagePath,
+        imageBytes: imageBytes,
+      );
+
+      if (result == null) {
+        throw Exception('Failed to regenerate GradCAM');
+      }
+
+      // Update state with regenerated data
+      if (mounted) {
+        setState(() {
+          _regeneratedGradcamImageBytes = result['gradcam_image'] as Uint8List?;
+          _regeneratedMethod = result['method'] as String?;
+          _regeneratedFallbackUsed = result['fallback_used'] as bool? ?? false;
+          _isRegenerating = false;
+          // Widget will rebuild automatically when state changes
+        });
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _regeneratedMethod == 'grad-cam'
+                  ? 'GradCAM regenerated successfully!'
+                  : 'CAM regenerated successfully!',
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isRegenerating = false;
+        });
+
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to regenerate: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   void _shareResults() {
@@ -697,12 +871,78 @@ class _PlantResultScreenState extends State<PlantResultScreen>
         );
       }).toList();
 
-      // Get plant data from provider based on the predicted label
-      final plantLabel = topPrediction['label'] ?? '';
+      // Get plant data from provider based on the predicted plant name
+      // CRITICAL FIX: Use plantName and scientificName from prediction for better matching
+      final predictedPlantName =
+          topPrediction['plantName'] ?? topPrediction['label'] ?? '';
+      final predictedScientificName = topPrediction['scientificName'] ?? '';
+
+      // Normalize strings for comparison (trim, lowercase)
+      final normalizedPredictedName = predictedPlantName.trim().toLowerCase();
+      final normalizedPredictedScientific =
+          predictedScientificName.trim().toLowerCase();
+
+      // Try to find matching plant in database
+      // Check against commonName, scientificName, and englishName
       final plant = plantProvider.plants.where((p) {
-        return p.commonName.toLowerCase() == plantLabel.toLowerCase() ||
-            p.scientificName.toLowerCase() == plantLabel.toLowerCase();
+        final normalizedCommon = p.commonName.trim().toLowerCase();
+        final normalizedScientific = p.scientificName.trim().toLowerCase();
+        final normalizedEnglish = p.englishName.trim().toLowerCase();
+
+        // Match against predicted plant name
+        if (normalizedPredictedName.isNotEmpty) {
+          if (normalizedCommon == normalizedPredictedName ||
+              normalizedScientific == normalizedPredictedName ||
+              normalizedEnglish == normalizedPredictedName) {
+            return true;
+          }
+        }
+
+        // Match against predicted scientific name
+        if (normalizedPredictedScientific.isNotEmpty) {
+          if (normalizedCommon == normalizedPredictedScientific ||
+              normalizedScientific == normalizedPredictedScientific ||
+              normalizedEnglish == normalizedPredictedScientific) {
+            return true;
+          }
+        }
+
+        return false;
       }).firstOrNull;
+
+      // Debug logging
+      if (plant == null) {
+        print('⚠️ [PlantResultScreen] Plant not found in database:');
+        print('   Predicted plant name: "$predictedPlantName"');
+        print('   Predicted scientific name: "$predictedScientificName"');
+        print(
+            '   Available plants: ${plantProvider.plants.map((p) => p.commonName).join(", ")}');
+      } else {
+        print(
+            '✅ [PlantResultScreen] Plant matched: ${plant.commonName} (${plant.scientificName})');
+      }
+
+      // Save GradCAM image bytes to file if we have bytes but no path
+      // This is needed for online GradCAM which returns bytes directly
+      String? savedGradCAMPath = widget.gradCAMPath;
+      if (widget.gradcamImageBytes != null && savedGradCAMPath == null) {
+        try {
+          final appDir = await getApplicationDocumentsDirectory();
+          final gradcamDir = Directory('${appDir.path}/gradcam');
+          if (!await gradcamDir.exists()) {
+            await gradcamDir.create(recursive: true);
+          }
+
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final gradcamFile = File('${gradcamDir.path}/gradcam_$timestamp.png');
+          await gradcamFile.writeAsBytes(widget.gradcamImageBytes!);
+          savedGradCAMPath = gradcamFile.path;
+
+          print('💾 Saved GradCAM image to: $savedGradCAMPath');
+        } catch (e) {
+          print('⚠️ Error saving GradCAM image: $e');
+        }
+      }
 
       // Create scan result
       final scanResult = ScanResult(
@@ -712,13 +952,16 @@ class _PlantResultScreenState extends State<PlantResultScreen>
         predictions: predictions,
         imagePath: widget.imagePath,
         scanDate: DateTime.now(),
-        gradCAMPath: widget.gradCAMPath,
+        gradCAMPath: savedGradCAMPath,
         metadata: {
-          'gradCAMAvailable': widget.gradCAMPath != null,
+          'gradCAMAvailable':
+              savedGradCAMPath != null || widget.gradcamImageBytes != null,
           'summaryGradCAMAvailable': widget.summaryGradCAMPath != null,
           'scanTime': DateTime.now().toIso8601String(),
+          'method': widget.method ?? 'unknown',
+          'fallbackUsed': widget.fallbackUsed ?? false,
         },
-        isOfflineScan: false,
+        isOfflineScan: widget.method == 'cam' || widget.fallbackUsed == true,
       );
 
       // Save to database
@@ -743,6 +986,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
         ),
       );
     } else {
+      // Manually save when button is pressed
       _saveResultsAutomatically();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

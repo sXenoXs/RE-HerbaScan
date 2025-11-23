@@ -6,7 +6,6 @@ import 'package:herbascan/core/models/plant.dart';
 import 'package:herbascan/features/scan/plant_detail_screen.dart';
 import 'package:herbascan/features/browse/condition_search_screen.dart';
 import 'package:herbascan/core/services/usage_analytics.dart';
-import 'dart:io';
 
 enum BrowseFilter { all, doh, byCondition }
 
@@ -29,6 +28,11 @@ class _BrowseScreenState extends State<BrowseScreen> {
     super.initState();
     // Track browse screen view
     _analytics.trackBrowseViewed();
+    // Refresh plants when screen opens (checks for missing plants and reloads)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final plantProvider = Provider.of<PlantProvider>(context, listen: false);
+      plantProvider.refreshPlants();
+    });
   }
 
   @override
@@ -176,13 +180,18 @@ class _BrowseScreenState extends State<BrowseScreen> {
 
           // Plant List/Grid
           Expanded(
-            child: plantProvider.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : filteredPlants.isEmpty
-                    ? _buildEmptyState(context, theme, appLocalizations)
-                    : _isGridView
-                        ? _buildGridView(filteredPlants, theme)
-                        : _buildListView(filteredPlants, theme),
+            child: RefreshIndicator(
+              onRefresh: () async {
+                await plantProvider.refreshPlants();
+              },
+              child: plantProvider.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : filteredPlants.isEmpty
+                      ? _buildEmptyState(context, theme, appLocalizations)
+                      : _isGridView
+                          ? _buildGridView(filteredPlants, theme)
+                          : _buildListView(filteredPlants, theme),
+            ),
           ),
         ],
       ),
@@ -208,12 +217,10 @@ class _BrowseScreenState extends State<BrowseScreen> {
           });
         }
       },
-      selectedColor: theme.colorScheme.primaryContainer,
-      checkmarkColor: theme.colorScheme.onPrimaryContainer,
+      selectedColor: theme.colorScheme.primary,
+      checkmarkColor: Colors.white,
       labelStyle: TextStyle(
-        color: isSelected
-            ? theme.colorScheme.onPrimaryContainer
-            : theme.colorScheme.onSurface,
+        color: isSelected ? Colors.white : theme.colorScheme.onSurface,
         fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
       ),
     );
@@ -303,8 +310,8 @@ class _BrowseScreenState extends State<BrowseScreen> {
                 width: double.infinity,
                 color: theme.colorScheme.surfaceContainerHighest,
                 child: plant.imagePath.isNotEmpty
-                    ? Image.file(
-                        File(plant.imagePath),
+                    ? Image.asset(
+                        plant.imagePath,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
                           return _buildPlaceholderImage(theme);
@@ -414,8 +421,8 @@ class _BrowseScreenState extends State<BrowseScreen> {
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: plant.imagePath.isNotEmpty
-                    ? Image.file(
-                        File(plant.imagePath),
+                    ? Image.asset(
+                        plant.imagePath,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
                           return _buildPlaceholderImage(theme);
