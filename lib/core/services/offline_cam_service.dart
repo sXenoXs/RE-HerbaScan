@@ -17,13 +17,11 @@ class OfflineCAMService {
 
   Interpreter? _interpreter;
   Interpreter? _mobilenetv2Interpreter;
-  Interpreter? _herbascanInterpreter;
   List<List<double>>? _camWeights; // [256, 40]
   List<List<double>>? _mobilenetv2CamWeights;
-  List<List<double>>? _herbascanCamWeights;
   Map<String, String>? _labels; // Loaded from labels.json
   bool _isInitialized = false;
-  String? _preferredModelName; // Track which model to use for CAM
+  String? _preferredModelName = "MobileNetV2"; // Always use MobileNetV2
 
   // Model output indices (determined during initialization)
   int _featureMapOutputIndex = 0; // Which output contains feature maps
@@ -35,7 +33,8 @@ class OfflineCAMService {
   // Model configuration
   static const int inputSize = 224;
   // numClasses is now dynamic - determined from labels file (42 classes: 0-41)
-  int get numClasses => _labels?.length ?? 42; // Default to 42 if labels not loaded
+  int get numClasses =>
+      _labels?.length ?? 42; // Default to 42 if labels not loaded
   static const int featureDim = 256; // From Phase 2 analysis
   static const List<int> expectedFeatureMapShape = [
     7,
@@ -67,25 +66,22 @@ class OfflineCAMService {
       _logger.i('Step 1: Loading TFLite model...');
       print('📦 [OfflineCAMService] Step 1: Loading TFLite model...');
       try {
-        // Try to load both multi-output models
+        // Load MobileNetV2 multi-output model (ONLY MODEL - HerbaScan deprecated)
         List<String> mobilenetv2Paths = [
           'assets/models/mobilenetv2_multi_output.tflite',
           'assets/models/MobileNetV2_model.tflite', // Legacy fallback
         ];
-        
-        List<String> herbascanPaths = [
-          'assets/models/herbascan_multi_output.tflite',
-          'assets/models/herbascan_model.tflite', // Legacy fallback
-        ];
-        
+
         // Load MobileNetV2 multi-output model
         String? mobilenetv2Path;
         for (String modelPath in mobilenetv2Paths) {
           try {
             print('   Attempting to load MobileNetV2: $modelPath');
             final assetData = await rootBundle.load(modelPath);
-            final sizeMB = (assetData.lengthInBytes / 1024 / 1024).toStringAsFixed(2);
-            _logger.i('✅ MobileNetV2 model found, size: ${assetData.lengthInBytes} bytes ($sizeMB MB)');
+            final sizeMB =
+                (assetData.lengthInBytes / 1024 / 1024).toStringAsFixed(2);
+            _logger.i(
+                '✅ MobileNetV2 model found, size: ${assetData.lengthInBytes} bytes ($sizeMB MB)');
             print('✅ [OfflineCAMService] MobileNetV2 model found!');
             print('   Path: $modelPath');
             mobilenetv2Path = modelPath;
@@ -94,74 +90,40 @@ class OfflineCAMService {
             continue;
           }
         }
-        
-        // Load HerbaScan multi-output model
-        String? herbascanPath;
-        for (String modelPath in herbascanPaths) {
-          try {
-            print('   Attempting to load HerbaScan: $modelPath');
-            final assetData = await rootBundle.load(modelPath);
-            final sizeMB = (assetData.lengthInBytes / 1024 / 1024).toStringAsFixed(2);
-            _logger.i('✅ HerbaScan model found, size: ${assetData.lengthInBytes} bytes ($sizeMB MB)');
-            print('✅ [OfflineCAMService] HerbaScan model found!');
-            print('   Path: $modelPath');
-            herbascanPath = modelPath;
-            break;
-          } catch (assetError) {
-            continue;
-          }
-        }
-        
-        if (mobilenetv2Path == null && herbascanPath == null) {
-          _logger.e('❌ No multi-output model assets found in bundle');
-          print('❌ [OfflineCAMService] No multi-output models found!');
-          print('   Expected: mobilenetv2_multi_output.tflite or herbascan_multi_output.tflite');
+
+        if (mobilenetv2Path == null) {
+          _logger.e('❌ MobileNetV2 multi-output model not found in bundle');
+          print(
+              '❌ [OfflineCAMService] MobileNetV2 multi-output model not found!');
+          print('   Expected: assets/models/mobilenetv2_multi_output.tflite');
           throw Exception(
-            'No multi-output model files found. Please verify:\n'
-            '1. Files exist: assets/models/mobilenetv2_multi_output.tflite or assets/models/herbascan_multi_output.tflite\n'
+            'MobileNetV2 multi-output model file not found. Please verify:\n'
+            '1. File exists: assets/models/mobilenetv2_multi_output.tflite\n'
             '2. pubspec.yaml includes: assets/models/\n'
             '3. Run: flutter clean && flutter pub get && flutter run',
           );
         }
 
-        // Load interpreters
-        if (mobilenetv2Path != null) {
-          try {
-            _logger.d('   Creating MobileNetV2 interpreter from: $mobilenetv2Path');
-            _mobilenetv2Interpreter = await Interpreter.fromAsset(mobilenetv2Path);
-            _mobilenetv2Interpreter!.allocateTensors();
-            _logger.i('✅ MobileNetV2 interpreter created successfully');
-            print('✅ [OfflineCAMService] MobileNetV2 interpreter created!');
-          } catch (e) {
-            _logger.w('⚠️ Failed to create MobileNetV2 interpreter: $e');
-            print('⚠️ [OfflineCAMService] Failed to create MobileNetV2 interpreter');
-          }
+        // Load MobileNetV2 interpreter
+        try {
+          _logger
+              .d('   Creating MobileNetV2 interpreter from: $mobilenetv2Path');
+          _mobilenetv2Interpreter =
+              await Interpreter.fromAsset(mobilenetv2Path);
+          _mobilenetv2Interpreter!.allocateTensors();
+          _logger.i('✅ MobileNetV2 interpreter created successfully');
+          print('✅ [OfflineCAMService] MobileNetV2 interpreter created!');
+        } catch (e) {
+          _logger.e('❌ Failed to create MobileNetV2 interpreter: $e');
+          print(
+              '❌ [OfflineCAMService] Failed to create MobileNetV2 interpreter');
+          rethrow;
         }
-        
-        if (herbascanPath != null) {
-          try {
-            _logger.d('   Creating HerbaScan interpreter from: $herbascanPath');
-            _herbascanInterpreter = await Interpreter.fromAsset(herbascanPath);
-            _herbascanInterpreter!.allocateTensors();
-            _logger.i('✅ HerbaScan interpreter created successfully');
-            print('✅ [OfflineCAMService] HerbaScan interpreter created!');
-          } catch (e) {
-            _logger.w('⚠️ Failed to create HerbaScan interpreter: $e');
-            print('⚠️ [OfflineCAMService] Failed to create HerbaScan interpreter');
-          }
-        }
-        
-        // Set default interpreter (prefer MobileNetV2, fallback to HerbaScan)
-        if (_mobilenetv2Interpreter != null) {
-          _interpreter = _mobilenetv2Interpreter;
-          _preferredModelName = 'MobileNetV2';
-        } else if (_herbascanInterpreter != null) {
-          _interpreter = _herbascanInterpreter;
-          _preferredModelName = 'HerbaScan';
-        } else {
-          throw Exception('Failed to load any multi-output models');
-        }
-        
+
+        // Set interpreter (always MobileNetV2)
+        _interpreter = _mobilenetv2Interpreter;
+        _preferredModelName = 'MobileNetV2';
+
         // Load interpreter (for backward compatibility)
         try {
           _logger.i('✅ TFLite interpreter created successfully');
@@ -496,8 +458,10 @@ class OfflineCAMService {
       String jsonString;
       try {
         // Try class_indices.json first (new format)
-        jsonString = await rootBundle.loadString('assets/models/class_indices.json');
-        _logger.d('   ✅ Labels file loaded (class_indices.json), size: ${jsonString.length} bytes');
+        jsonString =
+            await rootBundle.loadString('assets/models/class_indices.json');
+        _logger.d(
+            '   ✅ Labels file loaded (class_indices.json), size: ${jsonString.length} bytes');
         print('   📋 Loaded class_indices.json');
       } catch (fileError) {
         _logger.w('⚠️ Failed to load class_indices.json: $fileError');
@@ -505,11 +469,13 @@ class OfflineCAMService {
         print('   ⚠️ Failed to load class_indices.json, trying labels.json...');
         try {
           jsonString = await rootBundle.loadString('assets/models/labels.json');
-          _logger.d('   ✅ Labels file loaded (labels.json), size: ${jsonString.length} bytes');
+          _logger.d(
+              '   ✅ Labels file loaded (labels.json), size: ${jsonString.length} bytes');
           print('   📋 Loaded labels.json (legacy)');
         } catch (fileError2) {
           _logger.w('⚠️ Failed to load labels file: $fileError2');
-          _logger.w('   File paths tried: assets/models/class_indices.json, assets/models/labels.json');
+          _logger.w(
+              '   File paths tried: assets/models/class_indices.json, assets/models/labels.json');
           _logger.w('   Continuing without labels (will use default names)');
           print('   ❌ Failed to load both class_indices.json and labels.json');
           _labels = {};
@@ -549,15 +515,13 @@ class OfflineCAMService {
 
   /// Load CAM weights from JSON asset
   /// Set preferred model name (from TflitePlantService best result)
+  /// NOTE: Always uses MobileNetV2 now (HerbaScan deprecated)
   void setPreferredModel(String? modelName) {
-    _preferredModelName = modelName;
-    // Switch interpreter if needed
-    if (modelName == 'MobileNetV2' && _mobilenetv2Interpreter != null) {
+    // Always use MobileNetV2 regardless of input (for backward compatibility)
+    _preferredModelName = 'MobileNetV2';
+    if (_mobilenetv2Interpreter != null) {
       _interpreter = _mobilenetv2Interpreter;
       _camWeights = _mobilenetv2CamWeights;
-    } else if (modelName == 'HerbaScan' && _herbascanInterpreter != null) {
-      _interpreter = _herbascanInterpreter;
-      _camWeights = _herbascanCamWeights;
     }
   }
 
@@ -565,31 +529,37 @@ class OfflineCAMService {
     try {
       _logger.i('Loading CAM weights from JSON files...');
       print('📦 [OfflineCAMService] Loading CAM weights...');
-      
+
       // Load MobileNetV2 CAM weights
       try {
-        final jsonString = await rootBundle.loadString('assets/models/mobilenetv2_cam_weights.json');
+        final jsonString = await rootBundle
+            .loadString('assets/models/mobilenetv2_cam_weights.json');
         final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
         final weightsList = jsonData['weights'] as List;
         _mobilenetv2CamWeights = weightsList.map((row) {
           if (row is! List) {
-            throw Exception('CAM weights row is not a list, got ${row.runtimeType}');
+            throw Exception(
+                'CAM weights row is not a list, got ${row.runtimeType}');
           }
           return List<double>.from(row.map((val) => (val as num).toDouble()));
         }).toList();
-        _logger.i('✅ MobileNetV2 CAM weights loaded: ${_mobilenetv2CamWeights!.length} features x ${_mobilenetv2CamWeights![0].length} classes');
+        _logger.i(
+            '✅ MobileNetV2 CAM weights loaded: ${_mobilenetv2CamWeights!.length} features x ${_mobilenetv2CamWeights![0].length} classes');
         print('✅ [OfflineCAMService] MobileNetV2 CAM weights loaded!');
       } catch (e) {
         _logger.w('⚠️ Failed to load MobileNetV2 CAM weights: $e');
-        print('⚠️ [OfflineCAMService] MobileNetV2 CAM weights not found, trying legacy...');
+        print(
+            '⚠️ [OfflineCAMService] MobileNetV2 CAM weights not found, trying legacy...');
         // Try legacy path
         try {
-          final jsonString = await rootBundle.loadString('assets/models/cam_weights.json');
+          final jsonString =
+              await rootBundle.loadString('assets/models/cam_weights.json');
           final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
           final weightsList = jsonData['weights'] as List;
           _mobilenetv2CamWeights = weightsList.map((row) {
             if (row is! List) {
-              throw Exception('CAM weights row is not a list, got ${row.runtimeType}');
+              throw Exception(
+                  'CAM weights row is not a list, got ${row.runtimeType}');
             }
             return List<double>.from(row.map((val) => (val as num).toDouble()));
           }).toList();
@@ -598,39 +568,21 @@ class OfflineCAMService {
           _logger.w('⚠️ Legacy CAM weights also failed: $e2');
         }
       }
-      
-      // Load HerbaScan CAM weights
-      try {
-        final jsonString = await rootBundle.loadString('assets/models/herbascan_cam_weights.json');
-        final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
-        final weightsList = jsonData['weights'] as List;
-        _herbascanCamWeights = weightsList.map((row) {
-          if (row is! List) {
-            throw Exception('CAM weights row is not a list, got ${row.runtimeType}');
-          }
-          return List<double>.from(row.map((val) => (val as num).toDouble()));
-        }).toList();
-        _logger.i('✅ HerbaScan CAM weights loaded: ${_herbascanCamWeights!.length} features x ${_herbascanCamWeights![0].length} classes');
-        print('✅ [OfflineCAMService] HerbaScan CAM weights loaded!');
-      } catch (e) {
-        _logger.w('⚠️ Failed to load HerbaScan CAM weights: $e');
-        print('⚠️ [OfflineCAMService] HerbaScan CAM weights not found');
-      }
-      
-      // Set default CAM weights (prefer MobileNetV2, fallback to HerbaScan, then legacy)
+
+      // Set default CAM weights (use MobileNetV2, fallback to legacy)
       if (_mobilenetv2CamWeights != null) {
         _camWeights = _mobilenetv2CamWeights;
-      } else if (_herbascanCamWeights != null) {
-        _camWeights = _herbascanCamWeights;
       } else {
         // Legacy: try single cam_weights.json
         try {
-          final jsonString = await rootBundle.loadString('assets/models/cam_weights.json');
+          final jsonString =
+              await rootBundle.loadString('assets/models/cam_weights.json');
           final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
           final weightsList = jsonData['weights'] as List;
           _camWeights = weightsList.map((row) {
             if (row is! List) {
-              throw Exception('CAM weights row is not a list, got ${row.runtimeType}');
+              throw Exception(
+                  'CAM weights row is not a list, got ${row.runtimeType}');
             }
             return List<double>.from(row.map((val) => (val as num).toDouble()));
           }).toList();
@@ -645,20 +597,21 @@ class OfflineCAMService {
           rethrow;
         }
       }
-      
+
       // Validate weights
       if (_camWeights == null || _camWeights!.isEmpty) {
         throw Exception('CAM weights are null or empty after loading');
       }
-      
+
       _logger.i('✅ CAM weights loaded successfully');
       print('✅ [OfflineCAMService] CAM weights loaded!');
-      print('   MobileNetV2 weights: ${_mobilenetv2CamWeights != null ? "✅" : "❌"}');
-      print('   HerbaScan weights: ${_herbascanCamWeights != null ? "✅" : "❌"}');
-      
+      print(
+          '   MobileNetV2 weights: ${_mobilenetv2CamWeights != null ? "✅" : "❌"}');
+
       // Note: Feature dimension validation happens later
-      _logger.d('   Weights shape: ${_camWeights!.length} features x ${_camWeights![0].length} classes');
-      
+      _logger.d(
+          '   Weights shape: ${_camWeights!.length} features x ${_camWeights![0].length} classes');
+
       return;
     } catch (e, stackTrace) {
       _logger.e('❌ Error loading CAM weights: $e');
@@ -671,8 +624,8 @@ class OfflineCAMService {
 
   /// Identify plant and generate CAM visualization
   ///
-  /// [modelName] - Optional: "MobileNetV2" or "HerbaScan" to use specific model
-  ///                If null, uses preferred model or default
+  /// [modelName] - Optional: Always uses "MobileNetV2" (HerbaScan deprecated)
+  ///                If null, uses MobileNetV2 (default)
   ///
   /// Returns Map with:
   /// - plant_name: String
@@ -743,21 +696,26 @@ class OfflineCAMService {
       final spatialFeatures =
           inferenceResult['spatialFeatures'] as List<List<List<double>>>;
       print('🔍 [OfflineCAM] Computing CAM heatmap...');
-      print('   Spatial features shape: [${spatialFeatures.length}, ${spatialFeatures[0].length}, ${spatialFeatures[0][0].length}]');
+      print(
+          '   Spatial features shape: [${spatialFeatures.length}, ${spatialFeatures[0].length}, ${spatialFeatures[0][0].length}]');
       print('   Predicted class index: $predictedClassIdx');
-      
+
       final camHeatmap =
           _generateSpatialCAM(spatialFeatures, predictedClassIdx);
       if (camHeatmap == null) {
-        _logger.e('❌ CAM computation failed - _generateSpatialCAM returned null');
-        print('❌ [OfflineCAM] CAM computation failed - _generateSpatialCAM returned null');
+        _logger
+            .e('❌ CAM computation failed - _generateSpatialCAM returned null');
+        print(
+            '❌ [OfflineCAM] CAM computation failed - _generateSpatialCAM returned null');
         return null;
       }
-      print('✅ [OfflineCAM] CAM heatmap generated: [${camHeatmap.length}, ${camHeatmap[0].length}]');
+      print(
+          '✅ [OfflineCAM] CAM heatmap generated: [${camHeatmap.length}, ${camHeatmap[0].length}]');
 
       // 4. Upscale heatmap (7x7 → 224x224) with bicubic interpolation
-      final upscaledHeatmap = _resizeHeatmapBicubic(camHeatmap, inputSize, inputSize);
-      
+      final upscaledHeatmap =
+          _resizeHeatmapBicubic(camHeatmap, inputSize, inputSize);
+
       // 5. Apply Gaussian blur for smoother, more organic appearance
       final smoothedHeatmap = _applyGaussianBlur(upscaledHeatmap, sigma: 2.0);
 
@@ -798,11 +756,13 @@ class OfflineCAMService {
       print('═══════════════════════════════════════════════════════');
       print('✅ [OfflineCAM] CAM heatmap generated successfully');
       print('   Heatmap size: ${gradcamImageBytes.length} bytes');
-      print('   Top prediction: ${topPredictions[0]['label']} (${predictions[predictedClassIdx]})');
+      print(
+          '   Top prediction: ${topPredictions[0]['label']} (${predictions[predictedClassIdx]})');
       print('   Method: cam');
-      print('   Returning result with gradcam_image: ${gradcamImageBytes.length} bytes');
+      print(
+          '   Returning result with gradcam_image: ${gradcamImageBytes.length} bytes');
       print('═══════════════════════════════════════════════════════');
-      
+
       _logger.i('✅ CAM heatmap generated successfully');
       _logger.i('   Heatmap size: ${gradcamImageBytes.length} bytes');
       _logger.i(
@@ -1356,7 +1316,7 @@ class OfflineCAMService {
         // Bicubic interpolation uses 4x4 neighborhood
         final srcYFloor = srcY.floor();
         final srcXFloor = srcX.floor();
-        
+
         final y0 = (srcYFloor - 1).clamp(0, srcHeight - 1);
         final y1 = srcYFloor.clamp(0, srcHeight - 1);
         final y2 = (srcYFloor + 1).clamp(0, srcHeight - 1);
@@ -1371,26 +1331,26 @@ class OfflineCAMService {
         final fx = (srcX - srcXFloor).clamp(0.0, 1.0);
 
         // Cubic interpolation function (Catmull-Rom spline)
-        double cubicInterpolate(double p0, double p1, double p2, double p3, double t) {
+        double cubicInterpolate(
+            double p0, double p1, double p2, double p3, double t) {
           final t2 = t * t;
           final t3 = t2 * t;
-          return 0.5 * (
-            (2.0 * p1) +
-            (-p0 + p2) * t +
-            (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * t2 +
-            (-p0 + 3.0 * p1 - 3.0 * p2 + p3) * t3
-          );
+          return 0.5 *
+              ((2.0 * p1) +
+                  (-p0 + p2) * t +
+                  (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * t2 +
+                  (-p0 + 3.0 * p1 - 3.0 * p2 + p3) * t3);
         }
 
         // Interpolate along y-axis first
-        final row0 = cubicInterpolate(
-          heatmap[y0][x0], heatmap[y0][x1], heatmap[y0][x2], heatmap[y0][x3], fx);
-        final row1 = cubicInterpolate(
-          heatmap[y1][x0], heatmap[y1][x1], heatmap[y1][x2], heatmap[y1][x3], fx);
-        final row2 = cubicInterpolate(
-          heatmap[y2][x0], heatmap[y2][x1], heatmap[y2][x2], heatmap[y2][x3], fx);
-        final row3 = cubicInterpolate(
-          heatmap[y3][x0], heatmap[y3][x1], heatmap[y3][x2], heatmap[y3][x3], fx);
+        final row0 = cubicInterpolate(heatmap[y0][x0], heatmap[y0][x1],
+            heatmap[y0][x2], heatmap[y0][x3], fx);
+        final row1 = cubicInterpolate(heatmap[y1][x0], heatmap[y1][x1],
+            heatmap[y1][x2], heatmap[y1][x3], fx);
+        final row2 = cubicInterpolate(heatmap[y2][x0], heatmap[y2][x1],
+            heatmap[y2][x2], heatmap[y2][x3], fx);
+        final row3 = cubicInterpolate(heatmap[y3][x0], heatmap[y3][x1],
+            heatmap[y3][x2], heatmap[y3][x3], fx);
 
         // Interpolate along x-axis (actually y-axis in final step)
         final val = cubicInterpolate(row0, row1, row2, row3, fy);
@@ -1565,7 +1525,7 @@ class OfflineCAMService {
     if (_labels == null || _labels!.isEmpty) {
       return 'Plant_$index';
     }
-    
+
     // Find the plant name where the value equals the index
     // class_indices.json format: {"Mango": 24, "Oregano": 28, ...}
     for (final entry in _labels!.entries) {
@@ -1575,7 +1535,7 @@ class OfflineCAMService {
         return entry.key; // Return the plant name (key)
       }
     }
-    
+
     // Fallback: if not found, return Plant_index
     return 'Plant_$index';
   }

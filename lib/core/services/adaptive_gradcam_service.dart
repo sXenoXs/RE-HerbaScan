@@ -132,6 +132,7 @@ class AdaptiveGradCAMService {
   /// Parameters:
   /// - [imagePath]: Path to image file (for online service)
   /// - [imageBytes]: Image bytes (for offline service, or if imagePath fails)
+  /// - [modelName]: Optional: Always uses "MobileNetV2" (HerbaScan deprecated)
   ///
   /// Returns Map with:
   /// - plant_name: String
@@ -145,7 +146,8 @@ class AdaptiveGradCAMService {
   Future<Map<String, dynamic>?> identifyPlant({
     String? imagePath,
     Uint8List? imageBytes,
-    String? modelName, // Optional: "MobileNetV2" or "HerbaScan" to use specific model for CAM
+    String?
+        modelName, // Optional: Always uses "MobileNetV2" (HerbaScan deprecated)
   }) async {
     // CRITICAL: Use print() for visibility in logs
     print('═══════════════════════════════════════════════════════');
@@ -386,8 +388,10 @@ class AdaptiveGradCAMService {
 
         // CRITICAL: Ensure gradcam_image is preserved in the return
         // Also ensure 'predictions' key exists (convert from 'all_predictions' if needed)
-        final predictions = offlineResult['predictions'] ?? offlineResult['all_predictions'] ?? [];
-        
+        final predictions = offlineResult['predictions'] ??
+            offlineResult['all_predictions'] ??
+            [];
+
         final result = {
           ...offlineResult,
           'predictions': predictions, // Ensure 'predictions' key exists for UI
@@ -466,8 +470,9 @@ class AdaptiveGradCAMService {
   }
 
   /// Try offline CAM identification
-  /// [modelName] - Optional: "MobileNetV2" or "HerbaScan" to use specific model for CAM
-  Future<Map<String, dynamic>?> _tryOffline(Uint8List imageBytes, {String? modelName}) async {
+  /// [modelName] - Optional: Always uses "MobileNetV2" (HerbaScan deprecated)
+  Future<Map<String, dynamic>?> _tryOffline(Uint8List imageBytes,
+      {String? modelName}) async {
     try {
       print('═══════════════════════════════════════════════════════');
       print('📴 [AdaptiveGradCAM] _tryOffline() called');
@@ -497,7 +502,8 @@ class AdaptiveGradCAMService {
           '✅ [AdaptiveGradCAM] Offline CAM service is initialized, proceeding...');
 
       final stopwatch = Stopwatch()..start();
-      final result = await _offlineService.identifyPlantWithCAM(imageBytes, modelName: modelName);
+      final result = await _offlineService.identifyPlantWithCAM(imageBytes,
+          modelName: modelName);
       stopwatch.stop();
 
       if (result == null) {

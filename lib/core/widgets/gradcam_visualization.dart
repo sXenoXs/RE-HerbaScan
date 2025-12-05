@@ -155,7 +155,15 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
         }
       }
 
-      // Only pass isOnline if forceOnline is true (user explicitly requested refresh)
+      // CRITICAL FIX: If using online GradCAM (method == 'grad-cam' and not fallback),
+      // we should try to get online explanation if available, not just use cache
+      // This ensures the source badge shows "Online" when using online GradCAM
+      final shouldTryOnline = forceOnline ||
+          (widget.method == 'grad-cam' &&
+              !(widget.fallbackUsed == true) &&
+              isOnline);
+
+      // Only pass isOnline if we should try online (forceOnline OR using online GradCAM)
       // Otherwise, let the service check cache first without triggering online calls
       final explanation = await _explanationService.generateExplanation(
         plantName: widget.plantName,
@@ -166,17 +174,24 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
         originalImageBytes: originalImageBytes,
         heatmapImagePath: widget.gradCAMPath,
         heatmapImageBytes: heatmapImageBytes,
-        isOnline: forceOnline
-            ? isOnline
-            : false, // Only use isOnline if forcing refresh
+        isOnline: shouldTryOnline ? isOnline : false,
         forceOnline:
-            forceOnline, // This is the key: only true when user clicks refresh
+            shouldTryOnline, // Try online if using GradCAM or user requested refresh
       );
 
       if (mounted) {
         setState(() {
           _explanationText = explanation;
-          _explanationSource = _explanationService.getLastExplanationSource();
+          // CRITICAL FIX: If method is 'grad-cam' (online), show "Online" regardless of cache source
+          // This ensures that when using online GradCAM, the badge shows "Online" even if explanation came from cache
+          final serviceSource = _explanationService.getLastExplanationSource();
+          if (widget.method == 'grad-cam' && !(widget.fallbackUsed == true)) {
+            // Using online GradCAM - show "Online" (gemini) even if it came from cache
+            _explanationSource = 'gemini';
+          } else {
+            // Use the actual source from service (offline, cache, fallback)
+            _explanationSource = serviceSource;
+          }
           _isLoadingExplanation = false;
           if (explanation == null) {
             _explanationError = 'Unable to generate explanation';
