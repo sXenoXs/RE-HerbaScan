@@ -35,379 +35,375 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
     final theme = Theme.of(context);
 
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          // App Bar with Plant Image
-          SliverAppBar(
-            expandedHeight: 200,
-            pinned: true,
-            centerTitle: true,
-            flexibleSpace: FlexibleSpaceBar(
+      body: NestedScrollView(
+        headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+          return [
+            // App Bar with Plant Image
+            SliverAppBar(
+              expandedHeight: 200,
+              pinned: true,
               centerTitle: true,
-              title: Text(
-                widget.plant.commonName,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  shadows: [
-                    Shadow(
-                      offset: Offset(0, 1),
-                      blurRadius: 3.0,
-                      color: Colors.black45,
+              forceElevated: innerBoxIsScrolled,
+              flexibleSpace: FlexibleSpaceBar(
+                centerTitle: true,
+                title: Text(
+                  widget.plant.commonName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    shadows: [
+                      Shadow(
+                        offset: Offset(0, 1),
+                        blurRadius: 3.0,
+                        color: Colors.black45,
+                      ),
+                    ],
+                  ),
+                ),
+                background: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Plant image or gradient background
+                    widget.plant.imagePath.isNotEmpty
+                        ? Image.asset(
+                            widget.plant.imagePath,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      theme.colorScheme.primary,
+                                      theme.colorScheme.secondary,
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          )
+                        : Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  theme.colorScheme.primary,
+                                  theme.colorScheme.secondary,
+                                ],
+                              ),
+                            ),
+                          ),
+                    // Overlay for better text readability
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.7),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  // Plant image or gradient background
-                  widget.plant.imagePath.isNotEmpty
-                      ? Image.asset(
-                          widget.plant.imagePath,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    theme.colorScheme.primary,
-                                    theme.colorScheme.secondary,
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        )
-                      : Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                theme.colorScheme.primary,
-                                theme.colorScheme.secondary,
-                              ],
-                            ),
-                          ),
-                        ),
-                  // Overlay for better text readability
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withOpacity(0.7),
-                        ],
+            ),
+
+            // Scientific Name, English Name, and DOH Badge
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Text(
+                      widget.plant.scientificName,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontStyle: FontStyle.italic,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
+                      textAlign: TextAlign.center,
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 4),
+                    Text(
+                      widget.plant.englishName,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    if (widget.plant.isDOHApproved)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(
+                              0xFF48BB78), // Vibrant green for better visibility
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF48BB78).withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.verified,
+                              size: 20,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 6),
+                            const Text(
+                              'DOH Approved',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
-          ),
 
-          // Content
-          SliverToBoxAdapter(
-            child: Column(
-              children: [
-                // Scientific Name and English Name
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      Text(
-                        widget.plant.scientificName,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontStyle: FontStyle.italic,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        widget.plant.englishName,
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 12),
-                      if (widget.plant.isDOHApproved)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(
-                                0xFF48BB78), // Vibrant green for better visibility
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF48BB78).withOpacity(0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.verified,
-                                size: 20,
-                                color: Colors.white,
-                              ),
-                              const SizedBox(width: 6),
-                              const Text(
-                                'DOH Approved',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
+            // Tab Bar - Pinned at the top when scrolling
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _SliverTabBarDelegate(
+                TabBar(
+                  controller: _tabController,
+                  isScrollable: false, // Fixed tabs, evenly distributed
+                  labelStyle: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
                   ),
-                ),
-
-                // Tab Bar
-                Container(
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                  unselectedLabelStyle: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.normal,
                   ),
-                  child: TabBar(
-                    controller: _tabController,
-                    isScrollable: false, // Fixed tabs, evenly distributed
-                    labelStyle: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    unselectedLabelStyle: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.normal,
-                    ),
-                    tabs: const [
-                      Tab(
-                          icon: Icon(Icons.science, size: 22),
-                          text: 'Taxonomy'),
-                      Tab(icon: Icon(Icons.nature, size: 22), text: 'Ecology'),
-                      Tab(
-                          icon: Icon(Icons.medical_services, size: 22),
-                          text: 'Medicinal'),
-                      Tab(icon: Icon(Icons.warning, size: 22), text: 'Safety'),
-                    ],
-                  ),
+                  tabs: const [
+                    Tab(icon: Icon(Icons.science, size: 22), text: 'Taxonomy'),
+                    Tab(icon: Icon(Icons.nature, size: 22), text: 'Ecology'),
+                    Tab(
+                        icon: Icon(Icons.medical_services, size: 22),
+                        text: 'Medicinal'),
+                    Tab(icon: Icon(Icons.warning, size: 22), text: 'Safety'),
+                  ],
                 ),
-
-                // Tab Views - Use dynamic height based on screen size
-                Builder(
-                  builder: (context) {
-                    final screenHeight = MediaQuery.of(context).size.height;
-                    // Calculate available height: screen height minus app bar (200), header (~120), and tab bar (~48)
-                    final availableHeight = screenHeight - 200.0 - 120.0 - 48.0;
-                    final tabViewHeight =
-                        availableHeight > 500.0 ? availableHeight : 500.0;
-
-                    return SizedBox(
-                      height: tabViewHeight,
-                      child: TabBarView(
-                        controller: _tabController,
-                        physics:
-                            const ClampingScrollPhysics(), // Enable swipe navigation
-                        children: [
-                          _buildTaxonomyTab(theme),
-                          _buildEcologyTab(theme),
-                          _buildMedicinalTab(theme),
-                          _buildSafetyTab(theme),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ],
+                theme.colorScheme.surface,
+              ),
             ),
-          ),
-        ],
+          ];
+        },
+        // Tab Views - Body content that scrolls with the header
+        body: TabBarView(
+          controller: _tabController,
+          physics: const ClampingScrollPhysics(), // Enable swipe navigation
+          children: [
+            _buildTaxonomyTab(theme),
+            _buildEcologyTab(theme),
+            _buildMedicinalTab(theme),
+            _buildSafetyTab(theme),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildTaxonomyTab(ThemeData theme) {
-    return SingleChildScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionTitle('🏷️ Scientific Classification', theme),
-          const SizedBox(height: 12),
-          _buildTaxonomyCard(theme),
-          const SizedBox(height: 20),
-          _buildSectionTitle('🌱 Morphology', theme),
-          const SizedBox(height: 12),
-          _buildInfoCard(
-            theme,
-            widget.plant.morphology,
-            Icons.eco,
-          ),
-          const SizedBox(
-              height: 20), // Extra padding at bottom for better scrolling
-        ],
-      ),
+    return Builder(
+      builder: (context) {
+        return CustomScrollView(
+          // Use the inner scroll controller from NestedScrollView
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.all(16),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  _buildSectionTitle('🏷️ Scientific Classification', theme),
+                  const SizedBox(height: 12),
+                  _buildTaxonomyCard(theme),
+                  const SizedBox(height: 20),
+                  _buildSectionTitle('🌱 Morphology', theme),
+                  const SizedBox(height: 12),
+                  _buildInfoCard(
+                    theme,
+                    widget.plant.morphology,
+                    Icons.eco,
+                  ),
+                  const SizedBox(
+                      height:
+                          20), // Extra padding at bottom for better scrolling
+                ]),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
   Widget _buildEcologyTab(ThemeData theme) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionTitle('🌍 Ecology', theme),
-          const SizedBox(height: 12),
-          _buildInfoCard(
-            theme,
-            widget.plant.ecology,
-            Icons.public,
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.all(16),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([
+              _buildSectionTitle('🌍 Ecology', theme),
+              const SizedBox(height: 12),
+              _buildInfoCard(
+                theme,
+                widget.plant.ecology,
+                Icons.public,
+              ),
+              const SizedBox(height: 20),
+              _buildSectionTitle('🏞️ Habitat', theme),
+              const SizedBox(height: 12),
+              _buildInfoCard(
+                theme,
+                widget.plant.habitat,
+                Icons.landscape,
+              ),
+              const SizedBox(height: 20),
+            ]),
           ),
-          const SizedBox(height: 20),
-          _buildSectionTitle('🏞️ Habitat', theme),
-          const SizedBox(height: 12),
-          _buildInfoCard(
-            theme,
-            widget.plant.habitat,
-            Icons.landscape,
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget _buildMedicinalTab(ThemeData theme) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionTitle('💊 Medicinal Uses', theme),
-          const SizedBox(height: 12),
-          ...widget.plant.medicinalUses
-              .map((use) => _buildMedicinalUseCard(theme, use)),
-          const SizedBox(height: 20),
-          _buildSectionTitle('📋 Preparation Methods', theme),
-          const SizedBox(height: 12),
-          ...widget.plant.preparationMethods
-              .map((method) => _buildPreparationMethodCard(theme, method)),
-        ],
-      ),
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.all(16),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([
+              _buildSectionTitle('💊 Medicinal Uses', theme),
+              const SizedBox(height: 12),
+              ...widget.plant.medicinalUses
+                  .map((use) => _buildMedicinalUseCard(theme, use)),
+              const SizedBox(height: 20),
+              _buildSectionTitle('📋 Preparation Methods', theme),
+              const SizedBox(height: 12),
+              ...widget.plant.preparationMethods
+                  .map((method) => _buildPreparationMethodCard(theme, method)),
+              const SizedBox(height: 20),
+            ]),
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildSafetyTab(ThemeData theme) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionTitle('⚠️ Safety Warnings', theme),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.errorContainer.withOpacity(0.3),
-              border: Border.all(
-                color: theme.colorScheme.error.withOpacity(0.5),
-                width: 2,
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (widget.plant.safetyWarnings.isEmpty)
-                  Text(
-                    'No specific safety warnings documented for this plant. However, always consult with a healthcare professional before use.',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onErrorContainer,
-                      height: 1.5,
-                    ),
-                  )
-                else
-                  ...widget.plant.safetyWarnings.map((warning) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            Icons.warning_amber_rounded,
-                            size: 20,
-                            color: theme.colorScheme.error,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              warning,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.onErrorContainer,
-                                height: 1.5,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  Icons.local_hospital,
-                  size: 20,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Always consult with a healthcare professional before using herbal remedies, especially if you are pregnant, nursing, taking medications, or have existing medical conditions.',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      height: 1.5,
-                      fontStyle: FontStyle.italic,
-                    ),
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.all(16),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([
+              _buildSectionTitle('⚠️ Safety Warnings', theme),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.errorContainer.withOpacity(0.3),
+                  border: Border.all(
+                    color: theme.colorScheme.error.withOpacity(0.5),
+                    width: 2,
                   ),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              ],
-            ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (widget.plant.safetyWarnings.isEmpty)
+                      Text(
+                        'No specific safety warnings documented for this plant. However, always consult with a healthcare professional before use.',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onErrorContainer,
+                          height: 1.5,
+                        ),
+                      )
+                    else
+                      ...widget.plant.safetyWarnings.map((warning) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.warning_amber_rounded,
+                                size: 20,
+                                color: theme.colorScheme.error,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  warning,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: theme.colorScheme.onErrorContainer,
+                                    height: 1.5,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest
+                      .withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.local_hospital,
+                      size: 20,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Always consult with a healthcare professional before using herbal remedies, especially if you are pregnant, nursing, taking medications, or have existing medical conditions.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          height: 1.5,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+            ]),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -666,5 +662,45 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
         ],
       ),
     );
+  }
+}
+
+/// Custom delegate for the TabBar to be used as a pinned SliverPersistentHeader
+class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
+  final TabBar tabBar;
+  final Color backgroundColor;
+
+  _SliverTabBarDelegate(this.tabBar, this.backgroundColor);
+
+  @override
+  double get minExtent => tabBar.preferredSize.height;
+
+  @override
+  double get maxExtent => tabBar.preferredSize.height;
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        boxShadow: overlapsContent
+            ? [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : null,
+      ),
+      child: tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(_SliverTabBarDelegate oldDelegate) {
+    return tabBar != oldDelegate.tabBar ||
+        backgroundColor != oldDelegate.backgroundColor;
   }
 }

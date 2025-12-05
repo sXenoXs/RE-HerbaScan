@@ -10,10 +10,10 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 
 ## 🚀 Current Development Status
 
-**Version**: v0.5.8  
+**Version**: v0.8.3  
 **Last Updated**: December 2025
-**Project Phase**: Phase 9 Complete (Hybrid XAI Explanation System)  
-**Overall Progress**: 71% Complete - **PRODUCTION READY** 
+**Project Phase**: Phase 33 Complete (Offline Data Retrieval & UI Fixes)  
+**Overall Progress**: 99% Complete - **PRODUCTION READY** 
 
 ### ✅ Added Features (Complete/Incomplete Features)
 
@@ -24,18 +24,30 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **Multi-language Support**: ✅ English/Filipino localization system
 - **Navigation**: ✅ Bottom navigation with 5 main sections
 - **Settings**: ✅ Comprehensive app configuration
-- **Plant Database**: ✅ **16 medicinal plants with comprehensive data** (10 DOH-approved + 6 additional)
-- **XAI Explanation Database**: ✅ Offline explanations for all 16 plants stored in JSON (~50KB)
+- **Plant Database**: ✅ **42 medicinal plants with comprehensive data** (10 DOH-approved + 32 additional)
+- **XAI Explanation Database**: ✅ **NEW** Complete offline explanations for all 42 plants stored in JSON (~150KB)
+- **Offline Data Retrieval**: ✅ **NEW** Fixed broken offline data retrieval - all 42 plants now display complete summaries
+- **Scientific Name Resolution**: ✅ **NEW** Automatic scientific name lookup from plant database in Details and History screens
+- **Confidence Score Display**: ✅ **NEW** Replaced meaningless "Features" with useful confidence percentage display
+- **History Screen Scientific Names**: ✅ **NEW** Fixed missing scientific name subtitles in scan history list
+- **CAM Result Caching**: ✅ **NEW** Fixed auto-regeneration bug - CAM results from history load saved summaries instead of regenerating
 - **Camera Zoom Controls**: ✅ **NEW** Pinch-to-zoom and optimized slider zoom with performance improvements
 - **UI/UX Refinements**: ✅ **NEW** Enhanced readability, visibility, and user experience across all screens
 - **Offline Processing**: ✅ Full offline functionality
-- **AI Model Integration**: ✅ MobileNet V2 + Random Forest fully integrated (accuracy needs improvement)
-- **Offline AI Inference**: ✅ TensorFlow Lite models work offline
+- **AI Model Integration**: ✅ **NEW** Dual model architecture (MobileNetV2 + HerbaScan custom model) with automatic best-result selection
+- **Offline AI Inference**: ✅ TensorFlow Lite multi-output models work offline (both models supported)
+- **Online/Offline Adaptive System**: ✅ **NEW** Automatically tries online GradCAM first, falls back to offline CAM gracefully
+- **Plant Name Display**: ✅ **NEW** Fixed to show correct plant names (e.g., "Mango" instead of "Plant_24")
+- **Predictions Format**: ✅ **NEW** Fixed to return predictions in correct format for UI display
 - **Connectivity Monitoring**: ✅ Real-time network status detection
 - **Offline Data Management**: ✅ Local storage with optimization and cleanup
 - **Offline Sync Management**: ✅ Automatic data synchronization when online
 - **Offline UI Components**: ✅ Status indicators and management interface
 - **GradCAM Visualization**: ✅ Explainable AI heatmap system with working overlay controls
+- **Interactive Full-Screen Heatmap Mode**: ✅ **NEW** Tap heatmap to open full-screen zoomable view with live controls
+- **Offline CAM Heatmap Rendering**: ✅ **NEW** Smooth bicubic interpolation and Gaussian blur for organic, contoured heatmaps
+- **Unified Heatmap Explanation Card**: ✅ **NEW** Merged "About GradCAM/CAM" and "Heatmap Legend" into single card with visual legend
+- **Persistent Settings System**: ✅ **NEW** User preferences saved to SharedPreferences (show_confidence, show_gradcam, show_top3)
 - **Hybrid XAI Explanation System**: ✅ Comprehensive text explanations with offline (JSON) and online (Gemini API) support
 - **Plant Results Screen**: ✅ AI prediction results with functional GradCAM integration
 - **Interactive Heatmaps**: ✅ Working opacity controls and tabbed interface
@@ -71,6 +83,21 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **Usability Assessment**: ✅ **NEW** Clear status indicators (USABLE/USE WITH CAUTION/NOT RECOMMENDED) based on heatmap analysis
 - **Refresh Functionality**: ✅ **NEW** Refresh button regenerates both GradCAM heatmap and AI explanation
 - **API Key Management**: ✅ **NEW** Secure API key configuration system for Gemini API
+- **Scroll Position Persistence**: ✅ **NEW** Condition Search Screen now preserves scroll position when navigating back from selected condition
+- **Feedback Screen Text Contrast**: ✅ **NEW** Fixed poor text contrast on selected feedback chips - dark green text on light green background for optimal readability
+- **Scan Screen AppBar Title Visibility**: ✅ **NEW** Fixed invisible "Scan Plant" title - changed to white text for readability against dark camera background
+- **UI Cleanup**: ✅ **NEW** Removed redundant DOH section from home screen - cleaner UI with single navigation path through Quick Actions
+- **Plant Result Screen Refactoring**: ✅ **NEW** Refactored to use NestedScrollView with collapsible SliverAppBar - smooth transitions, pinned TabBar, better space utilization
+- **Heatmap Controls UI Logic Fix**: ✅ **NEW** Fixed bug where heatmap controls were showing on all tabs - now only visible on Heatmap tab, state persists correctly
+- **Plant Result Screen UI Regression Fix**: ✅ **NEW** Fixed UI regression - restored "Scan Results" title and centered image card design with white background, rounded corners, and shadow
+- **Plant Result Screen Layout Overflow Fix**: ✅ **NEW** Fixed layout overflow errors - increased expandedHeight to 420.0, removed plant name from title, proper card structure with BorderRadius.circular(20)
+- **Plant Result Screen Background Color**: ✅ **NEW** Changed FlexibleSpaceBar background from white to #f8fbfc (light blue-gray) for softer appearance
+- **Plant Result Screen Card Color**: ✅ **NEW** Changed main plant card container to use gradient with two lighter colors based on #EBEDFB (rgba(235, 237, 251)) - #F0F2FC to #F5F7FE gradient for elegant appearance. Card size increased for better space utilization.
+- **Heatmap Controls Visibility Logic**: ✅ **NEW** Refactored visibility logic - controls only show on Heatmap tab, taking zero space on other tabs
+- **Tap to Expand Plant Image**: ✅ **NEW** Implemented tap to expand feature - tap plant image to view in full-screen with Hero animation, pinch-to-zoom (0.5x-4.0x), and pan gestures
+- **Full Screen Reading Mode**: ✅ **NEW** Implemented full-screen reading mode for Summary tab - distraction-free view with larger text and regenerate capability
+- **AI Explanation Tab Simplification**: ✅ **NEW** Removed 'Original' sub-tab from AI Explanation section - simplified navigation to only Heatmap and Summary tabs
+- **Version Update**: ✅ **NEW** Updated all version references from v0.5.8 to v0.7.4 across the application
 
 ### 🔄 In Progress (Phase 6: Offline CAM Fix)
 

@@ -12,6 +12,7 @@ import 'package:herbascan/features/dashboard/performance_dashboard_screen.dart';
 import 'package:herbascan/features/testing/gradcam_testing_screen.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/providers/plant_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -163,8 +164,11 @@ class SettingsScreen extends StatelessWidget {
         title: Text(AppLocalizations.of(context).showConfidenceScores),
         subtitle: const Text('Display confidence percentages'),
         value: appProvider.showConfidenceScores,
-        onChanged: (value) {
+        onChanged: (value) async {
           appProvider.toggleConfidenceScores();
+          // Save to SharedPreferences with key 'show_confidence'
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('show_confidence', value);
         },
       ),
     );
@@ -179,8 +183,11 @@ class SettingsScreen extends StatelessWidget {
         title: Text(AppLocalizations.of(context).showGradCAM),
         subtitle: const Text('Show AI focus areas'),
         value: appProvider.showGradCAM,
-        onChanged: (value) {
+        onChanged: (value) async {
           appProvider.toggleGradCAM();
+          // Save to SharedPreferences with key 'show_gradcam'
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('show_gradcam', value);
         },
       ),
     );
@@ -195,8 +202,11 @@ class SettingsScreen extends StatelessWidget {
         title: Text(AppLocalizations.of(context).showTop3Results),
         subtitle: const Text('Show top 3 predictions'),
         value: appProvider.showTop3Results,
-        onChanged: (value) {
+        onChanged: (value) async {
           appProvider.toggleTop3Results();
+          // Save to SharedPreferences with key 'show_top3'
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('show_top3', value);
         },
       ),
     );

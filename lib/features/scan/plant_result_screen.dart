@@ -1,5 +1,6 @@
 // lib/features/scan/plant_result_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:herbascan/core/widgets/gradcam_visualization.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
@@ -8,8 +9,10 @@ import 'package:herbascan/core/models/scan_result.dart';
 import 'package:herbascan/core/services/adaptive_gradcam_service.dart';
 import 'package:uuid/uuid.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:convert';
 
 class PlantResultScreen extends StatefulWidget {
   final String imagePath;
@@ -92,6 +95,11 @@ class _PlantResultScreenState extends State<PlantResultScreen>
   bool? _regeneratedFallbackUsed;
   bool _isRegenerating = false;
 
+  // Settings from SharedPreferences (default all true)
+  bool _showConfidence = true;
+  bool _showGradcam = true;
+  bool _showTop3 = true;
+
   final AdaptiveGradCAMService _adaptiveGradCAMService =
       AdaptiveGradCAMService();
 
@@ -104,10 +112,59 @@ class _PlantResultScreenState extends State<PlantResultScreen>
       _isSaved = true;
     }
 
+    // Initialize TabController with defaults first (will be updated after settings load)
+    _initializeTabController();
+
+    // Load settings from SharedPreferences and update TabController if needed
+    _loadSettings();
+
+    // Automatically save scan result when screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Only auto-save if not from history
+      if (!widget.isFromHistory) {
+        _saveResultsAutomatically();
+      }
+    });
+  }
+
+  /// Load settings from SharedPreferences
+  Future<void> _loadSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final showConfidence = prefs.getBool('show_confidence') ?? true;
+      final showGradcam = prefs.getBool('show_gradcam') ?? true;
+      final showTop3 = prefs.getBool('show_top3') ?? true;
+
+      // Check if GradCAM setting changed (before updating state)
+      final gradcamChanged = _showGradcam != showGradcam;
+
+      // Only update if values changed
+      if (mounted &&
+          (_showConfidence != showConfidence ||
+              _showGradcam != showGradcam ||
+              _showTop3 != showTop3)) {
+        setState(() {
+          _showConfidence = showConfidence;
+          _showGradcam = showGradcam;
+          _showTop3 = showTop3;
+        });
+
+        // Reinitialize TabController if GradCAM setting changed
+        if (gradcamChanged) {
+          _tabController.dispose();
+          _initializeTabController();
+        }
+      }
+    } catch (e) {
+      print('⚠️ Error loading settings: $e');
+    }
+  }
+
+  /// Initialize TabController based on settings and heatmap availability
+  void _initializeTabController() {
     // CRITICAL FIX: Always show AI Explanation tabs if:
-    // 1. Fallback was used (HIGHEST PRIORITY - indicates CAM/GradCAM was attempted), OR
-    // 2. Method is set (grad-cam or cam), OR
-    // 3. Heatmap is available
+    // 1. _showGradcam is true (user wants to see GradCAM), AND
+    // 2. (Fallback was used OR Method is set OR Heatmap is available)
     // This ensures tabs show even when heatmap generation fails
     final hasHeatmap =
         widget.gradcamImageBytes != null || widget.gradCAMPath != null;
@@ -117,19 +174,20 @@ class _PlantResultScreenState extends State<PlantResultScreen>
     final hasFallback = widget.fallbackUsed == true;
 
     // PRIORITY LOGIC:
-    // 1. If fallback is used, ALWAYS show tabs (offline CAM was attempted)
-    // 2. Otherwise, show if method is valid or heatmap exists
-    // This is the most permissive approach - if fallback is used, we attempted CAM/GradCAM
-    final showAIExplanation = hasFallback || hasValidMethod || hasHeatmap;
+    // 1. If _showGradcam is false, NEVER show tabs (user disabled GradCAM)
+    // 2. If _showGradcam is true, show tabs if fallback was used OR method is valid OR heatmap exists
+    final showAIExplanation =
+        _showGradcam && (hasFallback || hasValidMethod || hasHeatmap);
 
     // Debug logging BEFORE TabController initialization
-    print('🔍 [PlantResultScreen] initState - TabController Setup:');
+    print('🔍 [PlantResultScreen] _initializeTabController:');
     print('   ════════════════════════════════════════════════════════');
+    print('   _showGradcam: $_showGradcam');
     print('   method: "${widget.method}"');
     print('   fallbackUsed: ${widget.fallbackUsed}');
     print('   hasHeatmap: $hasHeatmap');
     print('   hasValidMethod: $hasValidMethod');
-    print('   hasFallback: $hasFallback (PRIORITY)');
+    print('   hasFallback: $hasFallback');
     print('   ────────────────────────────────────────────────────────');
     print('   showAIExplanation: $showAIExplanation');
     print('   TabController length will be: ${showAIExplanation ? 2 : 1}');
@@ -144,25 +202,11 @@ class _PlantResultScreenState extends State<PlantResultScreen>
     );
 
     // Debug logging AFTER TabController initialization
-    print('🔍 [PlantResultScreen] initState - TabController Created:');
+    print('🔍 [PlantResultScreen] TabController Created:');
     print('   TabController.length: ${_tabController.length}');
     print('   TabController.index: ${_tabController.index}');
     print(
         '   Result: ${_tabController.length == 2 ? "✅ 2 tabs (Details + AI Explanation)" : "❌ 1 tab (Details only)"}');
-    if (_tabController.length == 1 && hasFallback) {
-      print('   ⚠️ ERROR: Fallback is true but TabController length is 1!');
-      print('   ⚠️ This should not happen - tabs should be showing!');
-      print(
-          '   ⚠️ Check if fallbackUsed is being passed correctly to PlantResultScreen');
-    }
-
-    // Automatically save scan result when screen loads
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Only auto-save if not from history
-      if (!widget.isFromHistory) {
-        _saveResultsAutomatically();
-      }
-    });
   }
 
   @override
@@ -183,99 +227,80 @@ class _PlantResultScreenState extends State<PlantResultScreen>
     final plantName = topPrediction['plantName'] ?? 'Unknown Plant';
     final confidence = (topPrediction['confidence'] ?? 0.0).toDouble();
 
+    // CRITICAL: Use TabController length and _showGradcam setting to determine if tabs should show
+    final tabCount = _tabController.length;
+    final shouldShowTabs = tabCount == 2 && _showGradcam;
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text(AppLocalizations.of(context).scanResults),
-        actions: [
-          IconButton(
-            onPressed: _shareResults,
-            icon: const Icon(Icons.share),
-            tooltip: 'Share Results',
-          ),
-          IconButton(
-            onPressed: _saveResults,
-            icon: const Icon(Icons.save),
-            tooltip: 'Save Results',
-          ),
-        ],
-      ),
-      body: Builder(
-        builder: (context) {
-          // CRITICAL: Use TabController length to determine if tabs should show
-          // TabController was initialized in initState based on method/heatmap/fallback
-          // We MUST use the same length here to avoid TabController mismatch errors
-          final tabCount = _tabController.length;
-          final shouldShowTabs = tabCount == 2;
-
-          // Re-check conditions for debugging (should match initState logic)
-          final hasHeatmap =
-              widget.gradcamImageBytes != null || widget.gradCAMPath != null;
-          final hasValidMethod = widget.method != null &&
-              widget.method != 'classification_only' &&
-              widget.method != '';
-          final hasFallback = widget.fallbackUsed == true;
-          // CRITICAL: Same priority logic as initState - fallback has highest priority
-          final expectedShowTabs = hasFallback || hasValidMethod || hasHeatmap;
-
-          // Debug logging
-          print('🔍 [PlantResultScreen] build() - Rendering UI:');
-          print('   method: "${widget.method}"');
-          print('   fallbackUsed: ${widget.fallbackUsed}');
-          print('   hasHeatmap: $hasHeatmap');
-          print('   hasValidMethod: $hasValidMethod');
-          print('   hasFallback: $hasFallback');
-          print('   expectedShowTabs: $expectedShowTabs');
-          print('   TabController.length: $tabCount');
-          print('   shouldShowTabs: $shouldShowTabs');
-          print(
-              '   gradcamImageBytes: ${widget.gradcamImageBytes != null ? "${widget.gradcamImageBytes!.length} bytes" : "null"}');
-          print('   gradCAMPath: ${widget.gradCAMPath}');
-
-          // WARNING if mismatch
-          if (expectedShowTabs != shouldShowTabs) {
-            print('⚠️ [PlantResultScreen] MISMATCH DETECTED:');
-            print('   Expected to show tabs: $expectedShowTabs');
-            print('   TabController says: $shouldShowTabs');
-            print('   This means TabController was initialized incorrectly!');
-          }
-
-          return Column(
-            children: [
-              // Plant identification result
-              _buildPlantResultCard(theme, plantName, confidence),
-
-              // Tab bar - ONLY show if TabController length is 2
-              // This is critical - TabBar requires TabController.length == 2
-              if (tabCount == 2)
-                TabBar(
-                  controller: _tabController,
-                  tabs: const [
-                    Tab(
-                      icon: Icon(Icons.info),
-                      text: 'Details',
-                    ),
-                    Tab(
-                      icon: Icon(Icons.visibility),
-                      text: 'AI Explanation',
-                    ),
-                  ],
-                ),
-
-              // Tab content - MUST match TabController length
-              Expanded(
-                child: tabCount == 2
-                    ? TabBarView(
-                        controller: _tabController,
-                        children: [
-                          _buildDetailsTab(theme, topPrediction),
-                          _buildGradCAMTab(theme, plantName, confidence),
-                        ],
-                      )
-                    : _buildDetailsTab(theme, topPrediction),
+      body: NestedScrollView(
+        headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+          return [
+            // SliverAppBar with collapsible header
+            SliverAppBar(
+              expandedHeight: 420.0, // Increased to prevent overflow
+              floating: false,
+              pinned: true, // Always visible at top
+              snap: false,
+              elevation: 0,
+              backgroundColor: theme.scaffoldBackgroundColor,
+              flexibleSpace: FlexibleSpaceBar(
+                // Do NOT use title property - plant name is in the card
+                background: _buildExpandedHeader(theme, plantName, confidence),
               ),
-            ],
-          );
+              // Title always shows "Scan Results"
+              centerTitle: true,
+              title: Text(
+                AppLocalizations.of(context).scanResults,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              actions: [
+                IconButton(
+                  onPressed: _shareResults,
+                  icon: const Icon(Icons.share),
+                  tooltip: 'Share Results',
+                ),
+                IconButton(
+                  onPressed: _saveResults,
+                  icon: const Icon(Icons.save),
+                  tooltip: 'Save Results',
+                ),
+              ],
+            ),
+            // Pinned TabBar - only show if _showGradcam is true
+            if (shouldShowTabs && _showGradcam)
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _SliverTabBarDelegate(
+                  TabBar(
+                    controller: _tabController,
+                    tabs: const [
+                      Tab(
+                        icon: Icon(Icons.info),
+                        text: 'Details',
+                      ),
+                      Tab(
+                        icon: Icon(Icons.visibility),
+                        text: 'AI Explanation',
+                      ),
+                    ],
+                  ),
+                  theme.scaffoldBackgroundColor,
+                ),
+              ),
+          ];
         },
+        body: (shouldShowTabs && _showGradcam)
+            ? TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildDetailsTab(theme, topPrediction),
+                  _buildGradCAMTab(theme, plantName, confidence),
+                ],
+              )
+            : _buildDetailsTab(theme, topPrediction),
       ),
     );
   }
@@ -318,112 +343,152 @@ class _PlantResultScreenState extends State<PlantResultScreen>
     );
   }
 
-  Widget _buildPlantResultCard(
+  Widget _buildExpandedHeader(
       ThemeData theme, String plantName, double confidence) {
+    // Main container acting as canvas
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            theme.primaryColor.withOpacity(0.1),
-            theme.primaryColor.withOpacity(0.05),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.primaryColor.withOpacity(0.2),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        children: [
-          // Plant image
-          Container(
-            height: 120,
-            width: 120,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: theme.primaryColor.withOpacity(0.3)),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.file(
-                File(widget.imagePath),
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: Colors.grey.shade100,
-                    child: Icon(
-                      Icons.local_florist,
-                      size: 48,
-                      color: theme.primaryColor,
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Plant name
-          Text(
-            plantName,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.primaryColor,
-            ),
-            textAlign: TextAlign.center,
-          ),
-
-          const SizedBox(height: 8),
-
-          // Confidence score and method badge
-          // Use Wrap to prevent overflow issues - Wrap automatically handles overflow
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              // Confidence badge
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: _getConfidenceColor(confidence).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: _getConfidenceColor(confidence).withOpacity(0.3),
-                  ),
+      color: const Color(0xFFF8FBFC), // Light blue-gray background
+      child: SafeArea(
+        bottom: false,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Main card with plant details - centered
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(
+                        0xFFF0F2FC), // rgb(240, 242, 252) - Lighter shade
+                    const Color(
+                        0xFFF5F7FE), // rgb(245, 247, 254) - Even lighter shade
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.analytics,
-                      size: 14,
-                      color: _getConfidenceColor(confidence),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '${(confidence.clamp(0.0, 1.0) * 100).toStringAsFixed(1)}%',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: _getConfidenceColor(confidence),
+                borderRadius:
+                    BorderRadius.circular(20), // Changed from 16 to 20
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+                border: Border.all(
+                  color: const Color(
+                      0xFFD0D3ED), // rgb(208, 211, 237) - Border color outside the card
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Plant image - will fade out as user scrolls
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => FullScreenImageView(
+                            imagePath: widget.imagePath,
+                          ),
+                        ),
+                      );
+                    },
+                    child: Hero(
+                      tag: 'plant_image_hero',
+                      child: Container(
+                        height: 120,
+                        width: 120,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                              color: theme.primaryColor.withOpacity(0.3)),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.file(
+                            File(widget.imagePath),
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.grey.shade100,
+                                child: Icon(
+                                  Icons.local_florist,
+                                  size: 48,
+                                  color: theme.primaryColor,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Plant name
+                  Text(
+                    plantName,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.primaryColor,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  // Confidence score and method badge - will fade out as user scrolls
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      // Confidence badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color:
+                              _getConfidenceColor(confidence).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: _getConfidenceColor(confidence)
+                                .withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.analytics,
+                              size: 14,
+                              color: _getConfidenceColor(confidence),
+                            ),
+                            const SizedBox(width: 6),
+                            Visibility(
+                              visible: _showConfidence,
+                              child: Text(
+                                '${(confidence.clamp(0.0, 1.0) * 100).toStringAsFixed(1)}%',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: _getConfidenceColor(confidence),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Method badge - only show if method is set
+                      if (widget.method != null) _buildMethodBadge(theme),
+                    ],
+                  ),
+                ],
               ),
-              // Method badge - only show if method is set
-              if (widget.method != null) _buildMethodBadge(theme),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -479,6 +544,25 @@ class _PlantResultScreenState extends State<PlantResultScreen>
             method: _regeneratedMethod ?? widget.method,
             fallbackUsed: _regeneratedFallbackUsed ?? widget.fallbackUsed,
             onRefresh: _regenerateGradCAM,
+            onHeatmapTap: (bool showOverlay,
+                double opacity,
+                Function(bool) onOverlayChanged,
+                Function(double) onOpacityChanged) {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => FullScreenHeatmapRoute(
+                    originalImagePath: widget.imagePath,
+                    gradcamImageBytes: _regeneratedGradcamImageBytes ??
+                        widget.gradcamImageBytes,
+                    gradCAMPath: widget.gradCAMPath,
+                    initialShowOverlay: showOverlay,
+                    initialOpacity: opacity,
+                    onOverlayChanged: onOverlayChanged,
+                    onOpacityChanged: onOpacityChanged,
+                  ),
+                ),
+              );
+            },
           ),
 
           const SizedBox(height: 16),
@@ -510,75 +594,93 @@ class _PlantResultScreenState extends State<PlantResultScreen>
               ],
             ),
             const SizedBox(height: 16),
-            ...widget.predictions.asMap().entries.map((entry) {
-              final index = entry.key;
-              final prediction = entry.value;
-              final confidence = (prediction['confidence'] ?? 0.0).toDouble();
-              final plantName = prediction['plantName'] ?? 'Unknown';
+            // Logic C: Top-3 Results - use displayCount based on _showTop3 setting
+            Builder(
+              builder: (context) {
+                // Create displayCount variable
+                final displayCount = _showTop3 ? widget.predictions.length : 1;
 
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: theme.primaryColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Center(
-                        child: Text(
-                          '${index + 1}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: theme.primaryColor,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                return Column(
+                  children: widget.predictions
+                      .asMap()
+                      .entries
+                      .take(displayCount)
+                      .map((entry) {
+                    final index = entry.key;
+                    final prediction = entry.value;
+                    final confidence =
+                        (prediction['confidence'] ?? 0.0).toDouble();
+                    final plantName = prediction['plantName'] ?? 'Unknown';
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Row(
                         children: [
-                          Text(
-                            plantName,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: theme.primaryColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${index + 1}',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.primaryColor,
+                                ),
+                              ),
                             ),
                           ),
-                          Text(
-                            '${(confidence * 100).toStringAsFixed(1)}% confidence',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.grey.shade600,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  plantName,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Visibility(
+                                  visible: _showConfidence,
+                                  child: Text(
+                                    '${(confidence * 100).toStringAsFixed(1)}% confidence',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            width: 60,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade200,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: FractionallySizedBox(
+                              alignment: Alignment.centerLeft,
+                              widthFactor: confidence.clamp(0.0, 1.0),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: _getConfidenceColor(confidence),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
                             ),
                           ),
                         ],
                       ),
-                    ),
-                    Container(
-                      width: 60,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: FractionallySizedBox(
-                        alignment: Alignment.centerLeft,
-                        widthFactor: confidence.clamp(0.0, 1.0),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: _getConfidenceColor(confidence),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
+                    );
+                  }).toList(),
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -586,6 +688,10 @@ class _PlantResultScreenState extends State<PlantResultScreen>
   }
 
   Widget _buildPlantInfoCard(ThemeData theme, Map<String, dynamic> prediction) {
+    final plantName =
+        prediction['plantName'] ?? prediction['label'] ?? 'Unknown';
+    final confidence = (prediction['confidence'] ?? 0.0).toDouble();
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -605,20 +711,90 @@ class _PlantResultScreenState extends State<PlantResultScreen>
               ],
             ),
             const SizedBox(height: 16),
-            _buildInfoRow(
-                'Scientific Name', prediction['scientificName'] ?? 'Unknown'),
-            _buildInfoRow(
-                'Confidence Level',
-                _getConfidenceLevel(
-                    (prediction['confidence'] ?? 0.0).toDouble())),
+            FutureBuilder<String>(
+              future: _resolveScientificName(plantName),
+              builder: (context, snapshot) {
+                final scientificName = snapshot.data ?? plantName;
+                return _buildInfoRow('Scientific Name', scientificName);
+              },
+            ),
+            _buildInfoRow('Confidence Level', _getConfidenceLevel(confidence)),
             _buildInfoRow(
                 'Prediction Index', '${prediction['index'] ?? 'N/A'}'),
-            _buildInfoRow('Features',
-                '${(prediction['features'] as Map?)?.length ?? 0} features detected'),
+            _buildInfoRow('Confidence Score',
+                '${(confidence * 100).toStringAsFixed(1)}%'),
           ],
         ),
       ),
     );
+  }
+
+  /// Resolves scientific name from plant_explanations.json based on common name
+  /// Falls back to common name if not found
+  Future<String> _resolveScientificName(String commonName) async {
+    try {
+      // First, check if scientific name is already provided in prediction
+      final topPrediction = widget.predictions.isNotEmpty
+          ? widget.predictions.first
+          : <String, dynamic>{};
+      final existingScientificName = topPrediction['scientificName'] as String?;
+
+      if (existingScientificName != null &&
+          existingScientificName.isNotEmpty &&
+          existingScientificName != 'Unknown') {
+        return existingScientificName;
+      }
+
+      // Load plant_explanations.json
+      final jsonString =
+          await rootBundle.loadString('assets/data/plant_explanations.json');
+      final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
+
+      // Normalize common name for lookup (case-insensitive, trim)
+      final normalizedCommonName = commonName.trim();
+
+      // Try exact match first
+      var plantData = jsonData[normalizedCommonName];
+
+      // Try case-insensitive match if exact match fails
+      if (plantData == null) {
+        final matchingKey = jsonData.keys.firstWhere(
+          (key) =>
+              key.trim().toLowerCase() == normalizedCommonName.toLowerCase(),
+          orElse: () => '',
+        );
+        if (matchingKey.isNotEmpty) {
+          plantData = jsonData[matchingKey];
+        }
+      }
+
+      // Extract scientific name from identification text
+      if (plantData != null) {
+        final plantMap = plantData as Map<String, dynamic>;
+        final identification = plantMap['identification'] as String?;
+
+        if (identification != null && identification.isNotEmpty) {
+          // Pattern: "The model identified this as [Common Name] ([Scientific Name])"
+          // Extract text in parentheses after the common name
+          final regex = RegExp(r'\(([^)]+)\)');
+          final match = regex.firstMatch(identification);
+
+          if (match != null && match.groupCount >= 1) {
+            final scientificName = match.group(1)?.trim();
+            if (scientificName != null && scientificName.isNotEmpty) {
+              return scientificName;
+            }
+          }
+        }
+      }
+
+      // Fallback: return common name if scientific name cannot be found
+      return commonName;
+    } catch (e) {
+      print('⚠️ Error resolving scientific name for "$commonName": $e');
+      // Fallback: return common name on error
+      return commonName;
+    }
   }
 
   Widget _buildMetadataCard(ThemeData theme) {
@@ -666,7 +842,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
   Widget _buildGradCAMInfoCard(ThemeData theme) {
     // Determine if using CAM (offline) or GradCAM (online)
     final isCAM = widget.method == 'cam';
-    final methodName = isCAM ? 'CAM' : 'GradCAM';
+    final title = isCAM ? 'About Offline CAM' : 'About GradCAM';
 
     // Description text based on method
     final description = isCAM
@@ -684,7 +860,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                 Icon(Icons.help_outline, color: theme.primaryColor),
                 const SizedBox(width: 8),
                 Text(
-                  'About $methodName',
+                  title,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -693,21 +869,48 @@ class _PlantResultScreenState extends State<PlantResultScreen>
             ),
             const SizedBox(height: 16),
             Text(
-              '$description',
+              description,
               style: theme.textTheme.bodyMedium,
             ),
-            const SizedBox(height: 12),
-            Text(
-              '• Red areas: High attention (important features)\n'
-              '• Green areas: Medium attention\n'
-              '• Blue areas: Low attention',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: Colors.grey.shade600,
-              ),
+            const SizedBox(height: 16),
+            // Visual legend with colored squares
+            Row(
+              children: [
+                _buildColorLegendItem(Colors.red, 'High'),
+                const SizedBox(width: 16),
+                _buildColorLegendItem(Colors.green, 'Medium'),
+                const SizedBox(width: 16),
+                _buildColorLegendItem(Colors.blue, 'Low'),
+              ],
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildColorLegendItem(Color color, String label) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey.shade700,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 
@@ -1049,6 +1252,355 @@ class _PlantResultScreenState extends State<PlantResultScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// Custom delegate for pinned TabBar
+class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
+  final TabBar tabBar;
+  final Color backgroundColor;
+
+  _SliverTabBarDelegate(this.tabBar, this.backgroundColor);
+
+  @override
+  double get minExtent => tabBar.preferredSize.height;
+
+  @override
+  double get maxExtent => tabBar.preferredSize.height;
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: backgroundColor,
+      child: tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(_SliverTabBarDelegate oldDelegate) {
+    return tabBar != oldDelegate.tabBar ||
+        backgroundColor != oldDelegate.backgroundColor;
+  }
+}
+
+// Full-screen image viewer with zoom and pan capabilities
+class FullScreenImageView extends StatelessWidget {
+  final String imagePath;
+
+  const FullScreenImageView({
+    super.key,
+    required this.imagePath,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            // Full-screen image with zoom and pan
+            Center(
+              child: InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4.0,
+                child: Hero(
+                  tag: 'plant_image_hero',
+                  child: Image.file(
+                    File(imagePath),
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              size: 64,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Image not found',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+            // Close button in top-right corner
+            Positioned(
+              top: 8,
+              right: 8,
+              child: SafeArea(
+                child: IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(
+                    Icons.close,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.black.withOpacity(0.5),
+                    shape: const CircleBorder(),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Full-screen heatmap viewer with zoom, pan, and live controls
+class FullScreenHeatmapRoute extends StatefulWidget {
+  final String originalImagePath;
+  final Uint8List? gradcamImageBytes;
+  final String? gradCAMPath;
+  final bool initialShowOverlay;
+  final double initialOpacity;
+  final Function(bool) onOverlayChanged;
+  final Function(double) onOpacityChanged;
+
+  const FullScreenHeatmapRoute({
+    super.key,
+    required this.originalImagePath,
+    this.gradcamImageBytes,
+    this.gradCAMPath,
+    required this.initialShowOverlay,
+    required this.initialOpacity,
+    required this.onOverlayChanged,
+    required this.onOpacityChanged,
+  });
+
+  @override
+  State<FullScreenHeatmapRoute> createState() => _FullScreenHeatmapRouteState();
+}
+
+class _FullScreenHeatmapRouteState extends State<FullScreenHeatmapRoute> {
+  late bool _showOverlay;
+  late double _opacity;
+
+  @override
+  void initState() {
+    super.initState();
+    _showOverlay = widget.initialShowOverlay;
+    _opacity = widget.initialOpacity;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasImageBytes = widget.gradcamImageBytes != null;
+    final hasFilePath = widget.gradCAMPath != null;
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          // Layer 1: The Zoomable Image (Bottom of Stack)
+          Center(
+            child: InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: _showOverlay
+                  ? LayoutBuilder(
+                      builder: (context, constraints) {
+                        // Use a single image widget to ensure both images are constrained to same size
+                        return Stack(
+                          alignment: Alignment.center,
+                          fit: StackFit.expand,
+                          children: [
+                            // Original image - base layer
+                            Image.file(
+                              File(widget.originalImagePath),
+                              fit: BoxFit.contain,
+                              alignment: Alignment.center,
+                              errorBuilder: (context, error, stackTrace) {
+                                return _buildErrorWidget(
+                                    'Original image not found');
+                              },
+                            ),
+                            // Heatmap overlay - constrained to match original image exactly
+                            Positioned.fill(
+                              child: Opacity(
+                                opacity: _opacity,
+                                child: hasImageBytes
+                                    ? Image.memory(
+                                        widget.gradcamImageBytes!,
+                                        fit: BoxFit.contain,
+                                        alignment: Alignment.center,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                          return _buildErrorWidget(
+                                              'Failed to decode heatmap image');
+                                        },
+                                      )
+                                    : hasFilePath
+                                        ? Image.file(
+                                            File(widget.gradCAMPath!),
+                                            fit: BoxFit.contain,
+                                            alignment: Alignment.center,
+                                            errorBuilder:
+                                                (context, error, stackTrace) {
+                                              return _buildErrorWidget(
+                                                  'Heatmap not found');
+                                            },
+                                          )
+                                        : const SizedBox.shrink(),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    )
+                  : Image.file(
+                      File(widget.originalImagePath),
+                      fit: BoxFit.contain,
+                      alignment: Alignment.center,
+                      errorBuilder: (context, error, stackTrace) {
+                        return _buildErrorWidget('Original image not found');
+                      },
+                    ),
+            ),
+          ),
+
+          // Layer 2: The UI Overlays (Top of Stack)
+          // Close Button
+          Positioned(
+            top: 8,
+            left: 8,
+            child: SafeArea(
+              child: IconButton(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(
+                  Icons.close,
+                  color: Colors.white,
+                  size: 32,
+                ),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black.withOpacity(0.5),
+                  shape: const CircleBorder(),
+                ),
+              ),
+            ),
+          ),
+
+          // Floating Controls Card
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+              child: Container(
+                margin: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Show Heatmap Overlay Switch
+                    SwitchListTile(
+                      title: const Text(
+                        'Show Heatmap Overlay',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      value: _showOverlay,
+                      onChanged: (value) {
+                        setState(() {
+                          _showOverlay = value;
+                        });
+                        // Update parent state
+                        widget.onOverlayChanged(value);
+                      },
+                      activeColor: Theme.of(context).primaryColor,
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Heatmap Opacity Slider
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.opacity,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Slider(
+                            value: _opacity,
+                            min: 0.0,
+                            max: 1.0,
+                            divisions: 20,
+                            label: '${(_opacity * 100).round()}%',
+                            onChanged: (value) {
+                              setState(() {
+                                _opacity = value;
+                              });
+                              // Update parent state
+                              widget.onOpacityChanged(value);
+                            },
+                            activeColor: Theme.of(context).primaryColor,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${(_opacity * 100).round()}%',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorWidget(String message) {
+    return Container(
+      color: Colors.black,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Colors.white,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }

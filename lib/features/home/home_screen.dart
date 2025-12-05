@@ -158,11 +158,6 @@ class _HomeDashboardState extends State<HomeDashboard> {
 
               // Recent Scans
               _buildRecentScans(context, theme, plantProvider),
-
-              const SizedBox(height: 24),
-
-              // DOH Approved Plants Preview
-              _buildDOHPreview(context, theme, plantProvider),
             ],
           ),
         ),
@@ -526,9 +521,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
                     Flexible(
                       flex: 1,
                       child: Text(
-                        scan.plant?.commonName ?? 
-                        scan.topPrediction?.plantName ?? 
-                        'Unknown Plant',
+                        scan.plant?.commonName ??
+                            scan.topPrediction?.plantName ??
+                            'Unknown Plant',
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -573,149 +568,29 @@ class _HomeDashboardState extends State<HomeDashboard> {
     );
   }
 
-  Widget _buildDOHPreview(
-      BuildContext context, ThemeData theme, PlantProvider plantProvider) {
-    final dohPlants = plantProvider.dohApprovedPlants.take(4).toList();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              AppLocalizations.of(context).dohApproved,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                // Navigate to DOH screen (index 3)
-                widget.onNavigate?.call(3);
-              },
-              child: const Text('View All'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF0FFF4),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: const Color(0xFF48BB78),
-            ),
-          ),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.verified,
-                    color: Color(0xFF48BB78),
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    AppLocalizations.of(context).philippineDepartmentOfHealth,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      color: const Color(0xFF48BB78),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '${plantProvider.dohApprovedPlants.length} ${AppLocalizations.of(context).clinicallyValidated}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFF38A169),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 2.5,
-          ),
-          itemCount: dohPlants.length,
-          itemBuilder: (context, index) {
-            final plant = dohPlants[index];
-            return Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: const Color(0xFF48BB78).withOpacity(0.3),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF48BB78).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.eco,
-                      color: Color(0xFF48BB78),
-                      size: 16,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      plant.commonName,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
   /// Get method label from scan result metadata
   /// Returns: "CAM", "GradCAM", "Fallback", or "Online"
   String? _getMethodLabel(ScanResult scan) {
     final method = scan.metadata['method'] as String?;
     final fallbackUsed = scan.metadata['fallbackUsed'] as bool? ?? false;
-    
+
     // If fallback was used, show "Fallback"
     if (fallbackUsed == true) {
       return 'Fallback';
     }
-    
+
     // Otherwise, show based on method
     if (method == 'cam') {
       return 'CAM';
     } else if (method == 'grad-cam') {
       return 'GradCAM';
     }
-    
+
     // Fallback: use isOfflineScan to determine
     if (scan.isOfflineScan) {
       return 'CAM';
     }
-    
+
     // If no method info, return null (don't show label)
     return null;
   }
@@ -729,7 +604,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
     } else {
       labelColor = Colors.green; // Green for online/GradCAM
     }
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(

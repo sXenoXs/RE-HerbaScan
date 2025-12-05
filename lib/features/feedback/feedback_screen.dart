@@ -234,6 +234,13 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                         setState(() => _selectedCategory = category);
                       }
                     },
+                    selectedColor: Colors.green.shade100, // Light green background
+                    labelStyle: TextStyle(
+                      color: isSelected
+                          ? Colors.green.shade900 // Dark green text when selected
+                          : theme.colorScheme.onSurface, // Default text color when not selected
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    ),
                   );
                 }).toList(),
               ),

@@ -208,15 +208,20 @@ class CameraProvider extends ChangeNotifier {
 
   // --- CHANGED: Unified AI Processing Logic using TFLite ---
   Future<List<Map<String, dynamic>>> processImageForAI(Uint8List imageData) async {
+    print("🔍 [CameraProvider] processImageForAI() called");
+    print("   Image data: ${imageData.length} bytes");
     _isClassifying = true;
     notifyListeners();
     _performanceMonitor.startTimer(PerformanceOperation.aiInference);
 
     try {
       final imageFile = await _getImageFileForTflite(imageData);
+      print("   📁 Image file: ${imageFile.path}");
 
       // CALL YOUR TFLITE SERVICE
+      print("   🚀 Calling TFLite service predict()...");
       final prediction = await _tfliteService.predict(imageFile);
+      print("   📊 Prediction result: ${prediction != null ? "${prediction.label} (${(prediction.confidence * 100).toStringAsFixed(2)}%)" : "null"}");
 
       List<Map<String, dynamic>> resultList = [];
       if (prediction != null) {
@@ -247,7 +252,7 @@ class CameraProvider extends ChangeNotifier {
   }
 
   // --- CHANGED: Main method called by UI ---
-  // Replaces the complex GradCAM logic with a direct TFLite call
+  // Uses AdaptiveGradCAMService which tries online first, then falls back to offline
   Future<Map<String, dynamic>> processPlantIdentificationWithGradCAM(
       Uint8List imageData, {
         OfflineProvider? offlineProvider,
@@ -258,53 +263,105 @@ class CameraProvider extends ChangeNotifier {
     _performanceMonitor.startTimer(PerformanceOperation.aiInference);
 
     try {
-      print('🌿 Processing with TFLite (Offline)...');
-
-      // 1. Get File
+      print('🌿 [CameraProvider] Processing with AdaptiveGradCAM...');
+      
+      // Save image to temp file for AdaptiveGradCAMService (needs file path for online)
       final imageFile = await _getImageFileForTflite(imageData);
+      final imagePath = imageFile.path;
+      
+      print('   📁 Image saved to: $imagePath');
+      print('   📊 Image bytes: ${imageData.length} bytes');
+      
+      // Get model name from TFLite service (for matching CAM with prediction)
+      // Note: We'll get this after the first prediction, but for now try online first
+      String? modelName;
+      try {
+        modelName = _tfliteService.getBestModelName();
+        print('   📌 Best model from TFLite: $modelName');
+      } catch (e) {
+        print('   ⚠️ Could not get model name: $e');
+        modelName = null;
+      }
+      
+      // Use AdaptiveGradCAMService - it will try online first, then offline
+      final result = await _adaptiveGradCAM.identifyPlant(
+        imagePath: imagePath,
+        imageBytes: imageData,
+        modelName: modelName, // Pass model name to ensure CAM matches prediction
+      );
 
-      // 2. Predict
-      final tfliteResult = await _tfliteService.predict(imageFile);
-
-      if (tfliteResult == null) {
-        throw Exception("Model could not identify image.");
+      if (result == null) {
+        print('   ❌ AdaptiveGradCAM returned null, falling back to TFLite only...');
+        // Fallback to TFLite only
+        final tfliteResult = await _tfliteService.predict(imageFile);
+        if (tfliteResult == null) {
+          throw Exception("Model could not identify image.");
+        }
+        
+        final predictions = [{
+          'label': tfliteResult.label,
+          'plantName': tfliteResult.label,
+          'scientificName': tfliteResult.label,
+          'confidence': tfliteResult.confidence,
+          'index': 0,
+          'isDOHApproved': false,
+        }];
+        
+        _lastPredictions = predictions;
+        await _performanceMonitor.stopTimer(PerformanceOperation.aiInference);
+        
+        if (tfliteResult.confidence > 0.5) {
+          await _usageAnalytics.trackSuccessfulScan(tfliteResult.label);
+        } else {
+          await _usageAnalytics.trackFailedScan();
+        }
+        
+        _isClassifying = false;
+        notifyListeners();
+        
+        return {
+          'predictions': predictions,
+          'gradcam_image': null,
+          'method': 'cam', // Offline CAM
+          'fallback_used': true,
+          'processing_time_ms': 0.0,
+          'gradCAMPath': null,
+          'summaryGradCAMPath': null,
+        };
       }
 
-      print('✅ TFLite Result: ${tfliteResult.label} (${(tfliteResult.confidence * 100).toStringAsFixed(1)}%)');
-
-      // 3. Map Result
-      final predictions = [{
-        'label': tfliteResult.label,
-        'plantName': tfliteResult.label,
-        'scientificName': tfliteResult.label,
-        'confidence': tfliteResult.confidence,
-        'index': 0,
-        'isDOHApproved': false,
-      }];
-
+      // Extract predictions from result
+      final predictions = (result['predictions'] as List<dynamic>?)
+          ?.map((p) => p as Map<String, dynamic>)
+          .toList() ?? [];
+      
       _lastPredictions = predictions;
-
       await _performanceMonitor.stopTimer(PerformanceOperation.aiInference);
 
-      if (tfliteResult.confidence > 0.5) {
-        await _usageAnalytics.trackSuccessfulScan(tfliteResult.label);
-      } else {
-        await _usageAnalytics.trackFailedScan();
+      if (predictions.isNotEmpty && predictions[0]['confidence'] != null) {
+        final confidence = predictions[0]['confidence'] as double;
+        final plantName = predictions[0]['plantName'] as String? ?? predictions[0]['label'] as String? ?? 'Unknown';
+        if (confidence > 0.5) {
+          await _usageAnalytics.trackSuccessfulScan(plantName);
+        } else {
+          await _usageAnalytics.trackFailedScan();
+        }
       }
 
       _isClassifying = false;
       notifyListeners();
 
-      // 4. Return formatted response
-      // Note: TFLite doesn't generate heatmaps (gradcam_image is null)
+      print('   ✅ Result: method=${result['method']}, fallback=${result['fallback_used']}, predictions=${predictions.length}');
+      
+      // Return result from AdaptiveGradCAMService
       return {
         'predictions': predictions,
-        'gradcam_image': null,
-        'method': 'tflite_offline', // Tells UI this was an offline scan
-        'fallback_used': true,
-        'processing_time_ms': 0.0,
-        'gradCAMPath': null,
-        'summaryGradCAMPath': null,
+        'gradcam_image': result['gradcam_image'] as Uint8List?,
+        'method': result['method'] as String? ?? 'cam',
+        'fallback_used': result['fallback_used'] as bool? ?? true,
+        'processing_time_ms': result['processing_time_ms'] as double? ?? 0.0,
+        'gradCAMPath': result['gradCAMPath'] as String?,
+        'summaryGradCAMPath': result['summaryGradCAMPath'] as String?,
       };
 
     } catch (e, stackTrace) {

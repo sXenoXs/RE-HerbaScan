@@ -2,7 +2,7 @@ name: herbascan
 description: "HerbaScan: A CNN-Based Mobile Application for Herbal Plant Recognition and Data Retrieval"
 publish_to: "none"
 
-version: 0.5.8+1
+version: 7.0.0+1
 
 environment:
   sdk: ">=3.4.0 <4.0.0"

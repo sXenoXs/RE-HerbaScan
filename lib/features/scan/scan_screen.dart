@@ -107,22 +107,26 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
         final File imageFile = File(image.path);
         final Uint8List imageBytes = await imageFile.readAsBytes();
 
-        // Process with TFLite
-        final predictions = await cameraProvider.processImageForAI(imageBytes);
+        // Process with AdaptiveGradCAM (tries online first, falls back to offline)
+        print("🔍 [ScanScreen] Calling processPlantIdentificationWithGradCAM...");
+        final result = await cameraProvider.processPlantIdentificationWithGradCAM(imageBytes);
+        print("🔍 [ScanScreen] Got result: method=${result['method']}, fallback=${result['fallback_used']}");
 
         if (!mounted) return;
 
+        final predictions = result['predictions'] as List<Map<String, dynamic>>? ?? [];
         if (predictions.isNotEmpty) {
+          print("🔍 [ScanScreen] ✅ Predictions found, navigating to result screen");
           await Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => PlantResultScreen(
                 predictions: predictions,
                 imagePath: image.path,
-                gradcamImageBytes: null,
-                method: 'tflite_offline',
-                fallbackUsed: true,
-                gradCAMPath: null,
-                summaryGradCAMPath: null,
+                gradcamImageBytes: result['gradcam_image'] as Uint8List?,
+                method: result['method'] as String? ?? 'cam',
+                fallbackUsed: result['fallback_used'] as bool? ?? true,
+                gradCAMPath: result['gradCAMPath'] as String?,
+                summaryGradCAMPath: result['summaryGradCAMPath'] as String?,
               ),
             ),
           );
@@ -131,6 +135,7 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
             await cameraProvider.cameraController?.resumePreview();
           }
         } else {
+          print("🔍 [ScanScreen] ❌ No predictions returned");
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('No plant detected.')),
           );
@@ -139,8 +144,9 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
           }
         }
       }
-    } catch (e) {
-      print("Capture Error: $e");
+    } catch (e, stackTrace) {
+      print("❌ [ScanScreen] Capture Error: $e");
+      print("Stack trace: $stackTrace");
       if (mounted) {
         // Try to resume if something failed
         if (cameraProvider.cameraController != null) {
@@ -161,32 +167,44 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
         final File imageFile = File(image.path);
         final Uint8List imageBytes = await imageFile.readAsBytes();
 
-        final predictions = await cameraProvider.processImageForAI(imageBytes);
+        // Process with AdaptiveGradCAM (tries online first, falls back to offline)
+        print("🔍 [ScanScreen] Gallery: Calling processPlantIdentificationWithGradCAM...");
+        final result = await cameraProvider.processPlantIdentificationWithGradCAM(imageBytes);
+        print("🔍 [ScanScreen] Gallery: Got result: method=${result['method']}, fallback=${result['fallback_used']}");
 
         if (!mounted) return;
 
+        final predictions = result['predictions'] as List<Map<String, dynamic>>? ?? [];
         if (predictions.isNotEmpty) {
+          print("🔍 [ScanScreen] Gallery: ✅ Predictions found, navigating to result screen");
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => PlantResultScreen(
                 predictions: predictions,
                 imagePath: image.path,
-                gradcamImageBytes: null,
-                method: 'tflite_offline',
-                fallbackUsed: true,
-                gradCAMPath: null,
-                summaryGradCAMPath: null,
+                gradcamImageBytes: result['gradcam_image'] as Uint8List?,
+                method: result['method'] as String? ?? 'cam',
+                fallbackUsed: result['fallback_used'] as bool? ?? true,
+                gradCAMPath: result['gradCAMPath'] as String?,
+                summaryGradCAMPath: result['summaryGradCAMPath'] as String?,
               ),
             ),
           );
         } else {
+          print("🔍 [ScanScreen] Gallery: ❌ No predictions returned");
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Failed to identify plant.')),
           );
         }
       }
-    } catch (e) {
-      print("Gallery Error: $e");
+    } catch (e, stackTrace) {
+      print("❌ [ScanScreen] Gallery Error: $e");
+      print("Stack trace: $stackTrace");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
     }
   }
 
@@ -205,6 +223,11 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
         title: Text(AppLocalizations.of(context).scanPlant),
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
+        titleTextStyle: const TextStyle(
+          color: Colors.white,
+          fontSize: 20,
+          fontWeight: FontWeight.w500,
+        ),
       ),
       body: Consumer<CameraProvider>(
         builder: (context, cameraProvider, child) {

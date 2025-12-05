@@ -6,6 +6,7 @@ import 'package:herbascan/core/services/xai_explanation_service.dart';
 import 'package:herbascan/core/providers/offline_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:herbascan/core/widgets/summary_fullscreen_view.dart';
 
 class GradCAMVisualization extends StatefulWidget {
   final String? gradCAMPath; // Legacy: file path (deprecated)
@@ -20,6 +21,9 @@ class GradCAMVisualization extends StatefulWidget {
   final String? method; // 'grad-cam' or 'cam'
   final bool? fallbackUsed; // True if offline was fallback
   final VoidCallback? onRefresh;
+  final Function(bool showOverlay, double opacity,
+          Function(bool) onOverlayChanged, Function(double) onOpacityChanged)?
+      onHeatmapTap; // Callback for full-screen heatmap
 
   const GradCAMVisualization({
     super.key,
@@ -34,6 +38,7 @@ class GradCAMVisualization extends StatefulWidget {
     this.method,
     this.fallbackUsed,
     this.onRefresh,
+    this.onHeatmapTap, // Callback for full-screen heatmap
   });
 
   @override
@@ -45,22 +50,37 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
   late TabController _tabController;
   bool _showHeatmap = true;
   double _opacity = 0.6;
+  int _currentTabIndex = 0; // Track current tab index
 
   // Explanation state
   final XAIExplanationService _explanationService = XAIExplanationService();
   String? _explanationText;
   bool _isLoadingExplanation = false;
   String? _explanationError;
+  String?
+      _explanationSource; // Track source: "gemini", "cache", "offline", "fallback"
+  bool _shouldForceOnline = false; // Track if we should force online mode
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
+    // Listen to tab changes to track current tab index
+    // CRITICAL: This listener ensures setState() is called when tab changes
+    // Without this, the visibility condition won't re-evaluate when user swipes between tabs
+    _tabController.addListener(() {
+      if (mounted && _tabController.index != _currentTabIndex) {
+        setState(() {
+          _currentTabIndex = _tabController.index;
+        });
+      }
+    });
     // Only load explanation on initial build, not on rebuilds
     // Rebuilds will be handled by didUpdateWidget or explicit refresh calls
+    // Load cached explanation first (don't auto-trigger online calls)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        _loadExplanation();
+        _loadExplanation(forceOnline: false); // Load from cache only
       }
     });
   }
@@ -68,12 +88,24 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
   @override
   void didUpdateWidget(GradCAMVisualization oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Only reload explanation if key changed (indicating a refresh)
-    // Check if scientific name or other key data changed
+    // Reload explanation if key data changed OR if heatmap was regenerated
+    final heatmapChanged =
+        oldWidget.gradcamImageBytes != widget.gradcamImageBytes ||
+            oldWidget.gradCAMPath != widget.gradCAMPath;
+
     if (oldWidget.scientificName != widget.scientificName ||
         oldWidget.plantName != widget.plantName ||
-        oldWidget.confidence != widget.confidence) {
-      _loadExplanation();
+        oldWidget.confidence != widget.confidence ||
+        heatmapChanged) {
+      // If heatmap changed, reload explanation to use new heatmap
+      // Use forceOnline if it was set by refresh button (user explicitly requested)
+      if (heatmapChanged && _shouldForceOnline) {
+        _loadExplanation(forceOnline: true);
+        _shouldForceOnline = false; // Reset after use
+      } else {
+        // Otherwise, just reload from cache (don't auto-trigger online calls)
+        _loadExplanation(forceOnline: false);
+      }
     }
   }
 
@@ -89,6 +121,7 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
     setState(() {
       _isLoadingExplanation = true;
       _explanationError = null;
+      _explanationSource = null;
     });
 
     try {
@@ -96,19 +129,54 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
           Provider.of<OfflineProvider>(context, listen: false);
       final isOnline = offlineProvider.isOnline;
 
+      // Load images as bytes
+      Uint8List? originalImageBytes;
+      Uint8List? heatmapImageBytes;
+
+      try {
+        final originalFile = File(widget.originalImagePath);
+        if (await originalFile.exists()) {
+          originalImageBytes = await originalFile.readAsBytes();
+        }
+      } catch (e) {
+        print('⚠️ Error loading original image: $e');
+      }
+
+      // Get heatmap bytes (prefer bytes over file path)
+      heatmapImageBytes = widget.gradcamImageBytes;
+      if (heatmapImageBytes == null && widget.gradCAMPath != null) {
+        try {
+          final heatmapFile = File(widget.gradCAMPath!);
+          if (await heatmapFile.exists()) {
+            heatmapImageBytes = await heatmapFile.readAsBytes();
+          }
+        } catch (e) {
+          print('⚠️ Error loading heatmap image: $e');
+        }
+      }
+
+      // Only pass isOnline if forceOnline is true (user explicitly requested refresh)
+      // Otherwise, let the service check cache first without triggering online calls
       final explanation = await _explanationService.generateExplanation(
         plantName: widget.plantName,
         scientificName: widget.scientificName!,
         confidence: widget.confidence,
         predictions: widget.predictions ?? [],
         imagePath: widget.originalImagePath,
-        isOnline: isOnline,
-        forceOnline: forceOnline,
+        originalImageBytes: originalImageBytes,
+        heatmapImagePath: widget.gradCAMPath,
+        heatmapImageBytes: heatmapImageBytes,
+        isOnline: forceOnline
+            ? isOnline
+            : false, // Only use isOnline if forcing refresh
+        forceOnline:
+            forceOnline, // This is the key: only true when user clicks refresh
       );
 
       if (mounted) {
         setState(() {
           _explanationText = explanation;
+          _explanationSource = _explanationService.getLastExplanationSource();
           _isLoadingExplanation = false;
           if (explanation == null) {
             _explanationError = 'Unable to generate explanation';
@@ -120,6 +188,7 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
         setState(() {
           _isLoadingExplanation = false;
           _explanationError = 'Error loading explanation: $e';
+          _explanationSource = null;
         });
       }
     }
@@ -127,14 +196,24 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
 
   /// Handle refresh button - regenerate both heatmap and explanation
   Future<void> _handleRefresh() async {
-    // Reload explanation with force online
-    await _loadExplanation(forceOnline: true);
-    
-    // Call parent refresh callback if provided (for heatmap regeneration)
-    // This should happen after explanation starts loading to avoid conflicts
+    // Show loading state
+    setState(() {
+      _isLoadingExplanation = true;
+      _explanationError = null;
+      _explanationText = null;
+      _shouldForceOnline = true; // Mark that we want to force online mode
+    });
+
+    // First, regenerate the heatmap (if callback provided)
+    // This will trigger _regenerateGradCAM in parent, which updates the widget
+    // with new gradcamImageBytes, causing didUpdateWidget to be called
     if (widget.onRefresh != null) {
-      widget.onRefresh!(); // VoidCallback, not async
+      widget.onRefresh!(); // This will trigger _regenerateGradCAM in parent
     }
+
+    // Also immediately reload explanation with force online
+    // This ensures explanation is regenerated even if heatmap doesn't change
+    await _loadExplanation(forceOnline: true);
   }
 
   @override
@@ -189,9 +268,22 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                   ),
                   if (widget.onRefresh != null)
                     IconButton(
-                      onPressed: _handleRefresh,
-                      icon: const Icon(Icons.refresh),
-                      tooltip: 'Regenerate explanation and heatmap',
+                      onPressed: _isLoadingExplanation ? null : _handleRefresh,
+                      icon: _isLoadingExplanation
+                          ? SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  theme.primaryColor,
+                                ),
+                              ),
+                            )
+                          : const Icon(Icons.refresh),
+                      tooltip: _isLoadingExplanation
+                          ? 'Regenerating...'
+                          : 'Regenerate explanation and heatmap',
                     ),
                 ],
               ),
@@ -243,10 +335,6 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                 controller: _tabController,
                 tabs: const [
                   Tab(
-                    icon: Icon(Icons.image),
-                    text: 'Original',
-                  ),
-                  Tab(
                     icon: Icon(Icons.thermostat),
                     text: 'Heatmap',
                   ),
@@ -268,7 +356,6 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                 child: TabBarView(
                   controller: _tabController,
                   children: [
-                    _buildOriginalImage(),
                     _buildHeatmapImage(),
                     _buildSummaryImage(),
                   ],
@@ -276,39 +363,16 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
               ),
 
               // Only show spacing if controls/legend will be shown
-              if (hasHeatmap) const SizedBox(height: 16),
+              // Show controls and legend only when Heatmap tab (index 0) is active
+              if (hasHeatmap && _currentTabIndex == 0)
+                const SizedBox(height: 16),
 
-              // Controls - only show if heatmap is available
-              _buildControls(),
+              // Controls - only show if heatmap is available AND Heatmap tab is active
+              if (hasHeatmap && _currentTabIndex == 0) _buildControls(),
 
-              // Only show spacing if legend will be shown
-              if (hasHeatmap) const SizedBox(height: 8),
-
-              // Legend - only show if heatmap is available
-              if (hasHeatmap) _buildLegend(),
+              // Legend removed - now integrated into "About GradCAM/CAM" card in plant_result_screen.dart
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOriginalImage() {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Image.file(
-          File(widget.originalImagePath),
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: double.infinity,
-          errorBuilder: (context, error, stackTrace) {
-            return _buildErrorWidget('Original image not found');
-          },
         ),
       ),
     );
@@ -441,66 +505,87 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
       );
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: _showHeatmap
-            ? Stack(
-                children: [
-                  // Original image
-                  Image.file(
-                    File(widget.originalImagePath),
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: double.infinity,
-                    errorBuilder: (context, error, stackTrace) {
-                      return _buildErrorWidget('Original image not found');
-                    },
-                  ),
-                  // Heatmap overlay
-                  Opacity(
-                    opacity: _opacity,
-                    child: hasImageBytes
-                        ? Image.memory(
-                            widget.gradcamImageBytes!,
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: double.infinity,
-                            errorBuilder: (context, error, stackTrace) {
-                              final methodName =
-                                  widget.method == 'cam' ? 'CAM' : 'Grad-CAM';
-                              return _buildErrorWidget(
-                                  'Failed to decode $methodName heatmap image');
-                            },
-                          )
-                        : Image.file(
-                            File(widget.gradCAMPath!),
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: double.infinity,
-                            errorBuilder: (context, error, stackTrace) {
-                              final methodName =
-                                  widget.method == 'cam' ? 'CAM' : 'Grad-CAM';
-                              return _buildErrorWidget(
-                                  '$methodName heatmap not found');
-                            },
-                          ),
-                  ),
-                ],
-              )
-            : Image.file(
-                File(widget.originalImagePath),
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
-                errorBuilder: (context, error, stackTrace) {
-                  return _buildErrorWidget('Original image not found');
-                },
-              ),
+    return GestureDetector(
+      onTap: () {
+        // Only open full-screen if heatmap is available and callback is provided
+        if ((hasImageBytes || hasFilePath) && widget.onHeatmapTap != null) {
+          widget.onHeatmapTap!(
+            _showHeatmap,
+            _opacity,
+            (bool val) {
+              setState(() {
+                _showHeatmap = val;
+              });
+            },
+            (double val) {
+              setState(() {
+                _opacity = val;
+              });
+            },
+          );
+        }
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: _showHeatmap
+              ? Stack(
+                  children: [
+                    // Original image
+                    Image.file(
+                      File(widget.originalImagePath),
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                      errorBuilder: (context, error, stackTrace) {
+                        return _buildErrorWidget('Original image not found');
+                      },
+                    ),
+                    // Heatmap overlay
+                    Opacity(
+                      opacity: _opacity,
+                      child: hasImageBytes
+                          ? Image.memory(
+                              widget.gradcamImageBytes!,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: double.infinity,
+                              errorBuilder: (context, error, stackTrace) {
+                                final methodName =
+                                    widget.method == 'cam' ? 'CAM' : 'Grad-CAM';
+                                return _buildErrorWidget(
+                                    'Failed to decode $methodName heatmap image');
+                              },
+                            )
+                          : Image.file(
+                              File(widget.gradCAMPath!),
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: double.infinity,
+                              errorBuilder: (context, error, stackTrace) {
+                                final methodName =
+                                    widget.method == 'cam' ? 'CAM' : 'Grad-CAM';
+                                return _buildErrorWidget(
+                                    '$methodName heatmap not found');
+                              },
+                            ),
+                    ),
+                  ],
+                )
+              : Image.file(
+                  File(widget.originalImagePath),
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                  errorBuilder: (context, error, stackTrace) {
+                    return _buildErrorWidget('Original image not found');
+                  },
+                ),
+        ),
       ),
     );
   }
@@ -617,13 +702,14 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
         border: Border.all(color: Colors.grey.shade300),
         color: Colors.grey.shade50,
       ),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          // Header Row - AI Explanation title, Status Badge, and Fullscreen Icon
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Row(
               children: [
                 Icon(
                   Icons.psychology,
@@ -631,191 +717,282 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                   size: 20,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  'AI Explanation',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Text(
+                    'AI Explanation',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const Spacer(),
-                // Show online/offline badge
-                Consumer<OfflineProvider>(
-                  builder: (context, offlineProvider, _) {
-                    final isOnline = offlineProvider.isOnline;
-                    return Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: isOnline
-                            ? Colors.green.withOpacity(0.1)
-                            : Colors.blue.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isOnline
-                              ? Colors.green.withOpacity(0.3)
-                              : Colors.blue.withOpacity(0.3),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            isOnline ? Icons.cloud : Icons.offline_bolt,
-                            size: 12,
-                            color: isOnline ? Colors.green : Colors.blue,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            isOnline ? 'Online' : 'Offline',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: isOnline ? Colors.green : Colors.blue,
+                // Source badge (Online/Fallback/Offline/Cached) and Fullscreen Icon
+                if (_explanationSource != null)
+                  Flexible(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: _explanationSource == 'gemini'
+                                ? Colors.green.withOpacity(0.1)
+                                : _explanationSource == 'cache'
+                                    ? Colors.orange.withOpacity(0.1)
+                                    : _explanationSource == 'fallback'
+                                        ? Colors.orange.withOpacity(0.1)
+                                        : Colors.blue.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: _explanationSource == 'gemini'
+                                  ? Colors.green.withOpacity(0.3)
+                                  : _explanationSource == 'cache'
+                                      ? Colors.orange.withOpacity(0.3)
+                                      : _explanationSource == 'fallback'
+                                          ? Colors.orange.withOpacity(0.3)
+                                          : Colors.blue.withOpacity(0.3),
                             ),
                           ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _explanationSource == 'gemini'
+                                    ? Icons.auto_awesome
+                                    : _explanationSource == 'cache'
+                                        ? Icons.cached
+                                        : _explanationSource == 'fallback'
+                                            ? Icons.info_outline
+                                            : Icons.storage,
+                                size: 12,
+                                color: _explanationSource == 'gemini'
+                                    ? Colors.green
+                                    : _explanationSource == 'cache'
+                                        ? Colors.orange
+                                        : _explanationSource == 'fallback'
+                                            ? Colors.orange
+                                            : Colors.blue,
+                              ),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  _explanationSource == 'gemini'
+                                      ? 'Online'
+                                      : _explanationSource == 'cache'
+                                          ? 'Cached'
+                                          : _explanationSource == 'fallback'
+                                              ? 'Fallback'
+                                              : 'Offline',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: _explanationSource == 'gemini'
+                                        ? Colors.green
+                                        : _explanationSource == 'cache'
+                                            ? Colors.orange
+                                            : _explanationSource == 'fallback'
+                                                ? Colors.orange
+                                                : Colors.blue,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        // Fullscreen Icon
+                        if (_explanationText != null &&
+                            _explanationText!.isNotEmpty)
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(20),
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => SummaryFullScreenView(
+                                      explanationText: _explanationText!,
+                                      onRegenerate: _handleRefresh,
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Icon(
+                                  Icons.fullscreen,
+                                  size: 18,
+                                  color: theme.primaryColor,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
               ],
             ),
-            const SizedBox(height: 16),
-            // Explanation text with markdown formatting
-            MarkdownBody(
-              data: _explanationText!,
-              styleSheet: MarkdownStyleSheet(
-                // Headings with reduced spacing
-                h1: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.primaryColor,
-                  fontSize: 22,
-                  height: 1.3,
-                ),
-                h1Padding: const EdgeInsets.only(bottom: 4, top: 8),
-                h2: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.primaryColor,
-                  fontSize: 20,
-                  height: 1.3,
-                ),
-                h2Padding: const EdgeInsets.only(bottom: 4, top: 8),
-                h3: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade900,
-                  fontSize: 18,
-                  height: 1.3,
-                ),
-                h3Padding: const EdgeInsets.only(bottom: 4, top: 8),
-                // Body text with reduced spacing
-                p: theme.textTheme.bodyMedium?.copyWith(
-                  height: 1.7,
-                  color: Colors.grey.shade800,
-                  fontSize: 14,
-                ),
-                pPadding: const EdgeInsets.only(bottom: 8, top: 2),
-                // Bold text (for section headers like **Plant Identification Summary**)
-                strong: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.primaryColor,
-                  fontSize: 16,
-                  height: 1.4,
-                ),
-                // Add spacing after bold text by wrapping in a custom builder
-                // Italic text
-                em: theme.textTheme.bodyMedium?.copyWith(
-                  fontStyle: FontStyle.italic,
-                  color: Colors.grey.shade700,
-                ),
-                // Lists
-                listBullet: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.primaryColor,
-                  fontSize: 16,
-                ),
-                // List items
-                listIndent: 24.0,
-                listBulletPadding: const EdgeInsets.only(right: 8),
-                // Block quotes
-                blockquote: theme.textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey.shade700,
-                  fontStyle: FontStyle.italic,
-                  backgroundColor: Colors.grey.shade100,
-                ),
-                blockquotePadding: const EdgeInsets.all(12),
-                blockquoteDecoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border(
-                    left: BorderSide(
-                      color: theme.primaryColor,
-                      width: 4,
+          ),
+          // Content area (no longer needs Stack since icon is in header)
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  MarkdownBody(
+                    data: _explanationText!,
+                    styleSheet: MarkdownStyleSheet(
+                      // Headings with reduced spacing
+                      h1: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.primaryColor,
+                        fontSize: 22,
+                        height: 1.3,
+                      ),
+                      h1Padding: const EdgeInsets.only(bottom: 4, top: 8),
+                      h2: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.primaryColor,
+                        fontSize: 20,
+                        height: 1.3,
+                      ),
+                      h2Padding: const EdgeInsets.only(bottom: 4, top: 8),
+                      h3: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade900,
+                        fontSize: 18,
+                        height: 1.3,
+                      ),
+                      h3Padding: const EdgeInsets.only(bottom: 4, top: 8),
+                      // Body text with reduced spacing
+                      p: theme.textTheme.bodyMedium?.copyWith(
+                        height: 1.7,
+                        color: Colors.grey.shade800,
+                        fontSize: 14,
+                      ),
+                      pPadding: const EdgeInsets.only(bottom: 8, top: 2),
+                      // Bold text (for section headers like **Plant Identification Summary**)
+                      strong: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.primaryColor,
+                        fontSize: 16,
+                        height: 1.4,
+                      ),
+                      // Italic text
+                      em: theme.textTheme.bodyMedium?.copyWith(
+                        fontStyle: FontStyle.italic,
+                        color: Colors.grey.shade700,
+                      ),
+                      // Lists
+                      listBullet: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.primaryColor,
+                        fontSize: 16,
+                      ),
+                      // List items
+                      listIndent: 24.0,
+                      listBulletPadding: const EdgeInsets.only(right: 8),
+                      // Block quotes
+                      blockquote: theme.textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey.shade700,
+                        fontStyle: FontStyle.italic,
+                        backgroundColor: Colors.grey.shade100,
+                      ),
+                      blockquotePadding: const EdgeInsets.all(12),
+                      blockquoteDecoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border(
+                          left: BorderSide(
+                            color: theme.primaryColor,
+                            width: 4,
+                          ),
+                        ),
+                      ),
+                      // Code blocks
+                      code: theme.textTheme.bodySmall?.copyWith(
+                        backgroundColor: Colors.grey.shade200,
+                        fontFamily: 'monospace',
+                      ),
+                      codeblockPadding: const EdgeInsets.all(12),
+                      codeblockDecoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      // Horizontal rule
+                      horizontalRuleDecoration: BoxDecoration(
+                        border: Border(
+                          top: BorderSide(
+                            color: Colors.grey.shade300,
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                      // Links
+                      a: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.primaryColor,
+                        decoration: TextDecoration.underline,
+                      ),
+                      // Table
+                      tableHead: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade900,
+                        backgroundColor: Colors.grey.shade200,
+                      ),
+                      tableBody: theme.textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey.shade800,
+                      ),
+                      tableBorder: TableBorder.all(
+                        color: Colors.grey.shade300,
+                        width: 1,
+                      ),
+                      tableHeadAlign: TextAlign.center,
+                      tableCellsPadding: const EdgeInsets.all(8),
+                      // Spacing between blocks (reduced)
+                      blockSpacing: 12.0,
+                      textScaleFactor: 1.0,
                     ),
                   ),
-                ),
-                // Code blocks
-                code: theme.textTheme.bodySmall?.copyWith(
-                  backgroundColor: Colors.grey.shade200,
-                  fontFamily: 'monospace',
-                ),
-                codeblockPadding: const EdgeInsets.all(12),
-                codeblockDecoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                // Horizontal rule
-                horizontalRuleDecoration: BoxDecoration(
-                  border: Border(
-                    top: BorderSide(
-                      color: Colors.grey.shade300,
-                      width: 1,
-                    ),
+                  // "Ask AI Assistant" button when online - at the bottom of content
+                  const SizedBox(height: 16),
+                  Consumer<OfflineProvider>(
+                    builder: (context, offlineProvider, _) {
+                      if (offlineProvider.isOnline) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: ElevatedButton.icon(
+                            onPressed: () =>
+                                _loadExplanation(forceOnline: true),
+                            icon: const Icon(Icons.auto_awesome),
+                            label: const Text('Ask AI Assistant (Regenerate)'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: theme.primaryColor,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
                   ),
-                ),
-                // Links
-                a: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.primaryColor,
-                  decoration: TextDecoration.underline,
-                ),
-                // Table
-                tableHead: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade900,
-                  backgroundColor: Colors.grey.shade200,
-                ),
-                tableBody: theme.textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey.shade800,
-                ),
-                tableBorder: TableBorder.all(
-                  color: Colors.grey.shade300,
-                  width: 1,
-                ),
-                tableHeadAlign: TextAlign.center,
-                tableCellsPadding: const EdgeInsets.all(8),
-                // Spacing between blocks (reduced)
-                blockSpacing: 12.0,
-                textScaleFactor: 1.0,
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            // "Ask AI Assistant" button when online
-            Consumer<OfflineProvider>(
-              builder: (context, offlineProvider, _) {
-                if (offlineProvider.isOnline) {
-                  return ElevatedButton.icon(
-                    onPressed: () => _loadExplanation(forceOnline: true),
-                    icon: const Icon(Icons.auto_awesome),
-                    label: const Text('Ask AI Assistant (Regenerate)'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.primaryColor,
-                      foregroundColor: Colors.white,
-                    ),
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -930,87 +1107,6 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
               _opacity = value;
             });
           },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLegend() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.info_outline,
-                size: 16,
-                color: Colors.grey.shade600,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Heatmap Legend',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade700,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 8),
-
-          // Use Wrap to prevent overflow
-          Wrap(
-            spacing: 16,
-            runSpacing: 8,
-            children: [
-              _buildLegendItem(Colors.blue, 'Low Attention'),
-              _buildLegendItem(Colors.green, 'Medium Attention'),
-              _buildLegendItem(Colors.red, 'High Attention'),
-            ],
-          ),
-
-          const SizedBox(height: 8),
-
-          Text(
-            'The heatmap shows which parts of the image the AI model focused on when making its prediction. Red areas indicate high attention, while blue areas indicate low attention.',
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey.shade600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLegendItem(Color color, String label) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 10,
-            color: Colors.grey.shade600,
-          ),
         ),
       ],
     );
