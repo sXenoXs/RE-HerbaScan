@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/providers/plant_provider.dart';
@@ -7,6 +8,7 @@ import 'package:herbascan/features/scan/plant_result_screen.dart';
 import 'package:herbascan/features/scan/scan_screen.dart';
 import 'package:herbascan/core/services/usage_analytics.dart';
 import 'dart:io';
+import 'dart:convert';
 import 'package:intl/intl.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -19,12 +21,93 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   final UsageAnalytics _analytics = UsageAnalytics();
   String _sortBy = 'recent'; // recent, oldest, confidence
+  Map<String, dynamic>? _plantDataCache;
 
   @override
   void initState() {
     super.initState();
     // Track history screen view
     _analytics.trackHistoryViewed();
+    // Load plant_explanations.json into cache
+    _loadPlantDataCache();
+  }
+
+  /// Load plant_explanations.json into memory cache
+  Future<void> _loadPlantDataCache() async {
+    try {
+      final jsonString =
+          await rootBundle.loadString('assets/data/plant_explanations.json');
+      final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
+      if (mounted) {
+        setState(() {
+          _plantDataCache = jsonData;
+        });
+      }
+    } catch (e) {
+      print('⚠️ Error loading plant_explanations.json: $e');
+      // Set empty map on error to prevent null checks
+      if (mounted) {
+        setState(() {
+          _plantDataCache = {};
+        });
+      }
+    }
+  }
+
+  /// Resolves scientific name from plant_explanations.json based on common name
+  /// Falls back to common name or "Species not listed" if not found
+  String _resolveScientificName(String commonName) {
+    // If cache not loaded yet, return fallback
+    if (_plantDataCache == null || _plantDataCache!.isEmpty) {
+      return commonName; // Return common name as fallback
+    }
+
+    try {
+      // Normalize common name for lookup (case-insensitive, trim)
+      final normalizedCommonName = commonName.trim();
+
+      // Try exact match first
+      var plantData = _plantDataCache![normalizedCommonName];
+
+      // Try case-insensitive match if exact match fails
+      if (plantData == null) {
+        final matchingKey = _plantDataCache!.keys.firstWhere(
+          (key) =>
+              key.trim().toLowerCase() == normalizedCommonName.toLowerCase(),
+          orElse: () => '',
+        );
+        if (matchingKey.isNotEmpty) {
+          plantData = _plantDataCache![matchingKey];
+        }
+      }
+
+      // Extract scientific name from identification text
+      if (plantData != null) {
+        final plantMap = plantData as Map<String, dynamic>;
+        final identification = plantMap['identification'] as String?;
+
+        if (identification != null && identification.isNotEmpty) {
+          // Pattern: "The model identified this as [Common Name] ([Scientific Name])"
+          // Extract text in parentheses after the common name
+          final regex = RegExp(r'\(([^)]+)\)');
+          final match = regex.firstMatch(identification);
+
+          if (match != null && match.groupCount >= 1) {
+            final scientificName = match.group(1)?.trim();
+            if (scientificName != null && scientificName.isNotEmpty) {
+              return scientificName;
+            }
+          }
+        }
+      }
+
+      // Fallback: return common name if scientific name cannot be found
+      return commonName;
+    } catch (e) {
+      print('⚠️ Error resolving scientific name for "$commonName": $e');
+      // Fallback: return common name on error
+      return commonName;
+    }
   }
 
   List<ScanResult> _sortScans(List<ScanResult> scans) {
@@ -436,16 +519,53 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       ],
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      scan.plant?.scientificName ??
-                          scan.topPrediction?.scientificName ??
-                          '',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontStyle: FontStyle.italic,
-                        color: theme.colorScheme.onSurface.withOpacity(0.6),
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
+                    Builder(
+                      builder: (context) {
+                        // Get scientific name from scan result
+                        final existingScientificName =
+                            scan.plant?.scientificName ??
+                                scan.topPrediction?.scientificName;
+
+                        // If scientific name exists and is not empty, use it
+                        if (existingScientificName != null &&
+                            existingScientificName.isNotEmpty &&
+                            existingScientificName != 'Unknown') {
+                          return Text(
+                            existingScientificName,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontStyle: FontStyle.italic,
+                              color:
+                                  theme.colorScheme.onSurface.withOpacity(0.6),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          );
+                        }
+
+                        // Otherwise, resolve from plant data cache
+                        final plantName = scan.plant?.commonName ??
+                            scan.topPrediction?.plantName ??
+                            'Unknown Plant';
+                        final resolvedScientificName =
+                            _resolveScientificName(plantName);
+
+                        // If resolved name is same as common name, show "Species not listed"
+                        final displayName =
+                            (resolvedScientificName == plantName ||
+                                    resolvedScientificName.isEmpty)
+                                ? 'Species not listed'
+                                : resolvedScientificName;
+
+                        return Text(
+                          displayName,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontStyle: FontStyle.italic,
+                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        );
+                      },
                     ),
                     const SizedBox(height: 8),
                     Row(

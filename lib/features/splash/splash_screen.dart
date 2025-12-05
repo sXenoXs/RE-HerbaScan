@@ -249,7 +249,7 @@ class _SplashScreenState extends State<SplashScreen>
                     return FadeTransition(
                       opacity: _fadeAnimation,
                       child: Text(
-                        'Version v0.5.8',
+                        'Version v0.8.3',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: Colors.white.withOpacity(0.7),
                         ),

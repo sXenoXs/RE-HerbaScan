@@ -16,9 +16,14 @@ class OfflineCAMService {
   final Logger _logger = Logger();
 
   Interpreter? _interpreter;
+  Interpreter? _mobilenetv2Interpreter;
+  Interpreter? _herbascanInterpreter;
   List<List<double>>? _camWeights; // [256, 40]
+  List<List<double>>? _mobilenetv2CamWeights;
+  List<List<double>>? _herbascanCamWeights;
   Map<String, String>? _labels; // Loaded from labels.json
   bool _isInitialized = false;
+  String? _preferredModelName; // Track which model to use for CAM
 
   // Model output indices (determined during initialization)
   int _featureMapOutputIndex = 0; // Which output contains feature maps
@@ -29,7 +34,8 @@ class OfflineCAMService {
 
   // Model configuration
   static const int inputSize = 224;
-  static const int numClasses = 40;
+  // numClasses is now dynamic - determined from labels file (42 classes: 0-41)
+  int get numClasses => _labels?.length ?? 42; // Default to 42 if labels not loaded
   static const int featureDim = 256; // From Phase 2 analysis
   static const List<int> expectedFeatureMapShape = [
     7,
@@ -57,53 +63,107 @@ class OfflineCAMService {
       _logger.i('═══════════════════════════════════════════════════════');
       print('🚀 [OfflineCAMService] Starting initialization...');
 
-      // Step 1: Load TFLite model
+      // Step 1: Load TFLite model (try both models)
       _logger.i('Step 1: Loading TFLite model...');
       print('📦 [OfflineCAMService] Step 1: Loading TFLite model...');
       try {
-        // First verify asset can be loaded
-        try {
-          print(
-              '   Attempting to load asset: assets/models/mobilenetv2_multi_output.tflite');
-          final assetData = await rootBundle
-              .load('assets/models/mobilenetv2_multi_output.tflite');
-          final sizeMB =
-              (assetData.lengthInBytes / 1024 / 1024).toStringAsFixed(2);
-          _logger.i(
-              '✅ Model asset found, size: ${assetData.lengthInBytes} bytes ($sizeMB MB)');
-          print('✅ [OfflineCAMService] Model asset found!');
-          print('   Size: ${assetData.lengthInBytes} bytes ($sizeMB MB)');
-          if (assetData.lengthInBytes < 100000) {
-            _logger.w(
-                '⚠️ WARNING: Model file is very small (${assetData.lengthInBytes} bytes). It might be corrupted or incomplete.');
-            print('⚠️ [OfflineCAMService] WARNING: Model file is very small!');
+        // Try to load both multi-output models
+        List<String> mobilenetv2Paths = [
+          'assets/models/mobilenetv2_multi_output.tflite',
+          'assets/models/MobileNetV2_model.tflite', // Legacy fallback
+        ];
+        
+        List<String> herbascanPaths = [
+          'assets/models/herbascan_multi_output.tflite',
+          'assets/models/herbascan_model.tflite', // Legacy fallback
+        ];
+        
+        // Load MobileNetV2 multi-output model
+        String? mobilenetv2Path;
+        for (String modelPath in mobilenetv2Paths) {
+          try {
+            print('   Attempting to load MobileNetV2: $modelPath');
+            final assetData = await rootBundle.load(modelPath);
+            final sizeMB = (assetData.lengthInBytes / 1024 / 1024).toStringAsFixed(2);
+            _logger.i('✅ MobileNetV2 model found, size: ${assetData.lengthInBytes} bytes ($sizeMB MB)');
+            print('✅ [OfflineCAMService] MobileNetV2 model found!');
+            print('   Path: $modelPath');
+            mobilenetv2Path = modelPath;
+            break;
+          } catch (assetError) {
+            continue;
           }
-        } catch (assetError, assetStack) {
-          _logger.e('❌ Model asset not found in bundle: $assetError');
-          _logger.e('❌ This usually means:');
-          _logger.e('   1. File is missing from assets/models/');
-          _logger.e('   2. pubspec.yaml assets not configured');
-          _logger.e(
-              '   3. App needs to be rebuilt (flutter clean && flutter pub get)');
-          print('❌ [OfflineCAMService] Model asset NOT found!');
-          print('   Error: $assetError');
-          print('   Error type: ${assetError.runtimeType}');
-          print('   Stack trace: $assetStack');
+        }
+        
+        // Load HerbaScan multi-output model
+        String? herbascanPath;
+        for (String modelPath in herbascanPaths) {
+          try {
+            print('   Attempting to load HerbaScan: $modelPath');
+            final assetData = await rootBundle.load(modelPath);
+            final sizeMB = (assetData.lengthInBytes / 1024 / 1024).toStringAsFixed(2);
+            _logger.i('✅ HerbaScan model found, size: ${assetData.lengthInBytes} bytes ($sizeMB MB)');
+            print('✅ [OfflineCAMService] HerbaScan model found!');
+            print('   Path: $modelPath');
+            herbascanPath = modelPath;
+            break;
+          } catch (assetError) {
+            continue;
+          }
+        }
+        
+        if (mobilenetv2Path == null && herbascanPath == null) {
+          _logger.e('❌ No multi-output model assets found in bundle');
+          print('❌ [OfflineCAMService] No multi-output models found!');
+          print('   Expected: mobilenetv2_multi_output.tflite or herbascan_multi_output.tflite');
           throw Exception(
-            'Model file not found in assets. Please verify:\n'
-            '1. File exists: assets/models/mobilenetv2_multi_output.tflite\n'
+            'No multi-output model files found. Please verify:\n'
+            '1. Files exist: assets/models/mobilenetv2_multi_output.tflite or assets/models/herbascan_multi_output.tflite\n'
             '2. pubspec.yaml includes: assets/models/\n'
             '3. Run: flutter clean && flutter pub get && flutter run',
           );
         }
 
-        // Load interpreter
-        _logger.d('   Creating TFLite interpreter...');
-        print('   Creating TFLite interpreter...');
+        // Load interpreters
+        if (mobilenetv2Path != null) {
+          try {
+            _logger.d('   Creating MobileNetV2 interpreter from: $mobilenetv2Path');
+            _mobilenetv2Interpreter = await Interpreter.fromAsset(mobilenetv2Path);
+            _mobilenetv2Interpreter!.allocateTensors();
+            _logger.i('✅ MobileNetV2 interpreter created successfully');
+            print('✅ [OfflineCAMService] MobileNetV2 interpreter created!');
+          } catch (e) {
+            _logger.w('⚠️ Failed to create MobileNetV2 interpreter: $e');
+            print('⚠️ [OfflineCAMService] Failed to create MobileNetV2 interpreter');
+          }
+        }
+        
+        if (herbascanPath != null) {
+          try {
+            _logger.d('   Creating HerbaScan interpreter from: $herbascanPath');
+            _herbascanInterpreter = await Interpreter.fromAsset(herbascanPath);
+            _herbascanInterpreter!.allocateTensors();
+            _logger.i('✅ HerbaScan interpreter created successfully');
+            print('✅ [OfflineCAMService] HerbaScan interpreter created!');
+          } catch (e) {
+            _logger.w('⚠️ Failed to create HerbaScan interpreter: $e');
+            print('⚠️ [OfflineCAMService] Failed to create HerbaScan interpreter');
+          }
+        }
+        
+        // Set default interpreter (prefer MobileNetV2, fallback to HerbaScan)
+        if (_mobilenetv2Interpreter != null) {
+          _interpreter = _mobilenetv2Interpreter;
+          _preferredModelName = 'MobileNetV2';
+        } else if (_herbascanInterpreter != null) {
+          _interpreter = _herbascanInterpreter;
+          _preferredModelName = 'HerbaScan';
+        } else {
+          throw Exception('Failed to load any multi-output models');
+        }
+        
+        // Load interpreter (for backward compatibility)
         try {
-          _interpreter = await Interpreter.fromAsset(
-            'assets/models/mobilenetv2_multi_output.tflite',
-          );
           _logger.i('✅ TFLite interpreter created successfully');
           print(
               '✅ [OfflineCAMService] TFLite interpreter created successfully!');
@@ -432,17 +492,29 @@ class OfflineCAMService {
     try {
       _logger.d('   Loading labels file...');
 
-      // Try to load the file
+      // Try to load the file (try class_indices.json first, then labels.json)
       String jsonString;
       try {
-        jsonString = await rootBundle.loadString('assets/models/labels.json');
-        _logger.d('   ✅ Labels file loaded, size: ${jsonString.length} bytes');
+        // Try class_indices.json first (new format)
+        jsonString = await rootBundle.loadString('assets/models/class_indices.json');
+        _logger.d('   ✅ Labels file loaded (class_indices.json), size: ${jsonString.length} bytes');
+        print('   📋 Loaded class_indices.json');
       } catch (fileError) {
-        _logger.w('⚠️ Failed to load labels file: $fileError');
-        _logger.w('   File path: assets/models/labels.json');
-        _logger.w('   Continuing without labels (will use default names)');
-        _labels = {};
-        return;
+        _logger.w('⚠️ Failed to load class_indices.json: $fileError');
+        _logger.w('   Trying labels.json (legacy format)...');
+        print('   ⚠️ Failed to load class_indices.json, trying labels.json...');
+        try {
+          jsonString = await rootBundle.loadString('assets/models/labels.json');
+          _logger.d('   ✅ Labels file loaded (labels.json), size: ${jsonString.length} bytes');
+          print('   📋 Loaded labels.json (legacy)');
+        } catch (fileError2) {
+          _logger.w('⚠️ Failed to load labels file: $fileError2');
+          _logger.w('   File paths tried: assets/models/class_indices.json, assets/models/labels.json');
+          _logger.w('   Continuing without labels (will use default names)');
+          print('   ❌ Failed to load both class_indices.json and labels.json');
+          _labels = {};
+          return;
+        }
       }
 
       // Parse JSON
@@ -476,98 +548,118 @@ class OfflineCAMService {
   }
 
   /// Load CAM weights from JSON asset
+  /// Set preferred model name (from TflitePlantService best result)
+  void setPreferredModel(String? modelName) {
+    _preferredModelName = modelName;
+    // Switch interpreter if needed
+    if (modelName == 'MobileNetV2' && _mobilenetv2Interpreter != null) {
+      _interpreter = _mobilenetv2Interpreter;
+      _camWeights = _mobilenetv2CamWeights;
+    } else if (modelName == 'HerbaScan' && _herbascanInterpreter != null) {
+      _interpreter = _herbascanInterpreter;
+      _camWeights = _herbascanCamWeights;
+    }
+  }
+
   Future<void> _loadCAMWeights() async {
     try {
-      _logger.d('   Loading CAM weights file...');
-
-      // Try to load the file
-      String jsonString;
+      _logger.i('Loading CAM weights from JSON files...');
+      print('📦 [OfflineCAMService] Loading CAM weights...');
+      
+      // Load MobileNetV2 CAM weights
       try {
-        jsonString =
-            await rootBundle.loadString('assets/models/cam_weights.json');
-        _logger.d(
-            '   ✅ CAM weights file loaded, size: ${jsonString.length} bytes');
-      } catch (fileError) {
-        _logger.e('❌ Failed to load CAM weights file: $fileError');
-        _logger.e('   File path: assets/models/cam_weights.json');
-        _logger.e('   This usually means:');
-        _logger.e('   1. File is missing from assets/models/');
-        _logger.e('   2. pubspec.yaml assets not configured');
-        _logger.e('   3. App needs to be rebuilt');
-        rethrow;
+        final jsonString = await rootBundle.loadString('assets/models/mobilenetv2_cam_weights.json');
+        final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
+        final weightsList = jsonData['weights'] as List;
+        _mobilenetv2CamWeights = weightsList.map((row) {
+          if (row is! List) {
+            throw Exception('CAM weights row is not a list, got ${row.runtimeType}');
+          }
+          return List<double>.from(row.map((val) => (val as num).toDouble()));
+        }).toList();
+        _logger.i('✅ MobileNetV2 CAM weights loaded: ${_mobilenetv2CamWeights!.length} features x ${_mobilenetv2CamWeights![0].length} classes');
+        print('✅ [OfflineCAMService] MobileNetV2 CAM weights loaded!');
+      } catch (e) {
+        _logger.w('⚠️ Failed to load MobileNetV2 CAM weights: $e');
+        print('⚠️ [OfflineCAMService] MobileNetV2 CAM weights not found, trying legacy...');
+        // Try legacy path
+        try {
+          final jsonString = await rootBundle.loadString('assets/models/cam_weights.json');
+          final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
+          final weightsList = jsonData['weights'] as List;
+          _mobilenetv2CamWeights = weightsList.map((row) {
+            if (row is! List) {
+              throw Exception('CAM weights row is not a list, got ${row.runtimeType}');
+            }
+            return List<double>.from(row.map((val) => (val as num).toDouble()));
+          }).toList();
+          _logger.i('✅ Loaded CAM weights from legacy path for MobileNetV2');
+        } catch (e2) {
+          _logger.w('⚠️ Legacy CAM weights also failed: $e2');
+        }
       }
-
-      // Parse JSON
-      _logger.d('   Parsing JSON data...');
-      Map<String, dynamic> jsonData;
+      
+      // Load HerbaScan CAM weights
       try {
-        jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
-        _logger.d('   ✅ JSON parsed successfully');
-      } catch (parseError) {
-        _logger.e('❌ Failed to parse CAM weights JSON: $parseError');
-        _logger.e('   File might be corrupted or invalid JSON');
-        rethrow;
+        final jsonString = await rootBundle.loadString('assets/models/herbascan_cam_weights.json');
+        final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
+        final weightsList = jsonData['weights'] as List;
+        _herbascanCamWeights = weightsList.map((row) {
+          if (row is! List) {
+            throw Exception('CAM weights row is not a list, got ${row.runtimeType}');
+          }
+          return List<double>.from(row.map((val) => (val as num).toDouble()));
+        }).toList();
+        _logger.i('✅ HerbaScan CAM weights loaded: ${_herbascanCamWeights!.length} features x ${_herbascanCamWeights![0].length} classes');
+        print('✅ [OfflineCAMService] HerbaScan CAM weights loaded!');
+      } catch (e) {
+        _logger.w('⚠️ Failed to load HerbaScan CAM weights: $e');
+        print('⚠️ [OfflineCAMService] HerbaScan CAM weights not found');
       }
-
-      // Extract weights array
-      if (!jsonData.containsKey('weights')) {
-        throw Exception('CAM weights JSON does not contain "weights" key');
-      }
-
-      final weightsList = jsonData['weights'];
-      if (weightsList is! List) {
-        throw Exception(
-            'CAM weights "weights" is not a list, got ${weightsList.runtimeType}');
-      }
-
-      _logger.d('   Extracting weights array (${weightsList.length} rows)...');
-      _camWeights = weightsList.map((row) {
-        if (row is! List) {
-          throw Exception(
-              'CAM weights row is not a list, got ${row.runtimeType}');
-        }
-        return List<double>.from(row.map((val) => (val as num).toDouble()));
-      }).toList();
-
-      _logger.d('   ✅ Weights extracted: ${_camWeights!.length} rows');
-
-      // Verify shape
-      if (_camWeights!.isEmpty) {
-        throw Exception('CAM weights array is empty');
-      }
-
-      if (_camWeights!.length != featureDim) {
-        _logger.w('⚠️ CAM weights dimension mismatch:');
-        _logger.w('   Expected: $featureDim features');
-        _logger.w('   Got: ${_camWeights!.length} features');
-        _logger.w('   Using first $featureDim features');
-        // Truncate or pad to match featureDim
-        if (_camWeights!.length > featureDim) {
-          _camWeights = _camWeights!.take(featureDim).toList();
-        } else {
-          throw Exception(
-            'CAM weights dimension is too small: expected at least $featureDim, got ${_camWeights!.length}',
-          );
+      
+      // Set default CAM weights (prefer MobileNetV2, fallback to HerbaScan, then legacy)
+      if (_mobilenetv2CamWeights != null) {
+        _camWeights = _mobilenetv2CamWeights;
+      } else if (_herbascanCamWeights != null) {
+        _camWeights = _herbascanCamWeights;
+      } else {
+        // Legacy: try single cam_weights.json
+        try {
+          final jsonString = await rootBundle.loadString('assets/models/cam_weights.json');
+          final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
+          final weightsList = jsonData['weights'] as List;
+          _camWeights = weightsList.map((row) {
+            if (row is! List) {
+              throw Exception('CAM weights row is not a list, got ${row.runtimeType}');
+            }
+            return List<double>.from(row.map((val) => (val as num).toDouble()));
+          }).toList();
+          _logger.i('✅ Loaded CAM weights from legacy single file');
+        } catch (fileError) {
+          _logger.e('❌ Failed to load CAM weights file: $fileError');
+          _logger.e('   File path: assets/models/cam_weights.json');
+          _logger.e('   This usually means:');
+          _logger.e('   1. File is missing from assets/models/');
+          _logger.e('   2. pubspec.yaml assets not configured');
+          _logger.e('   3. App needs to be rebuilt');
+          rethrow;
         }
       }
-
-      final numWeightClasses =
-          _camWeights!.isNotEmpty ? _camWeights![0].length : 0;
-      if (numWeightClasses != numClasses) {
-        _logger.w('⚠️ CAM weights class count mismatch:');
-        _logger.w('   Expected: $numClasses classes');
-        _logger.w('   Got: $numWeightClasses classes');
-        if (numWeightClasses < numClasses) {
-          throw Exception(
-            'CAM weights class count is too small: expected $numClasses, got $numWeightClasses',
-          );
-        }
-        _logger.w('   Using first $numClasses classes');
+      
+      // Validate weights
+      if (_camWeights == null || _camWeights!.isEmpty) {
+        throw Exception('CAM weights are null or empty after loading');
       }
-
-      _logger.i(
-        '✅ CAM weights loaded: ${_camWeights!.length} features x ${_camWeights![0].length} classes',
-      );
+      
+      _logger.i('✅ CAM weights loaded successfully');
+      print('✅ [OfflineCAMService] CAM weights loaded!');
+      print('   MobileNetV2 weights: ${_mobilenetv2CamWeights != null ? "✅" : "❌"}');
+      print('   HerbaScan weights: ${_herbascanCamWeights != null ? "✅" : "❌"}');
+      
+      // Note: Feature dimension validation happens later
+      _logger.d('   Weights shape: ${_camWeights!.length} features x ${_camWeights![0].length} classes');
+      
+      return;
     } catch (e, stackTrace) {
       _logger.e('❌ Error loading CAM weights: $e');
       _logger.e('   Error type: ${e.runtimeType}');
@@ -579,6 +671,9 @@ class OfflineCAMService {
 
   /// Identify plant and generate CAM visualization
   ///
+  /// [modelName] - Optional: "MobileNetV2" or "HerbaScan" to use specific model
+  ///                If null, uses preferred model or default
+  ///
   /// Returns Map with:
   /// - plant_name: String
   /// - scientific_name: String
@@ -587,9 +682,17 @@ class OfflineCAMService {
   /// - gradcam_image: Uint8List (CAM overlay image as PNG)
   /// - method: "cam"
   /// - processing_time_ms: double
+  /// - model_used: String (which model was used for CAM)
   Future<Map<String, dynamic>?> identifyPlantWithCAM(
-    Uint8List imageBytes,
-  ) async {
+    Uint8List imageBytes, {
+    String? modelName,
+  }) async {
+    // Set preferred model if specified
+    if (modelName != null) {
+      setPreferredModel(modelName);
+      _logger.i('Using specified model for CAM: $modelName');
+      print('📌 [OfflineCAMService] Using model: $modelName');
+    }
     if (!_isInitialized) {
       _logger.w('Service not initialized, initializing now...');
       try {
@@ -652,13 +755,16 @@ class OfflineCAMService {
       }
       print('✅ [OfflineCAM] CAM heatmap generated: [${camHeatmap.length}, ${camHeatmap[0].length}]');
 
-      // 4. Upscale heatmap (7x7 → 224x224)
-      final upscaledHeatmap = _resizeHeatmap(camHeatmap, inputSize, inputSize);
+      // 4. Upscale heatmap (7x7 → 224x224) with bicubic interpolation
+      final upscaledHeatmap = _resizeHeatmapBicubic(camHeatmap, inputSize, inputSize);
+      
+      // 5. Apply Gaussian blur for smoother, more organic appearance
+      final smoothedHeatmap = _applyGaussianBlur(upscaledHeatmap, sigma: 2.0);
 
-      // 5. Apply Jet colormap
-      final coloredHeatmap = _applyJetColormap(upscaledHeatmap);
+      // 6. Apply Jet colormap
+      final coloredHeatmap = _applyJetColormap(smoothedHeatmap);
 
-      // 6. Decode original image and overlay
+      // 7. Decode original image and overlay
       final originalImage = img.decodeImage(imageBytes);
       if (originalImage == null) {
         _logger.e('Failed to decode original image');
@@ -674,14 +780,14 @@ class OfflineCAMService {
 
       final overlayImage = _overlayHeatmap(resizedOriginal, coloredHeatmap);
 
-      // 7. Encode to PNG
+      // 8. Encode to PNG
       print('🔍 [OfflineCAM] Encoding overlay image to PNG...');
       final gradcamImageBytes = Uint8List.fromList(img.encodePng(overlayImage));
       print('✅ [OfflineCAM] PNG encoded: ${gradcamImageBytes.length} bytes');
 
       stopwatch.stop();
 
-      // 8. Get top predictions
+      // 9. Get top predictions
       final topPredictions = _getTopPredictions(predictions, 3);
 
       _logger.i(
@@ -703,11 +809,24 @@ class OfflineCAMService {
           '   Top prediction: ${topPredictions[0]['label']} (${predictions[predictedClassIdx]})');
       _logger.i('   Method: cam');
 
+      // Format predictions for UI (convert 'label' to 'plantName' and add 'index')
+      final formattedPredictions = topPredictions.map((pred) {
+        return {
+          'label': pred['label'],
+          'plantName': pred['label'], // UI expects 'plantName'
+          'scientificName': pred['scientificName'] ?? pred['label'],
+          'confidence': pred['confidence'],
+          'index': pred['index'] ?? 0,
+          'isDOHApproved': pred['isDOHApproved'] ?? false,
+        };
+      }).toList();
+
       return {
         'plant_name': topPredictions[0]['label'] ?? 'Unknown',
         'scientific_name': topPredictions[0]['scientificName'] ?? '',
         'confidence': predictions[predictedClassIdx],
-        'all_predictions': topPredictions,
+        'predictions': formattedPredictions, // UI expects 'predictions' key
+        'all_predictions': topPredictions, // Keep for backward compatibility
         'gradcam_image': gradcamImageBytes, // This is the critical field!
         'method': 'cam',
         'processing_time_ms': stopwatch.elapsedMilliseconds.toDouble(),
@@ -1218,8 +1337,8 @@ class OfflineCAMService {
         .toList();
   }
 
-  /// Resize heatmap using bilinear interpolation
-  List<List<double>> _resizeHeatmap(
+  /// Resize heatmap using bicubic interpolation for smooth, organic appearance
+  List<List<double>> _resizeHeatmapBicubic(
     List<List<double>> heatmap,
     int targetWidth,
     int targetHeight,
@@ -1234,31 +1353,104 @@ class OfflineCAMService {
         final srcY = (y / targetHeight) * srcHeight;
         final srcX = (x / targetWidth) * srcWidth;
 
-        // Bilinear interpolation
-        final y1 = srcY.floor();
-        final y2 = (y1 + 1).clamp(0, srcHeight - 1);
-        final x1 = srcX.floor();
-        final x2 = (x1 + 1).clamp(0, srcWidth - 1);
+        // Bicubic interpolation uses 4x4 neighborhood
+        final srcYFloor = srcY.floor();
+        final srcXFloor = srcX.floor();
+        
+        final y0 = (srcYFloor - 1).clamp(0, srcHeight - 1);
+        final y1 = srcYFloor.clamp(0, srcHeight - 1);
+        final y2 = (srcYFloor + 1).clamp(0, srcHeight - 1);
+        final y3 = (srcYFloor + 2).clamp(0, srcHeight - 1);
 
-        final fy = srcY - y1;
-        final fx = srcX - x1;
+        final x0 = (srcXFloor - 1).clamp(0, srcWidth - 1);
+        final x1 = srcXFloor.clamp(0, srcWidth - 1);
+        final x2 = (srcXFloor + 1).clamp(0, srcWidth - 1);
+        final x3 = (srcXFloor + 2).clamp(0, srcWidth - 1);
 
-        final val11 = heatmap[y1][x1];
-        final val12 = heatmap[y1][x2];
-        final val21 = heatmap[y2][x1];
-        final val22 = heatmap[y2][x2];
+        final fy = (srcY - srcYFloor).clamp(0.0, 1.0);
+        final fx = (srcX - srcXFloor).clamp(0.0, 1.0);
 
-        final val = (val11 * (1 - fx) * (1 - fy) +
-                val12 * fx * (1 - fy) +
-                val21 * (1 - fx) * fy +
-                val22 * fx * fy)
-            .clamp(0.0, 1.0);
+        // Cubic interpolation function (Catmull-Rom spline)
+        double cubicInterpolate(double p0, double p1, double p2, double p3, double t) {
+          final t2 = t * t;
+          final t3 = t2 * t;
+          return 0.5 * (
+            (2.0 * p1) +
+            (-p0 + p2) * t +
+            (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * t2 +
+            (-p0 + 3.0 * p1 - 3.0 * p2 + p3) * t3
+          );
+        }
 
-        return val;
+        // Interpolate along y-axis first
+        final row0 = cubicInterpolate(
+          heatmap[y0][x0], heatmap[y0][x1], heatmap[y0][x2], heatmap[y0][x3], fx);
+        final row1 = cubicInterpolate(
+          heatmap[y1][x0], heatmap[y1][x1], heatmap[y1][x2], heatmap[y1][x3], fx);
+        final row2 = cubicInterpolate(
+          heatmap[y2][x0], heatmap[y2][x1], heatmap[y2][x2], heatmap[y2][x3], fx);
+        final row3 = cubicInterpolate(
+          heatmap[y3][x0], heatmap[y3][x1], heatmap[y3][x2], heatmap[y3][x3], fx);
+
+        // Interpolate along x-axis (actually y-axis in final step)
+        final val = cubicInterpolate(row0, row1, row2, row3, fy);
+
+        return val.clamp(0.0, 1.0);
       }),
     );
 
     return resized;
+  }
+
+  /// Apply Gaussian blur to heatmap for smoother, more organic appearance
+  List<List<double>> _applyGaussianBlur(
+    List<List<double>> heatmap, {
+    double sigma = 2.0,
+  }) {
+    final height = heatmap.length;
+    final width = heatmap[0].length;
+
+    // Calculate kernel size (should be odd and cover 3*sigma)
+    final kernelSize = ((sigma * 6).ceil() | 1); // Ensure odd number
+    final halfKernel = kernelSize ~/ 2;
+
+    // Generate 1D Gaussian kernel
+    final kernel = List.generate(kernelSize, (i) {
+      final x = i - halfKernel;
+      return math.exp(-(x * x) / (2 * sigma * sigma));
+    });
+
+    // Normalize kernel
+    final kernelSum = kernel.reduce((a, b) => a + b);
+    final normalizedKernel = kernel.map((k) => k / kernelSum).toList();
+
+    // Apply horizontal blur
+    final blurredHorizontal = List.generate(height, (y) {
+      return List.generate(width, (x) {
+        double sum = 0.0;
+        for (int i = 0; i < kernelSize; i++) {
+          final offset = i - halfKernel;
+          final srcX = (x + offset).clamp(0, width - 1);
+          sum += heatmap[y][srcX] * normalizedKernel[i];
+        }
+        return sum;
+      });
+    });
+
+    // Apply vertical blur
+    final blurred = List.generate(height, (y) {
+      return List.generate(width, (x) {
+        double sum = 0.0;
+        for (int i = 0; i < kernelSize; i++) {
+          final offset = i - halfKernel;
+          final srcY = (y + offset).clamp(0, height - 1);
+          sum += blurredHorizontal[srcY][x] * normalizedKernel[i];
+        }
+        return sum.clamp(0.0, 1.0);
+      });
+    });
+
+    return blurred;
   }
 
   /// Apply Jet colormap to heatmap
@@ -1367,21 +1559,25 @@ class OfflineCAMService {
   }
 
   /// Get plant name from index
+  /// class_indices.json format: {"PlantName": index}
+  /// So we need to find the key where value == index
   String _getPlantName(int index) {
-    if (_labels == null) {
+    if (_labels == null || _labels!.isEmpty) {
       return 'Plant_$index';
     }
-    final label = _labels![index.toString()];
-    if (label == null) {
-      return 'Plant_$index';
+    
+    // Find the plant name where the value equals the index
+    // class_indices.json format: {"Mango": 24, "Oregano": 28, ...}
+    for (final entry in _labels!.entries) {
+      // Try to parse the value as an integer
+      final value = int.tryParse(entry.value.toString());
+      if (value == index) {
+        return entry.key; // Return the plant name (key)
+      }
     }
-    // Extract common name from format like "4Vitex negundo(VN)"
-    // Try to extract the name before the parentheses
-    final match = RegExp(r'^\d+([^(]+)').firstMatch(label);
-    if (match != null) {
-      return match.group(1)!.trim();
-    }
-    return label;
+    
+    // Fallback: if not found, return Plant_index
+    return 'Plant_$index';
   }
 
   /// Get scientific name (placeholder)

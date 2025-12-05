@@ -6,9 +6,9 @@ class AppProvider extends ChangeNotifier {
   bool _isOfflineMode = false;
   bool _showConfidenceScores = true;
   bool _showGradCAM = true;
-  bool _showTop3Results = false;
+  bool _showTop3Results = true; // Default to true (ON)
   bool _isDarkMode = false;
-  final String _appVersion = 'v0.5.8';
+  final String _appVersion = 'v0.8.3';
   final String _modelVersion = 'CNN v1.0';
   bool _isThemeChanging = false;
 
@@ -32,11 +32,17 @@ class AppProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       _isFirstLaunch = prefs.getBool('isFirstLaunch') ?? true;
       _isOfflineMode = prefs.getBool('isOfflineMode') ?? false;
-      _showConfidenceScores = prefs.getBool('showConfidenceScores') ?? true;
-      _showGradCAM = prefs.getBool('showGradCAM') ?? true;
-      _showTop3Results = prefs.getBool('showTop3Results') ?? false;
+      // Check new keys first, fallback to old keys for backward compatibility
+      _showConfidenceScores = prefs.getBool('show_confidence') ??
+          prefs.getBool('showConfidenceScores') ??
+          true;
+      _showGradCAM =
+          prefs.getBool('show_gradcam') ?? prefs.getBool('showGradCAM') ?? true;
+      _showTop3Results = prefs.getBool('show_top3') ??
+          prefs.getBool('showTop3Results') ??
+          true; // Default to true (ON)
       _isDarkMode = prefs.getBool('isDarkMode') ?? false;
-      
+
       // Use a microtask to ensure smooth UI updates
       Future.microtask(() {
         notifyListeners();
@@ -102,11 +108,11 @@ class AppProvider extends ChangeNotifier {
   // Toggle dark mode
   Future<void> toggleDarkMode() async {
     if (_isThemeChanging) return; // Prevent rapid toggling
-    
+
     _isThemeChanging = true;
     _isDarkMode = !_isDarkMode;
     await _saveSettings();
-    
+
     // Use a post-frame callback to ensure smooth theme transitions
     WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();

@@ -98,21 +98,25 @@ class AdaptiveGradCAMService {
   }
 
   /// Check if device has internet connectivity
+  /// Returns true if network is available (even if backend is not reachable)
+  /// This allows us to try online first, and fallback gracefully if backend fails
   Future<bool> _hasConnectivity() async {
     try {
       final connectivityResults = await _connectivity.checkConnectivity();
-      final hasConnection = connectivityResults.any(
+      final hasNetworkConnection = connectivityResults.any(
         (result) => result != ConnectivityResult.none,
       );
 
-      if (!hasConnection) {
+      if (!hasNetworkConnection) {
+        _logger.d('No network connection detected');
         return false;
       }
 
-      // Additional check: verify backend is reachable
-      // This is more reliable than just checking network interface
-      final isServerReachable = await _onlineService.hasConnectivity();
-      return isServerReachable;
+      // We have network - try online first
+      // Don't check backend health here - let the actual request fail gracefully
+      // This allows us to attempt online GradCAM even if backend is temporarily down
+      _logger.d('Network connection detected, will attempt online GradCAM');
+      return true;
     } catch (e) {
       _logger.w('Error checking connectivity: $e');
       return false;
@@ -141,6 +145,7 @@ class AdaptiveGradCAMService {
   Future<Map<String, dynamic>?> identifyPlant({
     String? imagePath,
     Uint8List? imageBytes,
+    String? modelName, // Optional: "MobileNetV2" or "HerbaScan" to use specific model for CAM
   }) async {
     // CRITICAL: Use print() for visibility in logs
     print('═══════════════════════════════════════════════════════');
@@ -327,7 +332,7 @@ class AdaptiveGradCAMService {
       _logger.i('📴 Attempting offline CAM computation...');
       print('📴 [AdaptiveGradCAM] Attempting offline CAM computation...');
       print('   Image bytes: ${imageBytes.length} bytes');
-      final offlineResult = await _tryOffline(imageBytes);
+      final offlineResult = await _tryOffline(imageBytes, modelName: modelName);
       print(
           '   Offline CAM result: ${offlineResult != null ? "SUCCESS" : "NULL"}');
 
@@ -380,8 +385,12 @@ class AdaptiveGradCAMService {
             (hasConnection && offlineResult['fallback_used'] == true);
 
         // CRITICAL: Ensure gradcam_image is preserved in the return
+        // Also ensure 'predictions' key exists (convert from 'all_predictions' if needed)
+        final predictions = offlineResult['predictions'] ?? offlineResult['all_predictions'] ?? [];
+        
         final result = {
           ...offlineResult,
+          'predictions': predictions, // Ensure 'predictions' key exists for UI
           'method':
               offlineResult['method'] ?? 'cam', // Ensure method is always set
           'fallback_used':
@@ -457,12 +466,16 @@ class AdaptiveGradCAMService {
   }
 
   /// Try offline CAM identification
-  Future<Map<String, dynamic>?> _tryOffline(Uint8List imageBytes) async {
+  /// [modelName] - Optional: "MobileNetV2" or "HerbaScan" to use specific model for CAM
+  Future<Map<String, dynamic>?> _tryOffline(Uint8List imageBytes, {String? modelName}) async {
     try {
       print('═══════════════════════════════════════════════════════');
       print('📴 [AdaptiveGradCAM] _tryOffline() called');
       print('   Image bytes: ${imageBytes.length} bytes');
       print('   Offline service initialized: ${_offlineService.isInitialized}');
+      if (modelName != null) {
+        print('   Using model: $modelName');
+      }
       print('═══════════════════════════════════════════════════════');
 
       if (!_offlineService.isInitialized) {
@@ -477,11 +490,14 @@ class AdaptiveGradCAMService {
 
       _logger.d('📴 Starting offline CAM computation...');
       _logger.d('   Image bytes: ${imageBytes.length} bytes');
+      if (modelName != null) {
+        _logger.d('   Using model: $modelName');
+      }
       print(
           '✅ [AdaptiveGradCAM] Offline CAM service is initialized, proceeding...');
 
       final stopwatch = Stopwatch()..start();
-      final result = await _offlineService.identifyPlantWithCAM(imageBytes);
+      final result = await _offlineService.identifyPlantWithCAM(imageBytes, modelName: modelName);
       stopwatch.stop();
 
       if (result == null) {

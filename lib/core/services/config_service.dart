@@ -8,7 +8,7 @@ class ConfigService {
   // PLACEHOLDER: Replace with your API key for testing, or configure via setGeminiApiKey()
 
   static const String _defaultGeminiApiKey =
-      'AIzaSyBiYp5sWppWetPjg3eEF0IyDjU0X25Szw8'; // TODO: Add your Gemini API key here or use setGeminiApiKey() method
+      'AIzaSyBvSJM-Z6PsHbU_bIiQF3SqP0tJfIvwM0A'; // Updated Gemini API key
 
   /// Get the Gemini API key from SharedPreferences
   /// Returns default API key if not configured in SharedPreferences

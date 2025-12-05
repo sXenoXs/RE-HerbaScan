@@ -12,9 +12,13 @@ class ConditionSearchScreen extends StatefulWidget {
   State<ConditionSearchScreen> createState() => _ConditionSearchScreenState();
 }
 
-class _ConditionSearchScreenState extends State<ConditionSearchScreen> {
+class _ConditionSearchScreenState extends State<ConditionSearchScreen>
+    with AutomaticKeepAliveClientMixin {
   String? _selectedCondition;
   List<Plant> _filteredPlants = [];
+
+  @override
+  bool get wantKeepAlive => true;
 
   // Common medical conditions from the plant database
   final List<Map<String, dynamic>> _conditions = [
@@ -81,6 +85,7 @@ class _ConditionSearchScreenState extends State<ConditionSearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     final theme = Theme.of(context);
     final appLocalizations = AppLocalizations.of(context);
 
@@ -233,6 +238,7 @@ class _ConditionSearchScreenState extends State<ConditionSearchScreen> {
 
   Widget _buildConditionGrid(ThemeData theme) {
     return GridView.builder(
+      key: const PageStorageKey<String>('condition_search_grid'),
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
@@ -337,6 +343,8 @@ class _ConditionSearchScreenState extends State<ConditionSearchScreen> {
     }
 
     return ListView.builder(
+      key:
+          PageStorageKey<String>('condition_search_plants_$_selectedCondition'),
       padding: const EdgeInsets.all(16),
       itemCount: _filteredPlants.length,
       itemBuilder: (context, index) {
