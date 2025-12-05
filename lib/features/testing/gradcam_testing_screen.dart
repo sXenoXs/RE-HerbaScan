@@ -60,7 +60,7 @@ class _GradCAMTestingScreenState extends State<GradCAMTestingScreen> {
   Future<void> _testOnlineMode(Uint8List imageBytes) async {
     setState(() {
       _isTesting = true;
-      _currentTest = 'Testing Online Grad-CAM';
+      _currentTest = 'Testing Online Score-CAM';
       _progress = 0.0;
     });
 
@@ -128,7 +128,7 @@ class _GradCAMTestingScreenState extends State<GradCAMTestingScreen> {
     } catch (e, stackTrace) {
       ErrorLogger().logError(
         ErrorType.aiInferenceError,
-        'Online Grad-CAM test failed: $e',
+        'Online Score-CAM test failed: $e',
         stackTrace: stackTrace.toString(),
       );
 
@@ -527,7 +527,7 @@ class _GradCAMTestingScreenState extends State<GradCAMTestingScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Phase 5: GradCAM Testing'),
+        title: const Text('Phase 5: Score-CAM Testing'),
         actions: [
           IconButton(
             icon: const Icon(Icons.wifi),
@@ -709,7 +709,7 @@ class _GradCAMTestingScreenState extends State<GradCAMTestingScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('GradCAM Generation Metrics (${gradcamMetrics.length} samples)'),
+        Text('Score-CAM Generation Metrics (${gradcamMetrics.length} samples)'),
         const SizedBox(height: 8),
         _buildMetricRow('Average', '${avg.toStringAsFixed(0)}ms',
             avg < 2000 ? Colors.green : Colors.orange),

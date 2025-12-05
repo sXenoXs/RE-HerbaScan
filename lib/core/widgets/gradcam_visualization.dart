@@ -268,7 +268,7 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Explainable AI - ${widget.method == 'grad-cam' ? 'Grad-CAM' : 'CAM'}',
+                          'Explainable AI - ${widget.method == 'grad-cam' ? 'Score-CAM' : 'CAM'}',
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -409,7 +409,7 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
     }
 
     if (!hasImageBytes && !hasFilePath) {
-      final methodName = widget.method == 'cam' ? 'CAM' : 'Grad-CAM';
+      final methodName = widget.method == 'cam' ? 'CAM' : 'Score-CAM';
       print('   ⚠️ WARNING: No heatmap available for $methodName');
       // CRITICAL FIX: Use LayoutBuilder to respect parent constraints
       // TabBarView provides fixed constraints (220px), we must fit exactly
@@ -473,7 +473,7 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                         child: Text(
                           widget.method == 'cam'
                               ? 'Offline CAM heatmap generation failed. This may be due to model initialization issues or image processing errors.'
-                              : 'Grad-CAM heatmap generation failed. Please check your internet connection or try again.',
+                              : 'Score-CAM heatmap generation failed. Please check your internet connection or try again.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: descFontSize,
@@ -570,8 +570,9 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                               width: double.infinity,
                               height: double.infinity,
                               errorBuilder: (context, error, stackTrace) {
-                                final methodName =
-                                    widget.method == 'cam' ? 'CAM' : 'Grad-CAM';
+                                final methodName = widget.method == 'cam'
+                                    ? 'CAM'
+                                    : 'Score-CAM';
                                 return _buildErrorWidget(
                                     'Failed to decode $methodName heatmap image');
                               },
@@ -582,8 +583,9 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                               width: double.infinity,
                               height: double.infinity,
                               errorBuilder: (context, error, stackTrace) {
-                                final methodName =
-                                    widget.method == 'cam' ? 'CAM' : 'Grad-CAM';
+                                final methodName = widget.method == 'cam'
+                                    ? 'CAM'
+                                    : 'Score-CAM';
                                 return _buildErrorWidget(
                                     '$methodName heatmap not found');
                               },
@@ -1140,7 +1142,7 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
     if (isOnline && !isFallback) {
       badgeColor = Colors.green;
       badgeIcon = Icons.cloud;
-      badgeText = 'Online (Grad-CAM)';
+      badgeText = 'Online (Score-CAM)';
     } else if (isFallback) {
       badgeColor = Colors.orange;
       badgeIcon = Icons.sync_problem;
@@ -1298,7 +1300,7 @@ class GradCAMPreview extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'GradCAM not available',
+                          'Score-CAM not available',
                           style: TextStyle(
                             color: Colors.grey.shade600,
                             fontSize: 12,

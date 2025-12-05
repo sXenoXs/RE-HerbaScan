@@ -675,7 +675,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     if (method == 'cam') {
       return 'CAM';
     } else if (method == 'grad-cam') {
-      return 'GradCAM';
+      return 'Score-CAM';
     }
 
     // Fallback: use isOfflineScan to determine
@@ -694,7 +694,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     if (label == 'CAM' || label == 'Fallback') {
       labelColor = Colors.orange; // Orange for offline/fallback
     } else {
-      labelColor = Colors.green; // Green for online/GradCAM
+      labelColor = Colors.green; // Green for online/Score-CAM
     }
 
     return Container(

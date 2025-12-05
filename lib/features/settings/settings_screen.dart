@@ -6,12 +6,7 @@ import 'package:herbascan/core/providers/offline_provider.dart';
 import 'package:herbascan/core/widgets/offline_indicator.dart';
 import 'package:herbascan/features/offline/offline_demo_screen.dart';
 import 'package:herbascan/features/help/help_tutorial_screen.dart';
-import 'package:herbascan/features/metrics/performance_metrics_screen.dart';
-import 'package:herbascan/features/feedback/feedback_screen.dart';
-import 'package:herbascan/features/dashboard/performance_dashboard_screen.dart';
-import 'package:herbascan/features/testing/gradcam_testing_screen.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
-import 'package:herbascan/core/providers/plant_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -34,6 +29,7 @@ class SettingsScreen extends StatelessWidget {
           _buildLanguageSetting(context, theme),
           _buildOfflineModeSetting(context, theme),
           _buildAutoSaveSetting(context, theme),
+          _buildHelpTutorialLink(context, theme),
 
           const SizedBox(height: 16),
 
@@ -47,22 +43,6 @@ class SettingsScreen extends StatelessWidget {
           _buildConfidenceScoresSetting(context, theme),
           _buildGradCAMSetting(context, theme),
           _buildTop3ResultsSetting(context, theme),
-
-          const SizedBox(height: 24),
-
-          // Help & Support
-          _buildSectionHeader(context, theme, 'Help & Support'),
-          _buildHelpTutorialLink(context, theme),
-          _buildPerformanceMetricsLink(context, theme),
-          _buildFeedbackLink(context, theme),
-          _buildAppPerformanceLink(context, theme),
-          _buildGradCAMTestingLink(context, theme),
-
-          const SizedBox(height: 24),
-
-          // Database Management
-          _buildSectionHeader(context, theme, 'Database'),
-          _buildDatabaseResetOption(context, theme),
 
           const SizedBox(height: 24),
 
@@ -256,82 +236,6 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPerformanceMetricsLink(BuildContext context, ThemeData theme) {
-    return Card(
-      child: ListTile(
-        leading: const Icon(Icons.analytics),
-        title: const Text('AI Performance Metrics'),
-        subtitle: const Text('View model accuracy and performance stats'),
-        trailing: const Icon(Icons.arrow_forward_ios),
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const PerformanceMetricsScreen(),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildFeedbackLink(BuildContext context, ThemeData theme) {
-    final appLocalizations = AppLocalizations.of(context);
-
-    return Card(
-      child: ListTile(
-        leading: const Icon(Icons.feedback_outlined),
-        title: Text(appLocalizations.sendFeedback),
-        subtitle: const Text('Help us improve HerbaScan'),
-        trailing: const Icon(Icons.arrow_forward_ios),
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const FeedbackScreen(),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildAppPerformanceLink(BuildContext context, ThemeData theme) {
-    final appLocalizations = AppLocalizations.of(context);
-
-    return Card(
-      child: ListTile(
-        leading: const Icon(Icons.speed),
-        title: Text(appLocalizations.appPerformance),
-        subtitle: Text(appLocalizations.viewPerformanceData),
-        trailing: const Icon(Icons.arrow_forward_ios),
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const PerformanceDashboardScreen(),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildGradCAMTestingLink(BuildContext context, ThemeData theme) {
-    return Card(
-      child: ListTile(
-        leading: const Icon(Icons.science),
-        title: const Text('Phase 5: GradCAM Testing'),
-        subtitle: const Text('Test online/offline modes and measure performance'),
-        trailing: const Icon(Icons.arrow_forward_ios),
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const GradCAMTestingScreen(),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
   Widget _buildOfflineManagementSection(BuildContext context, ThemeData theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -340,11 +244,6 @@ class SettingsScreen extends StatelessWidget {
 
         // Offline Status Card
         OfflineStatusCard(),
-
-        const SizedBox(height: 16),
-
-        // Offline Features Status
-        OfflineFeatureStatus(),
 
         const SizedBox(height: 16),
 
@@ -527,83 +426,6 @@ class SettingsScreen extends StatelessWidget {
             child: const Text(
               'Clear',
               style: TextStyle(color: Colors.red),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDatabaseResetOption(BuildContext context, ThemeData theme) {
-    return Card(
-      child: ListTile(
-        leading: const Icon(Icons.refresh, color: Colors.orange),
-        title: const Text('Reset Plant Database'),
-        subtitle: const Text('Clear and reload all plant data (fixes missing plants)'),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () {
-          _showDatabaseResetDialog(context);
-        },
-      ),
-    );
-  }
-
-  void _showDatabaseResetDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Reset Plant Database'),
-        content: const Text(
-          'This will clear the plant database and reload all 16 plants (10 DOH + 6 additional). '
-          'This will fix missing plants. Continue?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.of(context).pop();
-              final plantProvider = Provider.of<PlantProvider>(context, listen: false);
-              
-              // Show loading
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (context) => const Center(
-                  child: CircularProgressIndicator(),
-                ),
-              );
-
-              try {
-                await plantProvider.forceReinitializeDatabase();
-                if (context.mounted) {
-                  Navigator.of(context).pop(); // Close loading
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('✅ Database reset successfully! All 16 plants loaded.'),
-                      backgroundColor: Colors.green,
-                      duration: Duration(seconds: 3),
-                    ),
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  Navigator.of(context).pop(); // Close loading
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('❌ Error resetting database: $e'),
-                      backgroundColor: Colors.red,
-                      duration: const Duration(seconds: 5),
-                    ),
-                  );
-                }
-              }
-            },
-            child: const Text(
-              'Reset',
-              style: TextStyle(color: Colors.orange),
             ),
           ),
         ],

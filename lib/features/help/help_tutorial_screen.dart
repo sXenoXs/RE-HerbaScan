@@ -180,7 +180,7 @@ class _HelpTutorialScreenState extends State<HelpTutorialScreen> {
               theme,
             ),
             _buildFeatureCard(
-              'GradCAM Visualization',
+              'Score-CAM Visualization',
               'See which parts of the leaf the AI focused on for identification.',
               Icons.visibility,
               theme,
@@ -357,8 +357,7 @@ class _HelpTutorialScreenState extends State<HelpTutorialScreen> {
             color: theme.colorScheme.primary,
             borderRadius: BorderRadius.circular(8),
           ),
-          child:
-              Icon(icon, color: Colors.white, size: 24),
+          child: Icon(icon, color: Colors.white, size: 24),
         ),
         title: Text(
           title,
