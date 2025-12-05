@@ -820,8 +820,10 @@ class _PlantResultScreenState extends State<PlantResultScreen>
             _buildInfoRow('Scan Time', DateTime.now().toString().split('.')[0]),
             _buildInfoRow('Image Path', widget.imagePath.split('/').last),
             _buildInfoRow(
-                // Show "CAM Available" for offline CAM, "GradCAM Available" for online GradCAM
-                widget.method == 'cam' ? 'CAM Available' : 'GradCAM Available',
+                // Show "CAM Available" for offline CAM, "Score-CAM Available" for online Score-CAM
+                widget.method == 'cam'
+                    ? 'CAM Available'
+                    : 'Score-CAM Available',
                 (widget.gradcamImageBytes != null || widget.gradCAMPath != null)
                     ? 'Yes'
                     : 'No'),
@@ -829,7 +831,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
               _buildInfoRow(
                   'Method',
                   widget.method == 'grad-cam'
-                      ? 'Online (Grad-CAM)'
+                      ? 'Online (Score-CAM)'
                       : 'Offline (CAM)'),
             if (widget.fallbackUsed == true)
               _buildInfoRow('Fallback Used', 'Yes'),
@@ -842,12 +844,12 @@ class _PlantResultScreenState extends State<PlantResultScreen>
   Widget _buildGradCAMInfoCard(ThemeData theme) {
     // Determine if using CAM (offline) or GradCAM (online)
     final isCAM = widget.method == 'cam';
-    final title = isCAM ? 'About Offline CAM' : 'About GradCAM';
+    final title = isCAM ? 'About Offline CAM' : 'About Score-CAM';
 
     // Description text based on method
     final description = isCAM
         ? 'CAM (Class Activation Mapping) shows which parts of the image the AI model focused on when making its prediction. This offline method uses feature maps to highlight important regions without requiring gradient computation.'
-        : 'GradCAM (Gradient-weighted Class Activation Mapping) shows which parts of the image the AI model focused on when making its prediction. This helps explain why the model made its decision.';
+        : 'Score-CAM (Score-weighted Class Activation Mapping) shows which parts of the image the AI model focused on when making its prediction. This helps explain why the model made its decision.';
 
     return Card(
       child: Padding(
@@ -978,7 +980,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
               const SizedBox(width: 16),
               Expanded(
                 child: Text(
-                  'Regenerating GradCAM and explanation...',
+                  'Regenerating Score-CAM and explanation...',
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
                 ),
@@ -1021,7 +1023,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
           SnackBar(
             content: Text(
               _regeneratedMethod == 'grad-cam'
-                  ? 'GradCAM regenerated successfully!'
+                  ? 'Score-CAM regenerated successfully!'
                   : 'CAM regenerated successfully!',
             ),
             backgroundColor: Colors.green,

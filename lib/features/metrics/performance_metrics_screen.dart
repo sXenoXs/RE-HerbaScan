@@ -154,7 +154,8 @@ class PerformanceMetricsScreen extends StatelessWidget {
                       '40 Philippine Medicinal Plants', theme),
                   _buildInfoRow(
                       'Validation Source', 'Test set (20% of dataset)', theme),
-                  _buildInfoRow('GradCAM', 'Enabled for explainability', theme),
+                  _buildInfoRow(
+                      'Score-CAM', 'Enabled for explainability', theme),
                 ],
               ),
             ),

@@ -583,7 +583,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
     if (method == 'cam') {
       return 'CAM';
     } else if (method == 'grad-cam') {
-      return 'GradCAM';
+      return 'Score-CAM';
     }
 
     // Fallback: use isOfflineScan to determine
@@ -602,7 +602,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
     if (label == 'CAM' || label == 'Fallback') {
       labelColor = Colors.orange; // Orange for offline/fallback
     } else {
-      labelColor = Colors.green; // Green for online/GradCAM
+      labelColor = Colors.green; // Green for online/Score-CAM
     }
 
     return Container(

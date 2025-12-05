@@ -18,25 +18,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     OnboardingPage(
       icon: Icons.camera_alt,
       title: 'AI-Powered Plant Recognition',
-      description: 'Identify Philippine medicinal plants instantly using advanced CNN technology',
+      description:
+          'Identify Philippine medicinal plants instantly using advanced CNN technology',
       color: const Color(0xFF6366F1),
     ),
     OnboardingPage(
       icon: Icons.offline_bolt,
       title: 'Works Offline',
-      description: 'No internet required - perfect for rural areas and field work',
+      description:
+          'No internet required - perfect for rural areas and field work',
       color: const Color(0xFF22C55E),
     ),
     OnboardingPage(
       icon: Icons.verified,
       title: 'DOH Approved Plants',
-      description: 'Access information about 13 clinically validated herbal medicines',
+      description:
+          'Access information about 13 clinically validated herbal medicines',
       color: const Color(0xFFF59E0B),
     ),
     OnboardingPage(
       icon: Icons.visibility,
       title: 'Explainable AI',
-      description: 'See exactly how the AI identifies plants with GradCAM visualization',
+      description:
+          'See exactly how the AI identifies plants with Score-CAM visualization',
       color: const Color(0xFF9F7AEA),
     ),
   ];
@@ -70,7 +74,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void _completeOnboarding() async {
     final appProvider = Provider.of<AppProvider>(context, listen: false);
     await appProvider.setFirstLaunchCompleted();
-    
+
     if (mounted) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const HomeScreen()),
@@ -97,7 +101,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     )
                   else
                     const SizedBox(width: 60),
-                  
                   TextButton(
                     onPressed: _completeOnboarding,
                     child: const Text('Skip'),
@@ -105,7 +108,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ],
               ),
             ),
-            
+
             // Page View
             Expanded(
               child: PageView.builder(
@@ -121,7 +124,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 },
               ),
             ),
-            
+
             // Page Indicators
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -133,7 +136,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
               ),
             ),
-            
+
             // Next/Get Started Button
             Padding(
               padding: const EdgeInsets.all(24.0),
@@ -146,7 +149,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                   child: Text(
                     _currentPage == _pages.length - 1 ? 'Get Started' : 'Next',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
@@ -177,29 +181,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               color: page.color,
             ),
           ),
-          
+
           const SizedBox(height: 48),
-          
+
           // Title
           Text(
             page.title,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Description
           Text(
             page.description,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-              height: 1.5,
-            ),
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                  height: 1.5,
+                ),
           ),
         ],
       ),
@@ -214,8 +219,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       width: isActive ? 24 : 8,
       height: 8,
       decoration: BoxDecoration(
-        color: isActive 
-            ? Theme.of(context).colorScheme.primary 
+        color: isActive
+            ? Theme.of(context).colorScheme.primary
             : Theme.of(context).colorScheme.primary.withOpacity(0.3),
         borderRadius: BorderRadius.circular(4),
       ),
