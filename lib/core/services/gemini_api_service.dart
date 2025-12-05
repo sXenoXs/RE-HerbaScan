@@ -288,27 +288,45 @@ ${ecologyInfo.isNotEmpty ? '\n$ecologyInfo' : ''}
 ${safetyInfo.isNotEmpty ? '\n$safetyInfo' : ''}
 ${safetyCheckInstructions.isNotEmpty ? safetyCheckInstructions : ''}
 
-**ANALYSIS REQUIRED:**
+**OUTPUT REQUIREMENTS - STRICT STRUCTURE:**
 
-1. **Plant Identification Summary**: 
+You MUST return your response using EXACTLY these four section headers in Markdown format. Do NOT deviate from this structure:
+
+### Taxonomy
+(List Kingdom, Family, Genus, Species)
+
+### Ecology & Habitat
+(Describe habitat and growth patterns)
+
+### Medicinal Use & Preparation
+(List specific traditional uses and step-by-step preparation if applicable)
+
+### Safety & Look-alikes
+(Analyze the heatmap image provided. Does this plant have toxic look-alikes? Explain the biological difference.)
+
+**ANALYSIS REQUIRED FOR EACH SECTION:**
+
+1. **Plant Identification Summary** (Before the structured sections):
    - Confirm that the visual traits of ${plantName} are present based on the heatmap analysis.
    - Explain: "The TFLite model identified this as ${plantName} (${scientificName}) with ${confidencePercent}% confidence. Heatmap Analysis: The model focused heavily on [specific plant part as shown in heatmap]. This confirms the presence of [biological marker], a key distinguishing feature of ${plantName}."
    - Reference specific plant parts where the heatmap shows high attention.
    - Explain why these areas confirm the identification is correct.
    - Make the user feel like the analysis is based on actual heatmap data, not textbook information.
 
-2. **Safety Check** (CRITICAL):
-   ${isDangerousLookAlike && dangerInfo != null ? '- This plant (${plantName}) is a DANGEROUS LOOK-ALIKE. Verify the heatmap shows the critical distinguishing marker: ${dangerInfo['marker']}. If the heatmap highlights ${dangerInfo['marker']}, this confirms the identification is correct and safe. If the heatmap does NOT clearly show ${dangerInfo['marker']}, emphasize this may indicate a misidentification.' : '- If ${plantName} has known look-alikes, verify the heatmap confirms the distinguishing features that separate ${plantName} from similar species.'}
+2. **### Taxonomy** (REQUIRED SECTION):
+   ${plantData != null ? 'Include: Kingdom: Plantae, Family: ${plantData.family}, Genus: ${plantData.genus}, Species: ${plantData.species}' : 'If available, list the plant\'s taxonomic classification (Kingdom, Family, Genus, Species). If not available, state "Taxonomy information not available."'}
 
-3. **Taxonomy**: ${plantData != null ? 'Include the taxonomy information provided above (Kingdom, Family, Genus, Species).' : 'If available, mention the plant\'s taxonomic classification (Family, Genus, Species).'}
+3. **### Ecology & Habitat** (REQUIRED SECTION):
+   ${plantData != null && (plantData.ecology.isNotEmpty || plantData.habitat.isNotEmpty) ? 'Describe: ${plantData.ecology.isNotEmpty ? plantData.ecology : ""} ${plantData.habitat.isNotEmpty ? "Habitat: ${plantData.habitat}" : ""}' : 'If available, describe where this plant is typically found, its environmental requirements, and growth patterns. If not available, state "Ecology information not available."'}
 
-4. **Ecology & Habitat**: ${plantData != null && (plantData.ecology.isNotEmpty || plantData.habitat.isNotEmpty) ? 'Include the ecology and habitat information provided above.' : 'If available, mention where this plant is typically found and its environmental requirements.'}
+4. **### Medicinal Use & Preparation** (REQUIRED SECTION):
+   ${plantData != null && plantData.medicinalUses.isNotEmpty ? 'List specific traditional uses: ${plantData.medicinalUses.map((u) => u.condition).join(", ")}. ${plantData.preparationMethods.isNotEmpty ? "Preparation: ${plantData.preparationMethods.first.title}" : ""}' : 'If this is a medicinal plant, list specific traditional uses and step-by-step preparation methods if applicable. Mention if it\'s DOH-approved or traditionally used. If not a medicinal plant, state "Not traditionally used for medicinal purposes."'}
 
-5. **Medicinal Uses Overview**: If this is a medicinal plant, briefly summarize its main medicinal uses and active compounds. Mention if it's DOH-approved or traditionally used. ${plantData != null && plantData.medicinalUses.isNotEmpty ? 'Reference the medicinal uses information provided above.' : ''}
+5. **### Safety & Look-alikes** (REQUIRED SECTION):
+   ${isDangerousLookAlike && dangerInfo != null ? 'CRITICAL: This plant (${plantName}) is a DANGEROUS LOOK-ALIKE. Analyze the heatmap image provided. Verify the heatmap shows the critical distinguishing marker: ${dangerInfo['marker']}. Explain the biological difference between ${plantName} and ${dangerInfo['safeAlternative']}. If the heatmap highlights ${dangerInfo['marker']}, this confirms the identification is correct. If the heatmap does NOT clearly show ${dangerInfo['marker']}, emphasize this may indicate a misidentification.' : plantData != null && plantData.safetyWarnings.isNotEmpty ? 'Include safety warnings: ${plantData.safetyWarnings.join(". ")}. ${plantData.isDOHApproved ? "This plant is DOH-approved for specific medicinal uses." : ""} If ${plantName} has known look-alikes, analyze the heatmap to confirm distinguishing features that separate ${plantName} from similar species.' : 'If this is a medicinal plant, mention any important safety considerations, contraindications, or warnings. Analyze the heatmap image provided. Does this plant have toxic look-alikes? Explain the biological difference. If no safety concerns, state "No known safety concerns when used as directed."'}
 
-6. **Safety Information**: ${plantData != null && plantData.safetyWarnings.isNotEmpty ? 'Include the safety warnings provided above. This is CRITICAL for user safety.' : 'If this is a medicinal plant, mention any important safety considerations, contraindications, or warnings.'}
-
-7. **Usability Assessment**: Analyze the plant's condition based on heatmap patterns and provide a clear usability verdict:
+6. **Usability Assessment** (After the structured sections):
+   Analyze the plant's condition based on heatmap patterns and provide a clear usability verdict:
 
    **Format the Usability Assessment as follows:**
    
@@ -323,22 +341,56 @@ ${safetyCheckInstructions.isNotEmpty ? safetyCheckInstructions : ''}
      * If NOT RECOMMENDED: Explain why (severe disease, damage, or safety concerns)
    - Recommendations for use (if usable) or what to look for before using
 
-**OUTPUT REQUIREMENTS:**
-- Write in a friendly, accessible tone suitable for general users.
-- Keep the explanation concise but informative (approximately 350-450 words).
-- Focus on practical information that helps users understand why the model made this identification.
-- Never question or suggest alternatives to the model's prediction.
-- Speak definitively about ${plantName} as if the identification is confirmed fact.
-
-**Format your response using Markdown:**
-- Use **bold** for section headers (e.g., **Plant Identification Summary**, **Taxonomy**, **Ecology & Habitat**, **Medicinal Uses Overview**, **Safety Information**, **Usability Assessment**)
-- For Usability Assessment, start with **Status: [USABLE/USE WITH CAUTION/NOT RECOMMENDED]** in bold
-- Add a blank line after each bold header before the content
+**CRITICAL FORMATTING REQUIREMENTS:**
+- You MUST use EXACTLY these four Markdown headers (###) in this exact order:
+  1. ### Taxonomy
+  2. ### Ecology & Habitat
+  3. ### Medicinal Use & Preparation
+  4. ### Safety & Look-alikes
+- Each section MUST start with the header (###) followed by a blank line, then the content
+- Do NOT use **bold** for these four section headers - use ### (h3) Markdown headers
+- Write in a friendly, accessible tone suitable for general users
+- Keep the explanation concise but informative (approximately 400-500 words total)
+- Focus on practical information that helps users understand why the model made this identification
+- Never question or suggest alternatives to the model's prediction
+- Speak definitively about ${plantName} as if the identification is confirmed fact
 - Use *italic* for emphasis when needed
-- Use bullet points (- or *) for lists
+- Use bullet points (- or *) for lists within sections
 - Use proper line breaks between sections (blank lines)
 - Keep paragraphs concise and well-structured
-- Ensure proper spacing: blank line after headers, blank line between sections''';
+- Ensure proper spacing: blank line after headers, blank line between sections
+
+**EXAMPLE OUTPUT STRUCTURE:**
+```
+**Plant Identification Summary**
+
+[Your identification analysis here]
+
+### Taxonomy
+
+**Family:** [Family name]
+**Genus:** [Genus name]
+**Species:** [Species name]
+
+### Ecology & Habitat
+
+[Your ecology and habitat description here]
+
+### Medicinal Use & Preparation
+
+**Uses:** [List traditional uses]
+**Preparation:** [Step-by-step preparation if applicable]
+
+### Safety & Look-alikes
+
+[Your safety analysis and look-alike information here]
+
+**Usability Assessment**
+
+**Status: [USABLE/USE WITH CAUTION/NOT RECOMMENDED]**
+
+[Your usability analysis here]
+```''';
   }
 
   /// Remove greeting text and introductory phrases from explanation

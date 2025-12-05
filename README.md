@@ -10,9 +10,9 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 
 ## 🚀 Current Development Status
 
-**Version**: v0.8.3  
+**Version**: v0.8.5  
 **Last Updated**: December 2025
-**Project Phase**: Phase 33 Complete (Offline Data Retrieval & UI Fixes)  
+**Project Phase**: Phase 35 Complete (AI Explanation Content Standardization & Complete Plant Database Migration)  
 **Overall Progress**: 99% Complete - **PRODUCTION READY** 
 
 ### ✅ Added Features (Complete/Incomplete Features)
@@ -34,8 +34,8 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **Camera Zoom Controls**: ✅ **NEW** Pinch-to-zoom and optimized slider zoom with performance improvements
 - **UI/UX Refinements**: ✅ **NEW** Enhanced readability, visibility, and user experience across all screens
 - **Offline Processing**: ✅ Full offline functionality
-- **AI Model Integration**: ✅ **NEW** Dual model architecture (MobileNetV2 + HerbaScan custom model) with automatic best-result selection
-- **Offline AI Inference**: ✅ TensorFlow Lite multi-output models work offline (both models supported)
+- **AI Model Integration**: ✅ **UPDATED** Standardized to MobileNetV2 model only for prediction consistency (HerbaScan custom model deprecated)
+- **Offline AI Inference**: ✅ TensorFlow Lite multi-output model works offline (MobileNetV2 only)
 - **Online/Offline Adaptive System**: ✅ **NEW** Automatically tries online GradCAM first, falls back to offline CAM gracefully
 - **Plant Name Display**: ✅ **NEW** Fixed to show correct plant names (e.g., "Mango" instead of "Plant_24")
 - **Predictions Format**: ✅ **NEW** Fixed to return predictions in correct format for UI display
@@ -48,7 +48,9 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **Offline CAM Heatmap Rendering**: ✅ **NEW** Smooth bicubic interpolation and Gaussian blur for organic, contoured heatmaps
 - **Unified Heatmap Explanation Card**: ✅ **NEW** Merged "About GradCAM/CAM" and "Heatmap Legend" into single card with visual legend
 - **Persistent Settings System**: ✅ **NEW** User preferences saved to SharedPreferences (show_confidence, show_gradcam, show_top3)
-- **Hybrid XAI Explanation System**: ✅ Comprehensive text explanations with offline (JSON) and online (Gemini API) support
+- **Hybrid XAI Explanation System**: ✅ **UPDATED** Standardized content structure with four sections (Taxonomy, Ecology, Medicinal Uses, Safety) - identical format for online and offline explanations
+  - ✅ **COMPLETE** All 42 plants in `plant_explanations.json` migrated to new structured format
+  - ✅ **FIXED** GradCAM (Online) source badge now correctly displays "Online" instead of "Offline"
 - **Plant Results Screen**: ✅ AI prediction results with functional GradCAM integration
 - **Interactive Heatmaps**: ✅ Working opacity controls and tabbed interface
 - **Plant Detail Screen**: ✅ **NEW** Comprehensive plant information with ecology & habitat
@@ -78,9 +80,12 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **GradCAM/CAM Fixes**: ✅ **NEW** Fixed all GradCAM and CAM heatmap issues, scan persistence, and UI visibility
 - **Method Labels**: ✅ **NEW** Added method indicators (CAM/GradCAM/Fallback/Online) in History and Recent Scans
 - **Resizable Text Areas**: ✅ **NEW** Made feedback form text areas vertically resizable
-- **Hybrid XAI Explanation System**: ✅ **NEW** Comprehensive Explainable AI with offline (JSON) and online (Gemini API) explanations
-- **Markdown Text Formatting**: ✅ **NEW** Rich text explanations with proper formatting (bold, italic, headers, lists)
+- **Hybrid XAI Explanation System**: ✅ **UPDATED** Standardized structured format with four required sections: Taxonomy, Ecology & Habitat, Medicinal Uses, Safety Protocol
+- **Markdown Text Formatting**: ✅ **UPDATED** Uses h3 headers (###) for structured sections, rich text with proper formatting (bold, italic, headers, lists)
 - **Usability Assessment**: ✅ **NEW** Clear status indicators (USABLE/USE WITH CAUTION/NOT RECOMMENDED) based on heatmap analysis
+- **Content Standardization**: ✅ **COMPLETE** Online (Gemini) and offline (JSON) explanations now provide identical data depth and structure
+  - All 42 plants migrated to structured format with taxonomy, ecology, medicinal_preparation, and safety_consideration
+  - Source badge correctly displays "Online" for GradCAM (Online) mode and "Offline" for CAM (Offline) mode
 - **Refresh Functionality**: ✅ **NEW** Refresh button regenerates both GradCAM heatmap and AI explanation
 - **API Key Management**: ✅ **NEW** Secure API key configuration system for Gemini API
 - **Scroll Position Persistence**: ✅ **NEW** Condition Search Screen now preserves scroll position when navigating back from selected condition
@@ -488,12 +493,13 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 
 ### Phase 9: Hybrid XAI Explanation System (✅ COMPLETED)
 - [x] Implemented offline (JSON) + online (Gemini API) explanation system
-- [x] Created offline explanation database for all 16 plants
+- [x] Created offline explanation database for all 42 plants (expanded from 16)
 - [x] Integrated Gemini API for online explanations
 - [x] Added markdown text formatting
 - [x] Implemented usability assessment with clear status indicators
 - [x] Added refresh functionality for regenerating explanations
 - [x] Created API key management system
+- [x] **Content Standardization** (v0.8.5): Standardized structure with four sections (Taxonomy, Ecology, Medicinal Uses, Safety) - identical format for online and offline
 
 ### Phase 10: Beta Testing & Deployment (🔄 In Progress)
 
@@ -634,7 +640,7 @@ herbascan/
 
 ## 📊 Progress Metrics
 
-- **Version**: v0.5.8
+- **Version**: v0.8.5
 - **Code Files Created**: 50+ files
 - **Lines of Code**: 10,000+ lines
 - **Features Implemented**: 45+ core features
@@ -643,7 +649,7 @@ herbascan/
 - **Services**: 18 services (Database, Plant, Offline, GradCAM, XAI Explanation, Gemini API, Config, Performance, Analytics, Error Logger, Feedback, etc.)
 - **Models**: 3 data models (Plant, ScanResult, UserFeedback)
 - **Database Tables**: 4 tables with relationships
-- **Plant Database**: 16 medicinal plants (10 DOH-approved + 6 additional)
+- **Plant Database**: 42 medicinal plants (10 DOH-approved + 32 additional)
 - **Languages Supported**: 2 (English, Filipino)
 - **Documentation Files**: 20+ comprehensive documentation files
 - **Test Cases**: 50+ test cases documented

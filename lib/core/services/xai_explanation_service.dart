@@ -11,24 +11,33 @@ import 'gemini_api_service.dart';
 import 'config_service.dart';
 
 /// Model for plant explanation data
+/// Standardized structure with four required sections:
+/// 1. Taxonomy (Family, Genus, Species)
+/// 2. Ecology (Habitat, Growth Patterns)
+/// 3. Medicinal Use & Preparation (Traditional uses, preparation steps)
+/// 4. Safety & Look-alikes (Toxicity warnings, look-alike distinction)
 class PlantExplanation {
   final String identification;
-  final String medicinalUses;
-  final String usability;
-  final String? taxonomy;
-  final String? ecology;
-  final String? safety;
+  final String? taxonomy; // Family, Genus, Species
+  final String? ecology; // Habitat, Growth Patterns
+  final String?
+      medicinalPreparation; // Traditional uses, preparation steps (renamed from medicinalUses)
+  final String? safety; // Toxicity warnings, look-alike distinction
   final String? heatmapGuidance; // Guidance for interpreting heatmap offline
+  final String
+      usability; // Usability assessment (kept for backward compatibility)
 
   PlantExplanation({
     required this.identification,
-    required this.medicinalUses,
-    required this.usability,
     this.taxonomy,
     this.ecology,
+    String? medicinalPreparation,
     this.safety,
     this.heatmapGuidance,
-  });
+    required this.usability,
+    // Backward compatibility: support old medicinalUses field
+    String? medicinalUses,
+  }) : medicinalPreparation = medicinalPreparation ?? medicinalUses ?? '';
 
   String get formattedExplanation {
     final buffer = StringBuffer();
@@ -38,34 +47,48 @@ class PlantExplanation {
     buffer.writeln(identification);
     buffer.writeln();
 
+    // Section 1: Taxonomy
     if (taxonomy != null && taxonomy!.isNotEmpty) {
-      buffer.writeln('**Taxonomy**');
+      buffer.writeln('### Taxonomy');
+      buffer.writeln();
       buffer.writeln(taxonomy);
       buffer.writeln();
     }
 
+    // Section 2: Ecology & Habitat
     if (ecology != null && ecology!.isNotEmpty) {
-      buffer.writeln('**Ecology & Habitat**');
+      buffer.writeln('### Ecology & Habitat');
+      buffer.writeln();
       buffer.writeln(ecology);
       buffer.writeln();
     }
 
-    buffer.writeln('**Medicinal Uses Overview**');
-    buffer.writeln(medicinalUses);
-    buffer.writeln();
+    // Section 3: Medicinal Uses
+    if (medicinalPreparation != null && medicinalPreparation!.isNotEmpty) {
+      buffer.writeln('### Medicinal Uses');
+      buffer.writeln();
+      buffer.writeln(medicinalPreparation);
+      buffer.writeln();
+    }
 
+    // Section 4: Safety Protocol
     if (safety != null && safety!.isNotEmpty) {
-      buffer.writeln('**Safety Information**');
+      buffer.writeln('### Safety Protocol');
+      buffer.writeln();
       buffer.writeln(safety);
       buffer.writeln();
     }
 
+    // Usability Assessment (kept for backward compatibility)
     buffer.writeln('**Usability Assessment**');
+    buffer.writeln();
     buffer.writeln(usability);
     buffer.writeln();
 
+    // Heatmap Guidance (optional)
     if (heatmapGuidance != null && heatmapGuidance!.isNotEmpty) {
       buffer.writeln('**Heatmap Guidance**');
+      buffer.writeln();
       buffer.writeln(heatmapGuidance);
     }
 
@@ -131,22 +154,55 @@ class XAIExplanationService {
       // Reset source tracking
       _lastExplanationSource = null;
 
-      // STEP 1: Check SharedPreferences cache FIRST (Read First Principle)
-      final cachedText = await _getCachedExplanation(scientificName);
-      if (cachedText != null && cachedText.isNotEmpty) {
-        _logger.d(
-            'Using cached explanation from SharedPreferences for $scientificName');
-        // Use cache (source already set by _getCachedExplanation)
-        return cachedText;
-      }
+      // STEP 1: Check cache, but prioritize online if isOnline=true
+      // If online, only use cache if it's from a previous online (gemini) source
+      // This ensures online GradCAM shows "Online" badge, not "Offline" from cached offline data
+      if (isOnline) {
+        // When online, check cache but only use if it's from gemini source
+        final cachedText = await _getCachedExplanation(scientificName);
+        if (cachedText != null && cachedText.isNotEmpty) {
+          // Check if cache source is 'gemini' (online) - if so, use it
+          final cacheSource = await _getCacheSource(scientificName);
+          if (cacheSource == 'gemini') {
+            _logger.d(
+                'Using cached online explanation from SharedPreferences for $scientificName');
+            _lastExplanationSource = 'gemini'; // Mark as online
+            return cachedText;
+          } else {
+            _logger.d(
+                'Cache exists but is from offline source - will try online explanation first');
+          }
+        }
 
-      // STEP 2: Check JSON file cache (learned database)
-      final fileCachedText = await _getCachedFromFile(scientificName);
-      if (fileCachedText != null && fileCachedText.isNotEmpty) {
-        _logger
-            .d('Using cached explanation from JSON file for $scientificName');
-        // Use cache (source already set by _getCachedFromFile)
-        return fileCachedText;
+        // Also check JSON file cache for gemini source
+        final fileCachedText = await _getCachedFromFile(scientificName);
+        if (fileCachedText != null && fileCachedText.isNotEmpty) {
+          final fileCacheSource = await _getFileCacheSource(scientificName);
+          if (fileCacheSource == 'gemini') {
+            _logger.d(
+                'Using cached online explanation from JSON file for $scientificName');
+            _lastExplanationSource = 'gemini'; // Mark as online
+            return fileCachedText;
+          }
+        }
+      } else {
+        // Offline mode - use cache normally
+        final cachedText = await _getCachedExplanation(scientificName);
+        if (cachedText != null && cachedText.isNotEmpty) {
+          _logger.d(
+              'Using cached explanation from SharedPreferences for $scientificName');
+          // Use cache (source already set by _getCachedExplanation)
+          return cachedText;
+        }
+
+        // STEP 2: Check JSON file cache (learned database)
+        final fileCachedText = await _getCachedFromFile(scientificName);
+        if (fileCachedText != null && fileCachedText.isNotEmpty) {
+          _logger
+              .d('Using cached explanation from JSON file for $scientificName');
+          // Use cache (source already set by _getCachedFromFile)
+          return fileCachedText;
+        }
       }
 
       // STEP 3: Try offline explanation from asset JSON
@@ -180,13 +236,17 @@ class XAIExplanationService {
         return offlineExplanation.formattedExplanation;
       }
 
-      // STEP 4: Only call Gemini if forceOnline=true (user explicitly requested refresh)
+      // STEP 4: Try online explanation if:
+      // - forceOnline=true (user explicitly requested refresh), OR
+      // - isOnline=true (we're online and should try to get online explanation)
       // AND we have the necessary API key and images
-      if (forceOnline &&
+      final shouldTryOnline = forceOnline || isOnline;
+
+      if (shouldTryOnline &&
           await ConfigService.isGeminiApiKeyConfigured() &&
           (imagePath != null || originalImageBytes != null)) {
         _logger.d(
-            'No cache found, forceOnline=true - Attempting online explanation for $plantName ($scientificName)');
+            'Attempting online explanation for $plantName ($scientificName) - forceOnline=$forceOnline, isOnline=$isOnline');
         // Try online explanation with images
         final onlineExplanationText = await getExplanationOnline(
           plantName: plantName,
@@ -202,15 +262,16 @@ class XAIExplanationService {
 
         if (onlineExplanationText != null && onlineExplanationText.isNotEmpty) {
           _logger.i('Successfully retrieved online explanation from Gemini');
+          _lastExplanationSource = 'gemini'; // Mark as online source
           return onlineExplanationText; // Return markdown text directly
         }
 
         // If online fails, fall through to fallback
         _logger.w(
-            'Online explanation failed or returned empty, falling back to generic explanation');
-      } else if (forceOnline) {
+            'Online explanation failed or returned empty, falling back to offline explanation');
+      } else if (shouldTryOnline) {
         _logger.d(
-            'forceOnline=true but missing requirements: hasApiKey=${await ConfigService.isGeminiApiKeyConfigured()}, hasImage=${imagePath != null || originalImageBytes != null}');
+            'Should try online but missing requirements: hasApiKey=${await ConfigService.isGeminiApiKeyConfigured()}, hasImage=${imagePath != null || originalImageBytes != null}');
       }
 
       // STEP 5: Fallback - generic explanation
@@ -292,7 +353,7 @@ class XAIExplanationService {
         // Create a minimal PlantExplanation object for compatibility
         return PlantExplanation(
           identification: cachedText,
-          medicinalUses: '',
+          medicinalPreparation: '',
           usability: '',
           heatmapGuidance: null,
         );
@@ -350,7 +411,7 @@ class XAIExplanationService {
         // Convert cached text to PlantExplanation format
         return PlantExplanation(
           identification: fileCachedText,
-          medicinalUses: '',
+          medicinalPreparation: '',
           usability: '',
           heatmapGuidance: null,
         );
@@ -453,7 +514,7 @@ class XAIExplanationService {
           if (matchingPlant != null) {
             explanation = PlantExplanation(
               identification: explanation.identification,
-              medicinalUses: explanation.medicinalUses,
+              medicinalPreparation: explanation.medicinalPreparation,
               usability: explanation.usability,
               taxonomy: explanation.taxonomy ?? _formatTaxonomy(matchingPlant),
               ecology: explanation.ecology ?? _formatEcology(matchingPlant),
@@ -485,11 +546,16 @@ class XAIExplanationService {
         final explanationData = data as Map<String, dynamic>;
         _offlineExplanationsCache![key] = PlantExplanation(
           identification: explanationData['identification'] as String? ?? '',
-          medicinalUses: explanationData['medicinal_uses'] as String? ?? '',
+          // Support both new structure (medicinal_preparation) and old structure (medicinal_uses) for backward compatibility
+          medicinalPreparation:
+              explanationData['medicinal_preparation'] as String? ??
+                  explanationData['medicinal_uses'] as String? ??
+                  '',
           usability: explanationData['usability'] as String? ?? '',
           taxonomy: explanationData['taxonomy'] as String?,
           ecology: explanationData['ecology'] as String?,
-          safety: explanationData['safety'] as String?,
+          safety: explanationData['safety_consideration'] as String? ??
+              explanationData['safety'] as String?,
           heatmapGuidance: explanationData['heatmap_guidance'] as String?,
         );
       });
@@ -532,15 +598,37 @@ class XAIExplanationService {
   }) async {
     final confidencePercent = (confidence * 100).toStringAsFixed(1);
 
+    // Try to get plant data for structured fallback
+    Plant? plantData;
+    try {
+      final plants = await _plantService.getAllPlants();
+      try {
+        plantData = plants.firstWhere(
+          (p) =>
+              p.scientificName.toLowerCase() == scientificName.toLowerCase() ||
+              p.commonName.toLowerCase() == plantName.toLowerCase(),
+        );
+      } catch (e) {
+        // Plant not found in database
+      }
+    } catch (e) {
+      // Ignore errors
+    }
+
     return PlantExplanation(
       identification:
           "Identified as $plantName ($scientificName) with $confidencePercent% confidence.",
-      medicinalUses:
-          "Specific medicinal details for this plant are not currently in the offline database.",
-      usability: "Please consult a local expert before using this plant.",
-      taxonomy: null,
-      ecology: null,
-      safety: null,
+      taxonomy: plantData != null ? _formatTaxonomy(plantData) : null,
+      ecology: plantData != null ? _formatEcology(plantData) : null,
+      medicinalPreparation: plantData != null &&
+              plantData.medicinalUses.isNotEmpty
+          ? "**Uses:** ${plantData.medicinalUses.map((u) => u.condition).join(", ")}.\n\n**Preparation:** ${plantData.preparationMethods.isNotEmpty ? plantData.preparationMethods.first.title : "Consult traditional preparation methods."}"
+          : "Specific medicinal details for this plant are not currently in the offline database.",
+      safety: plantData != null
+          ? _formatSafety(plantData)
+          : "Please consult a local expert before using this plant.",
+      usability:
+          "**Status: USE WITH CAUTION**\n\nPlease consult a local expert before using this plant.",
       heatmapGuidance: null,
     );
   }
@@ -571,6 +659,17 @@ class XAIExplanationService {
       _logger.w('Error reading from SharedPreferences cache: $e');
     }
     return null;
+  }
+
+  /// Get cache source from SharedPreferences
+  Future<String?> _getCacheSource(String scientificName) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'xai_explanation_${_normalizeKey(scientificName)}';
+      return prefs.getString('${key}_source');
+    } catch (e) {
+      return null;
+    }
   }
 
   /// Save explanation to SharedPreferences cache
@@ -678,6 +777,24 @@ class XAIExplanationService {
       }
     } catch (e) {
       _logger.w('Error reading from JSON cache file: $e');
+    }
+    return null;
+  }
+
+  /// Get file cache source
+  Future<String?> _getFileCacheSource(String scientificName) async {
+    try {
+      if (_geminiCache == null) {
+        await _loadCacheFromFile();
+      }
+
+      final key = _normalizeKey(scientificName);
+      final cached = _geminiCache?[key];
+      if (cached != null) {
+        return cached['source'] as String?;
+      }
+    } catch (e) {
+      return null;
     }
     return null;
   }

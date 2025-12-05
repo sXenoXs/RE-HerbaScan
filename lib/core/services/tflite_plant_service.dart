@@ -13,20 +13,16 @@ class PlantPrediction {
 
 class TflitePlantService {
   Interpreter? _mobilenetv2Interpreter;
-  Interpreter? _herbascanInterpreter;
   List<String>? _labels;
-  
+
   // Output indices for multi-output models (determined during initialization)
   int _mobilenetv2PredictionIndex = 1; // Default: predictions at output 1
-  int _herbascanPredictionIndex = 1; // Default: predictions at output 1
-  
-  // Track which model was used for the last prediction
-  String? _lastUsedModel;
+
+  // Track which model was used for the last prediction (always MobileNetV2 now)
+  String? _lastUsedModel = "MobileNetV2";
 
   static const String mobilenetv2ModelPath =
       "assets/models/mobilenetv2_multi_output.tflite";
-  static const String herbascanModelPath =
-      "assets/models/herbascan_multi_output.tflite";
   static const String labelPath = "assets/models/class_indices.json";
 
   // MATCHING PYTHON: 224x224
@@ -34,41 +30,34 @@ class TflitePlantService {
 
   Future<void> loadModel() async {
     try {
-      // Load MobileNetV2 multi-output model
+      // Load MobileNetV2 multi-output model (ONLY MODEL - HerbaScan deprecated)
       try {
         _mobilenetv2Interpreter =
             await Interpreter.fromAsset(mobilenetv2ModelPath);
         _mobilenetv2Interpreter!.allocateTensors();
-        _mobilenetv2PredictionIndex = _determinePredictionOutputIndex(_mobilenetv2Interpreter!);
+        _mobilenetv2PredictionIndex =
+            _determinePredictionOutputIndex(_mobilenetv2Interpreter!);
         print("✅ MobileNetV2 Multi-Output TFLite Model loaded successfully.");
         print("   Prediction output index: $_mobilenetv2PredictionIndex");
+        _lastUsedModel = "MobileNetV2";
       } catch (e) {
-        print("⚠️ Error loading MobileNetV2 model: $e");
+        print("❌ Error loading MobileNetV2 model: $e");
+        throw Exception("Failed to load MobileNetV2 TFLite model: $e");
       }
 
-      // Load HerbaScan multi-output model
-      try {
-        _herbascanInterpreter = await Interpreter.fromAsset(herbascanModelPath);
-        _herbascanInterpreter!.allocateTensors();
-        _herbascanPredictionIndex = _determinePredictionOutputIndex(_herbascanInterpreter!);
-        print("✅ HerbaScan Multi-Output TFLite Model loaded successfully.");
-        print("   Prediction output index: $_herbascanPredictionIndex");
-      } catch (e) {
-        print("⚠️ Error loading HerbaScan model: $e");
-      }
-
-      // Check if at least one model loaded
-      if (_mobilenetv2Interpreter == null && _herbascanInterpreter == null) {
-        throw Exception("Failed to load any TFLite models");
+      // Check if model loaded
+      if (_mobilenetv2Interpreter == null) {
+        throw Exception("Failed to load MobileNetV2 TFLite model");
       }
 
       await _loadLabels();
-      print("✅ Multi-Output TFLite Models loaded successfully.");
+      print("✅ MobileNetV2 TFLite Model loaded successfully.");
     } catch (e) {
-      print("❌ Error loading models: $e");
+      print("❌ Error loading model: $e");
+      rethrow;
     }
   }
-  
+
   /// Determine which output index contains predictions (2D tensor)
   /// Multi-output models have: [feature_maps (4D), predictions (2D)]
   int _determinePredictionOutputIndex(Interpreter interpreter) {
@@ -76,7 +65,7 @@ class TflitePlantService {
     if (outputCount < 2) {
       return 0; // Single output model
     }
-    
+
     // Check output shapes to find predictions (2D tensor)
     for (int i = 0; i < outputCount; i++) {
       final outputTensor = interpreter.getOutputTensor(i);
@@ -86,7 +75,7 @@ class TflitePlantService {
         return i;
       }
     }
-    
+
     // Fallback: assume predictions at index 1
     return 1;
   }
@@ -115,23 +104,24 @@ class TflitePlantService {
   Future<PlantPrediction?> predict(File imageFile) async {
     print("🔍 [TflitePlantService] predict() called");
     print("   Image file: ${imageFile.path}");
-    
-    if ((_mobilenetv2Interpreter == null && _herbascanInterpreter == null)) {
-      print("   ⚠️ Models not loaded, loading now...");
+
+    if (_mobilenetv2Interpreter == null) {
+      print("   ⚠️ Model not loaded, loading now...");
       await loadModel();
     }
-    
-    print("   MobileNetV2 interpreter: ${_mobilenetv2Interpreter != null ? "✅" : "❌"}");
-    print("   HerbaScan interpreter: ${_herbascanInterpreter != null ? "✅" : "❌"}");
-    print("   Labels loaded: ${_labels != null && _labels!.isNotEmpty ? "✅ (${_labels!.length} labels)" : "❌"}");
-    
+
+    print(
+        "   MobileNetV2 interpreter: ${_mobilenetv2Interpreter != null ? "✅" : "❌"}");
+    print(
+        "   Labels loaded: ${_labels != null && _labels!.isNotEmpty ? "✅ (${_labels!.length} labels)" : "❌"}");
+
     if (_labels == null || _labels!.isEmpty) {
       print("   ❌ ERROR: Labels not loaded!");
       return null;
     }
-    
-    if (_mobilenetv2Interpreter == null && _herbascanInterpreter == null) {
-      print("   ❌ ERROR: No models loaded!");
+
+    if (_mobilenetv2Interpreter == null) {
+      print("   ❌ ERROR: MobileNetV2 model not loaded!");
       return null;
     }
 
@@ -144,7 +134,8 @@ class TflitePlantService {
       print("   ❌ ERROR: Failed to decode image!");
       return null;
     }
-    print("   📸 Image decoded: ${originalImage.width}x${originalImage.height}");
+    print(
+        "   📸 Image decoded: ${originalImage.width}x${originalImage.height}");
 
     // 2. Fix Rotation
     img.Image orientedImage = img.bakeOrientation(originalImage);
@@ -168,39 +159,44 @@ class TflitePlantService {
           (w) => List.generate(3, (c) {
             final pixel = resizedImage.getPixel(w, h);
             // Normalize to [0, 1] range (matching backend preprocessing)
-            return (c == 0 ? pixel.r.toDouble() : 
-                   c == 1 ? pixel.g.toDouble() : 
-                   pixel.b.toDouble()) / 255.0;
+            return (c == 0
+                    ? pixel.r.toDouble()
+                    : c == 1
+                        ? pixel.g.toDouble()
+                        : pixel.b.toDouble()) /
+                255.0;
           }),
         ),
       ),
     );
     print("   🔄 Input shape: [1, $inputSize, $inputSize, 3]");
-    print("   🔄 Input sample (first pixel): R=${input[0][0][0][0]}, G=${input[0][0][0][1]}, B=${input[0][0][0][2]}");
+    print(
+        "   🔄 Input sample (first pixel): R=${input[0][0][0][0]}, G=${input[0][0][0][1]}, B=${input[0][0][0][2]}");
 
-    // 5. Run inference on both models and select best result
-    print("   🚀 Starting inference...");
+    // 5. Run inference on MobileNetV2 model
+    print("   🚀 Starting inference with MobileNetV2...");
     PlantPrediction? bestPrediction;
     double bestConfidence = -1.0;
-    String? modelUsed;
+    String? modelUsed = "MobileNetV2";
 
-    // Try MobileNetV2 multi-output model
+    // Use MobileNetV2 multi-output model (ONLY MODEL)
     if (_mobilenetv2Interpreter != null) {
       try {
         // Multi-output model: extract predictions from the predictions output
         final numOutputs = _mobilenetv2Interpreter!.getOutputTensors().length;
         print("📊 MobileNetV2 model has $numOutputs outputs");
-        
-        final predictionsTensor = _mobilenetv2Interpreter!.getOutputTensor(_mobilenetv2PredictionIndex);
+
+        final predictionsTensor = _mobilenetv2Interpreter!
+            .getOutputTensor(_mobilenetv2PredictionIndex);
         final predictionsShape = predictionsTensor.shape;
         print("📊 MobileNetV2 predictions shape: $predictionsShape");
-        
+
         // Create output buffer for predictions [batch, classes]
         var predictionsOutput = List.generate(
           predictionsShape[0],
           (_) => List.filled(predictionsShape[1], 0.0),
         );
-        
+
         // For multi-output models, use runForMultipleInputs with output map
         // Create buffers for all outputs
         final outputMap = <int, Object>{};
@@ -234,17 +230,19 @@ class TflitePlantService {
             }
           }
         }
-        
+
         // Run inference using runForMultipleInputs (works better for multi-output)
         final inputs = [input];
-        print("   🚀 Running MobileNetV2 inference with ${outputMap.length} outputs...");
+        print(
+            "   🚀 Running MobileNetV2 inference with ${outputMap.length} outputs...");
         _mobilenetv2Interpreter!.runForMultipleInputs(inputs, outputMap);
         print("   ✅ MobileNetV2 inference completed");
 
         // Extract predictions from batch 0
         List<double> outputList = List<double>.from(predictionsOutput[0]);
-        print("📊 MobileNetV2 output length: ${outputList.length}, first 5: ${outputList.take(5).toList()}");
-        
+        print(
+            "📊 MobileNetV2 output length: ${outputList.length}, first 5: ${outputList.take(5).toList()}");
+
         double maxScore = -1.0;
         int maxIndex = -1;
 
@@ -256,110 +254,25 @@ class TflitePlantService {
         }
 
         print("📊 MobileNetV2 maxIndex: $maxIndex, maxScore: $maxScore");
-        if (maxIndex != -1 && maxIndex < _labels!.length && maxScore > bestConfidence) {
+        if (maxIndex != -1 && maxIndex < _labels!.length) {
           bestConfidence = maxScore;
           bestPrediction =
               PlantPrediction(label: _labels![maxIndex], confidence: maxScore);
-          modelUsed = "MobileNetV2";
           _lastUsedModel = "MobileNetV2";
           print(
               "📊 MobileNetV2: ${_labels![maxIndex]} (${(maxScore * 100).toStringAsFixed(2)}%)");
         } else {
-          print("⚠️ MobileNetV2: Invalid prediction (maxIndex: $maxIndex, labels length: ${_labels!.length}, score: $maxScore)");
-        }
-      } catch (e, stackTrace) {
-        print("⚠️ Error running MobileNetV2 inference: $e");
-        print("Stack trace: $stackTrace");
-      }
-    }
-
-    // Try HerbaScan multi-output model
-    if (_herbascanInterpreter != null) {
-      try {
-        // Multi-output model: extract predictions from the predictions output
-        final numOutputs = _herbascanInterpreter!.getOutputTensors().length;
-        print("📊 HerbaScan model has $numOutputs outputs");
-        
-        final predictionsTensor = _herbascanInterpreter!.getOutputTensor(_herbascanPredictionIndex);
-        final predictionsShape = predictionsTensor.shape;
-        print("📊 HerbaScan predictions shape: $predictionsShape");
-        
-        // Create output buffer for predictions [batch, classes]
-        var predictionsOutput = List.generate(
-          predictionsShape[0],
-          (_) => List.filled(predictionsShape[1], 0.0),
-        );
-        
-        // For multi-output models, use runForMultipleInputs with output map
-        // Create buffers for all outputs
-        final outputMap = <int, Object>{};
-        for (int i = 0; i < numOutputs; i++) {
-          if (i == _herbascanPredictionIndex) {
-            outputMap[i] = predictionsOutput;
-          } else {
-            // Create buffer for feature maps output (we don't need it for predictions)
-            final featureTensor = _herbascanInterpreter!.getOutputTensor(i);
-            final featureShape = featureTensor.shape;
-            // Create 4D buffer for feature maps [batch, H, W, C]
-            if (featureShape.length == 4) {
-              final batch = featureShape[0];
-              final height = featureShape[1];
-              final width = featureShape[2];
-              final channels = featureShape[3];
-              final featureBuffer = List.generate(
-                batch,
-                (_) => List.generate(
-                  height,
-                  (_) => List.generate(
-                    width,
-                    (_) => List.filled(channels, 0.0),
-                  ),
-                ),
-              );
-              outputMap[i] = featureBuffer;
-            } else {
-              final featureSize = featureShape.fold(1, (a, b) => a * b);
-              outputMap[i] = List.filled(featureSize, 0.0);
-            }
-          }
-        }
-        
-        // Run inference using runForMultipleInputs (works better for multi-output)
-        final inputs = [input];
-        print("   🚀 Running HerbaScan inference with ${outputMap.length} outputs...");
-        _herbascanInterpreter!.runForMultipleInputs(inputs, outputMap);
-        print("   ✅ HerbaScan inference completed");
-
-        // Extract predictions from batch 0
-        List<double> outputList = List<double>.from(predictionsOutput[0]);
-        print("📊 HerbaScan output length: ${outputList.length}, first 5: ${outputList.take(5).toList()}");
-        
-        double maxScore = -1.0;
-        int maxIndex = -1;
-
-        for (int i = 0; i < outputList.length; i++) {
-          if (outputList[i] > maxScore) {
-            maxScore = outputList[i];
-            maxIndex = i;
-          }
-        }
-
-        print("📊 HerbaScan maxIndex: $maxIndex, maxScore: $maxScore");
-        if (maxIndex != -1 && maxIndex < _labels!.length && maxScore > bestConfidence) {
-          bestConfidence = maxScore;
-          bestPrediction =
-              PlantPrediction(label: _labels![maxIndex], confidence: maxScore);
-          modelUsed = "HerbaScan";
-          _lastUsedModel = "HerbaScan";
           print(
-              "📊 HerbaScan: ${_labels![maxIndex]} (${(maxScore * 100).toStringAsFixed(2)}%)");
-        } else {
-          print("⚠️ HerbaScan: Invalid prediction (maxIndex: $maxIndex, labels length: ${_labels!.length}, score: $maxScore)");
+              "⚠️ MobileNetV2: Invalid prediction (maxIndex: $maxIndex, labels length: ${_labels!.length}, score: $maxScore)");
         }
       } catch (e, stackTrace) {
-        print("⚠️ Error running HerbaScan inference: $e");
+        print("❌ Error running MobileNetV2 inference: $e");
         print("Stack trace: $stackTrace");
+        return null;
       }
+    } else {
+      print("❌ ERROR: MobileNetV2 interpreter is null!");
+      return null;
     }
 
     // 6. Return best result
@@ -373,7 +286,8 @@ class TflitePlantService {
         print("   ✅ Returning prediction (confidence > 0.1)");
         return bestPrediction;
       } else {
-        print("   ⚠️ Prediction confidence too low: ${bestPrediction.confidence} (threshold: 0.1)");
+        print(
+            "   ⚠️ Prediction confidence too low: ${bestPrediction.confidence} (threshold: 0.1)");
       }
     } else {
       print("   ❌ No valid prediction found!");
@@ -428,8 +342,6 @@ class TflitePlantService {
 
   void close() {
     _mobilenetv2Interpreter?.close();
-    _herbascanInterpreter?.close();
     _mobilenetv2Interpreter = null;
-    _herbascanInterpreter = null;
   }
 }
