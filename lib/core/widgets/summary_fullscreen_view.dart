@@ -70,7 +70,7 @@ class SummaryFullScreenView extends StatelessWidget {
             h2Padding: const EdgeInsets.only(bottom: 6, top: 12),
             h3: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.grey.shade900,
+              color: theme.colorScheme.onSurface,
               fontSize: 22,
               height: 1.3,
             ),
@@ -86,7 +86,7 @@ class SummaryFullScreenView extends StatelessWidget {
             // Bold text (for section headers like **Plant Identification Summary**)
             strong: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              color: theme.primaryColor,
+              color: theme.colorScheme.onSurface,
               fontSize: 19,
               height: 1.5,
             ),
@@ -125,13 +125,14 @@ class SummaryFullScreenView extends StatelessWidget {
             ),
             // Code blocks
             code: theme.textTheme.bodySmall?.copyWith(
-              backgroundColor: Colors.grey.shade200,
+              backgroundColor: theme.colorScheme.surfaceContainerHighest,
               fontFamily: 'monospace',
               fontSize: 15,
+              color: theme.colorScheme.onSurface,
             ),
             codeblockPadding: const EdgeInsets.all(16),
             codeblockDecoration: BoxDecoration(
-              color: Colors.grey.shade200,
+              color: theme.colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(4),
             ),
             // Horizontal rule

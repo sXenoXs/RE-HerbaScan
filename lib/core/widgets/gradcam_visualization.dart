@@ -243,8 +243,14 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
     final hasHeatmap =
         widget.gradcamImageBytes != null || widget.gradCAMPath != null;
 
-    return Card(
-      elevation: 4,
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         // CRITICAL FIX: Use SingleChildScrollView to prevent overflow
@@ -259,7 +265,7 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                 children: [
                   Icon(
                     Icons.visibility,
-                    color: theme.primaryColor,
+                    color: theme.colorScheme.onSurface,
                     size: 24,
                   ),
                   const SizedBox(width: 8),
@@ -271,6 +277,7 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                           'Explainable AI - ${widget.method == 'grad-cam' ? 'Score-CAM' : 'CAM'}',
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                         if (widget.method != null)
@@ -291,14 +298,18 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
                                 valueColor: AlwaysStoppedAnimation<Color>(
-                                  theme.primaryColor,
+                                  theme.colorScheme.onSurface,
                                 ),
                               ),
                             )
-                          : const Icon(Icons.refresh),
+                          : Icon(
+                              Icons.refresh,
+                              color: theme.colorScheme.onSurface,
+                            ),
                       tooltip: _isLoadingExplanation
                           ? 'Regenerating...'
                           : 'Regenerate explanation and heatmap',
+                      color: theme.colorScheme.onSurface,
                     ),
                 ],
               ),
@@ -309,14 +320,17 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: theme.primaryColor.withOpacity(0.1),
+                  color: theme.colorScheme.surface,
                   borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: theme.colorScheme.outline.withOpacity(0.2),
+                  ),
                 ),
                 child: Row(
                   children: [
                     Icon(
                       Icons.local_florist,
-                      color: theme.primaryColor,
+                      color: theme.colorScheme.onSurface,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
@@ -328,12 +342,14 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                             widget.plantName,
                             style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.onSurface,
                             ),
                           ),
                           Text(
                             'Confidence: ${(widget.confidence.clamp(0.0, 1.0) * 100).toStringAsFixed(1)}%',
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.primaryColor,
+                              color:
+                                  theme.colorScheme.onSurface.withOpacity(0.87),
                             ),
                           ),
                         ],
@@ -424,11 +440,14 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
           final spacing = 4.0;
           final imageMaxHeight = 70.0; // Fixed size to prevent overflow
 
+          final theme = Theme.of(context);
           return Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey.shade300),
-              color: Colors.grey.shade100,
+              border: Border.all(
+                color: theme.colorScheme.outline.withOpacity(0.2),
+              ),
+              color: theme.colorScheme.surfaceContainerHighest,
             ),
             // CRITICAL: Use SizedBox.expand to fill TabBarView constraints exactly
             // Then use Center to center the content
@@ -457,7 +476,7 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                         style: TextStyle(
                           fontSize: titleFontSize,
                           fontWeight: FontWeight.bold,
-                          color: Colors.grey.shade700,
+                          color: theme.colorScheme.onSurface,
                         ),
                         textAlign: TextAlign.center,
                         maxLines: 2,
@@ -477,7 +496,8 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: descFontSize,
-                            color: Colors.grey.shade600,
+                            color:
+                                theme.colorScheme.onSurface.withOpacity(0.87),
                           ),
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,
@@ -491,7 +511,9 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                       child: Container(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey.shade300),
+                          border: Border.all(
+                            color: theme.colorScheme.outline.withOpacity(0.2),
+                          ),
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
@@ -503,7 +525,8 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                                 child: Icon(
                                   Icons.image_not_supported,
                                   size: 24,
-                                  color: Colors.grey.shade400,
+                                  color: theme.colorScheme.onSurface
+                                      .withOpacity(0.6),
                                 ),
                               );
                             },
@@ -543,7 +566,9 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.grey.shade300),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+          ),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(8),
@@ -619,7 +644,9 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
       return Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.grey.shade300),
+          border: Border.all(
+            color: theme.colorScheme.outline.withOpacity(0.2),
+          ),
         ),
         child: Center(
           child: Column(
@@ -630,7 +657,7 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
               Text(
                 'Generating explanation...',
                 style: TextStyle(
-                  color: Colors.grey.shade600,
+                  color: theme.colorScheme.onSurface.withOpacity(0.6),
                   fontSize: 14,
                 ),
               ),
@@ -644,7 +671,9 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
       return Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.grey.shade300),
+          border: Border.all(
+            color: theme.colorScheme.outline.withOpacity(0.2),
+          ),
         ),
         child: Center(
           child: Padding(
@@ -655,13 +684,13 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                 Icon(
                   Icons.error_outline,
                   size: 48,
-                  color: Colors.grey.shade400,
+                  color: theme.colorScheme.onSurface.withOpacity(0.4),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   _explanationError!,
                   style: TextStyle(
-                    color: Colors.grey.shade600,
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
                     fontSize: 14,
                   ),
                   textAlign: TextAlign.center,
@@ -683,7 +712,9 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
       return Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.grey.shade300),
+          border: Border.all(
+            color: theme.colorScheme.outline.withOpacity(0.2),
+          ),
         ),
         child: Center(
           child: Padding(
@@ -694,13 +725,13 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                 Icon(
                   Icons.info_outline,
                   size: 48,
-                  color: Colors.grey.shade400,
+                  color: theme.colorScheme.onSurface.withOpacity(0.4),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Explanation not available',
                   style: TextStyle(
-                    color: Colors.grey.shade600,
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
                     fontSize: 14,
                   ),
                   textAlign: TextAlign.center,
@@ -716,8 +747,10 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
-        color: Colors.grey.shade50,
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
+        ),
+        color: theme.colorScheme.surface,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -730,7 +763,7 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
               children: [
                 Icon(
                   Icons.psychology,
-                  color: theme.primaryColor,
+                  color: theme.colorScheme.onSurface,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
@@ -739,6 +772,7 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                     'AI Explanation',
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -839,7 +873,8 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                               child: Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: Colors.grey.shade100,
+                                  color:
+                                      theme.colorScheme.surfaceContainerHighest,
                                   borderRadius: BorderRadius.circular(20),
                                   boxShadow: [
                                     BoxShadow(
@@ -852,7 +887,7 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                                 child: Icon(
                                   Icons.fullscreen,
                                   size: 18,
-                                  color: theme.primaryColor,
+                                  color: theme.colorScheme.onSurface,
                                 ),
                               ),
                             ),
@@ -876,21 +911,21 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                       // Headings with reduced spacing
                       h1: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: theme.primaryColor,
+                        color: theme.colorScheme.onSurface,
                         fontSize: 22,
                         height: 1.3,
                       ),
                       h1Padding: const EdgeInsets.only(bottom: 4, top: 8),
                       h2: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: theme.primaryColor,
+                        color: theme.colorScheme.onSurface,
                         fontSize: 20,
                         height: 1.3,
                       ),
                       h2Padding: const EdgeInsets.only(bottom: 4, top: 8),
                       h3: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Colors.grey.shade900,
+                        color: theme.colorScheme.onSurface,
                         fontSize: 18,
                         height: 1.3,
                       ),
@@ -898,21 +933,21 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                       // Body text with reduced spacing
                       p: theme.textTheme.bodyMedium?.copyWith(
                         height: 1.7,
-                        color: Colors.grey.shade800,
+                        color: theme.colorScheme.onSurface.withOpacity(0.87),
                         fontSize: 14,
                       ),
                       pPadding: const EdgeInsets.only(bottom: 8, top: 2),
                       // Bold text (for section headers like **Plant Identification Summary**)
                       strong: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: theme.primaryColor,
+                        color: theme.colorScheme.onSurface,
                         fontSize: 16,
                         height: 1.4,
                       ),
                       // Italic text
                       em: theme.textTheme.bodyMedium?.copyWith(
                         fontStyle: FontStyle.italic,
-                        color: Colors.grey.shade700,
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
                       ),
                       // Lists
                       listBullet: theme.textTheme.bodyMedium?.copyWith(
@@ -924,13 +959,15 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                       listBulletPadding: const EdgeInsets.only(right: 8),
                       // Block quotes
                       blockquote: theme.textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey.shade700,
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
                         fontStyle: FontStyle.italic,
-                        backgroundColor: Colors.grey.shade100,
+                        backgroundColor:
+                            theme.colorScheme.surfaceVariant.withOpacity(0.3),
                       ),
                       blockquotePadding: const EdgeInsets.all(12),
                       blockquoteDecoration: BoxDecoration(
-                        color: Colors.grey.shade100,
+                        color:
+                            theme.colorScheme.surfaceVariant.withOpacity(0.3),
                         borderRadius: BorderRadius.circular(4),
                         border: Border(
                           left: BorderSide(
@@ -941,19 +978,21 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                       ),
                       // Code blocks
                       code: theme.textTheme.bodySmall?.copyWith(
-                        backgroundColor: Colors.grey.shade200,
+                        backgroundColor:
+                            theme.colorScheme.surfaceContainerHighest,
                         fontFamily: 'monospace',
+                        color: theme.colorScheme.onSurface,
                       ),
                       codeblockPadding: const EdgeInsets.all(12),
                       codeblockDecoration: BoxDecoration(
-                        color: Colors.grey.shade200,
+                        color: theme.colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(4),
                       ),
                       // Horizontal rule
                       horizontalRuleDecoration: BoxDecoration(
                         border: Border(
                           top: BorderSide(
-                            color: Colors.grey.shade300,
+                            color: theme.dividerColor,
                             width: 1,
                           ),
                         ),
@@ -966,14 +1005,15 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                       // Table
                       tableHead: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Colors.grey.shade900,
-                        backgroundColor: Colors.grey.shade200,
+                        color: theme.colorScheme.onSurface,
+                        backgroundColor:
+                            theme.colorScheme.surfaceVariant.withOpacity(0.5),
                       ),
                       tableBody: theme.textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey.shade800,
+                        color: theme.colorScheme.onSurface.withOpacity(0.87),
                       ),
                       tableBorder: TableBorder.all(
-                        color: Colors.grey.shade300,
+                        color: theme.dividerColor,
                         width: 1,
                       ),
                       tableHeadAlign: TextAlign.center,
@@ -1015,10 +1055,13 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
   }
 
   Widget _buildErrorWidget(String message) {
+    final theme = Theme.of(context);
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
+        ),
       ),
       child: Center(
         child: Column(
@@ -1027,13 +1070,13 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
             Icon(
               Icons.error_outline,
               size: 48,
-              color: Colors.grey.shade400,
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
             ),
             const SizedBox(height: 8),
             Text(
               message,
               style: TextStyle(
-                color: Colors.grey.shade600,
+                color: theme.colorScheme.onSurface.withOpacity(0.87),
                 fontSize: 14,
               ),
               textAlign: TextAlign.center,
@@ -1063,14 +1106,14 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
             Icon(
               Icons.visibility,
               size: 20,
-              color: Colors.grey.shade600,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
             ),
             const SizedBox(width: 8),
             Text(
               'Show Heatmap Overlay',
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey.shade700,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const Spacer(),
@@ -1093,14 +1136,14 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
             Icon(
               Icons.opacity,
               size: 20,
-              color: Colors.grey.shade600,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
             ),
             const SizedBox(width: 8),
             Text(
               'Heatmap Opacity',
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey.shade700,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const Spacer(),
@@ -1108,7 +1151,7 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
               '${(_opacity * 100).round()}%',
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey.shade600,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
               ),
             ),
           ],

@@ -347,7 +347,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
       ThemeData theme, String plantName, double confidence) {
     // Main container acting as canvas
     return Container(
-      color: const Color(0xFFF8FBFC), // Light blue-gray background
+      color: theme.scaffoldBackgroundColor, // Use theme background color
       child: SafeArea(
         bottom: false,
         child: Column(
@@ -358,16 +358,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
               margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    const Color(
-                        0xFFF0F2FC), // rgb(240, 242, 252) - Lighter shade
-                    const Color(
-                        0xFFF5F7FE), // rgb(245, 247, 254) - Even lighter shade
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: theme.colorScheme.surface, // Use theme surface color
                 borderRadius:
                     BorderRadius.circular(20), // Changed from 16 to 20
                 boxShadow: [
@@ -378,8 +369,8 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                   ),
                 ],
                 border: Border.all(
-                  color: const Color(
-                      0xFFD0D3ED), // rgb(208, 211, 237) - Border color outside the card
+                  color: theme.colorScheme.outline
+                      .withOpacity(0.2), // Use theme outline color
                   width: 1,
                 ),
               ),
@@ -414,7 +405,8 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
                               return Container(
-                                color: Colors.grey.shade100,
+                                color:
+                                    theme.colorScheme.surfaceContainerHighest,
                                 child: Icon(
                                   Icons.local_florist,
                                   size: 48,
@@ -433,7 +425,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                     plantName,
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: theme.primaryColor,
+                      color: theme.colorScheme.onSurface,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -575,7 +567,14 @@ class _PlantResultScreenState extends State<PlantResultScreen>
   }
 
   Widget _buildPredictionsCard(ThemeData theme) {
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -583,12 +582,16 @@ class _PlantResultScreenState extends State<PlantResultScreen>
           children: [
             Row(
               children: [
-                Icon(Icons.analytics, color: theme.primaryColor),
+                Icon(
+                  Icons.analytics,
+                  color: theme.colorScheme.onSurface,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'Top Predictions',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -649,7 +652,8 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                                   child: Text(
                                     '${(confidence * 100).toStringAsFixed(1)}% confidence',
                                     style: theme.textTheme.bodySmall?.copyWith(
-                                      color: Colors.grey.shade600,
+                                      color: theme.colorScheme.onSurface
+                                          .withOpacity(0.6),
                                     ),
                                   ),
                                 ),
@@ -660,7 +664,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                             width: 60,
                             height: 8,
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade200,
+                              color: theme.colorScheme.surfaceContainerHighest,
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: FractionallySizedBox(
@@ -692,7 +696,14 @@ class _PlantResultScreenState extends State<PlantResultScreen>
         prediction['plantName'] ?? prediction['label'] ?? 'Unknown';
     final confidence = (prediction['confidence'] ?? 0.0).toDouble();
 
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -700,12 +711,16 @@ class _PlantResultScreenState extends State<PlantResultScreen>
           children: [
             Row(
               children: [
-                Icon(Icons.info, color: theme.primaryColor),
+                Icon(
+                  Icons.info,
+                  color: theme.colorScheme.onSurface,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'Plant Information',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -798,7 +813,14 @@ class _PlantResultScreenState extends State<PlantResultScreen>
   }
 
   Widget _buildMetadataCard(ThemeData theme) {
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -806,12 +828,16 @@ class _PlantResultScreenState extends State<PlantResultScreen>
           children: [
             Row(
               children: [
-                Icon(Icons.settings, color: theme.primaryColor),
+                Icon(
+                  Icons.settings,
+                  color: theme.colorScheme.onSurface,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'Scan Information',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -851,7 +877,14 @@ class _PlantResultScreenState extends State<PlantResultScreen>
         ? 'CAM (Class Activation Mapping) shows which parts of the image the AI model focused on when making its prediction. This offline method uses feature maps to highlight important regions without requiring gradient computation.'
         : 'Score-CAM (Score-weighted Class Activation Mapping) shows which parts of the image the AI model focused on when making its prediction. This helps explain why the model made its decision.';
 
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -859,12 +892,16 @@ class _PlantResultScreenState extends State<PlantResultScreen>
           children: [
             Row(
               children: [
-                Icon(Icons.help_outline, color: theme.primaryColor),
+                Icon(
+                  Icons.help_outline,
+                  color: theme.colorScheme.onSurface,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   title,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -872,7 +909,9 @@ class _PlantResultScreenState extends State<PlantResultScreen>
             const SizedBox(height: 16),
             Text(
               description,
-              style: theme.textTheme.bodyMedium,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.87),
+              ),
             ),
             const SizedBox(height: 16),
             // Visual legend with colored squares
@@ -892,6 +931,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
   }
 
   Widget _buildColorLegendItem(Color color, String label) {
+    final theme = Theme.of(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -908,7 +948,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
           label,
           style: TextStyle(
             fontSize: 12,
-            color: Colors.grey.shade700,
+            color: theme.colorScheme.onSurface.withOpacity(0.87),
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -917,6 +957,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
   }
 
   Widget _buildInfoRow(String label, String value) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -926,13 +967,18 @@ class _PlantResultScreenState extends State<PlantResultScreen>
             width: 120,
             child: Text(
               '$label:',
-              style: const TextStyle(fontWeight: FontWeight.w500),
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                color: theme.colorScheme.onSurface.withOpacity(0.9),
+              ),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: TextStyle(color: Colors.grey.shade700),
+              style: TextStyle(
+                color: theme.colorScheme.onSurface.withOpacity(0.87),
+              ),
             ),
           ),
         ],

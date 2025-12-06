@@ -255,11 +255,14 @@ class _HelpTutorialScreenState extends State<HelpTutorialScreen> {
 
   Widget _buildPracticeCard(String title, String description, IconData icon,
       Color color, ThemeData theme) {
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -344,11 +347,14 @@ class _HelpTutorialScreenState extends State<HelpTutorialScreen> {
 
   Widget _buildFeatureCard(
       String title, String description, IconData icon, ThemeData theme) {
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 1,
-      shape: RoundedRectangleBorder(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
+        ),
       ),
       child: ListTile(
         leading: Container(

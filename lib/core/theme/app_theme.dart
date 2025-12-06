@@ -162,18 +162,24 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       fontFamily: 'Inter',
-      colorScheme: const ColorScheme.dark(
+      colorScheme: ColorScheme.dark(
         primary: primaryLight,
-        primaryContainer: Color(0xFF3730A3),
+        primaryContainer: const Color(0xFF3730A3),
         secondary: successLight,
-        secondaryContainer: Color(0xFF166534),
-        surface: Color(0xFF1F2937),
+        secondaryContainer: const Color(0xFF166534),
+        surface:
+            const Color(0xFF2C2C42), // Lighter surface for better visibility
+        surfaceContainerHighest:
+            const Color(0xFF3A3A5A), // For elevated surfaces
         error: errorLight,
+        outline: const Color(0xFF5E60CE), // Light purple-blue for borders
         onPrimary: Colors.white,
         onSecondary: Colors.white,
         onSurface: Colors.white,
         onError: Colors.white,
+        brightness: Brightness.dark,
       ),
+      scaffoldBackgroundColor: const Color(0xFF1A1A2E), // Darker background
       appBarTheme: const AppBarTheme(
         backgroundColor: Color(0xFF1F2937),
         foregroundColor: Colors.white,
@@ -187,10 +193,97 @@ class AppTheme {
         ),
       ),
       cardTheme: CardThemeData(
-        color: const Color(0xFF1F2937),
+        color: const Color(0xFF2C2C42), // Match surface color
         elevation: 2,
         shadowColor: Colors.black.withOpacity(0.3),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: Color(0xFF1F2937),
+        selectedItemColor: primaryLight,
+        unselectedItemColor: Color(0xFF9CA3AF),
+        type: BottomNavigationBarType.fixed,
+        elevation: 8,
+        selectedLabelStyle: TextStyle(
+          fontFamily: 'Inter',
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelStyle: TextStyle(
+          fontFamily: 'Inter',
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: primaryLight,
+          foregroundColor: Colors.white,
+          elevation: 2,
+          shadowColor: primaryLight.withOpacity(0.3),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          textStyle: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: primaryLight,
+          side: BorderSide(color: primaryLight, width: 2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          textStyle: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: primaryLight,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          textStyle: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFF2C2C42),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF5E60CE), width: 1),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF5E60CE), width: 1),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: primaryLight, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: errorLight),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
+        hintStyle:
+            const TextStyle(color: Color(0xFF9CA3AF), fontFamily: 'Inter'),
       ),
     );
   }

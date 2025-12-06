@@ -212,60 +212,70 @@ class _HomeDashboardState extends State<HomeDashboard> {
           ),
         ),
         const SizedBox(height: 16),
-        GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 1.3,
-          children: [
-            _buildActionCard(
-              context,
-              theme,
-              Icons.camera_alt,
-              AppLocalizations.of(context).scanPlant,
-              'Identify using camera',
-              () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const ScanScreen()),
-                );
-              },
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: theme.colorScheme.outline.withOpacity(0.2),
             ),
-            _buildActionCard(
-              context,
-              theme,
-              Icons.search,
-              AppLocalizations.of(context).browsePlants,
-              'Explore database',
-              () {
-                // Navigate to browse screen (index 1)
-                widget.onNavigate?.call(1);
-              },
-            ),
-            _buildActionCard(
-              context,
-              theme,
-              Icons.history,
-              AppLocalizations.of(context).recentScans,
-              'View history',
-              () {
-                // Navigate to history screen (index 2)
-                widget.onNavigate?.call(2);
-              },
-            ),
-            _buildActionCard(
-              context,
-              theme,
-              Icons.verified,
-              AppLocalizations.of(context).dohPlants,
-              'Official list',
-              () {
-                // Navigate to DOH screen (index 3)
-                widget.onNavigate?.call(3);
-              },
-            ),
-          ],
+          ),
+          child: GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            childAspectRatio: 1.3,
+            children: [
+              _buildActionCard(
+                context,
+                theme,
+                Icons.camera_alt,
+                AppLocalizations.of(context).scanPlant,
+                'Identify using camera',
+                () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const ScanScreen()),
+                  );
+                },
+              ),
+              _buildActionCard(
+                context,
+                theme,
+                Icons.search,
+                AppLocalizations.of(context).browsePlants,
+                'Explore database',
+                () {
+                  // Navigate to browse screen (index 1)
+                  widget.onNavigate?.call(1);
+                },
+              ),
+              _buildActionCard(
+                context,
+                theme,
+                Icons.history,
+                AppLocalizations.of(context).recentScans,
+                'View history',
+                () {
+                  // Navigate to history screen (index 2)
+                  widget.onNavigate?.call(2);
+                },
+              ),
+              _buildActionCard(
+                context,
+                theme,
+                Icons.verified,
+                AppLocalizations.of(context).dohPlants,
+                'Official list',
+                () {
+                  // Navigate to DOH screen (index 3)
+                  widget.onNavigate?.call(3);
+                },
+              ),
+            ],
+          ),
         ),
       ],
     );

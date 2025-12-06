@@ -453,10 +453,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final appLocalizations = AppLocalizations.of(context);
     final dateFormat = DateFormat('MMM dd, yyyy • HH:mm');
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
+        ),
       ),
       child: InkWell(
         onTap: () {

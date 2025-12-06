@@ -72,7 +72,14 @@ class SettingsScreen extends StatelessWidget {
   Widget _buildThemeSetting(BuildContext context, ThemeData theme) {
     final appProvider = Provider.of<AppProvider>(context);
 
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
+        ),
+      ),
       child: SwitchListTile(
         secondary: Icon(
           appProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode,
@@ -90,7 +97,14 @@ class SettingsScreen extends StatelessWidget {
   Widget _buildLanguageSetting(BuildContext context, ThemeData theme) {
     final languageProvider = Provider.of<LanguageProvider>(context);
 
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
+        ),
+      ),
       child: ListTile(
         leading: const Icon(Icons.language),
         title: Text(AppLocalizations.of(context).language),
@@ -107,7 +121,14 @@ class SettingsScreen extends StatelessWidget {
     final appProvider = Provider.of<AppProvider>(context);
     final offlineProvider = Provider.of<OfflineProvider>(context);
 
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
+        ),
+      ),
       child: SwitchListTile(
         secondary: const Icon(Icons.offline_bolt),
         title: Text(AppLocalizations.of(context).offlineMode),
@@ -122,7 +143,14 @@ class SettingsScreen extends StatelessWidget {
   }
 
   Widget _buildAutoSaveSetting(BuildContext context, ThemeData theme) {
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
+        ),
+      ),
       child: SwitchListTile(
         secondary: const Icon(Icons.save),
         title: const Text('Auto-save Scans'),
@@ -138,7 +166,14 @@ class SettingsScreen extends StatelessWidget {
   Widget _buildConfidenceScoresSetting(BuildContext context, ThemeData theme) {
     final appProvider = Provider.of<AppProvider>(context);
 
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
+        ),
+      ),
       child: SwitchListTile(
         secondary: const Icon(Icons.analytics),
         title: Text(AppLocalizations.of(context).showConfidenceScores),
@@ -157,7 +192,14 @@ class SettingsScreen extends StatelessWidget {
   Widget _buildGradCAMSetting(BuildContext context, ThemeData theme) {
     final appProvider = Provider.of<AppProvider>(context);
 
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
+        ),
+      ),
       child: SwitchListTile(
         secondary: const Icon(Icons.visibility),
         title: Text(AppLocalizations.of(context).showGradCAM),
@@ -176,7 +218,14 @@ class SettingsScreen extends StatelessWidget {
   Widget _buildTop3ResultsSetting(BuildContext context, ThemeData theme) {
     final appProvider = Provider.of<AppProvider>(context);
 
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
+        ),
+      ),
       child: SwitchListTile(
         secondary: const Icon(Icons.list),
         title: Text(AppLocalizations.of(context).showTop3Results),
@@ -195,7 +244,14 @@ class SettingsScreen extends StatelessWidget {
   Widget _buildAppVersionInfo(BuildContext context, ThemeData theme) {
     final appProvider = Provider.of<AppProvider>(context);
 
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
+        ),
+      ),
       child: ListTile(
         leading: const Icon(Icons.info),
         title: const Text('App Version'),
@@ -207,7 +263,14 @@ class SettingsScreen extends StatelessWidget {
   Widget _buildModelVersionInfo(BuildContext context, ThemeData theme) {
     final appProvider = Provider.of<AppProvider>(context);
 
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
+        ),
+      ),
       child: ListTile(
         leading: const Icon(Icons.psychology),
         title: const Text('Model Version'),
@@ -219,7 +282,14 @@ class SettingsScreen extends StatelessWidget {
   Widget _buildHelpTutorialLink(BuildContext context, ThemeData theme) {
     final appLocalizations = AppLocalizations.of(context);
 
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
+        ),
+      ),
       child: ListTile(
         leading: const Icon(Icons.help_outline),
         title: Text(appLocalizations.helpAndTutorial),
@@ -256,7 +326,14 @@ class SettingsScreen extends StatelessWidget {
   Widget _buildOfflineActions(BuildContext context, ThemeData theme) {
     return Consumer<OfflineProvider>(
       builder: (context, offlineProvider, child) {
-        return Card(
+        return Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: theme.colorScheme.outline.withOpacity(0.2),
+            ),
+          ),
           child: Column(
             children: [
               ListTile(
