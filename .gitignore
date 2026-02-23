@@ -343,6 +343,9 @@ test/*_test.dart.bak
 .history
 .svn/
 
+# Node (Supabase CLI, etc.)
+node_modules/
+
 # Excluded from repo (e.g. for RE-HerbaScan)
 CHANGELOG.md
 .cursor/
