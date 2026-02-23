@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:herbascan/core/models/plant.dart';
+import 'package:herbascan/core/widgets/contraindication_engine_widget.dart';
 import 'package:herbascan/features/scan/preparation_instructions_screen.dart';
 
 class PlantDetailScreen extends StatefulWidget {
@@ -317,88 +318,9 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
           padding: const EdgeInsets.all(16),
           sliver: SliverList(
             delegate: SliverChildListDelegate([
-              _buildSectionTitle('⚠️ Safety Warnings', theme),
+              _buildSectionTitle('⚠️ Safety & Contraindications', theme),
               const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.errorContainer.withOpacity(0.3),
-                  border: Border.all(
-                    color: theme.colorScheme.error.withOpacity(0.5),
-                    width: 2,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (widget.plant.safetyWarnings.isEmpty)
-                      Text(
-                        'No specific safety warnings documented for this plant. However, always consult with a healthcare professional before use.',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onErrorContainer,
-                          height: 1.5,
-                        ),
-                      )
-                    else
-                      ...widget.plant.safetyWarnings.map((warning) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Icon(
-                                Icons.warning_amber_rounded,
-                                size: 20,
-                                color: theme.colorScheme.error,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  warning,
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: theme.colorScheme.onErrorContainer,
-                                    height: 1.5,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest
-                      .withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      Icons.local_hospital,
-                      size: 20,
-                      color: theme.colorScheme.primary,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Always consult with a healthcare professional before using herbal remedies, especially if you are pregnant, nursing, taking medications, or have existing medical conditions.',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          height: 1.5,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              ContraindicationEngineWidget(plant: widget.plant),
               const SizedBox(height: 20),
             ]),
           ),

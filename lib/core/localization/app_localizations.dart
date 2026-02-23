@@ -113,6 +113,24 @@ class AppLocalizations {
   String get consultHealthcareDisclaimer =>
       _localizedValues[locale.languageCode]!['consultHealthcareDisclaimer']!;
 
+  // Contraindication Engine (Safety Informatics)
+  String get drugInteractions =>
+      _localizedValues[locale.languageCode]!['drugInteractions']!;
+  String get notSafeForPregnancy =>
+      _localizedValues[locale.languageCode]!['notSafeForPregnancy']!;
+  String get knownSideEffects =>
+      _localizedValues[locale.languageCode]!['knownSideEffects']!;
+  String get strictContraindications =>
+      _localizedValues[locale.languageCode]!['strictContraindications']!;
+  String get generallySafeForConsumption =>
+      _localizedValues[locale.languageCode]!['generallySafeForConsumption']!;
+  String get safetyDisclaimerEducational =>
+      _localizedValues[locale.languageCode]!['safetyDisclaimerEducational']!;
+  String get noStructuredSafetyData =>
+      _localizedValues[locale.languageCode]!['noStructuredSafetyData']!;
+  String get avoidUseWith =>
+      _localizedValues[locale.languageCode]!['avoidUseWith']!;
+
   // Settings
   String get language => _localizedValues[locale.languageCode]!['language']!;
   String get offlineMode =>
@@ -307,6 +325,15 @@ class AppLocalizations {
       'activeCompounds': 'Active Compounds',
       'consultHealthcareDisclaimer':
           'Always consult healthcare professionals before using any herbal remedies',
+      'drugInteractions': 'Drug interactions',
+      'notSafeForPregnancy': 'Not safe for pregnancy',
+      'knownSideEffects': 'Known side effects',
+      'strictContraindications': 'Strict contraindications',
+      'generallySafeForConsumption': 'Generally safe for normal consumption.',
+      'safetyDisclaimerEducational':
+          'This app is for educational purposes only. It is not a replacement for professional medical advice. Always consult a healthcare professional before using herbal remedies, especially if you are pregnant, nursing, taking medications, or have existing medical conditions.',
+      'noStructuredSafetyData': 'No structured safety data for this plant.',
+      'avoidUseWith': 'Avoid use with',
       'language': 'Language / Wika',
       'offlineMode': 'Offline Mode',
       'showConfidenceScores': 'Show Confidence Scores',
@@ -435,6 +462,15 @@ class AppLocalizations {
       'activeCompounds': 'Mga Aktibong Sangkap',
       'consultHealthcareDisclaimer':
           'Laging kumonsulta sa mga propesyonal sa kalusugan bago gumamit ng anumang halamang gamot',
+      'drugInteractions': 'Pakikipag-ugnayan sa gamot',
+      'notSafeForPregnancy': 'Hindi ligtas para sa pagbubuntis',
+      'knownSideEffects': 'Kilalang side effects',
+      'strictContraindications': 'Strikto na mga kontraindikasyon',
+      'generallySafeForConsumption': 'Sa pangkalahatan ay ligtas para sa normal na pagkonsumo.',
+      'safetyDisclaimerEducational':
+          'Ang app na ito ay para lamang sa edukasyonal na layunin. Hindi ito kapalit ng propesyonal na payo medikal. Laging kumonsulta sa propesyonal sa kalusugan bago gumamit ng halamang gamot, lalo na kung ikaw ay buntis, nagpapasuso, umiinom ng gamot, o may umiiral na kondisyong medikal.',
+      'noStructuredSafetyData': 'Walang istrukturang data ng kaligtasan para sa halamang ito.',
+      'avoidUseWith': 'Iwasan ang paggamit kasama ng',
       'language': 'Wika / Language',
       'offlineMode': 'Offline Mode',
       'showConfidenceScores': 'Ipakita ang Confidence Scores',

@@ -6,6 +6,7 @@ import 'package:herbascan/core/widgets/gradcam_visualization.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/providers/plant_provider.dart';
 import 'package:herbascan/core/providers/auth_provider.dart';
+import 'package:herbascan/core/models/plant.dart';
 import 'package:herbascan/core/models/scan_result.dart';
 import 'package:herbascan/core/services/herbarium_service.dart';
 import 'package:herbascan/core/services/adaptive_gradcam_service.dart';
@@ -90,6 +91,8 @@ class _PlantResultScreenState extends State<PlantResultScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
   bool _isSaved = false;
+  bool _savedToCloud = false;
+  ScanResult? _savedScanResult;
 
   // Regenerated GradCAM state
   Uint8List? _regeneratedGradcamImageBytes;
@@ -512,11 +515,28 @@ class _PlantResultScreenState extends State<PlantResultScreen>
 
   Widget _buildGradCAMTab(
       ThemeData theme, String plantName, double confidence) {
-    // Get scientific name and predictions from top prediction
+    // Get scientific name and predictions from top prediction.
+    // Fallback to plantName so Summary tab can load explanation when backend omits scientificName.
     final topPrediction = widget.predictions.isNotEmpty
         ? widget.predictions.first
         : <String, dynamic>{};
-    final scientificName = topPrediction['scientificName'] as String?;
+    final scientificName = (topPrediction['scientificName'] as String?)?.trim().isNotEmpty == true
+        ? (topPrediction['scientificName'] as String)
+        : plantName;
+
+    // Resolve plant for Contraindication Engine (safety cards)
+    Plant? resolvedPlant;
+    try {
+      final plantProvider = Provider.of<PlantProvider>(context, listen: false);
+      final normalized = plantName.trim().toLowerCase();
+      for (final p in plantProvider.plants) {
+        if (p.commonName.trim().toLowerCase() == normalized ||
+            p.scientificName.trim().toLowerCase() == normalized) {
+          resolvedPlant = p;
+          break;
+        }
+      }
+    } catch (_) {}
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -534,6 +554,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
             scientificName: scientificName,
             confidence: confidence,
             predictions: widget.predictions,
+            plant: resolvedPlant,
             // Use regenerated method if available, otherwise use original
             method: _regeneratedMethod ?? widget.method,
             fallbackUsed: _regeneratedFallbackUsed ?? widget.fallbackUsed,
@@ -1253,41 +1274,83 @@ class _PlantResultScreenState extends State<PlantResultScreen>
         isOfflineScan: widget.method == 'cam' || widget.fallbackUsed == true,
       );
 
-      // Save to database
+      // Save to database (device only; Cloud is opt-in via Save button when logged in)
       await plantProvider.addScanResult(scanResult);
-
-      // If logged in, upload to Personal Herbarium (Supabase)
-      final auth = Provider.of<AuthProvider>(context, listen: false);
-      if (auth.isLoggedIn) {
-        try {
-          await HerbariumService().uploadScan(scanResult, widget.imagePath);
-        } catch (_) {}
-      }
 
       setState(() {
         _isSaved = true;
+        _savedScanResult = scanResult;
       });
 
-      print('✅ Scan result saved successfully');
+      print('✅ Scan result saved to device');
     } catch (e) {
       print('❌ Error saving scan result: $e');
     }
   }
 
-  void _saveResults() {
-    if (_isSaved) {
+  Future<void> _saveResults() async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    if (!_isSaved) {
+      await _saveResultsAutomatically();
+      if (!mounted) return;
+      if (auth.isLoggedIn && _savedScanResult != null) {
+        try {
+          await HerbariumService().uploadScan(_savedScanResult!, widget.imagePath);
+          if (mounted) setState(() => _savedToCloud = true);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Saved to device and Personal Herbarium'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        } catch (_) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Saved to device. Cloud upload failed.'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          }
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Scan saved to device history'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+      return;
+    }
+    if (auth.isLoggedIn && !_savedToCloud && _savedScanResult != null) {
+      try {
+        await HerbariumService().uploadScan(_savedScanResult!, widget.imagePath);
+        if (mounted) setState(() => _savedToCloud = true);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Added to Personal Herbarium'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Cloud upload failed. Try again.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Scan already saved to history'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } else {
-      // Manually save when button is pressed
-      _saveResultsAutomatically();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Scan saved to history successfully'),
           backgroundColor: Colors.green,
         ),
       );

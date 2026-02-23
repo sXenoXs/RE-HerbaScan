@@ -5,6 +5,8 @@ import 'package:herbascan/core/providers/auth_provider.dart';
 import 'package:herbascan/core/providers/language_provider.dart';
 import 'package:herbascan/core/providers/offline_provider.dart';
 import 'package:herbascan/features/auth/login_screen.dart';
+import 'package:herbascan/features/auth/change_password_screen.dart';
+import 'package:herbascan/features/auth/change_email_screen.dart';
 import 'package:herbascan/features/admin/admin_dashboard_screen.dart';
 import 'package:herbascan/core/widgets/offline_indicator.dart';
 import 'package:herbascan/features/offline/offline_demo_screen.dart';
@@ -330,16 +332,51 @@ class SettingsScreen extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               auth.isLoggedIn
-                  ? ListTile(
-                      leading: const Icon(Icons.cloud_done_outlined),
-                      title: const Text('Personal Herbarium'),
-                      subtitle: Text(auth.user?.email ?? ''),
-                      trailing: TextButton(
-                        onPressed: () async {
-                          await auth.signOut();
-                        },
-                        child: const Text('Sign out'),
-                      ),
+                  ? Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ListTile(
+                          leading: const Icon(Icons.cloud_done_outlined),
+                          title: const Text('Personal Herbarium'),
+                          subtitle: Text(auth.user?.email ?? ''),
+                          trailing: TextButton(
+                            onPressed: () async {
+                              await auth.signOut();
+                            },
+                            child: const Text('Sign out'),
+                          ),
+                        ),
+                        const Divider(height: 1),
+                        ListTile(
+                          leading: const Icon(Icons.lock_outline),
+                          title: const Text('Change password'),
+                          subtitle: const Text('Update your account password'),
+                          trailing: const Icon(Icons.arrow_forward_ios),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (context) =>
+                                    const ChangePasswordScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        const Divider(height: 1),
+                        ListTile(
+                          leading: const Icon(Icons.email_outlined),
+                          title: const Text('Change email'),
+                          subtitle: const Text('Update your account email'),
+                          trailing: const Icon(Icons.arrow_forward_ios),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (context) =>
+                                    const ChangeEmailScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     )
                   : ListTile(
                       leading: const Icon(Icons.cloud_upload_outlined),
@@ -356,7 +393,8 @@ class SettingsScreen extends StatelessWidget {
                         );
                       },
                     ),
-              if (auth.isAdmin)
+              if (auth.isAdmin) ...[
+                const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.admin_panel_settings_outlined),
                   title: const Text('Review submissions'),
@@ -370,6 +408,7 @@ class SettingsScreen extends StatelessWidget {
                     );
                   },
                 ),
+              ],
             ],
           ),
         );

@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:herbascan/core/config/supabase_config.dart';
 
 /// Wraps Supabase Auth for HerbaScan. Handles sign in, sign up, sign out,
 /// session, and JWT access token. No custom auth logic.
@@ -46,7 +47,33 @@ class AuthService {
   }
 
   /// Reset password (sends email via Supabase).
+  /// Uses [authRedirectUrl] so the link opens the app; add it to Supabase Redirect URLs.
+  /// For 6-digit OTP flow, edit the Reset password template to show {{ .Token }} and use [verifyOtpRecovery].
   Future<void> resetPasswordForEmail(String email) async {
-    await _client.auth.resetPasswordForEmail(email);
+    await _client.auth.resetPasswordForEmail(
+      email,
+      redirectTo: authRedirectUrl,
+    );
+  }
+
+  /// Verify the 6-digit (or token) code from the password reset email and establish a recovery session.
+  /// After this, the user can call [updatePassword] to set a new password.
+  /// [email] must be the address the reset email was sent to (required by Supabase).
+  Future<void> verifyOtpRecovery({required String email, required String token}) async {
+    await _client.auth.verifyOTP(
+      type: OtpType.recovery,
+      email: email.trim(),
+      token: token.trim(),
+    );
+  }
+
+  /// Update current user's password. User must be signed in.
+  Future<void> updatePassword(String newPassword) async {
+    await _client.auth.updateUser(UserAttributes(password: newPassword));
+  }
+
+  /// Update current user's email. User must be signed in. May send confirmation to new email.
+  Future<void> updateEmail(String newEmail) async {
+    await _client.auth.updateUser(UserAttributes(email: newEmail));
   }
 }

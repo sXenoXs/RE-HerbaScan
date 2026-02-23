@@ -7,8 +7,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
 import 'plant_service.dart';
 import '../models/plant.dart';
-import 'gemini_api_service.dart';
-import 'config_service.dart';
 
 /// Model for plant explanation data
 /// Standardized structure with four required sections:
@@ -104,27 +102,15 @@ class XAIExplanationService {
 
   final Logger _logger = Logger();
   final PlantService _plantService = PlantService();
-  final GeminiAPIService _geminiService = GeminiAPIService();
 
   // Cache for offline explanations (asset JSON)
   Map<String, PlantExplanation>? _offlineExplanationsCache;
 
-  // Cache for Gemini responses (JSON file)
+  // Cache for online API responses (JSON file)
   Map<String, Map<String, dynamic>>? _geminiCache;
 
   // Source tracking
-  String? _lastExplanationSource; // "gemini", "cache", "offline", "fallback"
-
-  // Danger look-alikes for safety checks
-  static const Map<String, Map<String, String>> _dangerLookAlikes = {
-    'Conium maculatum': {
-      // Poison Hemlock
-      'marker': 'purple splotches on stem',
-      'safeAlternative': 'Wild Carrot',
-      'safeMarker': 'hairy stem',
-    },
-    // Add more dangerous look-alikes as needed
-  };
+  String? _lastExplanationSource; // "cache", "offline", "fallback"
 
   /// Get the last explanation source
   String? getLastExplanationSource() => _lastExplanationSource;
@@ -136,7 +122,7 @@ class XAIExplanationService {
   /// 1. Check SharedPreferences cache (saved explanations)
   /// 2. Check JSON file cache (learned database)
   /// 3. Check asset JSON (offline database)
-  /// 4. Only call Gemini if forceOnline=true AND no cache exists
+  /// 4. Only call online API if forceOnline=true AND no cache exists
   Future<String?> generateExplanation({
     required String plantName,
     required String scientificName,
@@ -155,18 +141,14 @@ class XAIExplanationService {
       _lastExplanationSource = null;
 
       // STEP 1: Check cache, but prioritize online if isOnline=true
-      // If online, only use cache if it's from a previous online (gemini) source
-      // This ensures online GradCAM shows "Online" badge, not "Offline" from cached offline data
       if (isOnline) {
-        // When online, check cache but only use if it's from gemini source
         final cachedText = await _getCachedExplanation(scientificName);
         if (cachedText != null && cachedText.isNotEmpty) {
-          // Check if cache source is 'gemini' (online) - if so, use it
           final cacheSource = await _getCacheSource(scientificName);
-          if (cacheSource == 'gemini') {
+          if (cacheSource == 'online' || cacheSource == 'gemini') {
             _logger.d(
                 'Using cached online explanation from SharedPreferences for $scientificName');
-            _lastExplanationSource = 'gemini'; // Mark as online
+            _lastExplanationSource = 'online';
             return cachedText;
           } else {
             _logger.d(
@@ -174,19 +156,17 @@ class XAIExplanationService {
           }
         }
 
-        // Also check JSON file cache for gemini source
         final fileCachedText = await _getCachedFromFile(scientificName);
         if (fileCachedText != null && fileCachedText.isNotEmpty) {
           final fileCacheSource = await _getFileCacheSource(scientificName);
-          if (fileCacheSource == 'gemini') {
+          if (fileCacheSource == 'online' || fileCacheSource == 'gemini') {
             _logger.d(
                 'Using cached online explanation from JSON file for $scientificName');
-            _lastExplanationSource = 'gemini'; // Mark as online
+            _lastExplanationSource = 'online';
             return fileCachedText;
           }
         }
       } else {
-        // Offline mode - use cache normally
         final cachedText = await _getCachedExplanation(scientificName);
         if (cachedText != null && cachedText.isNotEmpty) {
           _logger.d(
@@ -206,7 +186,6 @@ class XAIExplanationService {
       }
 
       // STEP 3: Try offline explanation from asset JSON
-      // Try common name FIRST (since JSON keys use common names matching model labels)
       final commonNameExplanation = await getExplanationOffline(
         plantName,
         enrichWithPlantData: true,
@@ -219,7 +198,6 @@ class XAIExplanationService {
         return commonNameExplanation.formattedExplanation;
       }
 
-      // Try with scientific name as fallback
       final offlineExplanation = await getExplanationOffline(
         scientificName,
         enrichWithPlantData: true,
@@ -232,45 +210,7 @@ class XAIExplanationService {
         return offlineExplanation.formattedExplanation;
       }
 
-      // STEP 4: Try online explanation if:
-      // - forceOnline=true (user explicitly requested refresh), OR
-      // - isOnline=true (we're online and should try to get online explanation)
-      // AND we have the necessary API key and images
-      final shouldTryOnline = forceOnline || isOnline;
-
-      if (shouldTryOnline &&
-          await ConfigService.isGeminiApiKeyConfigured() &&
-          (imagePath != null || originalImageBytes != null)) {
-        _logger.d(
-            'Attempting online explanation for $plantName ($scientificName) - forceOnline=$forceOnline, isOnline=$isOnline');
-        // Try online explanation with images
-        final onlineExplanationText = await getExplanationOnline(
-          plantName: plantName,
-          scientificName: scientificName,
-          confidence: confidence,
-          predictions: predictions ?? [],
-          originalImagePath: imagePath ?? '',
-          originalImageBytes: originalImageBytes,
-          heatmapImagePath: heatmapImagePath,
-          heatmapImageBytes: heatmapImageBytes,
-          plantData: plantData,
-        );
-
-        if (onlineExplanationText != null && onlineExplanationText.isNotEmpty) {
-          _logger.i('Successfully retrieved online explanation from Gemini');
-          _lastExplanationSource = 'gemini'; // Mark as online source
-          return onlineExplanationText; // Return markdown text directly
-        }
-
-        // If online fails, fall through to fallback
-        _logger.w(
-            'Online explanation failed or returned empty, falling back to offline explanation');
-      } else if (shouldTryOnline) {
-        _logger.d(
-            'Should try online but missing requirements: hasApiKey=${await ConfigService.isGeminiApiKeyConfigured()}, hasImage=${imagePath != null || originalImageBytes != null}');
-      }
-
-      // STEP 5: Fallback - generic explanation
+      // Fallback - generic explanation
       _logger.d('No explanation found, generating fallback...');
       _lastExplanationSource = 'fallback';
       final fallback = await _generateFallbackExplanation(
@@ -421,10 +361,11 @@ class XAIExplanationService {
 
       // Normalize the search key (lowercase, trim whitespace)
       final normalizedKeyName = _normalizeKey(keyName);
+      final assetKeys = _offlineExplanationsCache?.keys.toList() ?? [];
 
       // Debug logging
       _logger.d(
-          'Looking for key: "$normalizedKeyName" (original: "$keyName") in database keys: ${_offlineExplanationsCache?.keys.toList()}');
+          'Looking for key: "$normalizedKeyName" (original: "$keyName") in database keys: $assetKeys');
 
       // STEP 1: Try exact match (normalized)
       var explanation = _offlineExplanationsCache?[keyName];
@@ -510,7 +451,7 @@ class XAIExplanationService {
               usability: explanation.usability,
               taxonomy: explanation.taxonomy ?? _formatTaxonomy(matchingPlant),
               ecology: explanation.ecology ?? _formatEcology(matchingPlant),
-              safety: explanation.safety ?? _formatSafety(matchingPlant),
+              safety: _safetyProtocolPointer,
               heatmapGuidance: explanation.heatmapGuidance,
             );
           }
@@ -546,8 +487,7 @@ class XAIExplanationService {
           usability: explanationData['usability'] as String? ?? '',
           taxonomy: explanationData['taxonomy'] as String?,
           ecology: explanationData['ecology'] as String?,
-          safety: explanationData['safety_consideration'] as String? ??
-              explanationData['safety'] as String?,
+          safety: _safetyProtocolPointer,
           heatmapGuidance: explanationData['heatmap_guidance'] as String?,
         );
       });
@@ -573,17 +513,9 @@ class XAIExplanationService {
     return buffer.toString().trim();
   }
 
-  String _formatSafety(Plant plant) {
-    if (plant.safetyWarnings.isEmpty) {
-      return 'Consult a healthcare provider before use.';
-    }
-    final buffer = StringBuffer();
-    buffer.writeln('**Important Safety Warnings:**');
-    for (final warning in plant.safetyWarnings) {
-      buffer.writeln('- $warning');
-    }
-    return buffer.toString().trim();
-  }
+  /// Short pointer for Safety Protocol; real safety is from ContraindicationEngineWidget (safety_profiles.json).
+  static const String _safetyProtocolPointer =
+      'See Safety & Contraindications below for verified safety information.';
 
   Future<PlantExplanation> _generateFallbackExplanation({
     required String plantName,
@@ -618,18 +550,11 @@ class XAIExplanationService {
               plantData.medicinalUses.isNotEmpty
           ? "**Uses:** ${plantData.medicinalUses.map((u) => u.condition).join(", ")}.\n\n**Preparation:** ${plantData.preparationMethods.isNotEmpty ? plantData.preparationMethods.first.title : "Consult traditional preparation methods."}"
           : "Specific medicinal details for this plant are not currently in the offline database.",
-      safety: plantData != null
-          ? _formatSafety(plantData)
-          : "Please consult a local expert before using this plant.",
+      safety: _safetyProtocolPointer,
       usability:
           "**Status: USE WITH CAUTION**\n\nPlease consult a local expert before using this plant.",
       heatmapGuidance: null,
     );
-  }
-
-  /// Check if plant is a dangerous look-alike
-  bool _isDangerousLookAlike(String scientificName) {
-    return _dangerLookAlikes.containsKey(scientificName);
   }
 
   /// Get cached explanation from SharedPreferences
@@ -642,9 +567,7 @@ class XAIExplanationService {
       if (cachedText != null && cachedText.isNotEmpty) {
         // Check the source of the cache
         final cacheSource = prefs.getString('${key}_source');
-        // If cache source is 'gemini', it's from online analysis
-        // Otherwise, treat it as offline/cache
-        _lastExplanationSource = cacheSource == 'gemini' ? 'gemini' : 'cache';
+        _lastExplanationSource = 'cache';
         _logger.d(
             'Found cached explanation in SharedPreferences for $scientificName (source: $cacheSource)');
         return cachedText;
@@ -663,26 +586,6 @@ class XAIExplanationService {
       return prefs.getString('${key}_source');
     } catch (e) {
       return null;
-    }
-  }
-
-  /// Save explanation to SharedPreferences cache
-  Future<void> _saveCachedExplanation(
-    String scientificName,
-    String text,
-    String source,
-  ) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final key = 'xai_explanation_${_normalizeKey(scientificName)}';
-      await prefs.setString(key, text);
-      await prefs.setString('${key}_source', source);
-      await prefs.setString(
-          '${key}_timestamp', DateTime.now().toIso8601String());
-      _logger.d(
-          'Saved explanation to SharedPreferences cache for $scientificName');
-    } catch (e) {
-      _logger.w('Error saving to SharedPreferences cache: $e');
     }
   }
 
@@ -715,7 +618,7 @@ class XAIExplanationService {
     }
   }
 
-  /// Save explanation to JSON cache file
+  // ignore: unused_element - kept for reference; no longer writing to cache (no live LLM).
   Future<void> _saveToCacheFile(
     String scientificName,
     String text,
@@ -743,7 +646,6 @@ class XAIExplanationService {
 
       final cacheFile = File('${cacheDir.path}/plant_explanations_cache.json');
       await cacheFile.writeAsString(jsonEncode(_geminiCache));
-      _logger.d('Saved explanation to JSON cache file for $scientificName');
     } catch (e) {
       _logger.w('Error saving to JSON cache file: $e');
     }
@@ -762,9 +664,7 @@ class XAIExplanationService {
       if (cached != null && cached['text'] != null) {
         // Check the source of the cache
         final cacheSource = cached['source'] as String?;
-        // If cache source is 'gemini', it's from online analysis
-        // Otherwise, treat it as offline/cache
-        _lastExplanationSource = cacheSource == 'gemini' ? 'gemini' : 'cache';
+        _lastExplanationSource = 'cache';
         _logger.d(
             'Found cached explanation in JSON file for $scientificName (source: $cacheSource)');
         return cached['text'] as String;
@@ -796,89 +696,5 @@ class XAIExplanationService {
   /// Normalize key for caching (lowercase, trim)
   String _normalizeKey(String key) {
     return key.trim().toLowerCase();
-  }
-
-  /// Load image bytes from file path
-  Future<Uint8List?> _loadImageBytes(String? imagePath) async {
-    if (imagePath == null) return null;
-    try {
-      final file = File(imagePath);
-      if (await file.exists()) {
-        return await file.readAsBytes();
-      }
-    } catch (e) {
-      _logger.e('Error loading image bytes: $e');
-    }
-    return null;
-  }
-
-  /// Get explanation online using Gemini API with images
-  /// Returns formatted markdown text string (not PlantExplanation)
-  Future<String?> getExplanationOnline({
-    required String plantName,
-    required String scientificName,
-    required double confidence,
-    required List<Map<String, dynamic>> predictions,
-    required String originalImagePath,
-    Uint8List? originalImageBytes,
-    String? heatmapImagePath,
-    Uint8List? heatmapImageBytes,
-    Plant? plantData,
-  }) async {
-    try {
-      // Check if API key is configured
-      if (!await ConfigService.isGeminiApiKeyConfigured()) {
-        _logger.w('Gemini API key not configured, falling back to offline');
-        return null;
-      }
-
-      // Load images as bytes
-      final originalBytes =
-          originalImageBytes ?? await _loadImageBytes(originalImagePath);
-      final heatmapBytes =
-          heatmapImageBytes ?? await _loadImageBytes(heatmapImagePath);
-
-      if (originalBytes == null) {
-        _logger.w('Original image not available, falling back to offline');
-        return null;
-      }
-
-      // Extract only the top prediction (index 0) to avoid confusing Gemini
-      // The model's prediction is absolute truth - Gemini should only justify it, not identify
-      final topPrediction = predictions.isNotEmpty
-          ? [predictions.first] // Only pass the top prediction
-          : <Map<String, dynamic>>[];
-
-      // Call Gemini API with images
-      final explanationText = await _geminiService.generateExplanation(
-        plantName: plantName,
-        scientificName: scientificName,
-        confidence: confidence,
-        predictions:
-            topPrediction, // Only top prediction - model's decision is absolute
-        originalImageBytes: originalBytes,
-        heatmapImageBytes: heatmapBytes,
-        plantData: plantData,
-        isDangerousLookAlike: _isDangerousLookAlike(scientificName),
-        dangerInfo: _isDangerousLookAlike(scientificName)
-            ? _dangerLookAlikes[scientificName]
-            : null,
-      );
-
-      if (explanationText != null && explanationText.isNotEmpty) {
-        // Save to cache (both SharedPreferences and JSON file)
-        await _saveCachedExplanation(scientificName, explanationText, 'gemini');
-        await _saveToCacheFile(
-            scientificName, explanationText, 'gemini', plantName);
-
-        _lastExplanationSource = 'gemini';
-        return explanationText; // Return markdown text directly
-      }
-
-      return null;
-    } catch (e) {
-      _logger.e('Error getting online explanation: $e');
-      return null;
-    }
   }
 }
