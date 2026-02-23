@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:logger/logger.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Service for communicating with the Python Grad-CAM backend API
 class OnlineGradCAMService {
@@ -14,9 +15,8 @@ class OnlineGradCAMService {
 
   final Logger _logger = Logger();
 
-  // Railway backend URL
-  static const String serverUrl =
-      'https://herbascan-backend-production.up.railway.app';
+  // Railway backend URL (must include scheme for Uri.parse)
+  static const String serverUrl = 'https://web-production-011a.up.railway.app';
   static const Duration timeout = Duration(seconds: 30);
 
   /// Check if the backend server is healthy and ready
@@ -79,6 +79,12 @@ class OnlineGradCAMService {
           'POST',
           Uri.parse('$serverUrl/identify'),
         );
+
+        // Attach Supabase JWT when signed in (for Railway backend verification)
+        final token = Supabase.instance.client.auth.currentSession?.accessToken;
+        if (token != null && token.isNotEmpty) {
+          request.headers['Authorization'] = 'Bearer $token';
+        }
 
         // Attach image file
         request.files.add(

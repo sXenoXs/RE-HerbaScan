@@ -234,7 +234,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                 theme,
                 Icons.camera_alt,
                 AppLocalizations.of(context).scanPlant,
-                'Identify using camera',
+                'Use camera',
                 () {
                   Navigator.of(context).push(
                     MaterialPageRoute(builder: (context) => const ScanScreen()),
@@ -289,7 +289,14 @@ class _HomeDashboardState extends State<HomeDashboard> {
     String subtitle,
     VoidCallback onTap,
   ) {
+    // In dark mode use a lighter shade than grid container (#2c2d42) so cards don't blend
+    final bool isDark = theme.brightness == Brightness.dark;
+    final Color? cardColor = isDark
+        ? const Color(0xFF3A3B5C) // Lighter than grid surface (#2c2d42)
+        : null;
+
     return Card(
+      color: cardColor,
       child: InkWell(
         key: ValueKey('action_card_${title}_$subtitle'),
         onTap: onTap,

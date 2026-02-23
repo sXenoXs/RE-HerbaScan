@@ -213,9 +213,7 @@ class XAIExplanationService {
       );
 
       if (commonNameExplanation != null) {
-        if (_lastExplanationSource == null) {
-          _lastExplanationSource = 'offline';
-        }
+        _lastExplanationSource ??= 'offline';
         _logger.d(
             'Using offline explanation from asset JSON (common name) for $plantName');
         return commonNameExplanation.formattedExplanation;
@@ -228,9 +226,7 @@ class XAIExplanationService {
       );
 
       if (offlineExplanation != null) {
-        if (_lastExplanationSource == null) {
-          _lastExplanationSource = 'offline';
-        }
+        _lastExplanationSource ??= 'offline';
         _logger.d(
             'Using offline explanation from asset JSON (scientific name) for $scientificName');
         return offlineExplanation.formattedExplanation;
@@ -486,16 +482,12 @@ class XAIExplanationService {
       if (explanation == null) {
         _logger.w(
             'No explanation found for key: "$keyName" (normalized: "$normalizedKeyName")');
-        if (_lastExplanationSource == null) {
-          _lastExplanationSource = 'offline';
-        }
+        _lastExplanationSource ??= 'offline';
         return null;
       }
 
       // Update source if not already set
-      if (_lastExplanationSource == null) {
-        _lastExplanationSource = 'offline';
-      }
+      _lastExplanationSource ??= 'offline';
 
       // Enrich with plant data from database
       if (enrichWithPlantData) {
@@ -575,14 +567,16 @@ class XAIExplanationService {
   String _formatEcology(Plant plant) {
     final buffer = StringBuffer();
     if (plant.ecology.isNotEmpty) buffer.writeln(plant.ecology);
-    if (plant.habitat.isNotEmpty)
+    if (plant.habitat.isNotEmpty) {
       buffer.writeln('**Habitat:** ${plant.habitat}');
+    }
     return buffer.toString().trim();
   }
 
   String _formatSafety(Plant plant) {
-    if (plant.safetyWarnings.isEmpty)
+    if (plant.safetyWarnings.isEmpty) {
       return 'Consult a healthcare provider before use.';
+    }
     final buffer = StringBuffer();
     buffer.writeln('**Important Safety Warnings:**');
     for (final warning in plant.safetyWarnings) {

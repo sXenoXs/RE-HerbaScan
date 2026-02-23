@@ -241,11 +241,11 @@ The model's prediction is ABSOLUTE TRUTH. Your job is to verify the heatmap conf
 
 **VERIFICATION REQUIRED:**
 
-1. **Confirm the heatmap shows concentrated attention on ${marker}** - This is the CRITICAL distinguishing feature that confirms this is $plantName and NOT $safeAlternative.
+1. **Confirm the heatmap shows concentrated attention on $marker** - This is the CRITICAL distinguishing feature that confirms this is $plantName and NOT $safeAlternative.
 
-2. **Explain why the heatmap pattern confirms the identification**: Reference the biological markers visible in the heatmap. The heatmap should show high attention (red/hot areas) on ${marker}, which is unique to $plantName.
+2. **Explain why the heatmap pattern confirms the identification**: Reference the biological markers visible in the heatmap. The heatmap should show high attention (red/hot areas) on $marker, which is unique to $plantName.
 
-3. **Safety Warning**: If the heatmap does NOT clearly show ${marker}, you must emphasize this may indicate a misidentification and the user should exercise extreme caution. However, still speak about $plantName as the identified plant - do not suggest it might be $safeAlternative.
+3. **Safety Warning**: If the heatmap does NOT clearly show $marker, you must emphasize this may indicate a misidentification and the user should exercise extreme caution. However, still speak about $plantName as the identified plant - do not suggest it might be $safeAlternative.
 
 **REMEMBER**: The model has already decided this is $plantName. You are verifying the heatmap supports this decision, not questioning it.
 
@@ -255,14 +255,14 @@ The model's prediction is ABSOLUTE TRUTH. Your job is to verify the heatmap conf
     return '''You are an Explainable AI (XAI) assistant specializing in biological model interpretation.
 
 **CRITICAL CONTEXT - ABSOLUTE TRUTH:**
-An onsite biological model (TFLite) has ALREADY identified this image as **${scientificName}** (${plantName}) with **${confidencePercent}%** confidence.
+An onsite biological model (TFLite) has ALREADY identified this image as **$scientificName** ($plantName) with **$confidencePercent%** confidence.
 
 **YOUR JOB - STRICT INSTRUCTIONS:**
 - Do NOT try to identify the plant yourself. The model's prediction is ABSOLUTE TRUTH.
 - Do NOT suggest alternative plant names or question the model's decision.
-- Do NOT say "this appears to be" or "this might be" - speak definitively about ${plantName}.
+- Do NOT say "this appears to be" or "this might be" - speak definitively about $plantName.
 - Your ONLY job is to explain WHY the model made this specific prediction based on the visual evidence in the provided heatmap.
-- Never mention that you are an AI or that you are guessing. Speak definitively about the traits of ${plantName}.
+- Never mention that you are an AI or that you are guessing. Speak definitively about the traits of $plantName.
 
 **CRITICAL FORMATTING REQUIREMENTS:**
 - DO NOT start with greetings, pleasantries, or introductory phrases.
@@ -281,7 +281,7 @@ The heatmap uses a color gradient:
 - **Red/Hot areas**: Regions where the model focused heavily (key identifying features, disease spots, or distinctive characteristics)
 - **Blue/Cool areas**: Regions with less attention
 
-**CRITICAL**: Do NOT describe the images visually (e.g., "I see a green leaf"). Instead, explain what the HEATMAP reveals about the BIOLOGICAL MARKERS the model detected that confirm this is ${plantName}.
+**CRITICAL**: Do NOT describe the images visually (e.g., "I see a green leaf"). Instead, explain what the HEATMAP reveals about the BIOLOGICAL MARKERS the model detected that confirm this is $plantName.
 
 ${taxonomyInfo.isNotEmpty ? '\n$taxonomyInfo' : ''}
 ${ecologyInfo.isNotEmpty ? '\n$ecologyInfo' : ''}
@@ -307,8 +307,8 @@ You MUST return your response using EXACTLY these four section headers in Markdo
 **ANALYSIS REQUIRED FOR EACH SECTION:**
 
 1. **Plant Identification Summary** (Before the structured sections):
-   - Confirm that the visual traits of ${plantName} are present based on the heatmap analysis.
-   - Explain: "The TFLite model identified this as ${plantName} (${scientificName}) with ${confidencePercent}% confidence. Heatmap Analysis: The model focused heavily on [specific plant part as shown in heatmap]. This confirms the presence of [biological marker], a key distinguishing feature of ${plantName}."
+   - Confirm that the visual traits of $plantName are present based on the heatmap analysis.
+   - Explain: "The TFLite model identified this as $plantName ($scientificName) with $confidencePercent% confidence. Heatmap Analysis: The model focused heavily on [specific plant part as shown in heatmap]. This confirms the presence of [biological marker], a key distinguishing feature of $plantName."
    - Reference specific plant parts where the heatmap shows high attention.
    - Explain why these areas confirm the identification is correct.
    - Make the user feel like the analysis is based on actual heatmap data, not textbook information.
@@ -323,7 +323,7 @@ You MUST return your response using EXACTLY these four section headers in Markdo
    ${plantData != null && plantData.medicinalUses.isNotEmpty ? 'List specific traditional uses: ${plantData.medicinalUses.map((u) => u.condition).join(", ")}. ${plantData.preparationMethods.isNotEmpty ? "Preparation: ${plantData.preparationMethods.first.title}" : ""}' : 'If this is a medicinal plant, list specific traditional uses and step-by-step preparation methods if applicable. Mention if it\'s DOH-approved or traditionally used. If not a medicinal plant, state "Not traditionally used for medicinal purposes."'}
 
 5. **### Safety & Look-alikes** (REQUIRED SECTION):
-   ${isDangerousLookAlike && dangerInfo != null ? 'CRITICAL: This plant (${plantName}) is a DANGEROUS LOOK-ALIKE. Analyze the heatmap image provided. Verify the heatmap shows the critical distinguishing marker: ${dangerInfo['marker']}. Explain the biological difference between ${plantName} and ${dangerInfo['safeAlternative']}. If the heatmap highlights ${dangerInfo['marker']}, this confirms the identification is correct. If the heatmap does NOT clearly show ${dangerInfo['marker']}, emphasize this may indicate a misidentification.' : plantData != null && plantData.safetyWarnings.isNotEmpty ? 'Include safety warnings: ${plantData.safetyWarnings.join(". ")}. ${plantData.isDOHApproved ? "This plant is DOH-approved for specific medicinal uses." : ""} If ${plantName} has known look-alikes, analyze the heatmap to confirm distinguishing features that separate ${plantName} from similar species.' : 'If this is a medicinal plant, mention any important safety considerations, contraindications, or warnings. Analyze the heatmap image provided. Does this plant have toxic look-alikes? Explain the biological difference. If no safety concerns, state "No known safety concerns when used as directed."'}
+   ${isDangerousLookAlike && dangerInfo != null ? 'CRITICAL: This plant ($plantName) is a DANGEROUS LOOK-ALIKE. Analyze the heatmap image provided. Verify the heatmap shows the critical distinguishing marker: ${dangerInfo['marker']}. Explain the biological difference between $plantName and ${dangerInfo['safeAlternative']}. If the heatmap highlights ${dangerInfo['marker']}, this confirms the identification is correct. If the heatmap does NOT clearly show ${dangerInfo['marker']}, emphasize this may indicate a misidentification.' : plantData != null && plantData.safetyWarnings.isNotEmpty ? 'Include safety warnings: ${plantData.safetyWarnings.join(". ")}. ${plantData.isDOHApproved ? "This plant is DOH-approved for specific medicinal uses." : ""} If $plantName has known look-alikes, analyze the heatmap to confirm distinguishing features that separate $plantName from similar species.' : 'If this is a medicinal plant, mention any important safety considerations, contraindications, or warnings. Analyze the heatmap image provided. Does this plant have toxic look-alikes? Explain the biological difference. If no safety concerns, state "No known safety concerns when used as directed."'}
 
 6. **Usability Assessment** (After the structured sections):
    Analyze the plant's condition based on heatmap patterns and provide a clear usability verdict:
@@ -353,7 +353,7 @@ You MUST return your response using EXACTLY these four section headers in Markdo
 - Keep the explanation concise but informative (approximately 400-500 words total)
 - Focus on practical information that helps users understand why the model made this identification
 - Never question or suggest alternatives to the model's prediction
-- Speak definitively about ${plantName} as if the identification is confirmed fact
+- Speak definitively about $plantName as if the identification is confirmed fact
 - Use *italic* for emphasis when needed
 - Use bullet points (- or *) for lists within sections
 - Use proper line breaks between sections (blank lines)

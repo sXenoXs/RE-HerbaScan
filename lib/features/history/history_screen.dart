@@ -3,7 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/providers/plant_provider.dart';
+import 'package:herbascan/core/providers/auth_provider.dart';
 import 'package:herbascan/core/models/scan_result.dart';
+import 'package:herbascan/core/models/cloud_scan.dart';
+import 'package:herbascan/core/services/herbarium_service.dart';
+import 'package:herbascan/features/auth/login_screen.dart';
 import 'package:herbascan/features/scan/plant_result_screen.dart';
 import 'package:herbascan/features/scan/scan_screen.dart';
 import 'package:herbascan/core/services/usage_analytics.dart';
@@ -22,14 +26,24 @@ class _HistoryScreenState extends State<HistoryScreen> {
   final UsageAnalytics _analytics = UsageAnalytics();
   String _sortBy = 'recent'; // recent, oldest, confidence
   Map<String, dynamic>? _plantDataCache;
+  int _historyTabIndex = 0; // 0 = Device, 1 = Cloud
+  List<CloudScan> _cloudScans = [];
+  bool _cloudLoading = false;
 
   @override
   void initState() {
     super.initState();
-    // Track history screen view
     _analytics.trackHistoryViewed();
-    // Load plant_explanations.json into cache
     _loadPlantDataCache();
+  }
+
+  Future<void> _loadCloudScans() async {
+    setState(() => _cloudLoading = true);
+    final list = await HerbariumService().getMyScans();
+    if (mounted) setState(() {
+      _cloudScans = list;
+      _cloudLoading = false;
+    });
   }
 
   /// Load plant_explanations.json into memory cache
@@ -216,13 +230,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final theme = Theme.of(context);
     final appLocalizations = AppLocalizations.of(context);
     final plantProvider = Provider.of<PlantProvider>(context);
+    final authProvider = Provider.of<AuthProvider>(context);
     final sortedScans = _sortScans(plantProvider.scanHistory);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(appLocalizations.scanHistory),
         actions: [
-          if (sortedScans.isNotEmpty)
+          if (_historyTabIndex == 0 && sortedScans.isNotEmpty)
             PopupMenuButton<String>(
               icon: const Icon(Icons.sort),
               onSelected: (value) {
@@ -296,7 +311,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 ),
               ],
             ),
-          if (sortedScans.isNotEmpty)
+          if (_historyTabIndex == 0 && sortedScans.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.delete_sweep),
               onPressed: () => _showDeleteAllConfirmation(context),
@@ -304,28 +319,192 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ),
         ],
       ),
-      body: plantProvider.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : sortedScans.isEmpty
-              ? _buildEmptyState(context, theme, appLocalizations)
-              : Column(
-                  children: [
-                    // Stats Header
-                    _buildStatsHeader(context, theme, sortedScans),
-
-                    // Scan List
-                    Expanded(
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: sortedScans.length,
-                        itemBuilder: (context, index) {
-                          final scan = sortedScans[index];
-                          return _buildScanCard(context, theme, scan);
-                        },
-                      ),
-                    ),
-                  ],
+      body: Column(
+        children: [
+          // Device / Cloud tabs
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: SegmentedButton<int>(
+                    segments: const [
+                      ButtonSegment(value: 0, label: Text('Device'), icon: Icon(Icons.phone_android)),
+                      ButtonSegment(value: 1, label: Text('Cloud'), icon: Icon(Icons.cloud)),
+                    ],
+                    selected: {_historyTabIndex},
+                    onSelectionChanged: (Set<int> s) {
+                      final v = s.first;
+                      setState(() => _historyTabIndex = v);
+                      if (v == 1 && authProvider.isLoggedIn) _loadCloudScans();
+                    },
+                  ),
                 ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: _historyTabIndex == 0
+                ? _buildDeviceHistory(context, theme, appLocalizations, plantProvider, sortedScans)
+                : _buildCloudHistory(context, theme, authProvider),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeviceHistory(BuildContext context, ThemeData theme,
+      AppLocalizations appLocalizations, PlantProvider plantProvider,
+      List<ScanResult> sortedScans) {
+    if (plantProvider.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (sortedScans.isEmpty) {
+      return _buildEmptyState(context, theme, appLocalizations);
+    }
+    return Column(
+      children: [
+        _buildStatsHeader(context, theme, sortedScans),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: sortedScans.length,
+            itemBuilder: (context, index) {
+              final scan = sortedScans[index];
+              return _buildScanCard(context, theme, scan);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCloudHistory(BuildContext context, ThemeData theme, AuthProvider authProvider) {
+    if (!authProvider.isLoggedIn) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.cloud_off, size: 64, color: theme.colorScheme.outline),
+              const SizedBox(height: 16),
+              Text(
+                'Sign in to view your cloud backup',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleMedium,
+              ),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: () async {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute<bool>(builder: (context) => const LoginScreen()),
+                  );
+                  if (mounted && authProvider.isLoggedIn) _loadCloudScans();
+                },
+                icon: const Icon(Icons.login),
+                label: const Text('Sign in'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    if (_cloudLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_cloudScans.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.cloud_queue, size: 64, color: theme.colorScheme.outline),
+            const SizedBox(height: 16),
+            Text(
+              'No cloud scans yet',
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Scans are backed up here when you\'re signed in',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.4),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _cloudScans.length,
+      itemBuilder: (context, index) {
+        final cloud = _cloudScans[index];
+        return _buildCloudScanCard(context, theme, cloud);
+      },
+    );
+  }
+
+  Widget _buildCloudScanCard(BuildContext context, ThemeData theme, CloudScan cloud) {
+    final dateFormat = DateFormat('MMM dd, yyyy • HH:mm');
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(12),
+        leading: cloud.imageUrl != null && cloud.imageUrl!.isNotEmpty
+            ? ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  cloud.imageUrl!,
+                  width: 72,
+                  height: 72,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Icon(Icons.eco, size: 48, color: theme.colorScheme.outline),
+                ),
+              )
+            : Icon(Icons.eco, size: 48, color: theme.colorScheme.outline),
+        title: Text(
+          cloud.plantId ?? 'Unknown plant',
+          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text(
+          dateFormat.format(cloud.scanDate),
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurface.withOpacity(0.6),
+          ),
+        ),
+        trailing: IconButton(
+          icon: const Icon(Icons.delete_outline),
+          onPressed: () async {
+            final ok = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('Delete from cloud?'),
+                actions: [
+                  TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: Text('Delete', style: TextStyle(color: theme.colorScheme.error)),
+                  ),
+                ],
+              ),
+            );
+            if (ok == true) {
+              await HerbariumService().deleteScan(cloud.id);
+              if (mounted) _loadCloudScans();
+            }
+          },
+        ),
+      ),
     );
   }
 
