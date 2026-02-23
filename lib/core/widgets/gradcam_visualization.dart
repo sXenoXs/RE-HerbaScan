@@ -961,13 +961,14 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                       blockquote: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurface.withOpacity(0.7),
                         fontStyle: FontStyle.italic,
-                        backgroundColor:
-                            theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                        backgroundColor: theme
+                            .colorScheme.surfaceContainerHighest
+                            .withOpacity(0.3),
                       ),
                       blockquotePadding: const EdgeInsets.all(12),
                       blockquoteDecoration: BoxDecoration(
-                        color:
-                            theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                        color: theme.colorScheme.surfaceContainerHighest
+                            .withOpacity(0.3),
                         borderRadius: BorderRadius.circular(4),
                         border: Border(
                           left: BorderSide(
@@ -1006,8 +1007,9 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                       tableHead: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: theme.colorScheme.onSurface,
-                        backgroundColor:
-                            theme.colorScheme.surfaceVariant.withOpacity(0.5),
+                        backgroundColor: theme
+                            .colorScheme.surfaceContainerHighest
+                            .withOpacity(0.5),
                       ),
                       tableBody: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurface.withOpacity(0.87),

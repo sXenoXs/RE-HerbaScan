@@ -4,6 +4,8 @@ import 'package:path/path.dart';
 import 'package:herbascan/core/models/plant.dart';
 import 'package:herbascan/core/models/scan_result.dart';
 
+/// Local SQLite DB for plants and scan history. Catalog rule: plant catalog is 1-to-1
+/// with ML model classes; do not add or delete plants dynamically (admin may only edit text).
 class DatabaseService {
   static Database? _database;
   static const String _databaseName = 'herbascan.db';

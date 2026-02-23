@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
+import 'package:herbascan/core/config/supabase_config.dart';
 import 'package:herbascan/core/providers/app_provider.dart';
+import 'package:herbascan/core/providers/auth_provider.dart';
 import 'package:herbascan/core/providers/plant_provider.dart';
 import 'package:herbascan/core/providers/camera_provider.dart';
 import 'package:herbascan/core/providers/language_provider.dart';
@@ -12,17 +15,26 @@ import 'package:herbascan/features/splash/splash_screen.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/services/performance_monitor.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  if (isSupabaseConfigured) {
+    await Supabase.initialize(
+      url: supabaseUrl,
+      anonKey: supabaseAnonKey,
+    );
+  }
+
   // Start tracking app start time
   final performanceMonitor = PerformanceMonitor();
   performanceMonitor.startTimer(PerformanceOperation.appStart);
-  
+
   // Lock app to portrait orientation
-  SystemChrome.setPreferredOrientations([
+  await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
-  
+
   runApp(const HerbaScanApp());
 }
 
@@ -34,6 +46,7 @@ class HerbaScanApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AppProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => PlantProvider()),
         ChangeNotifierProvider(create: (_) => CameraProvider()),
         ChangeNotifierProvider(create: (_) => LanguageProvider()),

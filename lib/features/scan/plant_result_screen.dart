@@ -5,7 +5,9 @@ import 'package:provider/provider.dart';
 import 'package:herbascan/core/widgets/gradcam_visualization.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/providers/plant_provider.dart';
+import 'package:herbascan/core/providers/auth_provider.dart';
 import 'package:herbascan/core/models/scan_result.dart';
+import 'package:herbascan/core/services/herbarium_service.dart';
 import 'package:herbascan/core/services/adaptive_gradcam_service.dart';
 import 'package:uuid/uuid.dart';
 import 'package:path_provider/path_provider.dart';
@@ -581,17 +583,44 @@ class _PlantResultScreenState extends State<PlantResultScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(
                   Icons.analytics,
                   color: theme.colorScheme.onSurface,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  'Top Predictions',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Top Predictions',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Higher % = more likely this plant matches your photo.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Tooltip(
+                  message:
+                      'This percentage shows how sure the app is that the photo matches this plant. Higher is better.',
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.help_outline,
+                      size: 20,
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    ),
                   ),
                 ),
               ],
@@ -615,6 +644,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                         (prediction['confidence'] ?? 0.0).toDouble();
                     final plantName = prediction['plantName'] ?? 'Unknown';
 
+                    final isDark = theme.brightness == Brightness.dark;
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: Row(
@@ -623,7 +653,9 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                             width: 32,
                             height: 32,
                             decoration: BoxDecoration(
-                              color: theme.primaryColor.withOpacity(0.1),
+                              color: isDark
+                                  ? theme.colorScheme.surfaceContainerHighest
+                                  : theme.primaryColor.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: Center(
@@ -631,7 +663,9 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                                 '${index + 1}',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: theme.primaryColor,
+                                  color: isDark
+                                      ? theme.colorScheme.onSurface
+                                      : theme.primaryColor,
                                 ),
                               ),
                             ),
@@ -650,7 +684,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                                 Visibility(
                                   visible: _showConfidence,
                                   child: Text(
-                                    '${(confidence * 100).toStringAsFixed(1)}% confidence',
+                                    '${(confidence * 100).toStringAsFixed(1)}% match',
                                     style: theme.textTheme.bodySmall?.copyWith(
                                       color: theme.colorScheme.onSurface
                                           .withOpacity(0.6),
@@ -1009,26 +1043,30 @@ class _PlantResultScreenState extends State<PlantResultScreen>
     });
 
     try {
-      // Show loading indicator
+      // Show loading indicator (spinner and text must contrast with SnackBar: dark mode SnackBar often has light bg)
       if (!mounted) return;
+      final theme = Theme.of(context);
+      final isDark = theme.brightness == Brightness.dark;
+      final contentColor = isDark ? Colors.black87 : Colors.white;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
             children: [
-              const SizedBox(
+              SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  valueColor: AlwaysStoppedAnimation<Color>(contentColor),
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: Text(
-                  'Regenerating Score-CAM and explanation...',
+                  'Regenerating heatmap & explanation',
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
+                  style: TextStyle(color: contentColor),
                 ),
               ),
             ],
@@ -1217,6 +1255,14 @@ class _PlantResultScreenState extends State<PlantResultScreen>
 
       // Save to database
       await plantProvider.addScanResult(scanResult);
+
+      // If logged in, upload to Personal Herbarium (Supabase)
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      if (auth.isLoggedIn) {
+        try {
+          await HerbariumService().uploadScan(scanResult, widget.imagePath);
+        } catch (_) {}
+      }
 
       setState(() {
         _isSaved = true;
@@ -1575,7 +1621,7 @@ class _FullScreenHeatmapRouteState extends State<FullScreenHeatmapRoute> {
                         // Update parent state
                         widget.onOverlayChanged(value);
                       },
-                      activeColor: Theme.of(context).primaryColor,
+                      activeThumbColor: Theme.of(context).primaryColor,
                     ),
 
                     const SizedBox(height: 8),

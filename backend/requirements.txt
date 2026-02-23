@@ -1,0 +1,25 @@
+# HerbaScan Backend - Python Dependencies
+# FastAPI Server for True Grad-CAM Computation
+
+# Web Framework
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+python-multipart>=0.0.12
+gunicorn>=21.2.0
+
+# Machine Learning
+tensorflow==2.20.0
+numpy>=2.0.0
+
+# Image Processing
+pillow>=11.0.0
+opencv-python>=4.9.0
+
+# Utilities
+python-dotenv>=1.0.0
+requests>=2.32.0
+PyJWT>=2.8.0
+
+# Optional: For better logging
+loguru>=0.7.2
+

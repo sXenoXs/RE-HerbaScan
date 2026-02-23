@@ -342,3 +342,7 @@ test/*_test.dart.bak
 *.class
 .history
 .svn/
+
+# Excluded from repo (e.g. for RE-HerbaScan)
+CHANGELOG.md
+.cursor/

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:herbascan/core/providers/app_provider.dart';
+import 'package:herbascan/core/providers/auth_provider.dart';
 import 'package:herbascan/core/providers/language_provider.dart';
 import 'package:herbascan/core/providers/offline_provider.dart';
+import 'package:herbascan/features/auth/login_screen.dart';
+import 'package:herbascan/features/admin/admin_dashboard_screen.dart';
 import 'package:herbascan/core/widgets/offline_indicator.dart';
 import 'package:herbascan/features/offline/offline_demo_screen.dart';
 import 'package:herbascan/features/help/help_tutorial_screen.dart';
@@ -30,6 +33,12 @@ class SettingsScreen extends StatelessWidget {
           _buildOfflineModeSetting(context, theme),
           _buildAutoSaveSetting(context, theme),
           _buildHelpTutorialLink(context, theme),
+
+          const SizedBox(height: 16),
+
+          // Account / Personal Herbarium
+          _buildSectionHeader(context, theme, 'Account'),
+          _buildAccountSection(context, theme),
 
           const SizedBox(height: 16),
 
@@ -303,6 +312,68 @@ class SettingsScreen extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildAccountSection(BuildContext context, ThemeData theme) {
+    return Consumer<AuthProvider>(
+      builder: (context, auth, _) {
+        return Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: theme.colorScheme.outline.withOpacity(0.2),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              auth.isLoggedIn
+                  ? ListTile(
+                      leading: const Icon(Icons.cloud_done_outlined),
+                      title: const Text('Personal Herbarium'),
+                      subtitle: Text(auth.user?.email ?? ''),
+                      trailing: TextButton(
+                        onPressed: () async {
+                          await auth.signOut();
+                        },
+                        child: const Text('Sign out'),
+                      ),
+                    )
+                  : ListTile(
+                      leading: const Icon(Icons.cloud_upload_outlined),
+                      title: const Text('Personal Herbarium'),
+                      subtitle: const Text(
+                        'Sign in to back up your scans to the cloud',
+                      ),
+                      trailing: const Icon(Icons.arrow_forward_ios),
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<bool>(
+                            builder: (context) => const LoginScreen(),
+                          ),
+                        );
+                      },
+                    ),
+              if (auth.isAdmin)
+                ListTile(
+                  leading: const Icon(Icons.admin_panel_settings_outlined),
+                  title: const Text('Review submissions'),
+                  subtitle: const Text('Admin – approve or delete user scans'),
+                  trailing: const Icon(Icons.arrow_forward_ios),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (context) => const AdminDashboardScreen(),
+                      ),
+                    );
+                  },
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 

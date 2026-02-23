@@ -109,12 +109,12 @@ class SummaryFullScreenView extends StatelessWidget {
               color: theme.colorScheme.onSurface.withOpacity(0.7),
               fontStyle: FontStyle.italic,
               backgroundColor:
-                  theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                  theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
               fontSize: 17,
             ),
             blockquotePadding: const EdgeInsets.all(16),
             blockquoteDecoration: BoxDecoration(
-              color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+              color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
               borderRadius: BorderRadius.circular(4),
               border: Border(
                 left: BorderSide(
@@ -155,7 +155,7 @@ class SummaryFullScreenView extends StatelessWidget {
               fontWeight: FontWeight.bold,
               color: theme.colorScheme.onSurface,
               backgroundColor:
-                  theme.colorScheme.surfaceVariant.withOpacity(0.5),
+                  theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
               fontSize: 17,
             ),
             tableBody: theme.textTheme.bodyMedium?.copyWith(
