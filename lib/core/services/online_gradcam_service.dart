@@ -16,7 +16,7 @@ class OnlineGradCAMService {
   final Logger _logger = Logger();
 
   // Railway backend URL (must include scheme for Uri.parse)
-  static const String serverUrl = 'https://web-production-011a.up.railway.app';
+  static const String serverUrl = 'https://re-herbascan-production.up.railway.app';
   static const Duration timeout = Duration(seconds: 30);
 
   /// Check if the backend server is healthy and ready

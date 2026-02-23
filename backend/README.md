@@ -11,6 +11,21 @@ FastAPI server for true Grad-CAM (Gradient-weighted Class Activation Mapping) co
 
 This backend provides online GradCAM computation for the HerbaScan mobile app's Hybrid XAI Explanation System. The Flutter app uses this backend for online heatmap generation when internet connectivity is available, falling back to offline CAM when offline.
 
+## 🚂 Deploying on Railway (monorepo)
+
+This repo is a monorepo (Flutter app at root, backend in `backend/`). To deploy only the backend on Railway:
+
+1. **Create/link the service** to the repo (e.g. `sXenoXs/RE-HerbaScan`).
+2. **Set Root Directory** (UI only):
+   - Open the **backend service** → **Settings** → **Source**.
+   - Set **Root Directory** to `backend`.
+   - Railway will then use only files under `backend/` for build and deploy.
+3. **Config file path** (if Railway asks or you use config-as-code):
+   - Set the path from **repo root**: `backend/railway.json`.
+4. **Watch path** (optional): set to `backend/**` so only changes under `backend` trigger redeploys.
+
+Build/start come from `backend/railway.json` (Dockerfile + start command). No separate backend repo or submodule is required.
+
 ## 📋 Setup Instructions
 
 > **Note**: This backend is part of the HerbaScan Hybrid XAI Explanation System. The Flutter app (v0.8.5) uses this backend for online GradCAM computation, while offline explanations use pre-written structured JSON data (42 plants with taxonomy, ecology, medicinal_preparation, and safety_consideration) and offline CAM heatmaps.
