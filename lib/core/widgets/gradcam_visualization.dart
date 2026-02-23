@@ -2,11 +2,13 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:herbascan/core/models/plant.dart';
 import 'package:herbascan/core/services/xai_explanation_service.dart';
 import 'package:herbascan/core/providers/offline_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:herbascan/core/widgets/summary_fullscreen_view.dart';
+import 'package:herbascan/core/widgets/contraindication_engine_widget.dart';
 
 class GradCAMVisualization extends StatefulWidget {
   final String? gradCAMPath; // Legacy: file path (deprecated)
@@ -24,6 +26,7 @@ class GradCAMVisualization extends StatefulWidget {
   final Function(bool showOverlay, double opacity,
           Function(bool) onOverlayChanged, Function(double) onOpacityChanged)?
       onHeatmapTap; // Callback for full-screen heatmap
+  final Plant? plant; // For Contraindication Engine (safety cards)
 
   const GradCAMVisualization({
     super.key,
@@ -39,6 +42,7 @@ class GradCAMVisualization extends StatefulWidget {
     this.fallbackUsed,
     this.onRefresh,
     this.onHeatmapTap, // Callback for full-screen heatmap
+    this.plant,
   });
 
   @override
@@ -58,7 +62,7 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
   bool _isLoadingExplanation = false;
   String? _explanationError;
   String?
-      _explanationSource; // Track source: "gemini", "cache", "offline", "fallback"
+      _explanationSource; // Track source: "cache", "offline", "fallback"
   bool _shouldForceOnline = false; // Track if we should force online mode
 
   @override
@@ -109,11 +113,17 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
     }
   }
 
-  /// Load explanation (offline or online)
+  /// Load explanation (offline or online).
+  /// Uses [widget.plantName] as fallback when [widget.scientificName] is null
+  /// so offline/JSON lookup still runs (backend often sends label as both).
   Future<void> _loadExplanation({bool forceOnline = false}) async {
-    if (widget.scientificName == null) {
+    final effectiveScientificName =
+        widget.scientificName?.trim().isEmpty == true
+            ? null
+            : (widget.scientificName ?? widget.plantName);
+    if (effectiveScientificName == null || effectiveScientificName.isEmpty) {
       setState(() {
-        _explanationError = 'Scientific name not available';
+        _explanationError = 'Plant name not available';
       });
       return;
     }
@@ -167,7 +177,7 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
       // Otherwise, let the service check cache first without triggering online calls
       final explanation = await _explanationService.generateExplanation(
         plantName: widget.plantName,
-        scientificName: widget.scientificName!,
+        scientificName: effectiveScientificName,
         confidence: widget.confidence,
         predictions: widget.predictions ?? [],
         imagePath: widget.originalImagePath,
@@ -182,12 +192,10 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
       if (mounted) {
         setState(() {
           _explanationText = explanation;
-          // CRITICAL FIX: If method is 'grad-cam' (online), show "Online" regardless of cache source
-          // This ensures that when using online GradCAM, the badge shows "Online" even if explanation came from cache
+          // If method is 'grad-cam' (online), show "Online" regardless of cache source
           final serviceSource = _explanationService.getLastExplanationSource();
           if (widget.method == 'grad-cam' && !(widget.fallbackUsed == true)) {
-            // Using online GradCAM - show "Online" (gemini) even if it came from cache
-            _explanationSource = 'gemini';
+            _explanationSource = 'online';
           } else {
             // Use the actual source from service (offline, cache, fallback)
             _explanationSource = serviceSource;
@@ -633,8 +641,20 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
   }
 
   Widget _buildSummaryImage() {
-    // Show text explanation instead of image
-    return _buildSummaryExplanation();
+    // Safety cards (Contraindication Engine) + AI explanation
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ContraindicationEngineWidget(
+            plant: widget.plant,
+            commonName: widget.plantName,
+          ),
+          const SizedBox(height: 12),
+          _buildSummaryExplanation(),
+        ],
+      ),
+    );
   }
 
   Widget _buildSummaryExplanation() {
@@ -736,6 +756,12 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                   ),
                   textAlign: TextAlign.center,
                 ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () => _loadExplanation(forceOnline: true),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                ),
               ],
             ),
           ),
@@ -743,7 +769,9 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
       );
     }
 
-    // Show explanation text
+    // Show explanation text.
+    // Column must use mainAxisSize.min and no Expanded: this widget is inside
+    // SingleChildScrollView, so height is unbounded and flex is invalid.
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
@@ -754,7 +782,7 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.max,
+        mainAxisSize: MainAxisSize.min,
         children: [
           // Header Row - AI Explanation title, Status Badge, and Fullscreen Icon
           Padding(
@@ -787,7 +815,7 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: _explanationSource == 'gemini'
+                            color: _explanationSource == 'online'
                                 ? Colors.green.withOpacity(0.1)
                                 : _explanationSource == 'cache'
                                     ? Colors.orange.withOpacity(0.1)
@@ -796,7 +824,7 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                                         : Colors.blue.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: _explanationSource == 'gemini'
+                              color: _explanationSource == 'online'
                                   ? Colors.green.withOpacity(0.3)
                                   : _explanationSource == 'cache'
                                       ? Colors.orange.withOpacity(0.3)
@@ -809,7 +837,7 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                _explanationSource == 'gemini'
+                                _explanationSource == 'online'
                                     ? Icons.auto_awesome
                                     : _explanationSource == 'cache'
                                         ? Icons.cached
@@ -817,7 +845,7 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                                             ? Icons.info_outline
                                             : Icons.storage,
                                 size: 12,
-                                color: _explanationSource == 'gemini'
+                                color: _explanationSource == 'online'
                                     ? Colors.green
                                     : _explanationSource == 'cache'
                                         ? Colors.orange
@@ -828,7 +856,7 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                               const SizedBox(width: 4),
                               Flexible(
                                 child: Text(
-                                  _explanationSource == 'gemini'
+                                  _explanationSource == 'online'
                                       ? 'Online'
                                       : _explanationSource == 'cache'
                                           ? 'Cached'
@@ -838,7 +866,7 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w600,
-                                    color: _explanationSource == 'gemini'
+                                    color: _explanationSource == 'online'
                                         ? Colors.green
                                         : _explanationSource == 'cache'
                                             ? Colors.orange
@@ -898,14 +926,14 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
               ],
             ),
           ),
-          // Content area (no longer needs Stack since icon is in header)
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  MarkdownBody(
+          // Content area: no Expanded (parent is in scroll view). Outer scroll scrolls everything.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                MarkdownBody(
                     data: _explanationText!,
                     styleSheet: MarkdownStyleSheet(
                       // Headings with reduced spacing
@@ -1024,31 +1052,30 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                       blockSpacing: 12.0,
                       textScaleFactor: 1.0,
                     ),
-                  ),
-                  // "Ask AI Assistant" button when online - at the bottom of content
-                  const SizedBox(height: 16),
-                  Consumer<OfflineProvider>(
-                    builder: (context, offlineProvider, _) {
-                      if (offlineProvider.isOnline) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: ElevatedButton.icon(
-                            onPressed: () =>
-                                _loadExplanation(forceOnline: true),
-                            icon: const Icon(Icons.auto_awesome),
-                            label: const Text('Ask AI Assistant (Regenerate)'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: theme.primaryColor,
-                              foregroundColor: Colors.white,
-                            ),
+                ),
+                // "Ask AI Assistant" button when online - at the bottom of content
+                const SizedBox(height: 16),
+                Consumer<OfflineProvider>(
+                  builder: (context, offlineProvider, _) {
+                    if (offlineProvider.isOnline) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: ElevatedButton.icon(
+                          onPressed: () =>
+                              _loadExplanation(forceOnline: true),
+                          icon: const Icon(Icons.auto_awesome),
+                          label: const Text('Ask AI Assistant (Regenerate)'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.primaryColor,
+                            foregroundColor: Colors.white,
                           ),
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
-                  ),
-                ],
-              ),
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ],
             ),
           ),
         ],

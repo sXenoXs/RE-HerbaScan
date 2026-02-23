@@ -775,6 +775,12 @@ git push
 
    Railway automatically provides `$PORT`, but you can set a default.
 
+   **Optional – require Supabase login for /identify:** To enforce JWT verification so only signed-in users can call `POST /identify`, add:
+   ```
+   SUPABASE_JWT_SECRET=<your-supabase-jwt-secret>
+   ```
+   Get the JWT secret from Supabase Dashboard → Project Settings → API → JWT Secret. When set, the backend requires `Authorization: Bearer <token>` (Supabase access token); when not set, unauthenticated requests are allowed. See `supabase/README.md` → "Step 3: Railway – Enable JWT verification" for full steps.
+
 5. **Add Model Files:**
 
    **Important:** Model files are typically too large for GitHub (>100MB). Use one of these methods:

@@ -12,6 +12,11 @@ const String supabaseAnonKey = String.fromEnvironment(
   defaultValue: 'sb_publishable_XHJClWPasBxuBkHrMZ7NSw_IaiPy61V',
 );
 
+/// Redirect URL for auth links (password reset, change email). Must be added to
+/// Supabase Dashboard → Authentication → URL Configuration → Redirect URLs.
+/// Using a custom scheme so the link opens the app instead of a browser to localhost.
+const String authRedirectUrl = 'herbascan://auth/callback';
+
 /// Whether Supabase is configured (non-placeholder values).
 bool get isSupabaseConfigured =>
     supabaseUrl.contains('YOUR_PROJECT') == false &&

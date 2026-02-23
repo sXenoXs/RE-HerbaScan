@@ -80,4 +80,31 @@ class AuthProvider extends ChangeNotifier {
     await _loadRole();
     notifyListeners();
   }
+
+  /// Send password reset email. Does not require sign-in.
+  Future<void> requestPasswordReset(String email) async {
+    await _auth.resetPasswordForEmail(email);
+  }
+
+  /// Verify the 6-digit OTP from the password reset email; establishes recovery session.
+  /// Call [updatePassword] after this to set the new password.
+  /// [email] must be the address the reset email was sent to.
+  Future<void> verifyRecoveryOtp({required String email, required String token}) async {
+    await _auth.verifyOtpRecovery(email: email, token: token);
+    await _loadRole();
+    notifyListeners();
+  }
+
+  /// Update current user's password. Requires sign-in.
+  Future<void> updatePassword(String newPassword) async {
+    await _auth.updatePassword(newPassword);
+    notifyListeners();
+  }
+
+  /// Update current user's email. Requires sign-in.
+  Future<void> updateEmail(String newEmail) async {
+    await _auth.updateEmail(newEmail);
+    _user = _auth.currentUser;
+    notifyListeners();
+  }
 }

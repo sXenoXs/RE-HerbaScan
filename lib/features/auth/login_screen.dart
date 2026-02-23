@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:herbascan/core/providers/auth_provider.dart';
+import 'package:herbascan/features/auth/forgot_password_screen.dart';
 import 'package:herbascan/features/auth/signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -129,6 +130,23 @@ class _LoginScreenState extends State<LoginScreen> {
                     if (v == null || v.isEmpty) return 'Enter your password';
                     return null;
                   },
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: _isLoading
+                        ? null
+                        : () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (context) =>
+                                    const ForgotPasswordScreen(),
+                              ),
+                            );
+                          },
+                    child: const Text('Forgot password?'),
+                  ),
                 ),
                 const SizedBox(height: 24),
                 FilledButton(

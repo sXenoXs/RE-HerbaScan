@@ -328,6 +328,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
               children: [
                 Expanded(
                   child: SegmentedButton<int>(
+                    style: ButtonStyle(
+                      backgroundColor: WidgetStateProperty.resolveWith((Set<WidgetState> states) {
+                        if (states.contains(WidgetState.selected)) {
+                          return const Color(0xFF7BC9AD); // darker shade of #dffcea for contrast with white text
+                        }
+                        return null;
+                      }),
+                      foregroundColor: WidgetStateProperty.resolveWith((Set<WidgetState> states) {
+                        if (states.contains(WidgetState.selected)) {
+                          return Colors.white;
+                        }
+                        return null;
+                      }),
+                    ),
                     segments: const [
                       ButtonSegment(value: 0, label: Text('Device'), icon: Icon(Icons.phone_android)),
                       ButtonSegment(value: 1, label: Text('Cloud'), icon: Icon(Icons.cloud)),

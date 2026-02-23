@@ -12,10 +12,12 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 -- RLS: users read/update own profile; service role can update any (for admin grant).
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can read own profile" ON public.profiles;
 CREATE POLICY "Users can read own profile"
   ON public.profiles FOR SELECT
   USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can update own profile (non-role fields only in app; role changed via dashboard)" ON public.profiles;
 CREATE POLICY "Users can update own profile (non-role fields only in app; role changed via dashboard)"
   ON public.profiles FOR UPDATE
   USING (auth.uid() = id);
@@ -28,7 +30,7 @@ BEGIN
   VALUES (NEW.id, 'user');
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
@@ -57,23 +59,28 @@ CREATE INDEX IF NOT EXISTS idx_scans_status ON public.scans(status);
 ALTER TABLE public.scans ENABLE ROW LEVEL SECURITY;
 
 -- Users: CRUD own scans only.
+DROP POLICY IF EXISTS "Users can insert own scans" ON public.scans;
 CREATE POLICY "Users can insert own scans"
   ON public.scans FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can select own scans" ON public.scans;
 CREATE POLICY "Users can select own scans"
   ON public.scans FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own scans" ON public.scans;
 CREATE POLICY "Users can update own scans"
   ON public.scans FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete own scans" ON public.scans;
 CREATE POLICY "Users can delete own scans"
   ON public.scans FOR DELETE
   USING (auth.uid() = user_id);
 
 -- Admins: read all scans (for data collection review). Use service role or add admin policy.
+DROP POLICY IF EXISTS "Admins can select all scans" ON public.scans;
 CREATE POLICY "Admins can select all scans"
   ON public.scans FOR SELECT
   USING (
@@ -83,6 +90,7 @@ CREATE POLICY "Admins can select all scans"
     )
   );
 
+DROP POLICY IF EXISTS "Admins can update scan status" ON public.scans;
 CREATE POLICY "Admins can update scan status"
   ON public.scans FOR UPDATE
   USING (
@@ -92,6 +100,7 @@ CREATE POLICY "Admins can update scan status"
     )
   );
 
+DROP POLICY IF EXISTS "Admins can delete any scan" ON public.scans;
 CREATE POLICY "Admins can delete any scan"
   ON public.scans FOR DELETE
   USING (

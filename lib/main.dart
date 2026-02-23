@@ -14,6 +14,7 @@ import 'package:herbascan/core/providers/offline_provider.dart';
 import 'package:herbascan/features/splash/splash_screen.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/services/performance_monitor.dart';
+import 'package:herbascan/core/widgets/auth_deeplink_handler.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -54,7 +55,9 @@ class HerbaScanApp extends StatelessWidget {
       ],
       child: Consumer2<LanguageProvider, AppProvider>(
         builder: (context, languageProvider, appProvider, child) {
+          final navigatorKey = GlobalKey<NavigatorState>();
           return MaterialApp(
+            navigatorKey: navigatorKey,
             key: ValueKey('${appProvider.isDarkMode}_${languageProvider.locale}'),
             title: 'HerbaScan',
             debugShowCheckedModeBanner: false,
@@ -72,7 +75,10 @@ class HerbaScanApp extends StatelessWidget {
               Locale('en', 'US'), // English
               Locale('fil', 'PH'), // Filipino
             ],
-            home: const SplashScreen(),
+            home: AuthDeepLinkHandler(
+              navigatorKey: navigatorKey,
+              child: const SplashScreen(),
+            ),
           );
         },
       ),

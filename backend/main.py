@@ -45,11 +45,17 @@ SUPABASE_JWT_SECRET = os.environ.get("SUPABASE_JWT_SECRET")
 
 
 def verify_supabase_jwt(authorization: str = Header(None)) -> bool:
-    """Verify Supabase JWT when SUPABASE_JWT_SECRET is set. Returns True if valid or auth not required."""
+    """
+    Optional JWT verification for /identify:
+    - If SUPABASE_JWT_SECRET is not set: allow all requests.
+    - If no Bearer token is sent: allow (so scans work when user is not logged in).
+    - If Bearer token is sent: verify it; if invalid or expired, return 401.
+    """
     if not SUPABASE_JWT_SECRET:
         return True
     if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Bearer token required")
+        # No token sent – allow request (anonymous scan)
+        return True
     token = authorization[7:]
     try:
         jwt.decode(

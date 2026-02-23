@@ -1,0 +1,328 @@
+import 'package:flutter/material.dart';
+import 'package:herbascan/core/models/plant.dart';
+import 'package:herbascan/core/models/safety_profile.dart';
+import 'package:herbascan/core/services/safety_profile_service.dart';
+import 'package:herbascan/core/localization/app_localizations.dart';
+
+/// Reusable educational disclaimer. Shown below safety cards.
+class SafetyDisclaimerWidget extends StatelessWidget {
+  const SafetyDisclaimerWidget({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.local_hospital,
+            size: 20,
+            color: theme.colorScheme.primary,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              l10n.safetyDisclaimerEducational,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                height: 1.5,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Deterministic Contraindication Engine: color-coded safety cards from
+/// structured SafetyProfile only (no LLM). Always shows disclaimer below.
+class ContraindicationEngineWidget extends StatefulWidget {
+  final Plant? plant;
+  final String? plantId;
+  final String? commonName;
+
+  const ContraindicationEngineWidget({
+    super.key,
+    this.plant,
+    this.plantId,
+    this.commonName,
+  });
+
+  @override
+  State<ContraindicationEngineWidget> createState() =>
+      _ContraindicationEngineWidgetState();
+}
+
+class _ContraindicationEngineWidgetState
+    extends State<ContraindicationEngineWidget> {
+  SafetyProfile? _profile;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  @override
+  void didUpdateWidget(covariant ContraindicationEngineWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.plant?.id != widget.plant?.id ||
+        oldWidget.plantId != widget.plantId ||
+        oldWidget.commonName != widget.commonName) {
+      _loadProfile();
+    }
+  }
+
+  Future<void> _loadProfile() async {
+    setState(() => _loading = true);
+    final service = SafetyProfileService();
+    SafetyProfile? profile;
+    if (widget.plant != null) {
+      profile = await service.getSafetyProfile(widget.plant!);
+    } else if (widget.plantId != null && widget.plantId!.isNotEmpty) {
+      profile = await service.getSafetyProfileByPlantId(widget.plantId!);
+    } else if (widget.commonName != null && widget.commonName!.isNotEmpty) {
+      profile = await service.getSafetyProfileByCommonName(widget.commonName!);
+    }
+    if (mounted) {
+      setState(() {
+        _profile = profile;
+        _loading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+
+    if (_loading) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Center(child: CircularProgressIndicator()),
+          const SizedBox(height: 16),
+          SafetyDisclaimerWidget(),
+        ],
+      );
+    }
+
+    final profile = _profile;
+    final hasProfile = profile != null;
+    final isEmptySafe =
+        hasProfile &&
+        profile.isGenerallySafe &&
+        profile.knownSideEffects.isEmpty &&
+        profile.drugInteractions.isEmpty &&
+        profile.strictContraindications.isEmpty &&
+        !profile.pregnancyWarning;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (!hasProfile) ...[
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              l10n.noStructuredSafetyData,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ] else ...[
+          if (profile.drugInteractions.isNotEmpty) _buildOrangeCard(context, l10n.drugInteractions, '${l10n.avoidUseWith} ${profile.drugInteractions.join(', ')}.'),
+          if (profile.pregnancyWarning) _buildRedCard(context, l10n.notSafeForPregnancy),
+          if (profile.knownSideEffects.isNotEmpty) _buildYellowSection(context, l10n.knownSideEffects, profile.knownSideEffects),
+          if (profile.strictContraindications.isNotEmpty) _buildRedCard(context, l10n.strictContraindications, profile.strictContraindications.join('. ')),
+          if (isEmptySafe) _buildGreenCard(context, l10n.generallySafeForConsumption),
+        ],
+        const SizedBox(height: 12),
+        SafetyDisclaimerWidget(),
+      ],
+    );
+  }
+
+  Widget _buildOrangeCard(BuildContext context, String title, String body) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.orange.shade50,
+          border: Border.all(color: Colors.orange.shade300),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange.shade800, size: 22),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.orange.shade900,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    body,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRedCard(BuildContext context, String title, [String? body]) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.errorContainer.withValues(alpha: 0.4),
+          border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.6)),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.cancel_outlined, color: theme.colorScheme.error, size: 22),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onErrorContainer,
+                    ),
+                  ),
+                  if (body != null && body.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      body,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onErrorContainer,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildYellowSection(
+      BuildContext context, String title, List<String> items) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.amber.shade50,
+          border: Border.all(color: Colors.amber.shade300),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Colors.amber.shade900,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...items.map((e) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('• ', style: TextStyle(color: Colors.amber.shade900)),
+                      Expanded(
+                        child: Text(
+                          e,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGreenCard(BuildContext context, String text) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.green.shade50,
+          border: Border.all(color: Colors.green.shade300),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(Icons.check_circle_outline, color: Colors.green.shade700, size: 22),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                text,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: Colors.green.shade900,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
