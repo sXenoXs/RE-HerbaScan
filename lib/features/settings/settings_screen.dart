@@ -4,6 +4,7 @@ import 'package:herbascan/core/providers/app_provider.dart';
 import 'package:herbascan/core/providers/auth_provider.dart';
 import 'package:herbascan/core/providers/language_provider.dart';
 import 'package:herbascan/core/providers/offline_provider.dart';
+import 'package:herbascan/core/providers/plant_provider.dart';
 import 'package:herbascan/features/auth/login_screen.dart';
 import 'package:herbascan/features/auth/change_password_screen.dart';
 import 'package:herbascan/features/auth/change_email_screen.dart';
@@ -143,11 +144,13 @@ class SettingsScreen extends StatelessWidget {
       child: SwitchListTile(
         secondary: const Icon(Icons.offline_bolt),
         title: Text(AppLocalizations.of(context).offlineMode),
-        subtitle: const Text('Enable offline processing'),
-        value: appProvider.isOfflineMode,
+        subtitle: const Text(
+          'Force offline: use AI and local database only, no cloud sync',
+        ),
+        value: offlineProvider.isOfflineMode,
         onChanged: (value) async {
-          await appProvider.toggleOfflineMode();
           await offlineProvider.toggleOfflineMode();
+          await appProvider.syncOfflineModeFromPrefs();
         },
       ),
     );
@@ -376,6 +379,25 @@ class SettingsScreen extends StatelessWidget {
                             );
                           },
                         ),
+                        const Divider(height: 1),
+                        ListTile(
+                          leading: Icon(
+                            Icons.delete_forever_outlined,
+                            color: theme.colorScheme.error,
+                          ),
+                          title: Text(
+                            'Delete account',
+                            style: TextStyle(
+                              color: theme.colorScheme.error,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          subtitle: const Text(
+                            'Permanently delete your account and cloud data',
+                          ),
+                          trailing: const Icon(Icons.arrow_forward_ios),
+                          onTap: () => _showDeleteAccountDialog(context, auth),
+                        ),
                       ],
                     )
                   : ListTile(
@@ -449,7 +471,9 @@ class SettingsScreen extends StatelessWidget {
               ListTile(
                 leading: const Icon(Icons.refresh),
                 title: const Text('Refresh Offline Data'),
-                subtitle: const Text('Update offline database and sync status'),
+                subtitle: const Text(
+                  'Reload stats from local database and sync status',
+                ),
                 onTap: () async {
                   try {
                     await offlineProvider.refreshOfflineData();
@@ -478,20 +502,24 @@ class SettingsScreen extends StatelessWidget {
                 leading: const Icon(Icons.storage),
                 title: const Text('Offline Storage Info'),
                 subtitle: Text(
-                  'Scans: ${offlineProvider.offlineStats['totalScans'] ?? 0}\n'
-                  'Plants: ${offlineProvider.offlineStats['totalPlants'] ?? 0}\n'
-                  'Pending Sync: ${offlineProvider.offlineStats['pendingSync'] ?? 0}',
+                  'Scans: ${offlineProvider.offlineStats['totalScans'] ?? 0} · '
+                  'Plants: ${offlineProvider.offlineStats['totalPlants'] ?? 0} · '
+                  'Pending: ${offlineProvider.offlineStats['pendingSync'] ?? 0}',
                 ),
-                onTap: () {
-                  _showOfflineStorageDialog(context, offlineProvider);
+                onTap: () async {
+                  await offlineProvider.refreshOfflineData();
+                  if (context.mounted) {
+                    _showOfflineStorageDialog(context, offlineProvider);
+                  }
                 },
               ),
               const Divider(height: 1),
               ListTile(
                 leading: const Icon(Icons.delete_forever),
                 title: const Text('Clear Offline Data'),
-                subtitle:
-                    const Text('Remove all offline scans and cached data'),
+                subtitle: const Text(
+                  'Remove all scan history and pending sync from this device',
+                ),
                 onTap: () {
                   _showClearDataDialog(context, offlineProvider);
                 },
@@ -500,7 +528,9 @@ class SettingsScreen extends StatelessWidget {
               ListTile(
                 leading: const Icon(Icons.offline_bolt),
                 title: const Text('Offline Demo'),
-                subtitle: const Text('Test offline processing capabilities'),
+                subtitle: const Text(
+                  'View models, database, and online/offline status',
+                ),
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
@@ -571,27 +601,81 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
+  void _showDeleteAccountDialog(BuildContext context, AuthProvider auth) {
+    final theme = Theme.of(context);
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        icon: Icon(Icons.warning_amber_rounded, color: theme.colorScheme.error, size: 48),
+        title: const Text('Delete account?'),
+        content: const Text(
+          'This will permanently delete your Personal Herbarium account and all cloud data. '
+          'Your device scan history will not be affected. This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.of(dialogContext).pop();
+              try {
+                await auth.deleteAccount();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Account deleted'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        e.toString().replaceFirst('Exception: ', ''),
+                      ),
+                      backgroundColor: theme.colorScheme.error,
+                    ),
+                  );
+                }
+              }
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.error,
+              foregroundColor: theme.colorScheme.onError,
+            ),
+            child: const Text('Delete account'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showClearDataDialog(
       BuildContext context, OfflineProvider offlineProvider) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Clear Offline Data'),
         content: const Text(
-          'This will permanently delete all offline scan history and cached data. '
-          'This action cannot be undone. Are you sure you want to continue?',
+          'This will permanently delete all scan history and pending sync on this device. '
+          'This action cannot be undone. Are you sure?',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () async {
-              Navigator.of(context).pop();
+              Navigator.of(dialogContext).pop();
               try {
                 await offlineProvider.clearOfflineData();
                 if (context.mounted) {
+                  await context.read<PlantProvider>().loadScanHistory();
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Offline data cleared successfully'),

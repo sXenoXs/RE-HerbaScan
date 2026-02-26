@@ -43,7 +43,19 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       setState(() {
-        _errorMessage = e.toString().replaceFirst('AuthException: ', '');
+        final raw = e.toString();
+        if (raw.contains('invalid_credentials') ||
+            raw.contains('Invalid login credentials')) {
+          _errorMessage = 'Email or password does not match.';
+        } else {
+          _errorMessage = raw
+              .replaceFirst('AuthException: ', '')
+              .replaceFirst('AuthApiException(message: ', '')
+              .replaceAll(RegExp(r', statusCode: \d+, code: \w+\)'), '');
+          if (_errorMessage!.isEmpty || _errorMessage == raw) {
+            _errorMessage = 'Sign in failed. Please try again.';
+          }
+        }
         _isLoading = false;
       });
     }

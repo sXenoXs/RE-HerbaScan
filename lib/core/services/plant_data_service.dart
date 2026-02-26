@@ -122,6 +122,34 @@ class PlantDataService {
             'Consult physician if symptoms persist beyond 7 days',
           ],
           preparationType: 'Decoction',
+          stepDetails: [
+            const PreparationStepDetail(
+                instruction:
+                    'Gather 6-7 fresh lagundi leaves (or 2-3 tablespoons dried leaves)'),
+            const PreparationStepDetail(
+                instruction: 'Wash leaves thoroughly under running water'),
+            const PreparationStepDetail(
+                instruction: 'Boil 2 cups (500ml) of water in a pot'),
+            const PreparationStepDetail(
+                instruction: 'Add the clean lagundi leaves to the boiling water'),
+            const PreparationStepDetail(
+              instruction:
+                  'Reduce heat and simmer for 10-15 minutes until water reduces to 1 cup',
+              hasTimer: true,
+              timerDurationSeconds: 900,
+            ),
+            const PreparationStepDetail(
+                instruction:
+                    'Strain the decoction using clean cloth or strainer'),
+            const PreparationStepDetail(
+                instruction:
+                    'Let cool to comfortable drinking temperature'),
+          ],
+          schedule: const PreparationSchedule(
+            dosage: '1/2 cup',
+            frequencyHours: 24,
+            durationDays: 7,
+          ),
         ),
         PreparationMethod(
           id: _uuid.v4(),
@@ -694,6 +722,29 @@ class PlantDataService {
             'Not for pregnant women without medical supervision',
           ],
           preparationType: 'Decoction',
+          stepDetails: [
+            const PreparationStepDetail(
+                instruction: 'Collect 10-15 mature niyog-niyogan seeds'),
+            const PreparationStepDetail(
+                instruction: 'Crush seeds slightly'),
+            const PreparationStepDetail(instruction: 'Boil 2 cups of water'),
+            const PreparationStepDetail(
+                instruction: 'Add crushed seeds to boiling water'),
+            const PreparationStepDetail(
+              instruction: 'Simmer for 10-15 minutes',
+              hasTimer: true,
+              timerDurationSeconds: 900,
+            ),
+            const PreparationStepDetail(
+                instruction: 'Strain the decoction'),
+            const PreparationStepDetail(
+                instruction: 'Let cool to drinking temperature'),
+          ],
+          schedule: const PreparationSchedule(
+            dosage: '1/2 cup',
+            frequencyHours: 24,
+            durationDays: 5,
+          ),
         ),
       ],
       safetyWarnings: [

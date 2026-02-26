@@ -166,6 +166,64 @@ class MedicinalUse {
   }
 }
 
+/// Optional schedule for calendar export (frequency_hours, duration_days).
+class PreparationSchedule {
+  final String dosage;
+  final int frequencyHours;
+  final int durationDays;
+
+  const PreparationSchedule({
+    required this.dosage,
+    required this.frequencyHours,
+    required this.durationDays,
+  });
+
+  factory PreparationSchedule.fromJson(Map<String, dynamic> json) {
+    return PreparationSchedule(
+      dosage: json['dosage'] as String? ?? '',
+      frequencyHours: json['frequency_hours'] as int? ?? 24,
+      durationDays: json['duration_days'] as int? ?? 7,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'dosage': dosage,
+      'frequency_hours': frequencyHours,
+      'duration_days': durationDays,
+    };
+  }
+}
+
+/// Per-step detail for interactive guide (optional timer).
+class PreparationStepDetail {
+  final String instruction;
+  final bool hasTimer;
+  final int? timerDurationSeconds;
+
+  const PreparationStepDetail({
+    required this.instruction,
+    this.hasTimer = false,
+    this.timerDurationSeconds,
+  });
+
+  factory PreparationStepDetail.fromJson(Map<String, dynamic> json) {
+    return PreparationStepDetail(
+      instruction: json['instruction'] as String? ?? '',
+      hasTimer: json['has_timer'] as bool? ?? false,
+      timerDurationSeconds: json['timer_duration_seconds'] as int?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'instruction': instruction,
+      'has_timer': hasTimer,
+      if (timerDurationSeconds != null) 'timer_duration_seconds': timerDurationSeconds,
+    };
+  }
+}
+
 class PreparationMethod {
   final String id;
   final String condition;
@@ -177,6 +235,10 @@ class PreparationMethod {
   final String duration;
   final List<String> warnings;
   final String preparationType; // tea, decoction, poultice, etc.
+  /// Optional: per-step instructions with timer metadata. If non-null and non-empty, use instead of [steps] for display.
+  final List<PreparationStepDetail>? stepDetails;
+  /// Optional: structured schedule for calendar export. If null, use dosage/frequency/duration strings only.
+  final PreparationSchedule? schedule;
 
   PreparationMethod({
     required this.id,
@@ -189,9 +251,34 @@ class PreparationMethod {
     required this.duration,
     required this.warnings,
     required this.preparationType,
+    this.stepDetails,
+    this.schedule,
   });
 
+  /// Ordered list of step instructions to show (from stepDetails or steps).
+  List<String> get stepInstructions {
+    if (stepDetails != null && stepDetails!.isNotEmpty) {
+      return stepDetails!.map((s) => s.instruction).toList();
+    }
+    return steps;
+  }
+
+  /// True if any step has a timer.
+  bool get hasAnyTimer =>
+      stepDetails != null &&
+      stepDetails!.any((s) => s.hasTimer && (s.timerDurationSeconds ?? 0) > 0);
+
   factory PreparationMethod.fromJson(Map<String, dynamic> json) {
+    List<PreparationStepDetail>? stepDetails;
+    if (json['stepDetails'] != null && json['stepDetails'] is List) {
+      stepDetails = (json['stepDetails'] as List<dynamic>)
+          .map((e) => PreparationStepDetail.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
+    PreparationSchedule? schedule;
+    if (json['schedule'] != null && json['schedule'] is Map) {
+      schedule = PreparationSchedule.fromJson(json['schedule'] as Map<String, dynamic>);
+    }
     return PreparationMethod(
       id: json['id'] ?? '',
       condition: json['condition'] ?? '',
@@ -203,6 +290,8 @@ class PreparationMethod {
       duration: json['duration'] ?? '',
       warnings: (json['warnings'] as List<dynamic>?)?.cast<String>() ?? [],
       preparationType: json['preparationType'] ?? '',
+      stepDetails: stepDetails,
+      schedule: schedule,
     );
   }
 
@@ -218,6 +307,8 @@ class PreparationMethod {
       'duration': duration,
       'warnings': warnings,
       'preparationType': preparationType,
+      if (stepDetails != null) 'stepDetails': stepDetails!.map((s) => s.toJson()).toList(),
+      if (schedule != null) 'schedule': schedule!.toJson(),
     };
   }
 }

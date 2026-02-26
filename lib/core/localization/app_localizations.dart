@@ -112,6 +112,14 @@ class AppLocalizations {
       _localizedValues[locale.languageCode]!['activeCompounds']!;
   String get consultHealthcareDisclaimer =>
       _localizedValues[locale.languageCode]!['consultHealthcareDisclaimer']!;
+  String get startPreparationFocusMode =>
+      _localizedValues[locale.languageCode]!['startPreparationFocusMode']!;
+  String get addScheduleToCalendar =>
+      _localizedValues[locale.languageCode]!['addScheduleToCalendar']!;
+  String get timerFinished =>
+      _localizedValues[locale.languageCode]!['timerFinished']!;
+  String get openingCalendar =>
+      _localizedValues[locale.languageCode]!['openingCalendar']!;
 
   // Contraindication Engine (Safety Informatics)
   String get drugInteractions =>
@@ -325,6 +333,10 @@ class AppLocalizations {
       'activeCompounds': 'Active Compounds',
       'consultHealthcareDisclaimer':
           'Always consult healthcare professionals before using any herbal remedies',
+      'startPreparationFocusMode': 'Start Preparation (Focus Mode)',
+      'addScheduleToCalendar': 'Add Schedule to Device Calendar',
+      'timerFinished': 'Timer finished',
+      'openingCalendar': 'Opening calendar to add event',
       'drugInteractions': 'Drug interactions',
       'notSafeForPregnancy': 'Not safe for pregnancy',
       'knownSideEffects': 'Known side effects',
@@ -462,6 +474,10 @@ class AppLocalizations {
       'activeCompounds': 'Mga Aktibong Sangkap',
       'consultHealthcareDisclaimer':
           'Laging kumonsulta sa mga propesyonal sa kalusugan bago gumamit ng anumang halamang gamot',
+      'startPreparationFocusMode': 'Simulan ang Paghahanda (Focus Mode)',
+      'addScheduleToCalendar': 'Idagdag ang Iskedyul sa Kalendaryo ng Device',
+      'timerFinished': 'Tapos na ang timer',
+      'openingCalendar': 'Binubuksan ang kalendaryo para magdagdag ng event',
       'drugInteractions': 'Pakikipag-ugnayan sa gamot',
       'notSafeForPregnancy': 'Hindi ligtas para sa pagbubuntis',
       'knownSideEffects': 'Kilalang side effects',

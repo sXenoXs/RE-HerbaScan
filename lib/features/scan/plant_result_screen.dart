@@ -520,9 +520,10 @@ class _PlantResultScreenState extends State<PlantResultScreen>
     final topPrediction = widget.predictions.isNotEmpty
         ? widget.predictions.first
         : <String, dynamic>{};
-    final scientificName = (topPrediction['scientificName'] as String?)?.trim().isNotEmpty == true
-        ? (topPrediction['scientificName'] as String)
-        : plantName;
+    final scientificName =
+        (topPrediction['scientificName'] as String?)?.trim().isNotEmpty == true
+            ? (topPrediction['scientificName'] as String)
+            : plantName;
 
     // Resolve plant for Contraindication Engine (safety cards)
     Plant? resolvedPlant;
@@ -788,11 +789,9 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                 return _buildInfoRow('Scientific Name', scientificName);
               },
             ),
-            _buildInfoRow('Confidence Level', _getConfidenceLevel(confidence)),
+            _buildInfoRow('Match', '${(confidence * 100).toStringAsFixed(1)}%'),
             _buildInfoRow(
                 'Prediction Index', '${prediction['index'] ?? 'N/A'}'),
-            _buildInfoRow('Confidence Score',
-                '${(confidence * 100).toStringAsFixed(1)}%'),
           ],
         ),
       ),
@@ -1047,12 +1046,6 @@ class _PlantResultScreenState extends State<PlantResultScreen>
     return Colors.red;
   }
 
-  String _getConfidenceLevel(double confidence) {
-    if (confidence >= 0.8) return 'High';
-    if (confidence >= 0.5) return 'Medium';
-    return 'Low';
-  }
-
   Future<void> _regenerateGradCAM() async {
     if (_isRegenerating) {
       // Already regenerating, ignore
@@ -1295,7 +1288,8 @@ class _PlantResultScreenState extends State<PlantResultScreen>
       if (!mounted) return;
       if (auth.isLoggedIn && _savedScanResult != null) {
         try {
-          await HerbariumService().uploadScan(_savedScanResult!, widget.imagePath);
+          await HerbariumService()
+              .uploadScan(_savedScanResult!, widget.imagePath);
           if (mounted) setState(() => _savedToCloud = true);
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -1327,7 +1321,8 @@ class _PlantResultScreenState extends State<PlantResultScreen>
     }
     if (auth.isLoggedIn && !_savedToCloud && _savedScanResult != null) {
       try {
-        await HerbariumService().uploadScan(_savedScanResult!, widget.imagePath);
+        await HerbariumService()
+            .uploadScan(_savedScanResult!, widget.imagePath);
         if (mounted) setState(() => _savedToCloud = true);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

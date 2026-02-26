@@ -95,7 +95,7 @@ Scanners cannot consume a code; redirect URL is not required for this flow. **He
 
 Save. Users can either tap the link (if Redirect URLs are set) or tap **Enter 6-digit code** in the app and type the code from the email.
 
-**Confirm your signup** – In **Authentication → Emails → Templates → Confirm sign up**, you can keep the link-only body or add the code so users can enter it if you ever use confirm email:
+**Confirm your signup** – If **Confirm email** is **enabled**, new users must confirm before signing in. HerbaScan supports a **6-digit code** flow: after signup the app shows **Enter the code from your email**; the user enters the code and the account is activated. To support this, edit **Authentication → Emails → Templates → Confirm sign up** and include the token in the body, for example:
 
 ```html
 <h2>Confirm your signup</h2>
@@ -103,11 +103,19 @@ Save. Users can either tap the link (if Redirect URLs are set) or tap **Enter 6-
 <p>Follow this link to confirm your user:</p>
 <p><a href="{{ .ConfirmationURL }}">Confirm your mail</a></p>
 
-<p>Or enter this code in the app:</p>
+<p>Or enter this 6-digit code in the HerbaScan app:</p>
 <p><strong>{{ .Token }}</strong></p>
 ```
 
-We recommend leaving **Confirm email** disabled so signup does not require the link; then this template is not used.
+If **Confirm email** is **disabled**, users can sign in right after signup and this template is not used.
+
+---
+
+## Auth email rate limits
+
+When using Supabase’s **built-in email** (no custom SMTP), auth endpoints that send email (signup, password reset, etc.) are limited to **2 emails per hour** in total. If you see “email rate limit exceeded” or a 429 error in the app, that limit was hit. The app shows a friendly message: *“Too many signup emails sent. Please try again in about an hour.”*  
+
+To raise the limit, use a **custom SMTP** provider (e.g. SendGrid, AWS SES). See [Production checklist – Auth rate limits](https://supabase.com/docs/guides/deployment/going-into-prod#auth-rate-limits) and the “Built-in email service and custom SMTP” section below.
 
 ---
 
@@ -281,6 +289,24 @@ To see **Review submissions** in Settings and open the admin dashboard (list all
 
 4. Click **Run** (or Ctrl+Enter). You should see “Success” and a row count (e.g. `1`).
 5. Sign out and sign back in to the app (or restart it) so the app reloads your role. After that, **Review submissions** will appear in Settings and open the admin dashboard.
+
+---
+
+## Delete account (Edge Function)
+
+The app’s **Settings → Account → Delete account** option calls the Supabase Edge Function **`delete-user`** so users can permanently delete their Personal Herbarium account. Supabase Auth does not allow client apps to delete users directly; the function uses the **service role** to perform the deletion.
+
+**Deploy the function**
+
+1. Install the [Supabase CLI](https://supabase.com/docs/guides/cli) and log in: `npx supabase login`.
+2. Link the project (if not already): `npx supabase link --project-ref YOUR_PROJECT_REF`.
+3. Deploy the function: `npx supabase functions deploy delete-user`.
+
+The function lives in `supabase/functions/delete-user/index.ts`. It reads the `Authorization: Bearer <access_token>` header, validates the JWT and gets the user id, then calls `auth.admin.deleteUser(userId)` with the service role. The app sends the user’s access token when invoking the function.
+
+**If the function is not deployed:** Tapping **Delete account** will show an error (e.g. function not found). Deploy the function as above to enable account deletion.
+
+**Storage:** If the user has objects in Storage (e.g. herbarium scan images), Supabase may block deletion until those are removed. The function does not delete Storage objects; you can add cleanup in the function (e.g. list and delete objects under the user’s folder) or rely on Storage RLS and manual cleanup. For a simple setup, deleting the auth user and profile is enough; any orphaned Storage objects can be cleaned later.
 
 ---
 
