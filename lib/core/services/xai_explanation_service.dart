@@ -45,11 +45,13 @@ class PlantExplanation {
     buffer.writeln(identification);
     buffer.writeln();
 
-    // Section 1: Taxonomy
+    // Section 1: Taxonomy (ensure Family / Genus / Species each on own line in Markdown)
     if (taxonomy != null && taxonomy!.isNotEmpty) {
       buffer.writeln('### Taxonomy');
       buffer.writeln();
-      buffer.writeln(taxonomy);
+      // Markdown treats single \n as space; use "  \n" for hard line breaks so labels appear on separate lines
+      final taxonomyWithLineBreaks = taxonomy!.replaceAll('\n', '  \n');
+      buffer.writeln(taxonomyWithLineBreaks);
       buffer.writeln();
     }
 

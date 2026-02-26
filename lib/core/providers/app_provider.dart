@@ -8,7 +8,7 @@ class AppProvider extends ChangeNotifier {
   bool _showGradCAM = true;
   bool _showTop3Results = true; // Default to true (ON)
   bool _isDarkMode = false;
-  final String _appVersion = 'v0.8.5';
+  final String _appVersion = 'v0.8.8';
   final String _modelVersion = 'CNN v1.0';
   bool _isThemeChanging = false;
 
@@ -82,6 +82,21 @@ class AppProvider extends ChangeNotifier {
     _isOfflineMode = !_isOfflineMode;
     await _saveSettings();
     notifyListeners();
+  }
+
+  /// Sync offline mode from SharedPreferences (e.g. after OfflineProvider toggles it).
+  /// Keeps AppProvider in sync when OfflineProvider is the source of truth for the toggle.
+  Future<void> syncOfflineModeFromPrefs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final stored = prefs.getBool('isOfflineMode') ?? false;
+      if (_isOfflineMode != stored) {
+        _isOfflineMode = stored;
+        notifyListeners();
+      }
+    } catch (e) {
+      print('Error syncing offline mode from prefs: $e');
+    }
   }
 
   // Toggle confidence scores display

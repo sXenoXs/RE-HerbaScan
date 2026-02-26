@@ -218,7 +218,7 @@ class OfflineDataManager {
         'stats': stats,
         'plants': plants.map((p) => p.toJson()).toList(),
         'scanHistory': scanHistory.map((s) => s.toJson()).toList(),
-        'version': 'v0.8.5',
+        'version': 'v0.8.8',
       };
     } catch (e) {
       print('❌ Error exporting offline data: $e');

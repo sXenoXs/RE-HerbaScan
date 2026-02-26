@@ -64,7 +64,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
             : _featureController.text.trim(),
         createdAt: DateTime.now(),
         metadata: {
-          'app_version': '0.4.0',
+          'app_version': '0.8.8',
           'platform': Theme.of(context).platform.name,
         },
       );
@@ -234,12 +234,16 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                         setState(() => _selectedCategory = category);
                       }
                     },
-                    selectedColor: Colors.green.shade100, // Light green background
+                    selectedColor:
+                        Colors.green.shade100, // Light green background
                     labelStyle: TextStyle(
                       color: isSelected
-                          ? Colors.green.shade900 // Dark green text when selected
-                          : theme.colorScheme.onSurface, // Default text color when not selected
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                          ? Colors
+                              .green.shade900 // Dark green text when selected
+                          : theme.colorScheme
+                              .onSurface, // Default text color when not selected
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.normal,
                     ),
                   );
                 }).toList(),

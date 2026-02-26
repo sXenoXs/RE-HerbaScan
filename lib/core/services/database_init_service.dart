@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:herbascan/core/services/database_service.dart';
 import 'package:herbascan/core/services/plant_data_service.dart';
 import 'package:herbascan/core/models/plant.dart';
@@ -111,7 +112,7 @@ class DatabaseInitService {
 
       // Insert preparation methods
       for (var method in plant.preparationMethods) {
-        await txn.insert('preparation_methods', {
+        final map = <String, dynamic>{
           'id': method.id,
           'plant_id': plant.id,
           'condition': method.condition,
@@ -123,7 +124,15 @@ class DatabaseInitService {
           'duration': method.duration,
           'warnings': method.warnings.join('|'),
           'preparation_type': method.preparationType,
-        });
+        };
+        if (method.stepDetails != null && method.stepDetails!.isNotEmpty) {
+          map['step_details_json'] = jsonEncode(
+              method.stepDetails!.map((s) => s.toJson()).toList());
+        }
+        if (method.schedule != null) {
+          map['schedule_json'] = jsonEncode(method.schedule!.toJson());
+        }
+        await txn.insert('preparation_methods', map);
       }
     });
 

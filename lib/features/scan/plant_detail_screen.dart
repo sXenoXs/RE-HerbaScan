@@ -238,7 +238,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
                   const SizedBox(height: 12),
                   _buildTaxonomyCard(theme),
                   const SizedBox(height: 20),
-                  _buildSectionTitle('🌱 Morphology', theme),
+                  _buildSectionTitle('Morphology', theme),
                   const SizedBox(height: 12),
                   _buildInfoCard(
                     theme,
@@ -264,7 +264,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
           padding: const EdgeInsets.all(16),
           sliver: SliverList(
             delegate: SliverChildListDelegate([
-              _buildSectionTitle('🌍 Ecology', theme),
+              _buildSectionTitle('Ecology', theme),
               const SizedBox(height: 12),
               _buildInfoCard(
                 theme,
@@ -272,7 +272,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
                 Icons.public,
               ),
               const SizedBox(height: 20),
-              _buildSectionTitle('🏞️ Habitat', theme),
+              _buildSectionTitle('Habitat', theme),
               const SizedBox(height: 12),
               _buildInfoCard(
                 theme,
@@ -294,12 +294,12 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
           padding: const EdgeInsets.all(16),
           sliver: SliverList(
             delegate: SliverChildListDelegate([
-              _buildSectionTitle('💊 Medicinal Uses', theme),
+              _buildSectionTitle('Medicinal Uses', theme),
               const SizedBox(height: 12),
               ...widget.plant.medicinalUses
                   .map((use) => _buildMedicinalUseCard(theme, use)),
               const SizedBox(height: 20),
-              _buildSectionTitle('📋 Preparation Methods', theme),
+              _buildSectionTitle('Preparation Methods', theme),
               const SizedBox(height: 12),
               ...widget.plant.preparationMethods
                   .map((method) => _buildPreparationMethodCard(theme, method)),

@@ -32,15 +32,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     });
     try {
       final list = await HerbariumService().getAdminScans();
-      if (mounted) setState(() {
-        _scans = list;
-        _loading = false;
-      });
+      if (mounted)
+        setState(() {
+          _scans = list;
+          _loading = false;
+        });
     } catch (e) {
-      if (mounted) setState(() {
-        _error = e.toString();
-        _loading = false;
-      });
+      if (mounted)
+        setState(() {
+          _error = e.toString();
+          _loading = false;
+        });
     }
   }
 
@@ -59,10 +61,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           'This will remove the scan from the database and storage. It cannot be undone.',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text('Delete', style: TextStyle(color: theme.colorScheme.error)),
+            child: Text('Delete',
+                style: TextStyle(color: theme.colorScheme.error)),
           ),
         ],
       ),
@@ -102,7 +107,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       children: [
                         Text(_error!, style: theme.textTheme.bodyMedium),
                         const SizedBox(height: 16),
-                        FilledButton(onPressed: _load, child: const Text('Retry')),
+                        FilledButton(
+                            onPressed: _load, child: const Text('Retry')),
                       ],
                     ),
                   ),
@@ -112,12 +118,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.inbox_outlined, size: 64, color: theme.colorScheme.outline),
+                          Icon(Icons.inbox_outlined,
+                              size: 64, color: theme.colorScheme.outline),
                           const SizedBox(height: 16),
                           Text(
                             'No submissions yet',
                             style: theme.textTheme.titleMedium?.copyWith(
-                              color: theme.colorScheme.onSurface.withOpacity(0.6),
+                              color:
+                                  theme.colorScheme.onSurface.withOpacity(0.6),
                             ),
                           ),
                         ],
@@ -157,7 +165,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       width: 80,
                       height: 80,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Icon(Icons.eco, size: 48, color: theme.colorScheme.outline),
+                      errorBuilder: (_, __, ___) => Icon(Icons.eco,
+                          size: 48, color: theme.colorScheme.outline),
                     ),
                   )
                 else
@@ -169,7 +178,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     children: [
                       Text(
                         scan.plantId ?? 'Unknown',
-                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                        style: theme.textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -195,8 +205,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               runSpacing: 8,
               children: [
                 if (scan.status != 'approved')
-                  FilledButton.tonalIcon(
+                  FilledButton.icon(
                     onPressed: () => _updateStatus(scan, 'approved'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.green.shade700,
+                      foregroundColor: Colors.white,
+                    ),
                     icon: const Icon(Icons.check, size: 18),
                     label: const Text('Approve'),
                   ),
@@ -208,8 +222,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ),
                 TextButton.icon(
                   onPressed: () => _deleteScan(scan),
-                  icon: Icon(Icons.delete_outline, size: 18, color: theme.colorScheme.error),
-                  label: Text('Delete', style: TextStyle(color: theme.colorScheme.error)),
+                  icon: Icon(Icons.delete_outline,
+                      size: 18, color: theme.colorScheme.error),
+                  label: Text('Delete',
+                      style: TextStyle(color: theme.colorScheme.error)),
                 ),
               ],
             ),

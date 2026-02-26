@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/providers/plant_provider.dart';
 import 'package:herbascan/core/providers/auth_provider.dart';
+import 'package:herbascan/core/providers/offline_provider.dart';
 import 'package:herbascan/core/models/scan_result.dart';
 import 'package:herbascan/core/models/cloud_scan.dart';
 import 'package:herbascan/core/services/herbarium_service.dart';
@@ -24,6 +25,7 @@ class HistoryScreen extends StatefulWidget {
 
 class _HistoryScreenState extends State<HistoryScreen> {
   final UsageAnalytics _analytics = UsageAnalytics();
+  final PageController _historyPageController = PageController(initialPage: 0);
   String _sortBy = 'recent'; // recent, oldest, confidence
   Map<String, dynamic>? _plantDataCache;
   int _historyTabIndex = 0; // 0 = Device, 1 = Cloud
@@ -35,6 +37,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
     super.initState();
     _analytics.trackHistoryViewed();
     _loadPlantDataCache();
+  }
+
+  @override
+  void dispose() {
+    _historyPageController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadCloudScans() async {
@@ -231,6 +239,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final appLocalizations = AppLocalizations.of(context);
     final plantProvider = Provider.of<PlantProvider>(context);
     final authProvider = Provider.of<AuthProvider>(context);
+    final offlineProvider = Provider.of<OfflineProvider>(context);
     final sortedScans = _sortScans(plantProvider.scanHistory);
 
     return Scaffold(
@@ -350,6 +359,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     onSelectionChanged: (Set<int> s) {
                       final v = s.first;
                       setState(() => _historyTabIndex = v);
+                      _historyPageController.animateToPage(
+                        v,
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeInOut,
+                      );
                       if (v == 1 && authProvider.isLoggedIn) _loadCloudScans();
                     },
                   ),
@@ -358,9 +372,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ),
           ),
           Expanded(
-            child: _historyTabIndex == 0
-                ? _buildDeviceHistory(context, theme, appLocalizations, plantProvider, sortedScans)
-                : _buildCloudHistory(context, theme, authProvider),
+            child: PageView(
+              controller: _historyPageController,
+              onPageChanged: (int index) {
+                setState(() => _historyTabIndex = index);
+                if (index == 1 && authProvider.isLoggedIn) _loadCloudScans();
+              },
+              children: [
+                _buildDeviceHistory(context, theme, appLocalizations, plantProvider, sortedScans),
+                _buildCloudHistory(context, theme, authProvider, offlineProvider),
+              ],
+            ),
           ),
         ],
       ),
@@ -393,7 +415,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _buildCloudHistory(BuildContext context, ThemeData theme, AuthProvider authProvider) {
+  Widget _buildCloudHistory(BuildContext context, ThemeData theme, AuthProvider authProvider, OfflineProvider offlineProvider) {
+    final isOnline = offlineProvider.isOnline;
+
+    // Offline: show "No internet" state so Cloud tab updates immediately when Wi‑Fi is turned off
+    if (!isOnline) {
+      return _buildCloudPullToRefresh(
+        context: context,
+        theme: theme,
+        onRefresh: _loadCloudScans,
+        child: _buildCloudOfflineState(theme),
+      );
+    }
+
     if (!authProvider.isLoggedIn) {
       return Center(
         child: Padding(
@@ -428,36 +462,101 @@ class _HistoryScreenState extends State<HistoryScreen> {
       return const Center(child: CircularProgressIndicator());
     }
     if (_cloudScans.isEmpty) {
-      return Center(
+      return _buildCloudPullToRefresh(
+        context: context,
+        theme: theme,
+        onRefresh: _loadCloudScans,
+        child: _buildCloudEmptyState(theme),
+      );
+    }
+    return RefreshIndicator(
+      onRefresh: _loadCloudScans,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _cloudScans.length,
+        itemBuilder: (context, index) {
+          final cloud = _cloudScans[index];
+          return _buildCloudScanCard(context, theme, cloud);
+        },
+      ),
+    );
+  }
+
+  /// Scrollable wrapper so pull-to-refresh works on non-list Cloud content (offline / empty).
+  Widget _buildCloudPullToRefresh({
+    required BuildContext context,
+    required ThemeData theme,
+    required Future<void> Function() onRefresh,
+    required Widget child,
+  }) {
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: MediaQuery.of(context).size.height * 0.6,
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+
+  /// Shown when there is no internet (different from "No cloud scans yet").
+  Widget _buildCloudOfflineState(ThemeData theme) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.cloud_queue, size: 64, color: theme.colorScheme.outline),
+            Icon(Icons.wifi_off, size: 64, color: theme.colorScheme.outline),
             const SizedBox(height: 16),
             Text(
-              'No cloud scans yet',
+              'No internet connection',
+              textAlign: TextAlign.center,
               style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                color: theme.colorScheme.onSurface.withOpacity(0.8),
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Scans are backed up here when you\'re signed in',
+              'Cloud scans will appear when you\'re back online.',
+              textAlign: TextAlign.center,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.4),
+                color: theme.colorScheme.onSurface.withOpacity(0.5),
               ),
             ),
           ],
         ),
-      );
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _cloudScans.length,
-      itemBuilder: (context, index) {
-        final cloud = _cloudScans[index];
-        return _buildCloudScanCard(context, theme, cloud);
-      },
+      ),
+    );
+  }
+
+  /// Shown when online, signed in, but user has no cloud uploads yet.
+  Widget _buildCloudEmptyState(ThemeData theme) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.cloud_queue, size: 64, color: theme.colorScheme.outline),
+          const SizedBox(height: 16),
+          Text(
+            'No cloud scans yet',
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Scans are backed up here when you\'re signed in',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.4),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

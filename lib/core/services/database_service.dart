@@ -9,7 +9,7 @@ import 'package:herbascan/core/models/scan_result.dart';
 class DatabaseService {
   static Database? _database;
   static const String _databaseName = 'herbascan.db';
-  static const int _databaseVersion = 2;
+  static const int _databaseVersion = 3;
 
   // Table names
   static const String _plantsTable = 'plants';
@@ -86,6 +86,8 @@ class DatabaseService {
         duration TEXT NOT NULL,
         warnings TEXT NOT NULL,
         preparation_type TEXT NOT NULL,
+        step_details_json TEXT,
+        schedule_json TEXT,
         FOREIGN KEY (plant_id) REFERENCES $_plantsTable (id)
       )
     ''');
@@ -128,6 +130,17 @@ class DatabaseService {
       } catch (e) {
         // Column might already exist
         print('ℹ️ english_name column may already exist: $e');
+      }
+    }
+    if (oldVersion < 3) {
+      try {
+        await db.execute(
+            'ALTER TABLE $_preparationMethodsTable ADD COLUMN step_details_json TEXT');
+        await db.execute(
+            'ALTER TABLE $_preparationMethodsTable ADD COLUMN schedule_json TEXT');
+        print('✅ Added step_details_json and schedule_json to preparation_methods');
+      } catch (e) {
+        print('ℹ️ preparation_methods columns may already exist: $e');
       }
     }
   }
@@ -212,18 +225,41 @@ class DatabaseService {
     );
 
     final preparationMethods = preparationMethodsMaps
-        .map((methodMap) => PreparationMethod(
-              id: methodMap['id'] as String,
-              condition: methodMap['condition'] as String,
-              title: methodMap['title'] as String,
-              description: methodMap['description'] as String,
-              steps: (methodMap['steps'] as String).split('|'),
-              dosage: methodMap['dosage'] as String,
-              frequency: methodMap['frequency'] as String,
-              duration: methodMap['duration'] as String,
-              warnings: (methodMap['warnings'] as String).split('|'),
-              preparationType: methodMap['preparation_type'] as String,
-            ))
+        .map((methodMap) {
+          List<PreparationStepDetail>? stepDetails;
+          final stepDetailsJson = methodMap['step_details_json'] as String?;
+          if (stepDetailsJson != null && stepDetailsJson.isNotEmpty) {
+            try {
+              final list = jsonDecode(stepDetailsJson) as List<dynamic>?;
+              if (list != null) {
+                stepDetails = list
+                    .map((e) => PreparationStepDetail.fromJson(e as Map<String, dynamic>))
+                    .toList();
+              }
+            } catch (_) {}
+          }
+          PreparationSchedule? schedule;
+          final scheduleJson = methodMap['schedule_json'] as String?;
+          if (scheduleJson != null && scheduleJson.isNotEmpty) {
+            try {
+              schedule = PreparationSchedule.fromJson(jsonDecode(scheduleJson) as Map<String, dynamic>);
+            } catch (_) {}
+          }
+          return PreparationMethod(
+            id: methodMap['id'] as String,
+            condition: methodMap['condition'] as String,
+            title: methodMap['title'] as String,
+            description: methodMap['description'] as String,
+            steps: (methodMap['steps'] as String).split('|'),
+            dosage: methodMap['dosage'] as String,
+            frequency: methodMap['frequency'] as String,
+            duration: methodMap['duration'] as String,
+            warnings: (methodMap['warnings'] as String).split('|'),
+            preparationType: methodMap['preparation_type'] as String,
+            stepDetails: stepDetails,
+            schedule: schedule,
+          );
+        })
         .toList();
 
     return Plant(

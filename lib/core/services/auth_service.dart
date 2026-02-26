@@ -67,6 +67,16 @@ class AuthService {
     );
   }
 
+  /// Verify the 6-digit (or token) code from the signup confirmation email.
+  /// After this, the user is confirmed and Supabase may establish a session; the app should refresh auth state.
+  Future<void> verifyOtpSignup({required String email, required String token}) async {
+    await _client.auth.verifyOTP(
+      type: OtpType.signup,
+      email: email.trim(),
+      token: token.trim(),
+    );
+  }
+
   /// Update current user's password. User must be signed in.
   Future<void> updatePassword(String newPassword) async {
     await _client.auth.updateUser(UserAttributes(password: newPassword));
@@ -75,5 +85,28 @@ class AuthService {
   /// Update current user's email. User must be signed in. May send confirmation to new email.
   Future<void> updateEmail(String newEmail) async {
     await _client.auth.updateUser(UserAttributes(email: newEmail));
+  }
+
+  /// Request deletion of the current user's account.
+  /// Calls the Supabase Edge Function "delete-user" which uses the service role to delete the user.
+  /// Requires the delete-user Edge Function to be deployed (see supabase/README.md).
+  /// After successful deletion the client session is invalid; the app should sign out.
+  Future<void> deleteAccount() async {
+    final session = currentSession;
+    if (session == null) {
+      throw Exception('Not signed in');
+    }
+    final res = await _client.functions.invoke(
+      'delete-user',
+      headers: {
+        'Authorization': 'Bearer ${session.accessToken}',
+      },
+    );
+    if (res.status != 200) {
+      final msg = res.data != null
+          ? (res.data is Map ? (res.data as Map)['message'] ?? res.data.toString() : res.data.toString())
+          : 'Failed to delete account (${res.status})';
+      throw Exception(msg.toString());
+    }
   }
 }

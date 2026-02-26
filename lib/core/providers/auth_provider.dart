@@ -95,6 +95,14 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Verify the 6-digit OTP from the signup confirmation email. Confirms the user; may establish a session.
+  Future<void> verifySignupOtp({required String email, required String token}) async {
+    await _auth.verifyOtpSignup(email: email, token: token);
+    _user = _auth.currentUser;
+    await _loadRole();
+    notifyListeners();
+  }
+
   /// Update current user's password. Requires sign-in.
   Future<void> updatePassword(String newPassword) async {
     await _auth.updatePassword(newPassword);
@@ -106,5 +114,12 @@ class AuthProvider extends ChangeNotifier {
     await _auth.updateEmail(newEmail);
     _user = _auth.currentUser;
     notifyListeners();
+  }
+
+  /// Delete the current user's account (Supabase Auth + profile). Calls the delete-user Edge Function.
+  /// Signs out after successful deletion. Throws on failure.
+  Future<void> deleteAccount() async {
+    await _auth.deleteAccount();
+    await signOut();
   }
 }
