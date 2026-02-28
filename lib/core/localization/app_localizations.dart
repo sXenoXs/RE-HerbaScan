@@ -139,6 +139,22 @@ class AppLocalizations {
   String get avoidUseWith =>
       _localizedValues[locale.languageCode]!['avoidUseWith']!;
 
+  // Static Habitat Heatmap
+  String get viewHabitatMap =>
+      _localizedValues[locale.languageCode]!['viewHabitatMap']!;
+  String get noHabitatData =>
+      _localizedValues[locale.languageCode]!['noHabitatData']!;
+  String get noHabitatDataSubtitle =>
+      _localizedValues[locale.languageCode]!['noHabitatDataSubtitle']!;
+  String get knownHabitatRegions =>
+      _localizedValues[locale.languageCode]!['knownHabitatRegions']!;
+  String get climateNotes =>
+      _localizedValues[locale.languageCode]!['climateNotes']!;
+  String get whereItGrows =>
+      _localizedValues[locale.languageCode]!['whereItGrows']!;
+  String get habitatLoadError =>
+      _localizedValues[locale.languageCode]!['habitatLoadError']!;
+
   // Settings
   String get language => _localizedValues[locale.languageCode]!['language']!;
   String get offlineMode =>
@@ -346,6 +362,14 @@ class AppLocalizations {
           'This app is for educational purposes only. It is not a replacement for professional medical advice. Always consult a healthcare professional before using herbal remedies, especially if you are pregnant, nursing, taking medications, or have existing medical conditions.',
       'noStructuredSafetyData': 'No structured safety data for this plant.',
       'avoidUseWith': 'Avoid use with',
+      'viewHabitatMap': 'Habitat Map',
+      'noHabitatData': 'No habitat data',
+      'noHabitatDataSubtitle':
+          'Known habitat regions for this plant are not yet in the database. Data is from curated sources (e.g. DOST-PCHRD, DA).',
+      'knownHabitatRegions': 'Known habitat regions',
+      'climateNotes': 'Climate & habitat notes',
+      'whereItGrows': 'Where it grows',
+      'habitatLoadError': 'Failed to load habitat data.',
       'language': 'Language / Wika',
       'offlineMode': 'Offline Mode',
       'showConfidenceScores': 'Show Confidence Scores',
@@ -487,6 +511,14 @@ class AppLocalizations {
           'Ang app na ito ay para lamang sa edukasyonal na layunin. Hindi ito kapalit ng propesyonal na payo medikal. Laging kumonsulta sa propesyonal sa kalusugan bago gumamit ng halamang gamot, lalo na kung ikaw ay buntis, nagpapasuso, umiinom ng gamot, o may umiiral na kondisyong medikal.',
       'noStructuredSafetyData': 'Walang istrukturang data ng kaligtasan para sa halamang ito.',
       'avoidUseWith': 'Iwasan ang paggamit kasama ng',
+      'viewHabitatMap': 'Mapa ng Tirahan',
+      'noHabitatData': 'Walang data ng tirahan',
+      'noHabitatDataSubtitle':
+          'Ang mga kilalang rehiyong tirahan ng halamang ito ay wala pa sa database. Ang data ay mula sa mga curated na pinagmulan (hal. DOST-PCHRD, DA).',
+      'knownHabitatRegions': 'Kilalang rehiyong tirahan',
+      'climateNotes': 'Mga tala sa klima at tirahan',
+      'whereItGrows': 'Saan ito tumutubo',
+      'habitatLoadError': 'Hindi ma-load ang data ng tirahan.',
       'language': 'Wika / Language',
       'offlineMode': 'Offline Mode',
       'showConfidenceScores': 'Ipakita ang Confidence Scores',

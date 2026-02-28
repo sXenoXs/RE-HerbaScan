@@ -48,10 +48,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Future<void> _loadCloudScans() async {
     setState(() => _cloudLoading = true);
     final list = await HerbariumService().getMyScans();
-    if (mounted) setState(() {
-      _cloudScans = list;
-      _cloudLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _cloudScans = list;
+        _cloudLoading = false;
+      });
+    }
   }
 
   /// Load plant_explanations.json into memory cache
@@ -338,13 +340,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 Expanded(
                   child: SegmentedButton<int>(
                     style: ButtonStyle(
-                      backgroundColor: WidgetStateProperty.resolveWith((Set<WidgetState> states) {
+                      backgroundColor: WidgetStateProperty.resolveWith(
+                          (Set<WidgetState> states) {
                         if (states.contains(WidgetState.selected)) {
-                          return const Color(0xFF7BC9AD); // darker shade of #dffcea for contrast with white text
+                          return const Color(
+                              0xFF7BC9AD); // darker shade of #dffcea for contrast with white text
                         }
                         return null;
                       }),
-                      foregroundColor: WidgetStateProperty.resolveWith((Set<WidgetState> states) {
+                      foregroundColor: WidgetStateProperty.resolveWith(
+                          (Set<WidgetState> states) {
                         if (states.contains(WidgetState.selected)) {
                           return Colors.white;
                         }
@@ -352,8 +357,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       }),
                     ),
                     segments: const [
-                      ButtonSegment(value: 0, label: Text('Device'), icon: Icon(Icons.phone_android)),
-                      ButtonSegment(value: 1, label: Text('Cloud'), icon: Icon(Icons.cloud)),
+                      ButtonSegment(
+                          value: 0,
+                          label: Text('Device'),
+                          icon: Icon(Icons.phone_android)),
+                      ButtonSegment(
+                          value: 1,
+                          label: Text('Cloud'),
+                          icon: Icon(Icons.cloud)),
                     ],
                     selected: {_historyTabIndex},
                     onSelectionChanged: (Set<int> s) {
@@ -379,8 +390,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 if (index == 1 && authProvider.isLoggedIn) _loadCloudScans();
               },
               children: [
-                _buildDeviceHistory(context, theme, appLocalizations, plantProvider, sortedScans),
-                _buildCloudHistory(context, theme, authProvider, offlineProvider),
+                _buildDeviceHistory(context, theme, appLocalizations,
+                    plantProvider, sortedScans),
+                _buildCloudHistory(
+                    context, theme, authProvider, offlineProvider),
               ],
             ),
           ),
@@ -389,8 +402,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _buildDeviceHistory(BuildContext context, ThemeData theme,
-      AppLocalizations appLocalizations, PlantProvider plantProvider,
+  Widget _buildDeviceHistory(
+      BuildContext context,
+      ThemeData theme,
+      AppLocalizations appLocalizations,
+      PlantProvider plantProvider,
       List<ScanResult> sortedScans) {
     if (plantProvider.isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -415,7 +431,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _buildCloudHistory(BuildContext context, ThemeData theme, AuthProvider authProvider, OfflineProvider offlineProvider) {
+  Widget _buildCloudHistory(BuildContext context, ThemeData theme,
+      AuthProvider authProvider, OfflineProvider offlineProvider) {
     final isOnline = offlineProvider.isOnline;
 
     // Offline: show "No internet" state so Cloud tab updates immediately when Wi‑Fi is turned off
@@ -446,7 +463,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
               FilledButton.icon(
                 onPressed: () async {
                   await Navigator.of(context).push(
-                    MaterialPageRoute<bool>(builder: (context) => const LoginScreen()),
+                    MaterialPageRoute<bool>(
+                        builder: (context) => const LoginScreen()),
                   );
                   if (mounted && authProvider.isLoggedIn) _loadCloudScans();
                 },
@@ -560,7 +578,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _buildCloudScanCard(BuildContext context, ThemeData theme, CloudScan cloud) {
+  Widget _buildCloudScanCard(
+      BuildContext context, ThemeData theme, CloudScan cloud) {
     final dateFormat = DateFormat('MMM dd, yyyy • HH:mm');
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -579,13 +598,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   width: 72,
                   height: 72,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Icon(Icons.eco, size: 48, color: theme.colorScheme.outline),
+                  errorBuilder: (_, __, ___) => Icon(Icons.eco,
+                      size: 48, color: theme.colorScheme.outline),
                 ),
               )
             : Icon(Icons.eco, size: 48, color: theme.colorScheme.outline),
         title: Text(
           cloud.plantId ?? 'Unknown plant',
-          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          style: theme.textTheme.titleMedium
+              ?.copyWith(fontWeight: FontWeight.bold),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -603,10 +624,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
               builder: (ctx) => AlertDialog(
                 title: const Text('Delete from cloud?'),
                 actions: [
-                  TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                  TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: const Text('Cancel')),
                   TextButton(
                     onPressed: () => Navigator.pop(ctx, true),
-                    child: Text('Delete', style: TextStyle(color: theme.colorScheme.error)),
+                    child: Text('Delete',
+                        style: TextStyle(color: theme.colorScheme.error)),
                   ),
                 ],
               ),

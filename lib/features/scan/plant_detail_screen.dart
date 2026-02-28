@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/models/plant.dart';
+import 'package:herbascan/core/services/habitat_service.dart';
 import 'package:herbascan/core/widgets/contraindication_engine_widget.dart';
+import 'package:herbascan/features/scan/habitat_map_screen.dart';
 import 'package:herbascan/features/scan/preparation_instructions_screen.dart';
 
 class PlantDetailScreen extends StatefulWidget {
@@ -234,7 +237,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
               padding: const EdgeInsets.all(16),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  _buildSectionTitle('🏷️ Scientific Classification', theme),
+                  _buildSectionTitle('Scientific Classification', theme),
                   const SizedBox(height: 12),
                   _buildTaxonomyCard(theme),
                   const SizedBox(height: 20),
@@ -258,6 +261,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
   }
 
   Widget _buildEcologyTab(ThemeData theme) {
+    final l10n = AppLocalizations.of(context);
     return CustomScrollView(
       slivers: [
         SliverPadding(
@@ -280,6 +284,16 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
                 Icons.landscape,
               ),
               const SizedBox(height: 20),
+              FutureBuilder<bool>(
+                future: HabitatService().hasHabitatData(widget.plant.id),
+                builder: (context, snapshot) {
+                  if (snapshot.data != true) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child: _buildHabitatMapCard(theme, l10n),
+                  );
+                },
+              ),
             ]),
           ),
         ),
@@ -403,6 +417,63 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHabitatMapCard(
+      ThemeData theme, AppLocalizations l10n) {
+    return Card(
+      child: InkWell(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (context) => HabitatMapScreen(plant: widget.plant),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.map_outlined,
+                color: theme.colorScheme.primary,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      l10n.viewHabitatMap,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      l10n.whereItGrows,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
         ),
       ),
     );
