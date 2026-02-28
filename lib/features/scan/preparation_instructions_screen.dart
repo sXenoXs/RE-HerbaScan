@@ -45,7 +45,9 @@ class _PreparationInstructionsScreenState
     final stepDetails = widget.preparationMethod.stepDetails;
     if (stepDetails == null ||
         index >= stepDetails.length ||
-        !stepDetails[index].hasTimer) return null;
+        !stepDetails[index].hasTimer) {
+      return null;
+    }
     final sec = stepDetails[index].timerDurationSeconds;
     return (sec != null && sec > 0) ? sec : null;
   }
@@ -62,7 +64,8 @@ class _PreparationInstructionsScreenState
     final plant = widget.plant;
     final method = widget.preparationMethod;
     final now = DateTime.now();
-    final startDate = DateTime(now.year, now.month, now.day, 8, 0); // 8 AM today
+    final startDate =
+        DateTime(now.year, now.month, now.day, 8, 0); // 8 AM today
     final endDate = startDate.add(const Duration(hours: 1));
 
     int durationDays = 7;
@@ -309,7 +312,7 @@ class _PreparationInstructionsScreenState
                   // Steps Section (interactive checklist)
                   _buildSectionHeader(
                     context,
-                    '📋 Preparation Steps',
+                    'Preparation Steps',
                     theme,
                   ),
                   const SizedBox(height: 4),
@@ -333,7 +336,8 @@ class _PreparationInstructionsScreenState
                       );
                     },
                     icon: const Icon(Icons.fullscreen),
-                    label: Text(AppLocalizations.of(context).startPreparationFocusMode),
+                    label: Text(
+                        AppLocalizations.of(context).startPreparationFocusMode),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 20, vertical: 12),
@@ -411,7 +415,8 @@ class _PreparationInstructionsScreenState
                   FilledButton.icon(
                     onPressed: () => _addScheduleToCalendar(context),
                     icon: const Icon(Icons.calendar_today, size: 20),
-                    label: Text(AppLocalizations.of(context).addScheduleToCalendar),
+                    label: Text(
+                        AppLocalizations.of(context).addScheduleToCalendar),
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 20, vertical: 14),
@@ -614,53 +619,55 @@ class _PreparationInstructionsScreenState
               onTap: onTap,
               borderRadius: BorderRadius.circular(12),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: isCompleted
-                        ? const Color(0xFF48BB78)
-                        : theme.colorScheme.primary,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: isCompleted
-                        ? const Icon(Icons.check, color: Colors.white, size: 20)
-                        : Text(
-                            stepNumber.toString(),
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onPrimary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      step,
-                      style: theme.textTheme.bodyMedium?.copyWith(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
                         color: isCompleted
-                            ? theme.colorScheme.onSurface.withOpacity(0.5)
-                            : theme.colorScheme.onSurface,
-                        height: 1.5,
-                        decoration: isCompleted
-                            ? TextDecoration.lineThrough
-                            : TextDecoration.none,
+                            ? const Color(0xFF48BB78)
+                            : theme.colorScheme.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: isCompleted
+                            ? const Icon(Icons.check,
+                                color: Colors.white, size: 20)
+                            : Text(
+                                stepNumber.toString(),
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onPrimary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                       ),
                     ),
-                  ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          step,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: isCompleted
+                                ? theme.colorScheme.onSurface.withOpacity(0.5)
+                                : theme.colorScheme.onSurface,
+                            height: 1.5,
+                            decoration: isCompleted
+                                ? TextDecoration.lineThrough
+                                : TextDecoration.none,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-          ),
           ),
           if (timerSeconds != null && timerSeconds > 0) ...[
             const SizedBox(height: 8),
@@ -687,7 +694,8 @@ class _PreparationInstructionsScreenState
                   : ElevatedButton.icon(
                       onPressed: onStartTimer,
                       icon: const Icon(Icons.timer_outlined, size: 18),
-                      label: Text('Start ${_formatDuration(timerSeconds)} timer'),
+                      label:
+                          Text('Start ${_formatDuration(timerSeconds)} timer'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: theme.colorScheme.primary,
                         foregroundColor: theme.colorScheme.onPrimary,

@@ -32,17 +32,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     });
     try {
       final list = await HerbariumService().getAdminScans();
-      if (mounted)
+      if (mounted) {
         setState(() {
           _scans = list;
           _loading = false;
         });
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _error = e.toString();
           _loading = false;
         });
+      }
     }
   }
 
