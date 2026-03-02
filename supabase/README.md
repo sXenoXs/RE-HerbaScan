@@ -308,11 +308,15 @@ The app’s **Settings → Account → Delete account** option calls the Supabas
 2. Link the project (if not already): `npx supabase link --project-ref YOUR_PROJECT_REF`.
 3. Deploy the function: `npx supabase functions deploy delete-user`.
 
+The repo includes `supabase/config.toml` with `verify_jwt = false` for `delete-user`. That turns off the **gateway** JWT check (which can fail with Supabase’s new asymmetric signing). The function still **verifies the JWT inside** using the JWKS endpoint, so the endpoint remains protected.
+
 The function lives in `supabase/functions/delete-user/index.ts`. (1) **Self-delete:** with no body, it deletes the authenticated user. (2) **Admin delete:** with body `{ "user_id": "<uuid>" }`, it verifies the caller is admin (via `profiles.role`), then deletes that user. The Flutter app deletes the user’s storage objects (herbarium-images) before invoking the function for admin delete.
 
 **If the function is not deployed:** Tapping **Delete account** will show a 404 error; the app now shows a message that includes the deploy command (`npx supabase functions deploy delete-user`). Deploy as above to enable account deletion.
 
 **Storage:** For self-delete, Supabase may block deletion until storage is removed. For admin delete, the app removes the user’s folder in `herbarium-images` before calling the function.
+
+**401 Invalid JWT when deleting (self or admin):** (1) Ensure `supabase/config.toml` exists with `[functions.delete-user]` and `verify_jwt = false` so the gateway does not validate the JWT; the function validates it internally via JWKS. (2) Deploy to the **same project** as the app: `npx supabase link --project-ref YOUR_PROJECT_REF`, then `npx supabase functions deploy delete-user`. If you still see 401 after deploying, redeploy so the config is applied (the function verifies the token with the project’s JWKS endpoint).
 
 ---
 

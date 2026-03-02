@@ -1,6 +1,7 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:herbascan/core/models/plant.dart';
+import 'package:herbascan/core/models/plant_anatomy_part.dart';
 import 'package:herbascan/core/models/scan_result.dart';
 import 'package:herbascan/core/services/plant_service.dart';
 import 'package:herbascan/core/services/database_service.dart';
@@ -205,6 +206,23 @@ class PlantProvider extends ChangeNotifier {
     } catch (e) {
       return null;
     }
+  }
+
+  /// Returns anatomy parts for the plant (from local DB, synced from Supabase). Ordered by z_index.
+  /// Returns empty list if the anatomy table is missing (e.g. old DB before migration) or on error.
+  Future<List<PlantAnatomyPart>> getPlantAnatomy(String plantId) async {
+    try {
+      final rows = await _databaseService.getAnatomyForPlant(plantId);
+      return rows.map((row) => PlantAnatomyPart.fromMap(row)).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// Returns true if the plant has at least one anatomy part in the DB.
+  Future<bool> hasAnatomyData(String plantId) async {
+    final list = await getPlantAnatomy(plantId);
+    return list.isNotEmpty;
   }
 
   // Get plants by condition

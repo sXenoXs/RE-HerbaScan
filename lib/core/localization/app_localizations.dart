@@ -157,6 +157,10 @@ class AppLocalizations {
   String get habitatLoadError =>
       _localizedValues[locale.languageCode]!['habitatLoadError']!;
 
+  // 2D Interactive Plant Silhouette (anatomy)
+  String get explorePlantParts =>
+      _localizedValues[locale.languageCode]!['explorePlantParts']!;
+
   // Settings
   String get language => _localizedValues[locale.languageCode]!['language']!;
   String get offlineMode =>
@@ -373,6 +377,7 @@ class AppLocalizations {
       'climateNotes': 'Climate & habitat notes',
       'whereItGrows': 'Where it grows',
       'habitatLoadError': 'Failed to load habitat data.',
+      'explorePlantParts': 'Explore plant parts',
       'language': 'Language / Wika',
       'offlineMode': 'Offline Mode',
       'showConfidenceScores': 'Show Confidence Scores',
@@ -523,6 +528,7 @@ class AppLocalizations {
       'climateNotes': 'Mga tala sa klima at tirahan',
       'whereItGrows': 'Saan ito tumutubo',
       'habitatLoadError': 'Hindi ma-load ang data ng tirahan.',
+      'explorePlantParts': 'Tuklasin ang mga bahagi ng halaman',
       'language': 'Wika / Language',
       'offlineMode': 'Offline Mode',
       'showConfidenceScores': 'Ipakita ang Confidence Scores',

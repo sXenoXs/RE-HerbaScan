@@ -205,6 +205,19 @@ class CatalogSyncService {
         if (kDebugMode) debugPrint('[CatalogSync] catalog_conditions sync skipped: $e');
       }
 
+      // Sync catalog_plant_anatomy (2D silhouette parts) to local SQLite
+      try {
+        final anatomyRes = await _client.from('catalog_plant_anatomy').select();
+        final anatomyList = (anatomyRes as List).cast<Map<String, dynamic>>();
+        if (anatomyList.isNotEmpty) {
+          final rows = anatomyList.map((row) => _anatomyRowToLocal(row)).toList();
+          await _db.replaceAnatomyFromSync(rows);
+          if (kDebugMode) debugPrint('[CatalogSync] Synced ${anatomyList.length} plant anatomy rows.');
+        }
+      } catch (e) {
+        if (kDebugMode) debugPrint('[CatalogSync] catalog_plant_anatomy sync skipped: $e');
+      }
+
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_keyLastSynced, DateTime.now().toUtc().toIso8601String());
       if (kDebugMode) debugPrint('[CatalogSync] Synced ${plantsList.length} plants.');
@@ -254,6 +267,30 @@ class CatalogSyncService {
       isDefault: (row['is_default'] as bool?) ?? false,
       sortOrder: row['sort_order'] is int ? row['sort_order'] as int : int.tryParse(row['sort_order'].toString()) ?? 0,
     );
+  }
+
+  /// Map a catalog_plant_anatomy row from Supabase to local SQLite format.
+  static Map<String, dynamic> _anatomyRowToLocal(Map<String, dynamic> row) {
+    final id = row['id'];
+    final conditionsRaw = row['conditions'];
+    String conditionsStr = '[]';
+    if (conditionsRaw is List) {
+      conditionsStr = jsonEncode(conditionsRaw);
+    } else if (conditionsRaw is String && conditionsRaw.isNotEmpty && conditionsRaw != '[]') {
+      conditionsStr = conditionsRaw;
+    }
+    return {
+      'id': id?.toString() ?? '',
+      'plant_id': row['plant_id'] as String? ?? '',
+      'part_name': row['part_name'] as String? ?? '',
+      'svg_path': row['svg_path'] as String? ?? '',
+      'color_hex': row['color_hex'] as String? ?? '4CAF50',
+      'z_index': row['z_index'] is int ? row['z_index'] as int : int.tryParse(row['z_index'].toString()) ?? 0,
+      'is_interactive': (row['is_interactive'] as bool?) ?? true,
+      'title': row['title'] as String? ?? '',
+      'description': row['description'] as String? ?? '',
+      'conditions': conditionsStr,
+    };
   }
 
   /// Parse a catalog_habitat row (Supabase JSONB may be List/Map or String).

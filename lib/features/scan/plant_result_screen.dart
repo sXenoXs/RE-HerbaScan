@@ -12,6 +12,7 @@ import 'package:herbascan/core/services/herbarium_service.dart';
 import 'package:herbascan/core/services/adaptive_gradcam_service.dart';
 import 'package:herbascan/core/services/habitat_service.dart';
 import 'package:herbascan/features/scan/habitat_map_screen.dart';
+import 'package:herbascan/features/scan/plant_detail_screen.dart';
 import 'package:uuid/uuid.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -626,6 +627,11 @@ class _PlantResultScreenState extends State<PlantResultScreen>
           // Optional: Where it grows (Static Habitat Heatmap) – above GradCAM info for visibility
           if (resolvedPlant != null) ...[
             _WhereItGrowsTile(
+              plant: resolvedPlant,
+              theme: theme,
+            ),
+            const SizedBox(height: 16),
+            _ExplorePlantPartsTile(
               plant: resolvedPlant,
               theme: theme,
             ),
@@ -1894,6 +1900,93 @@ class _WhereItGrowsTile extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                             l10n.viewHabitatMap,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Optional "Explore plant parts" tile (2D Interactive Silhouette). Visible when plant has anatomy data.
+class _ExplorePlantPartsTile extends StatelessWidget {
+  const _ExplorePlantPartsTile({
+    required this.plant,
+    required this.theme,
+  });
+
+  final Plant plant;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    final plantProvider = context.read<PlantProvider>();
+    return FutureBuilder<bool>(
+      future: plantProvider.hasAnatomyData(plant.id),
+      builder: (context, snapshot) {
+        if (snapshot.data != true) return const SizedBox.shrink();
+        final l10n = AppLocalizations.of(context);
+        return Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: theme.colorScheme.outline.withOpacity(0.2),
+            ),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (context) => PlantDetailScreen(
+                      plant: plant,
+                      initialTabIndex: 2,
+                    ),
+                  ),
+                );
+              },
+              borderRadius: BorderRadius.circular(16),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.eco_outlined,
+                      color: theme.colorScheme.primary,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            l10n.explorePlantParts,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            l10n.viewDetails,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),

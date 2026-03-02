@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:herbascan/core/services/admin_user_service.dart';
 
@@ -74,7 +76,14 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
       try {
         await AdminUserService().deleteUser(row.id);
         if (mounted) _load();
-      } catch (e) {
+      } catch (e, stack) {
+        if (kDebugMode) {
+          debugPrint('[AdminUserManagement][_deleteUser] Delete failed for ${row.email} (${row.id}): $e');
+          if (e is FunctionException) {
+            debugPrint('[AdminUserManagement][_deleteUser] FunctionException status: ${e.status}, details: ${e.details}');
+          }
+          debugPrint('[AdminUserManagement][_deleteUser] stack: $stack');
+        }
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Delete failed: $e')),

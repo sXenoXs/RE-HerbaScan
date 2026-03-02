@@ -12,7 +12,7 @@ import 'package:herbascan/core/models/scan_result.dart';
 class DatabaseService {
   static Database? _database;
   static const String _databaseName = 'herbascan.db';
-  static const int _databaseVersion = 6;
+  static const int _databaseVersion = 7;
 
   // Table names
   static const String _plantsTable = 'plants';
@@ -23,6 +23,7 @@ class DatabaseService {
   static const String _plantHabitatsTable = 'plant_habitats';
   static const String _conditionsTable = 'catalog_conditions';
   static const String _conditionPlantsTable = 'catalog_condition_plants';
+  static const String _anatomyTable = 'catalog_plant_anatomy';
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -39,7 +40,49 @@ class DatabaseService {
       version: _databaseVersion,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
+      onOpen: _ensureCatalogTablesExist,
     );
+  }
+
+  /// Ensures catalog_conditions, catalog_condition_plants, and catalog_plant_anatomy exist.
+  /// Runs on every open so DBs created before these tables were added get them without a version bump.
+  Future<void> _ensureCatalogTablesExist(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $_conditionsTable (
+        id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        icon_key TEXT NOT NULL DEFAULT 'healing',
+        color_hex TEXT NOT NULL DEFAULT 'FF6366F1',
+        is_default INTEGER NOT NULL DEFAULT 0,
+        sort_order INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $_conditionPlantsTable (
+        condition_id INTEGER NOT NULL,
+        plant_id TEXT NOT NULL,
+        PRIMARY KEY (condition_id, plant_id),
+        FOREIGN KEY (plant_id) REFERENCES $_plantsTable (id)
+      )
+    ''');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_condition_plants_plant ON $_conditionPlantsTable (plant_id)');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $_anatomyTable (
+        id TEXT PRIMARY KEY,
+        plant_id TEXT NOT NULL,
+        part_name TEXT NOT NULL DEFAULT '',
+        svg_path TEXT NOT NULL DEFAULT '',
+        color_hex TEXT NOT NULL DEFAULT '4CAF50',
+        z_index INTEGER NOT NULL DEFAULT 0,
+        is_interactive INTEGER NOT NULL DEFAULT 1,
+        title TEXT NOT NULL DEFAULT '',
+        description TEXT NOT NULL DEFAULT '',
+        conditions TEXT NOT NULL DEFAULT '[]'
+      )
+    ''');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_catalog_plant_anatomy_plant_id ON $_anatomyTable (plant_id)');
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -151,6 +194,46 @@ class DatabaseService {
         'CREATE INDEX idx_medicinal_uses_plant ON $_medicinalUsesTable (plant_id)');
     await db.execute(
         'CREATE INDEX idx_preparation_methods_plant ON $_preparationMethodsTable (plant_id)');
+
+    // catalog_conditions and catalog_condition_plants (v6)
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $_conditionsTable (
+        id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        icon_key TEXT NOT NULL DEFAULT 'healing',
+        color_hex TEXT NOT NULL DEFAULT 'FF6366F1',
+        is_default INTEGER NOT NULL DEFAULT 0,
+        sort_order INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $_conditionPlantsTable (
+        condition_id INTEGER NOT NULL,
+        plant_id TEXT NOT NULL,
+        PRIMARY KEY (condition_id, plant_id),
+        FOREIGN KEY (plant_id) REFERENCES $_plantsTable (id)
+      )
+    ''');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_condition_plants_plant ON $_conditionPlantsTable (plant_id)');
+
+    // catalog_plant_anatomy (v7)
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $_anatomyTable (
+        id TEXT PRIMARY KEY,
+        plant_id TEXT NOT NULL,
+        part_name TEXT NOT NULL DEFAULT '',
+        svg_path TEXT NOT NULL DEFAULT '',
+        color_hex TEXT NOT NULL DEFAULT '4CAF50',
+        z_index INTEGER NOT NULL DEFAULT 0,
+        is_interactive INTEGER NOT NULL DEFAULT 1,
+        title TEXT NOT NULL DEFAULT '',
+        description TEXT NOT NULL DEFAULT '',
+        conditions TEXT NOT NULL DEFAULT '[]'
+      )
+    ''');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_catalog_plant_anatomy_plant_id ON $_anatomyTable (plant_id)');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -172,15 +255,15 @@ class DatabaseService {
             'ALTER TABLE $_preparationMethodsTable ADD COLUMN step_details_json TEXT');
         await db.execute(
             'ALTER TABLE $_preparationMethodsTable ADD COLUMN schedule_json TEXT');
-        print('✅ Added step_details_json and schedule_json to preparation_methods');
+        print(
+            '✅ Added step_details_json and schedule_json to preparation_methods');
       } catch (e) {
         print('ℹ️ preparation_methods columns may already exist: $e');
       }
     }
     if (oldVersion < 4) {
       try {
-        await db.execute(
-            'ALTER TABLE $_plantsTable ADD COLUMN image_url TEXT');
+        await db.execute('ALTER TABLE $_plantsTable ADD COLUMN image_url TEXT');
         print('✅ Added image_url to plants table');
       } catch (e) {
         print('ℹ️ image_url column may already exist: $e');
@@ -240,6 +323,29 @@ class DatabaseService {
         print('✅ Added catalog_conditions and catalog_condition_plants tables');
       } catch (e) {
         print('ℹ️ catalog_conditions/condition_plants may already exist: $e');
+      }
+    }
+    if (oldVersion < 7) {
+      try {
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS $_anatomyTable (
+            id TEXT PRIMARY KEY,
+            plant_id TEXT NOT NULL,
+            part_name TEXT NOT NULL DEFAULT '',
+            svg_path TEXT NOT NULL DEFAULT '',
+            color_hex TEXT NOT NULL DEFAULT '4CAF50',
+            z_index INTEGER NOT NULL DEFAULT 0,
+            is_interactive INTEGER NOT NULL DEFAULT 1,
+            title TEXT NOT NULL DEFAULT '',
+            description TEXT NOT NULL DEFAULT '',
+            conditions TEXT NOT NULL DEFAULT '[]'
+          )
+        ''');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_catalog_plant_anatomy_plant_id ON $_anatomyTable (plant_id)');
+        print('✅ Added catalog_plant_anatomy table');
+      } catch (e) {
+        print('ℹ️ catalog_plant_anatomy may already exist: $e');
       }
     }
   }
@@ -374,7 +480,8 @@ class DatabaseService {
     final db = await database;
     final row = {
       'plant_id': habitat.plantId,
-      'known_coordinates': jsonEncode(habitat.knownCoordinates.map((e) => e.toJson()).toList()),
+      'known_coordinates':
+          jsonEncode(habitat.knownCoordinates.map((e) => e.toJson()).toList()),
       'region_names': jsonEncode(habitat.regionNames),
       'climate_notes': habitat.climateNotes,
     };
@@ -410,7 +517,8 @@ class DatabaseService {
   }
 
   /// Replaces all conditions (for sync from catalog_conditions).
-  Future<void> replaceConditionsFromSync(List<CatalogCondition> conditions) async {
+  Future<void> replaceConditionsFromSync(
+      List<CatalogCondition> conditions) async {
     final db = await database;
     await db.delete(_conditionsTable);
     for (var c in conditions) {
@@ -426,7 +534,8 @@ class DatabaseService {
   }
 
   /// Replaces all condition–plant links (for sync from catalog_condition_plants).
-  Future<void> replaceConditionPlantsFromSync(List<MapEntry<int, String>> pairs) async {
+  Future<void> replaceConditionPlantsFromSync(
+      List<MapEntry<int, String>> pairs) async {
     final db = await database;
     await db.delete(_conditionPlantsTable);
     for (var e in pairs) {
@@ -440,7 +549,8 @@ class DatabaseService {
   /// Returns all conditions from local DB (synced from Supabase), ordered by sort_order.
   Future<List<CatalogCondition>> getConditions() async {
     final db = await database;
-    final maps = await db.query(_conditionsTable, orderBy: 'sort_order ASC, id ASC');
+    final maps =
+        await db.query(_conditionsTable, orderBy: 'sort_order ASC, id ASC');
     return maps.map((row) => CatalogCondition.fromRow(row)).toList();
   }
 
@@ -456,8 +566,48 @@ class DatabaseService {
     return maps.map((m) => m['plant_id'] as String).toList();
   }
 
+  /// Replaces all plant anatomy rows (for sync from catalog_plant_anatomy). Full replace.
+  Future<void> replaceAnatomyFromSync(List<Map<String, dynamic>> rows) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete(_anatomyTable);
+      for (var row in rows) {
+        await txn.insert(_anatomyTable, {
+          'id': row['id'] as String? ?? '',
+          'plant_id': row['plant_id'] as String? ?? '',
+          'part_name': row['part_name'] as String? ?? '',
+          'svg_path': row['svg_path'] as String? ?? '',
+          'color_hex': row['color_hex'] as String? ?? '4CAF50',
+          'z_index': row['z_index'] is int
+              ? row['z_index'] as int
+              : int.tryParse(row['z_index'].toString()) ?? 0,
+          'is_interactive':
+              row['is_interactive'] == true || row['is_interactive'] == 1
+                  ? 1
+                  : 0,
+          'title': row['title'] as String? ?? '',
+          'description': row['description'] as String? ?? '',
+          'conditions': row['conditions'] is String
+              ? row['conditions'] as String
+              : jsonEncode(row['conditions'] ?? []),
+        });
+      }
+    });
+  }
+
+  /// Returns anatomy parts for a plant from local DB (synced from Supabase), ordered by z_index.
+  Future<List<Map<String, dynamic>>> getAnatomyForPlant(String plantId) async {
+    final db = await database;
+    return db.query(
+      _anatomyTable,
+      where: 'plant_id = ?',
+      whereArgs: [plantId],
+      orderBy: 'z_index ASC',
+    );
+  }
+
   static SafetyProfile _rowToSafetyProfile(Map<String, dynamic> row) {
-    final list = (String s) {
+    List<String> list(String s) {
       if (s.isEmpty || s == '[]') return <String>[];
       try {
         final decoded = jsonDecode(s) as List<dynamic>?;
@@ -465,7 +615,8 @@ class DatabaseService {
       } catch (_) {
         return <String>[];
       }
-    };
+    }
+
     return SafetyProfile(
       plantId: row['plant_id'] as String? ?? '',
       name: '',
@@ -473,7 +624,8 @@ class DatabaseService {
       pregnancyWarning: (row['pregnancy_warning'] as int?) == 1,
       knownSideEffects: list(row['known_side_effects'] as String? ?? '[]'),
       drugInteractions: list(row['drug_interactions'] as String? ?? '[]'),
-      strictContraindications: list(row['strict_contraindications'] as String? ?? '[]'),
+      strictContraindications:
+          list(row['strict_contraindications'] as String? ?? '[]'),
     );
   }
 
@@ -579,43 +731,43 @@ class DatabaseService {
       whereArgs: [map['id']],
     );
 
-    final preparationMethods = preparationMethodsMaps
-        .map((methodMap) {
-          List<PreparationStepDetail>? stepDetails;
-          final stepDetailsJson = methodMap['step_details_json'] as String?;
-          if (stepDetailsJson != null && stepDetailsJson.isNotEmpty) {
-            try {
-              final list = jsonDecode(stepDetailsJson) as List<dynamic>?;
-              if (list != null) {
-                stepDetails = list
-                    .map((e) => PreparationStepDetail.fromJson(e as Map<String, dynamic>))
-                    .toList();
-              }
-            } catch (_) {}
+    final preparationMethods = preparationMethodsMaps.map((methodMap) {
+      List<PreparationStepDetail>? stepDetails;
+      final stepDetailsJson = methodMap['step_details_json'] as String?;
+      if (stepDetailsJson != null && stepDetailsJson.isNotEmpty) {
+        try {
+          final list = jsonDecode(stepDetailsJson) as List<dynamic>?;
+          if (list != null) {
+            stepDetails = list
+                .map((e) =>
+                    PreparationStepDetail.fromJson(e as Map<String, dynamic>))
+                .toList();
           }
-          PreparationSchedule? schedule;
-          final scheduleJson = methodMap['schedule_json'] as String?;
-          if (scheduleJson != null && scheduleJson.isNotEmpty) {
-            try {
-              schedule = PreparationSchedule.fromJson(jsonDecode(scheduleJson) as Map<String, dynamic>);
-            } catch (_) {}
-          }
-          return PreparationMethod(
-            id: methodMap['id'] as String,
-            condition: methodMap['condition'] as String,
-            title: methodMap['title'] as String,
-            description: methodMap['description'] as String,
-            steps: (methodMap['steps'] as String).split('|'),
-            dosage: methodMap['dosage'] as String,
-            frequency: methodMap['frequency'] as String,
-            duration: methodMap['duration'] as String,
-            warnings: (methodMap['warnings'] as String).split('|'),
-            preparationType: methodMap['preparation_type'] as String,
-            stepDetails: stepDetails,
-            schedule: schedule,
-          );
-        })
-        .toList();
+        } catch (_) {}
+      }
+      PreparationSchedule? schedule;
+      final scheduleJson = methodMap['schedule_json'] as String?;
+      if (scheduleJson != null && scheduleJson.isNotEmpty) {
+        try {
+          schedule = PreparationSchedule.fromJson(
+              jsonDecode(scheduleJson) as Map<String, dynamic>);
+        } catch (_) {}
+      }
+      return PreparationMethod(
+        id: methodMap['id'] as String,
+        condition: methodMap['condition'] as String,
+        title: methodMap['title'] as String,
+        description: methodMap['description'] as String,
+        steps: (methodMap['steps'] as String).split('|'),
+        dosage: methodMap['dosage'] as String,
+        frequency: methodMap['frequency'] as String,
+        duration: methodMap['duration'] as String,
+        warnings: (methodMap['warnings'] as String).split('|'),
+        preparationType: methodMap['preparation_type'] as String,
+        stepDetails: stepDetails,
+        schedule: schedule,
+      );
+    }).toList();
 
     return Plant(
       id: map['id'],

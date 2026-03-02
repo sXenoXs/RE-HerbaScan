@@ -35,25 +35,31 @@ class _ConditionSearchScreenState extends State<ConditionSearchScreen>
 
   Future<void> _loadConditions() async {
     final list = await _conditionService.getConditions();
-    if (mounted) setState(() {
-      _conditions = list;
-      _loadingConditions = false;
-    });
+    if (mounted) {
+      setState(() {
+        _conditions = list;
+        _loadingConditions = false;
+      });
+    }
   }
 
   Future<void> _selectCondition(CatalogCondition condition) async {
     final plantProvider = Provider.of<PlantProvider>(context, listen: false);
-    final plantIds = await _conditionService.getPlantIdsForCondition(condition.id);
+    final plantIds =
+        await _conditionService.getPlantIdsForCondition(condition.id);
     List<Plant> plants;
     if (plantIds.isNotEmpty) {
-      plants = plantProvider.plants.where((p) => plantIds.contains(p.id)).toList();
+      plants =
+          plantProvider.plants.where((p) => plantIds.contains(p.id)).toList();
     } else {
       plants = plantProvider.getPlantsByCondition(condition.name);
     }
-    if (mounted) setState(() {
-      _selectedCondition = condition;
-      _filteredPlants = plants;
-    });
+    if (mounted) {
+      setState(() {
+        _selectedCondition = condition;
+        _filteredPlants = plants;
+      });
+    }
   }
 
   @override
@@ -165,7 +171,8 @@ class _ConditionSearchScreenState extends State<ConditionSearchScreen>
               color: color,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(getConditionIcon(c.iconKey), color: Colors.white, size: 24),
+            child: Icon(getConditionIcon(c.iconKey),
+                color: Colors.white, size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -309,7 +316,8 @@ class _ConditionSearchScreenState extends State<ConditionSearchScreen>
     }
 
     return ListView.builder(
-      key: PageStorageKey<String>('condition_search_plants_${_selectedCondition?.name ?? ''}'),
+      key: PageStorageKey<String>(
+          'condition_search_plants_${_selectedCondition?.name ?? ''}'),
       padding: const EdgeInsets.all(16),
       itemCount: _filteredPlants.length,
       itemBuilder: (context, index) {
