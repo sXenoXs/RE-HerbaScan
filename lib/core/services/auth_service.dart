@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:herbascan/core/config/supabase_config.dart';
 
@@ -92,17 +93,19 @@ class AuthService {
   /// Requires the delete-user Edge Function to be deployed (see supabase/README.md).
   /// After successful deletion the client session is invalid; the app should sign out.
   Future<void> deleteAccount() async {
-    final session = currentSession;
-    if (session == null) {
+    await _client.auth.refreshSession();
+    if (currentSession == null) {
       throw Exception('Not signed in');
     }
+    if (kDebugMode) {
+      debugPrint('[AuthService][deleteAccount] session present, using SDK auth');
+    }
     try {
-      final res = await _client.functions.invoke(
-        'delete-user',
-        headers: {
-          'Authorization': 'Bearer ${session.accessToken}',
-        },
-      );
+      // Let the Supabase client attach the session JWT automatically (do not pass Authorization header).
+      final res = await _client.functions.invoke('delete-user');
+      if (kDebugMode) {
+        debugPrint('[AuthService][deleteAccount] response status: ${res.status}, data: ${res.data}');
+      }
       if (res.status == 404) {
         throw Exception(
           'Delete account is not available: the delete-user function is not deployed. '
@@ -116,6 +119,9 @@ class AuthService {
         throw Exception(msg.toString());
       }
     } on FunctionException catch (e) {
+      if (kDebugMode) {
+        debugPrint('[AuthService][deleteAccount] FunctionException status: ${e.status}, details: ${e.details}');
+      }
       if (e.status == 404) {
         throw Exception(
           'Delete account is not available: the delete-user function is not deployed. '
@@ -129,22 +135,33 @@ class AuthService {
   /// Admin: delete another user. Caller must be admin. Invokes delete-user with body { user_id }.
   /// Client must delete the user's storage objects before calling this (see AdminUserService.deleteUser).
   Future<void> adminDeleteUser(String targetUserId) async {
-    final session = currentSession;
-    if (session == null) {
+    await _client.auth.refreshSession();
+    if (currentSession == null) {
       throw Exception('Not signed in');
     }
-    final res = await _client.functions.invoke(
-      'delete-user',
-      body: {'user_id': targetUserId},
-      headers: {
-        'Authorization': 'Bearer ${session.accessToken}',
-      },
-    );
-    if (res.status != 200) {
-      final msg = res.data != null
-          ? (res.data is Map ? (res.data as Map)['message'] ?? res.data.toString() : res.data.toString())
-          : 'Failed to delete user (${res.status})';
-      throw Exception(msg.toString());
+    if (kDebugMode) {
+      debugPrint('[AuthService][adminDeleteUser] targetUserId: $targetUserId, using SDK auth');
+    }
+    try {
+      // Let the Supabase client attach the session JWT automatically (do not pass Authorization header).
+      final res = await _client.functions.invoke(
+        'delete-user',
+        body: {'user_id': targetUserId},
+      );
+      if (kDebugMode) {
+        debugPrint('[AuthService][adminDeleteUser] response status: ${res.status}, data: ${res.data}');
+      }
+      if (res.status != 200) {
+        final msg = res.data != null
+            ? (res.data is Map ? (res.data as Map)['message'] ?? res.data.toString() : res.data.toString())
+            : 'Failed to delete user (${res.status})';
+        throw Exception(msg.toString());
+      }
+    } on FunctionException catch (e) {
+      if (kDebugMode) {
+        debugPrint('[AuthService][adminDeleteUser] FunctionException status: ${e.status}, details: ${e.details}');
+      }
+      rethrow;
     }
   }
 }

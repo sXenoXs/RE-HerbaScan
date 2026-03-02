@@ -1,18 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:provider/provider.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/models/plant.dart';
+import 'package:herbascan/core/models/plant_anatomy_part.dart';
 import 'package:herbascan/core/services/habitat_service.dart';
+import 'package:herbascan/core/providers/plant_provider.dart';
+import 'package:herbascan/core/widgets/anatomy_interactive_view.dart';
 import 'package:herbascan/core/widgets/contraindication_engine_widget.dart';
 import 'package:herbascan/features/scan/habitat_map_screen.dart';
 import 'package:herbascan/features/scan/preparation_instructions_screen.dart';
 
 class PlantDetailScreen extends StatefulWidget {
   final Plant plant;
+  /// If set, the tab at this index (0–3) is selected when the screen opens.
+  final int? initialTabIndex;
 
   const PlantDetailScreen({
     super.key,
     required this.plant,
+    this.initialTabIndex,
   });
 
   @override
@@ -26,7 +33,12 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    final index = widget.initialTabIndex;
+    _tabController = TabController(
+      length: 4,
+      vsync: this,
+      initialIndex: (index != null && index >= 0 && index < 4) ? index : 0,
+    );
   }
 
   @override
@@ -339,12 +351,57 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
   }
 
   Widget _buildMedicinalTab(ThemeData theme) {
+    final plantProvider = context.read<PlantProvider>();
     return CustomScrollView(
       slivers: [
         SliverPadding(
           padding: const EdgeInsets.all(16),
           sliver: SliverList(
             delegate: SliverChildListDelegate([
+              // Hero: 2D Interactive Plant Silhouette (when anatomy data exists)
+              FutureBuilder<List<PlantAnatomyPart>>(
+                future: plantProvider.getPlantAnatomy(widget.plant.id),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData || (snapshot.data!).isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  final parts = snapshot.data!;
+                  final l10n = AppLocalizations.of(context);
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          l10n.explorePlantParts,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          height: 400,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerLow,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: AnatomyInteractiveView(
+                            parts: parts,
+                            height: 400,
+                            onPartTapped: (part) => _showAnatomyPartBottomSheet(
+                              context,
+                              part,
+                              theme,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
               _buildSectionTitle('Medicinal Uses', theme),
               const SizedBox(height: 12),
               ...widget.plant.medicinalUses
@@ -359,6 +416,87 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
           ),
         ),
       ],
+    );
+  }
+
+  void _showAnatomyPartBottomSheet(
+    BuildContext context,
+    PlantAnatomyPart part,
+    ThemeData theme,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.5,
+          minChildSize: 0.3,
+          maxChildSize: 0.9,
+          builder: (ctx, scrollController) {
+            return Container(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(24),
+                  topRight: Radius.circular(24),
+                ),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(top: 12, bottom: 8),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView(
+                      controller: scrollController,
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                      children: [
+                        Text(
+                          part.title.isNotEmpty ? part.title : part.partName,
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (part.conditions.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 6,
+                            children: part.conditions
+                                .map((c) => Chip(
+                                      label: Text(c),
+                                      backgroundColor: theme.colorScheme.primaryContainer,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                    ))
+                                .toList(),
+                          ),
+                        ],
+                        if (part.description.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          Text(
+                            part.description,
+                            style: theme.textTheme.bodyMedium,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

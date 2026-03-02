@@ -10,10 +10,12 @@ class AdminConditionSearchScreen extends StatefulWidget {
   const AdminConditionSearchScreen({super.key});
 
   @override
-  State<AdminConditionSearchScreen> createState() => _AdminConditionSearchScreenState();
+  State<AdminConditionSearchScreen> createState() =>
+      _AdminConditionSearchScreenState();
 }
 
-class _AdminConditionSearchScreenState extends State<AdminConditionSearchScreen> {
+class _AdminConditionSearchScreenState
+    extends State<AdminConditionSearchScreen> {
   List<CatalogCondition> _conditions = [];
   Map<int, int> _plantCounts = {};
   bool _loading = true;
@@ -89,7 +91,8 @@ class _AdminConditionSearchScreenState extends State<AdminConditionSearchScreen>
       initialSortOrder: c.sortOrder,
     );
     if (result == null || !mounted) return;
-    final ok = await _admin.updateCatalogCondition(c.id,
+    final ok = await _admin.updateCatalogCondition(
+      c.id,
       name: result.name,
       iconKey: result.iconKey,
       colorHex: result.colorHex,
@@ -149,7 +152,8 @@ class _AdminConditionSearchScreenState extends State<AdminConditionSearchScreen>
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text('Delete', style: TextStyle(color: Theme.of(ctx).colorScheme.error)),
+            child: Text('Delete',
+                style: TextStyle(color: Theme.of(ctx).colorScheme.error)),
           ),
         ],
       ),
@@ -254,9 +258,11 @@ class _AdminConditionSearchScreenState extends State<AdminConditionSearchScreen>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.local_hospital_outlined, size: 64, color: Colors.grey),
+                    Icon(Icons.local_hospital_outlined,
+                        size: 64, color: Colors.grey),
                     SizedBox(height: 16),
-                    Text('No conditions yet. Tap "Seed defaults" to add the 15 default conditions.'),
+                    Text(
+                        'No conditions yet. Tap "Seed defaults" to add the 15 default conditions.'),
                   ],
                 ),
               ),
@@ -268,7 +274,8 @@ class _AdminConditionSearchScreenState extends State<AdminConditionSearchScreen>
                   final c = _conditions[index];
                   final count = _plantCounts[c.id] ?? 0;
                   return Card(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                     child: ListTile(
                       leading: Container(
                         padding: const EdgeInsets.all(8),
@@ -276,7 +283,8 @@ class _AdminConditionSearchScreenState extends State<AdminConditionSearchScreen>
                           color: c.color.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Icon(getConditionIcon(c.iconKey), color: c.color, size: 24),
+                        child: Icon(getConditionIcon(c.iconKey),
+                            color: c.color, size: 24),
                       ),
                       title: Row(
                         children: [
@@ -290,7 +298,8 @@ class _AdminConditionSearchScreenState extends State<AdminConditionSearchScreen>
                             const SizedBox(width: 8),
                             Chip(
                               label: const Text('Default'),
-                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
                               visualDensity: VisualDensity.compact,
                             ),
                           ],
@@ -312,7 +321,8 @@ class _AdminConditionSearchScreenState extends State<AdminConditionSearchScreen>
                               onPressed: () => _showEditCondition(c),
                             ),
                             IconButton(
-                              icon: Icon(Icons.delete, color: theme.colorScheme.error),
+                              icon: Icon(Icons.delete,
+                                  color: theme.colorScheme.error),
                               tooltip: 'Delete',
                               onPressed: () => _deleteCondition(c),
                             ),
@@ -384,7 +394,8 @@ class _ConditionFormDialogState extends State<_ConditionFormDialog> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.initialName);
-    _sortController = TextEditingController(text: widget.initialSortOrder.toString());
+    _sortController =
+        TextEditingController(text: widget.initialSortOrder.toString());
     _iconKey = widget.initialIconKey;
     _colorHex = widget.initialColorHex;
   }
@@ -399,13 +410,18 @@ class _ConditionFormDialogState extends State<_ConditionFormDialog> {
   void _submit() {
     final name = _nameController.text.trim();
     if (name.isEmpty) return;
-    final sortOrder = int.tryParse(_sortController.text) ?? widget.initialSortOrder;
-    Navigator.pop(context, _ConditionFormResult(
-      name: name,
-      iconKey: conditionIconRegistry.containsKey(_iconKey) ? _iconKey : 'healing',
-      colorHex: _colorHex.length >= 6 ? _colorHex : '6366F1',
-      sortOrder: sortOrder,
-    ));
+    final sortOrder =
+        int.tryParse(_sortController.text) ?? widget.initialSortOrder;
+    Navigator.pop(
+        context,
+        _ConditionFormResult(
+          name: name,
+          iconKey: conditionIconRegistry.containsKey(_iconKey)
+              ? _iconKey
+              : 'healing',
+          colorHex: _colorHex.length >= 6 ? _colorHex : '6366F1',
+          sortOrder: sortOrder,
+        ));
   }
 
   @override
@@ -427,22 +443,24 @@ class _ConditionFormDialogState extends State<_ConditionFormDialog> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: keys.contains(_iconKey) ? _iconKey : keys.first,
+              initialValue: keys.contains(_iconKey) ? _iconKey : keys.first,
               decoration: const InputDecoration(labelText: 'Icon'),
               isExpanded: true,
-              items: keys.map((k) => DropdownMenuItem(
-                value: k,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(conditionIconRegistry[k], size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(k, overflow: TextOverflow.ellipsis),
-                    ),
-                  ],
-                ),
-              )).toList(),
+              items: keys
+                  .map((k) => DropdownMenuItem(
+                        value: k,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(conditionIconRegistry[k], size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(k, overflow: TextOverflow.ellipsis),
+                            ),
+                          ],
+                        ),
+                      ))
+                  .toList(),
               onChanged: (v) => setState(() => _iconKey = v ?? _iconKey),
             ),
             const SizedBox(height: 16),
@@ -452,7 +470,9 @@ class _ConditionFormDialogState extends State<_ConditionFormDialog> {
               children: _colorPresets.map((preset) {
                 final hex = preset.$1;
                 final label = preset.$2;
-                final isSelected = _colorHex.toUpperCase().replaceAll('#', '') == hex.toUpperCase();
+                final isSelected =
+                    _colorHex.toUpperCase().replaceAll('#', '') ==
+                        hex.toUpperCase();
                 return ChoiceChip(
                   label: Text(label),
                   selected: isSelected,
@@ -535,7 +555,9 @@ class _PlantSelectorDialogState extends State<_PlantSelectorDialog> {
                 });
               },
               title: Text(p.commonName),
-              subtitle: Text(p.scientificName, style: const TextStyle(fontStyle: FontStyle.italic, fontSize: 12)),
+              subtitle: Text(p.scientificName,
+                  style: const TextStyle(
+                      fontStyle: FontStyle.italic, fontSize: 12)),
             );
           },
         ),

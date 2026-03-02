@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:herbascan/core/services/database_service.dart';
 import 'package:herbascan/core/services/plant_data_service.dart';
 import 'package:herbascan/core/models/plant.dart';
+import 'package:sqflite/sqflite.dart';
 
 /// Service to initialize and populate the database with plant data
 class DatabaseInitService {
@@ -72,31 +73,39 @@ class DatabaseInitService {
     }
   }
 
-  /// Insert plant with all its related data (medicinal uses, preparation methods)
+  /// Insert plant with all its related data (medicinal uses, preparation methods).
+  /// Uses REPLACE for the plant row so concurrent/retry runs do not hit UNIQUE constraint.
   Future<void> _insertPlantWithRelations(Plant plant) async {
     final db = await _databaseService.database;
 
-    // Start transaction to ensure all related data is inserted together
     await db.transaction((txn) async {
-      // Insert main plant record
-      await txn.insert('plants', {
-        'id': plant.id,
-        'common_name': plant.commonName,
-        'scientific_name': plant.scientificName,
-        'local_name': plant.localName,
-        'english_name': plant.englishName,
-        'family': plant.family,
-        'genus': plant.genus,
-        'species': plant.species,
-        'is_doh_approved': plant.isDOHApproved ? 1 : 0,
-        'morphology': plant.morphology,
-        'ecology': plant.ecology,
-        'habitat': plant.habitat,
-        'image_path': plant.imagePath,
-        'image_url': plant.imageUrl,
-        'created_at': plant.createdAt.toIso8601String(),
-        'updated_at': plant.updatedAt.toIso8601String(),
-      });
+      // Replace plant row (idempotent; avoids UNIQUE when refresh runs concurrently)
+      await txn.insert(
+        'plants',
+        {
+          'id': plant.id,
+          'common_name': plant.commonName,
+          'scientific_name': plant.scientificName,
+          'local_name': plant.localName,
+          'english_name': plant.englishName,
+          'family': plant.family,
+          'genus': plant.genus,
+          'species': plant.species,
+          'is_doh_approved': plant.isDOHApproved ? 1 : 0,
+          'morphology': plant.morphology,
+          'ecology': plant.ecology,
+          'habitat': plant.habitat,
+          'image_path': plant.imagePath,
+          'image_url': plant.imageUrl,
+          'created_at': plant.createdAt.toIso8601String(),
+          'updated_at': plant.updatedAt.toIso8601String(),
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+
+      // Remove existing relations so this insert is idempotent
+      await txn.delete('medicinal_uses', where: 'plant_id = ?', whereArgs: [plant.id]);
+      await txn.delete('preparation_methods', where: 'plant_id = ?', whereArgs: [plant.id]);
 
       // Insert medicinal uses
       for (var use in plant.medicinalUses) {

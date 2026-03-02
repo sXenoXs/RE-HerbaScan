@@ -1,0 +1,5 @@
+# Edge Function config. See: https://supabase.com/docs/guides/functions/function-configuration
+# delete-user: skip gateway JWT verification so the function can verify the token itself via JWKS
+# (Supabase's new asymmetric signing breaks gateway verification; we validate inside the function).
+[functions.delete-user]
+verify_jwt = false

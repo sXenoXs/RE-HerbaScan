@@ -29,7 +29,8 @@ class AdminPlantCatalogEditorScreen extends StatefulWidget {
 }
 
 class _AdminPlantCatalogEditorScreenState
-    extends State<AdminPlantCatalogEditorScreen> with SingleTickerProviderStateMixin {
+    extends State<AdminPlantCatalogEditorScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late Plant _plant;
   String? _climateNotes;
@@ -71,13 +72,9 @@ class _AdminPlantCatalogEditorScreenState
       defaultImagePath: widget.plant.imagePath,
     );
     var safety = await _adminService.getCatalogSafety(widget.plant.id);
-    if (safety == null) {
-      safety = await SafetyProfileService().getSafetyProfile(widget.plant);
-    }
+    safety ??= await SafetyProfileService().getSafetyProfile(widget.plant);
     var habitat = await _adminService.getCatalogHabitat(widget.plant.id);
-    if (habitat == null) {
-      habitat = await HabitatService().getHabitat(widget.plant);
-    }
+    habitat ??= await HabitatService().getHabitat(widget.plant);
     if (mounted) {
       setState(() {
         if (fromCatalog != null) _plant = fromCatalog;
@@ -100,7 +97,8 @@ class _AdminPlantCatalogEditorScreenState
 
   Future<void> _save() async {
     setState(() => _saving = true);
-    var ok = await _adminService.saveCatalogPlant(_plant, climateNotes: _climateNotes);
+    var ok = await _adminService.saveCatalogPlant(_plant,
+        climateNotes: _climateNotes);
     if (ok) {
       final safetyProfile = SafetyProfile(
         plantId: _plant.id,
@@ -125,12 +123,12 @@ class _AdminPlantCatalogEditorScreenState
     setState(() => _saving = false);
     if (mounted) {
       if (ok) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Saved to catalog')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Saved to catalog')));
         widget.onSaved();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Save failed')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Save failed')));
       }
     }
   }
@@ -165,11 +163,11 @@ class _AdminPlantCatalogEditorScreenState
           updatedAt: DateTime.now(),
         );
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Image uploaded. Tap Save to update catalog.')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Image uploaded. Tap Save to update catalog.')));
     } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Upload failed')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Upload failed')));
     }
   }
 
@@ -183,8 +181,12 @@ class _AdminPlantCatalogEditorScreenState
           'Existing catalog data will be overwritten.',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Seed')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Seed')),
         ],
       ),
     );
@@ -198,8 +200,8 @@ class _AdminPlantCatalogEditorScreenState
             const SnackBar(content: Text('Catalog seeded from defaults')));
         await _loadCatalog();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Seed failed')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Seed failed')));
       }
     }
   }
@@ -282,25 +284,36 @@ class _AdminPlantCatalogEditorScreenState
             label: const Text('Upload image'),
           ),
           const SizedBox(height: 24),
-          _textField('Common name', _plant.commonName, (v) => setState(() => _plant = _copyWith(commonName: v))),
-          _textField('Scientific name', _plant.scientificName, (v) => setState(() => _plant = _copyWith(scientificName: v))),
-          _textField('Local name', _plant.localName, (v) => setState(() => _plant = _copyWith(localName: v))),
-          _textField('English name', _plant.englishName, (v) => setState(() => _plant = _copyWith(englishName: v))),
-          _textField('Family', _plant.family, (v) => setState(() => _plant = _copyWith(family: v))),
-          _textField('Genus', _plant.genus, (v) => setState(() => _plant = _copyWith(genus: v))),
-          _textField('Species', _plant.species, (v) => setState(() => _plant = _copyWith(species: v))),
-          _textField('Morphology', _plant.morphology, (v) => setState(() => _plant = _copyWith(morphology: v)), maxLines: 4),
+          _textField('Common name', _plant.commonName,
+              (v) => setState(() => _plant = _copyWith(commonName: v))),
+          _textField('Scientific name', _plant.scientificName,
+              (v) => setState(() => _plant = _copyWith(scientificName: v))),
+          _textField('Local name', _plant.localName,
+              (v) => setState(() => _plant = _copyWith(localName: v))),
+          _textField('English name', _plant.englishName,
+              (v) => setState(() => _plant = _copyWith(englishName: v))),
+          _textField('Family', _plant.family,
+              (v) => setState(() => _plant = _copyWith(family: v))),
+          _textField('Genus', _plant.genus,
+              (v) => setState(() => _plant = _copyWith(genus: v))),
+          _textField('Species', _plant.species,
+              (v) => setState(() => _plant = _copyWith(species: v))),
+          _textField('Morphology', _plant.morphology,
+              (v) => setState(() => _plant = _copyWith(morphology: v)),
+              maxLines: 4),
           SwitchListTile(
             title: const Text('DOH approved'),
             value: _plant.isDOHApproved,
-            onChanged: (v) => setState(() => _plant = _copyWith(isDOHApproved: v)),
+            onChanged: (v) =>
+                setState(() => _plant = _copyWith(isDOHApproved: v)),
           ),
         ],
       ),
     );
   }
 
-  Widget _textField(String label, String value, void Function(String) onChanged, {int maxLines = 1}) {
+  Widget _textField(String label, String value, void Function(String) onChanged,
+      {int maxLines = 1}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: TextField(
@@ -359,13 +372,23 @@ class _AdminPlantCatalogEditorScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _textField('Ecology', _plant.ecology, (v) => setState(() => _plant = _copyWith(ecology: v)), maxLines: 4),
-          _textField('Habitat', _plant.habitat, (v) => setState(() => _plant = _copyWith(habitat: v)), maxLines: 4),
-          _textField('Climate notes (plant)', _climateNotes ?? '', (v) => setState(() => _climateNotes = v), maxLines: 3),
+          _textField('Ecology', _plant.ecology,
+              (v) => setState(() => _plant = _copyWith(ecology: v)),
+              maxLines: 4),
+          _textField('Habitat', _plant.habitat,
+              (v) => setState(() => _plant = _copyWith(habitat: v)),
+              maxLines: 4),
+          _textField('Climate notes (plant)', _climateNotes ?? '',
+              (v) => setState(() => _climateNotes = v),
+              maxLines: 3),
           const SizedBox(height: 20),
-          Text('Known habitat regions', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+          Text('Known habitat regions',
+              style: theme.textTheme.titleSmall
+                  ?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          Text('Coordinates (lat, lng)', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          Text('Coordinates (lat, lng)',
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
           ...List.generate(_habitatCoordinates.length, (i) {
             final pt = _habitatCoordinates[i];
             return Padding(
@@ -375,14 +398,18 @@ class _AdminPlantCatalogEditorScreenState
                   SizedBox(
                     width: 100,
                     child: TextField(
-                      decoration: const InputDecoration(isDense: true, labelText: 'Lat'),
+                      decoration: const InputDecoration(
+                          isDense: true, labelText: 'Lat'),
                       controller: TextEditingController(text: pt.lat.toString())
-                        ..selection = TextSelection.collapsed(offset: pt.lat.toString().length),
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        ..selection = TextSelection.collapsed(
+                            offset: pt.lat.toString().length),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
                       onChanged: (v) {
                         final n = double.tryParse(v);
                         if (n != null) {
-                          final list = List<HabitatPoint>.from(_habitatCoordinates);
+                          final list =
+                              List<HabitatPoint>.from(_habitatCoordinates);
                           list[i] = HabitatPoint(lat: n, lng: list[i].lng);
                           setState(() => _habitatCoordinates = list);
                         }
@@ -393,14 +420,18 @@ class _AdminPlantCatalogEditorScreenState
                   SizedBox(
                     width: 100,
                     child: TextField(
-                      decoration: const InputDecoration(isDense: true, labelText: 'Lng'),
+                      decoration: const InputDecoration(
+                          isDense: true, labelText: 'Lng'),
                       controller: TextEditingController(text: pt.lng.toString())
-                        ..selection = TextSelection.collapsed(offset: pt.lng.toString().length),
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        ..selection = TextSelection.collapsed(
+                            offset: pt.lng.toString().length),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
                       onChanged: (v) {
                         final n = double.tryParse(v);
                         if (n != null) {
-                          final list = List<HabitatPoint>.from(_habitatCoordinates);
+                          final list =
+                              List<HabitatPoint>.from(_habitatCoordinates);
                           list[i] = HabitatPoint(lat: list[i].lat, lng: n);
                           setState(() => _habitatCoordinates = list);
                         }
@@ -411,7 +442,9 @@ class _AdminPlantCatalogEditorScreenState
                     icon: const Icon(Icons.remove_circle_outline),
                     onPressed: () {
                       setState(() {
-                        _habitatCoordinates = List<HabitatPoint>.from(_habitatCoordinates)..removeAt(i);
+                        _habitatCoordinates =
+                            List<HabitatPoint>.from(_habitatCoordinates)
+                              ..removeAt(i);
                       });
                     },
                   ),
@@ -420,12 +453,16 @@ class _AdminPlantCatalogEditorScreenState
             );
           }),
           TextButton.icon(
-            onPressed: () => setState(() => _habitatCoordinates = List<HabitatPoint>.from(_habitatCoordinates)..add(const HabitatPoint(lat: 14.6, lng: 121.0))),
+            onPressed: () => setState(() => _habitatCoordinates =
+                List<HabitatPoint>.from(_habitatCoordinates)
+                  ..add(const HabitatPoint(lat: 14.6, lng: 121.0))),
             icon: const Icon(Icons.add),
             label: const Text('Add coordinate'),
           ),
           const SizedBox(height: 12),
-          Text('Region names', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          Text('Region names',
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
           ...List.generate(_habitatRegionNames.length, (i) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -433,9 +470,12 @@ class _AdminPlantCatalogEditorScreenState
                 children: [
                   Expanded(
                     child: TextField(
-                      decoration: const InputDecoration(isDense: true, hintText: 'Region name'),
-                      controller: TextEditingController(text: _habitatRegionNames[i])
-                        ..selection = TextSelection.collapsed(offset: _habitatRegionNames[i].length),
+                      decoration: const InputDecoration(
+                          isDense: true, hintText: 'Region name'),
+                      controller:
+                          TextEditingController(text: _habitatRegionNames[i])
+                            ..selection = TextSelection.collapsed(
+                                offset: _habitatRegionNames[i].length),
                       onChanged: (v) {
                         final list = List<String>.from(_habitatRegionNames);
                         list[i] = v;
@@ -446,7 +486,8 @@ class _AdminPlantCatalogEditorScreenState
                   IconButton(
                     icon: const Icon(Icons.remove_circle_outline),
                     onPressed: () {
-                      setState(() => _habitatRegionNames = List<String>.from(_habitatRegionNames)..removeAt(i));
+                      setState(() => _habitatRegionNames =
+                          List<String>.from(_habitatRegionNames)..removeAt(i));
                     },
                   ),
                 ],
@@ -454,12 +495,15 @@ class _AdminPlantCatalogEditorScreenState
             );
           }),
           TextButton.icon(
-            onPressed: () => setState(() => _habitatRegionNames = List<String>.from(_habitatRegionNames)..add('')),
+            onPressed: () => setState(() => _habitatRegionNames =
+                List<String>.from(_habitatRegionNames)..add('')),
             icon: const Icon(Icons.add),
             label: const Text('Add region'),
           ),
           const SizedBox(height: 12),
-          _textField('Habitat climate notes', _habitatClimateNotes, (v) => setState(() => _habitatClimateNotes = v), maxLines: 2),
+          _textField('Habitat climate notes', _habitatClimateNotes,
+              (v) => setState(() => _habitatClimateNotes = v),
+              maxLines: 2),
           if (hasHabitatData) ...[
             const SizedBox(height: 16),
             Card(
@@ -476,7 +520,8 @@ class _AdminPlantCatalogEditorScreenState
                   padding: const EdgeInsets.all(16),
                   child: Row(
                     children: [
-                      Icon(Icons.map_outlined, color: theme.colorScheme.primary, size: 24),
+                      Icon(Icons.map_outlined,
+                          color: theme.colorScheme.primary, size: 24),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
@@ -487,7 +532,8 @@ class _AdminPlantCatalogEditorScreenState
                           ),
                         ),
                       ),
-                      Icon(Icons.chevron_right, color: theme.colorScheme.onSurfaceVariant),
+                      Icon(Icons.chevron_right,
+                          color: theme.colorScheme.onSurfaceVariant),
                     ],
                   ),
                 ),
@@ -508,14 +554,18 @@ class _AdminPlantCatalogEditorScreenState
         children: [
           Row(
             children: [
-              Text('Medicinal uses (${uses.length})', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+              Text('Medicinal uses (${uses.length})',
+                  style: theme.textTheme.titleSmall
+                      ?.copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(width: 8),
               TextButton.icon(
                 onPressed: () async {
                   final added = await _showMedicinalUseDialog(null);
                   if (added != null && mounted) {
                     setState(() {
-                      _plant = _copyWith(medicinalUses: List<MedicinalUse>.from(uses)..add(added));
+                      _plant = _copyWith(
+                          medicinalUses: List<MedicinalUse>.from(uses)
+                            ..add(added));
                     });
                   }
                 },
@@ -537,7 +587,12 @@ class _AdminPlantCatalogEditorScreenState
                     Row(
                       children: [
                         Expanded(
-                          child: Text(use.condition.isEmpty ? '(No condition)' : use.condition, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                          child: Text(
+                              use.condition.isEmpty
+                                  ? '(No condition)'
+                                  : use.condition,
+                              style: theme.textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w600)),
                         ),
                         IconButton(
                           icon: const Icon(Icons.edit_outlined, size: 20),
@@ -545,17 +600,20 @@ class _AdminPlantCatalogEditorScreenState
                             final updated = await _showMedicinalUseDialog(use);
                             if (updated != null && mounted) {
                               setState(() {
-                                final list = List<MedicinalUse>.from(uses)..[i] = updated;
+                                final list = List<MedicinalUse>.from(uses)
+                                  ..[i] = updated;
                                 _plant = _copyWith(medicinalUses: list);
                               });
                             }
                           },
                         ),
                         IconButton(
-                          icon: const Icon(Icons.remove_circle_outline, size: 20),
+                          icon:
+                              const Icon(Icons.remove_circle_outline, size: 20),
                           onPressed: () {
                             setState(() {
-                              final list = List<MedicinalUse>.from(uses)..removeAt(i);
+                              final list = List<MedicinalUse>.from(uses)
+                                ..removeAt(i);
                               _plant = _copyWith(medicinalUses: list);
                             });
                           },
@@ -565,12 +623,17 @@ class _AdminPlantCatalogEditorScreenState
                     if (use.effectiveness.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
-                        child: Text(use.effectiveness, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                        child: Text(use.effectiveness,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant)),
                       ),
                     if (use.description.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
-                        child: Text(use.description, style: theme.textTheme.bodySmall, maxLines: 2, overflow: TextOverflow.ellipsis),
+                        child: Text(use.description,
+                            style: theme.textTheme.bodySmall,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis),
                       ),
                   ],
                 ),
@@ -598,14 +661,19 @@ class _AdminPlantCatalogEditorScreenState
         children: [
           Row(
             children: [
-              Text('Preparation methods (${methods.length})', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+              Text('Preparation methods (${methods.length})',
+                  style: theme.textTheme.titleSmall
+                      ?.copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(width: 8),
               TextButton.icon(
                 onPressed: () async {
                   final added = await _showPreparationMethodDialog(null);
                   if (added != null && mounted) {
                     setState(() {
-                      _plant = _copyWith(preparationMethods: List<PreparationMethod>.from(methods)..add(added));
+                      _plant = _copyWith(
+                          preparationMethods:
+                              List<PreparationMethod>.from(methods)
+                                ..add(added));
                     });
                   }
                 },
@@ -627,25 +695,35 @@ class _AdminPlantCatalogEditorScreenState
                     Row(
                       children: [
                         Expanded(
-                          child: Text(method.title.isEmpty ? '(No title)' : method.title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                          child: Text(
+                              method.title.isEmpty
+                                  ? '(No title)'
+                                  : method.title,
+                              style: theme.textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w600)),
                         ),
                         IconButton(
                           icon: const Icon(Icons.edit_outlined, size: 20),
                           onPressed: () async {
-                            final updated = await _showPreparationMethodDialog(method);
+                            final updated =
+                                await _showPreparationMethodDialog(method);
                             if (updated != null && mounted) {
                               setState(() {
-                                final list = List<PreparationMethod>.from(methods)..[i] = updated;
+                                final list =
+                                    List<PreparationMethod>.from(methods)
+                                      ..[i] = updated;
                                 _plant = _copyWith(preparationMethods: list);
                               });
                             }
                           },
                         ),
                         IconButton(
-                          icon: const Icon(Icons.remove_circle_outline, size: 20),
+                          icon:
+                              const Icon(Icons.remove_circle_outline, size: 20),
                           onPressed: () {
                             setState(() {
-                              final list = List<PreparationMethod>.from(methods)..removeAt(i);
+                              final list = List<PreparationMethod>.from(methods)
+                                ..removeAt(i);
                               _plant = _copyWith(preparationMethods: list);
                             });
                           },
@@ -655,12 +733,15 @@ class _AdminPlantCatalogEditorScreenState
                     if (method.condition.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
-                        child: Text('For: ${method.condition}', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                        child: Text('For: ${method.condition}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant)),
                       ),
                     if (method.preparationType.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(top: 2),
-                        child: Text(method.preparationType, style: theme.textTheme.bodySmall),
+                        child: Text(method.preparationType,
+                            style: theme.textTheme.bodySmall),
                       ),
                   ],
                 ),
@@ -672,10 +753,12 @@ class _AdminPlantCatalogEditorScreenState
     );
   }
 
-  Future<PreparationMethod?> _showPreparationMethodDialog(PreparationMethod? initial) async {
+  Future<PreparationMethod?> _showPreparationMethodDialog(
+      PreparationMethod? initial) async {
     return showDialog<PreparationMethod>(
       context: context,
-      builder: (ctx) => _PreparationMethodEditDialog(initial: initial, plantId: _plant.id),
+      builder: (ctx) =>
+          _PreparationMethodEditDialog(initial: initial, plantId: _plant.id),
     );
   }
 
@@ -696,15 +779,22 @@ class _AdminPlantCatalogEditorScreenState
             onChanged: (v) => setState(() => _pregnancyWarning = v),
           ),
           const SizedBox(height: 16),
-          _buildListSection(theme, 'Known side effects', _knownSideEffects, (list) => setState(() => _knownSideEffects = list)),
-          _buildListSection(theme, 'Drug interactions', _drugInteractions, (list) => setState(() => _drugInteractions = list)),
-          _buildListSection(theme, 'Strict contraindications', _strictContraindications, (list) => setState(() => _strictContraindications = list)),
+          _buildListSection(theme, 'Known side effects', _knownSideEffects,
+              (list) => setState(() => _knownSideEffects = list)),
+          _buildListSection(theme, 'Drug interactions', _drugInteractions,
+              (list) => setState(() => _drugInteractions = list)),
+          _buildListSection(
+              theme,
+              'Strict contraindications',
+              _strictContraindications,
+              (list) => setState(() => _strictContraindications = list)),
         ],
       ),
     );
   }
 
-  Widget _buildListSection(ThemeData theme, String title, List<String> items, void Function(List<String>) onChanged) {
+  Widget _buildListSection(ThemeData theme, String title, List<String> items,
+      void Function(List<String>) onChanged) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: Column(
@@ -712,7 +802,9 @@ class _AdminPlantCatalogEditorScreenState
         children: [
           Row(
             children: [
-              Text(title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+              Text(title,
+                  style: theme.textTheme.titleSmall
+                      ?.copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(width: 8),
               TextButton.icon(
                 onPressed: () {
@@ -739,7 +831,8 @@ class _AdminPlantCatalogEditorScreenState
                         hintText: 'Item',
                       ),
                       controller: TextEditingController(text: items[i])
-                        ..selection = TextSelection.collapsed(offset: (items[i]).length),
+                        ..selection =
+                            TextSelection.collapsed(offset: (items[i]).length),
                       maxLines: 1,
                       onChanged: (v) {
                         final list = List<String>.from(items);
@@ -772,7 +865,8 @@ class _MedicinalUseEditDialog extends StatefulWidget {
   final MedicinalUse? initial;
 
   @override
-  State<_MedicinalUseEditDialog> createState() => _MedicinalUseEditDialogState();
+  State<_MedicinalUseEditDialog> createState() =>
+      _MedicinalUseEditDialogState();
 }
 
 class _MedicinalUseEditDialogState extends State<_MedicinalUseEditDialog> {
@@ -788,7 +882,8 @@ class _MedicinalUseEditDialogState extends State<_MedicinalUseEditDialog> {
     super.initState();
     final u = widget.initial;
     _conditionController = TextEditingController(text: u?.condition ?? '');
-    _effectivenessController = TextEditingController(text: u?.effectiveness ?? '');
+    _effectivenessController =
+        TextEditingController(text: u?.effectiveness ?? '');
     _descriptionController = TextEditingController(text: u?.description ?? '');
     _dosageController = TextEditingController(text: u?.dosage ?? '');
     _durationController = TextEditingController(text: u?.duration ?? '');
@@ -810,7 +905,8 @@ class _MedicinalUseEditDialogState extends State<_MedicinalUseEditDialog> {
       condition: _conditionController.text.trim(),
       effectiveness: _effectivenessController.text.trim(),
       description: _descriptionController.text.trim(),
-      activeCompounds: _activeCompounds.where((s) => s.trim().isNotEmpty).toList(),
+      activeCompounds:
+          _activeCompounds.where((s) => s.trim().isNotEmpty).toList(),
       dosage: _dosageController.text.trim(),
       duration: _durationController.text.trim(),
     );
@@ -821,7 +917,8 @@ class _MedicinalUseEditDialogState extends State<_MedicinalUseEditDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return AlertDialog(
-      title: Text(widget.initial == null ? 'Add medicinal use' : 'Edit medicinal use'),
+      title: Text(
+          widget.initial == null ? 'Add medicinal use' : 'Edit medicinal use'),
       content: SingleChildScrollView(
         child: SizedBox(
           width: 400,
@@ -831,13 +928,15 @@ class _MedicinalUseEditDialogState extends State<_MedicinalUseEditDialog> {
             children: [
               TextField(
                 controller: _conditionController,
-                decoration: const InputDecoration(labelText: 'Condition (title)'),
+                decoration:
+                    const InputDecoration(labelText: 'Condition (title)'),
                 autofocus: true,
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: _effectivenessController,
-                decoration: const InputDecoration(labelText: 'Effectiveness (e.g. High – DOH approved)'),
+                decoration: const InputDecoration(
+                    labelText: 'Effectiveness (e.g. High – DOH approved)'),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -846,7 +945,11 @@ class _MedicinalUseEditDialogState extends State<_MedicinalUseEditDialog> {
                 maxLines: 3,
               ),
               const SizedBox(height: 12),
-              _buildStringListSection(theme, 'Active compounds', _activeCompounds, (list) => setState(() => _activeCompounds = list)),
+              _buildStringListSection(
+                  theme,
+                  'Active compounds',
+                  _activeCompounds,
+                  (list) => setState(() => _activeCompounds = list)),
               const SizedBox(height: 12),
               TextField(
                 controller: _dosageController,
@@ -862,19 +965,24 @@ class _MedicinalUseEditDialogState extends State<_MedicinalUseEditDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+        TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel')),
         FilledButton(onPressed: _save, child: const Text('Save')),
       ],
     );
   }
 
-  Widget _buildStringListSection(ThemeData theme, String title, List<String> items, void Function(List<String>) onChanged) {
+  Widget _buildStringListSection(ThemeData theme, String title,
+      List<String> items, void Function(List<String>) onChanged) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Text(title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+            Text(title,
+                style: theme.textTheme.titleSmall
+                    ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(width: 8),
             TextButton.icon(
               onPressed: () => onChanged(List<String>.from(items)..add('')),
@@ -891,9 +999,11 @@ class _MedicinalUseEditDialogState extends State<_MedicinalUseEditDialog> {
               children: [
                 Expanded(
                   child: TextField(
-                    decoration: const InputDecoration(isDense: true, hintText: 'Compound'),
+                    decoration: const InputDecoration(
+                        isDense: true, hintText: 'Compound'),
                     controller: TextEditingController(text: items[i])
-                      ..selection = TextSelection.collapsed(offset: items[i].length),
+                      ..selection =
+                          TextSelection.collapsed(offset: items[i].length),
                     onChanged: (v) {
                       final list = List<String>.from(items)..[i] = v;
                       onChanged(list);
@@ -902,7 +1012,8 @@ class _MedicinalUseEditDialogState extends State<_MedicinalUseEditDialog> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.remove_circle_outline, size: 20),
-                  onPressed: () => onChanged(List<String>.from(items)..removeAt(i)),
+                  onPressed: () =>
+                      onChanged(List<String>.from(items)..removeAt(i)),
                 ),
               ],
             ),
@@ -921,10 +1032,12 @@ class _PreparationMethodEditDialog extends StatefulWidget {
   final String plantId;
 
   @override
-  State<_PreparationMethodEditDialog> createState() => _PreparationMethodEditDialogState();
+  State<_PreparationMethodEditDialog> createState() =>
+      _PreparationMethodEditDialogState();
 }
 
-class _PreparationMethodEditDialogState extends State<_PreparationMethodEditDialog> {
+class _PreparationMethodEditDialogState
+    extends State<_PreparationMethodEditDialog> {
   late TextEditingController _idController;
   late TextEditingController _conditionController;
   late TextEditingController _titleController;
@@ -940,12 +1053,14 @@ class _PreparationMethodEditDialogState extends State<_PreparationMethodEditDial
   void initState() {
     super.initState();
     final m = widget.initial;
-    final id = m?.id ?? '${widget.plantId}-prep-${DateTime.now().millisecondsSinceEpoch}';
+    final id = m?.id ??
+        '${widget.plantId}-prep-${DateTime.now().millisecondsSinceEpoch}';
     _idController = TextEditingController(text: id);
     _conditionController = TextEditingController(text: m?.condition ?? '');
     _titleController = TextEditingController(text: m?.title ?? '');
     _descriptionController = TextEditingController(text: m?.description ?? '');
-    _preparationTypeController = TextEditingController(text: m?.preparationType ?? '');
+    _preparationTypeController =
+        TextEditingController(text: m?.preparationType ?? '');
     _dosageController = TextEditingController(text: m?.dosage ?? '');
     _frequencyController = TextEditingController(text: m?.frequency ?? '');
     _durationController = TextEditingController(text: m?.duration ?? '');
@@ -968,7 +1083,9 @@ class _PreparationMethodEditDialogState extends State<_PreparationMethodEditDial
 
   void _save() {
     final method = PreparationMethod(
-      id: _idController.text.trim().isEmpty ? '${widget.plantId}-prep-${DateTime.now().millisecondsSinceEpoch}' : _idController.text.trim(),
+      id: _idController.text.trim().isEmpty
+          ? '${widget.plantId}-prep-${DateTime.now().millisecondsSinceEpoch}'
+          : _idController.text.trim(),
       condition: _conditionController.text.trim(),
       title: _titleController.text.trim(),
       description: _descriptionController.text.trim(),
@@ -988,7 +1105,9 @@ class _PreparationMethodEditDialogState extends State<_PreparationMethodEditDial
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return AlertDialog(
-      title: Text(widget.initial == null ? 'Add preparation method' : 'Edit preparation method'),
+      title: Text(widget.initial == null
+          ? 'Add preparation method'
+          : 'Edit preparation method'),
       content: SingleChildScrollView(
         child: SizedBox(
           width: 450,
@@ -998,7 +1117,9 @@ class _PreparationMethodEditDialogState extends State<_PreparationMethodEditDial
             children: [
               TextField(
                 controller: _idController,
-                decoration: const InputDecoration(labelText: 'ID (unique)', helperText: 'Auto-generated if empty'),
+                decoration: const InputDecoration(
+                    labelText: 'ID (unique)',
+                    helperText: 'Auto-generated if empty'),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -1009,7 +1130,8 @@ class _PreparationMethodEditDialogState extends State<_PreparationMethodEditDial
               const SizedBox(height: 12),
               TextField(
                 controller: _conditionController,
-                decoration: const InputDecoration(labelText: 'Condition (e.g. Cough)'),
+                decoration:
+                    const InputDecoration(labelText: 'Condition (e.g. Cough)'),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -1020,10 +1142,12 @@ class _PreparationMethodEditDialogState extends State<_PreparationMethodEditDial
               const SizedBox(height: 12),
               TextField(
                 controller: _preparationTypeController,
-                decoration: const InputDecoration(labelText: 'Preparation type (e.g. decoction, tea)'),
+                decoration: const InputDecoration(
+                    labelText: 'Preparation type (e.g. decoction, tea)'),
               ),
               const SizedBox(height: 12),
-              _buildStringListSection(theme, 'Steps', _steps, (list) => setState(() => _steps = list)),
+              _buildStringListSection(theme, 'Steps', _steps,
+                  (list) => setState(() => _steps = list)),
               const SizedBox(height: 12),
               TextField(
                 controller: _dosageController,
@@ -1040,25 +1164,31 @@ class _PreparationMethodEditDialogState extends State<_PreparationMethodEditDial
                 decoration: const InputDecoration(labelText: 'Duration'),
               ),
               const SizedBox(height: 12),
-              _buildStringListSection(theme, 'Warnings', _warnings, (list) => setState(() => _warnings = list)),
+              _buildStringListSection(theme, 'Warnings', _warnings,
+                  (list) => setState(() => _warnings = list)),
             ],
           ),
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+        TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel')),
         FilledButton(onPressed: _save, child: const Text('Save')),
       ],
     );
   }
 
-  Widget _buildStringListSection(ThemeData theme, String title, List<String> items, void Function(List<String>) onChanged) {
+  Widget _buildStringListSection(ThemeData theme, String title,
+      List<String> items, void Function(List<String>) onChanged) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Text(title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+            Text(title,
+                style: theme.textTheme.titleSmall
+                    ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(width: 8),
             TextButton.icon(
               onPressed: () => onChanged(List<String>.from(items)..add('')),
@@ -1076,9 +1206,13 @@ class _PreparationMethodEditDialogState extends State<_PreparationMethodEditDial
               children: [
                 Expanded(
                   child: TextField(
-                    decoration: InputDecoration(isDense: true, hintText: title == 'Steps' ? 'Step instruction' : 'Item'),
+                    decoration: InputDecoration(
+                        isDense: true,
+                        hintText:
+                            title == 'Steps' ? 'Step instruction' : 'Item'),
                     controller: TextEditingController(text: items[i])
-                      ..selection = TextSelection.collapsed(offset: items[i].length),
+                      ..selection =
+                          TextSelection.collapsed(offset: items[i].length),
                     maxLines: title == 'Steps' ? 2 : 1,
                     onChanged: (v) {
                       final list = List<String>.from(items)..[i] = v;
@@ -1088,7 +1222,8 @@ class _PreparationMethodEditDialogState extends State<_PreparationMethodEditDial
                 ),
                 IconButton(
                   icon: const Icon(Icons.remove_circle_outline, size: 20),
-                  onPressed: () => onChanged(List<String>.from(items)..removeAt(i)),
+                  onPressed: () =>
+                      onChanged(List<String>.from(items)..removeAt(i)),
                 ),
               ],
             ),
