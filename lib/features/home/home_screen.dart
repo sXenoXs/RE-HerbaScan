@@ -12,7 +12,9 @@ import 'package:herbascan/core/models/scan_result.dart';
 import 'dart:io';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, this.showUnauthorizedSnackBar = false});
+
+  final bool showUnauthorizedSnackBar;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -26,6 +28,15 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.showUnauthorizedSnackBar) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Unauthorized access.')),
+          );
+        }
+      });
+    }
     _screens = [
       HomeDashboard(onNavigate: (index) {
         setState(() {

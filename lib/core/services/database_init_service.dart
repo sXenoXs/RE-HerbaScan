@@ -93,6 +93,7 @@ class DatabaseInitService {
         'ecology': plant.ecology,
         'habitat': plant.habitat,
         'image_path': plant.imagePath,
+        'image_url': plant.imageUrl,
         'created_at': plant.createdAt.toIso8601String(),
         'updated_at': plant.updatedAt.toIso8601String(),
       });

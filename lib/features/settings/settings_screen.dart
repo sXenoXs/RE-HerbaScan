@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:herbascan/core/providers/app_provider.dart';
 import 'package:herbascan/core/providers/auth_provider.dart';
@@ -8,7 +9,6 @@ import 'package:herbascan/core/providers/plant_provider.dart';
 import 'package:herbascan/features/auth/login_screen.dart';
 import 'package:herbascan/features/auth/change_password_screen.dart';
 import 'package:herbascan/features/auth/change_email_screen.dart';
-import 'package:herbascan/features/admin/admin_dashboard_screen.dart';
 import 'package:herbascan/core/widgets/offline_indicator.dart';
 import 'package:herbascan/features/offline/offline_demo_screen.dart';
 import 'package:herbascan/features/help/help_tutorial_screen.dart';
@@ -423,11 +423,7 @@ class SettingsScreen extends StatelessWidget {
                   subtitle: const Text('Admin – approve or delete user scans'),
                   trailing: const Icon(Icons.arrow_forward_ios),
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (context) => const AdminDashboardScreen(),
-                      ),
-                    );
+                    context.push('/admin');
                   },
                 ),
               ],

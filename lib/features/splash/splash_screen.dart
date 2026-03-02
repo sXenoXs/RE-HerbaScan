@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:herbascan/core/providers/app_provider.dart';
 import 'package:herbascan/core/providers/language_provider.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
-import 'package:herbascan/features/home/home_screen.dart';
-import 'package:herbascan/features/onboarding/onboarding_screen.dart';
 import 'package:herbascan/core/services/performance_monitor.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -61,15 +60,10 @@ class _SplashScreenState extends State<SplashScreen>
 
     if (mounted) {
       final appProvider = Provider.of<AppProvider>(context, listen: false);
-
       if (appProvider.isFirstLaunch) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const OnboardingScreen()),
-        );
+        context.go('/onboarding');
       } else {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-        );
+        context.go('/home');
       }
     }
   }

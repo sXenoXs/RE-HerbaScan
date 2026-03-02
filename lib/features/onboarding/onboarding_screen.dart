@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:herbascan/core/providers/app_provider.dart';
-import 'package:herbascan/features/home/home_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -76,9 +76,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     await appProvider.setFirstLaunchCompleted();
 
     if (mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-      );
+      context.go('/home');
     }
   }
 

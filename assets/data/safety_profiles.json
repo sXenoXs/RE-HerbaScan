@@ -429,7 +429,7 @@
     }
   },
   "TubaTuba": {
-    "plant_id": "tubatuba-001",
+    "plant_id": "tuba-tuba-001",
     "name": "Tuba-tuba",
     "safety_profile": {
       "is_generally_safe": false,

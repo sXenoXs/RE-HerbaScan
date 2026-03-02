@@ -19,6 +19,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   bool _loading = true;
   String? _error;
 
+  /// When true, show only pending scans (Image Review pipeline). When false, show all.
+  bool _pendingOnly = true;
+
   @override
   void initState() {
     super.initState();
@@ -31,7 +34,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       _error = null;
     });
     try {
-      final list = await HerbariumService().getAdminScans();
+      final list = await HerbariumService().getAdminScans(
+        statusFilter: _pendingOnly ? 'pending' : null,
+      );
       if (mounted) {
         setState(() {
           _scans = list;
@@ -51,6 +56,49 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Future<void> _updateStatus(CloudScan scan, String status) async {
     final ok = await HerbariumService().updateScanStatus(scan.id, status);
     if (ok && mounted) _load();
+  }
+
+  void _showImageDialog(BuildContext context, String imageUrl) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => Dialog(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.sizeOf(context).width * 0.9,
+            maxHeight: MediaQuery.sizeOf(context).height * 0.9,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Full resolution – pinch to zoom'),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+              ),
+              Flexible(
+                child: InteractiveViewer(
+                  minScale: 0.5,
+                  maxScale: 4.0,
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 64),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _deleteScan(CloudScan scan) async {
@@ -93,66 +141,109 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Review submissions'),
+        automaticallyImplyLeading: false,
+        title: const SizedBox.shrink(),
         actions: [
+          SegmentedButton<bool>(
+            segments: const [
+              ButtonSegment(value: true, label: Text('Pending'), icon: Icon(Icons.pending_outlined)),
+              ButtonSegment(value: false, label: Text('All'), icon: Icon(Icons.list)),
+            ],
+            selected: {_pendingOnly},
+            onSelectionChanged: (Set<bool> sel) {
+              setState(() => _pendingOnly = sel.first);
+              _load();
+            },
+            style: ButtonStyle(
+              backgroundColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {
+                if (states.contains(WidgetState.selected)) {
+                  return Colors.green.shade700;
+                }
+                return null;
+              }),
+              foregroundColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {
+                if (states.contains(WidgetState.selected)) {
+                  return Colors.white;
+                }
+                return null;
+              }),
+            ),
+          ),
+          const SizedBox(width: 8),
           IconButton(icon: const Icon(Icons.refresh), onPressed: _load),
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(_error!, style: theme.textTheme.bodyMedium),
-                        const SizedBox(height: 16),
-                        FilledButton(
-                            onPressed: _load, child: const Text('Retry')),
-                      ],
-                    ),
-                  ),
-                )
-              : _scans.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.inbox_outlined,
-                              size: 64, color: theme.colorScheme.outline),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No submissions yet',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              color:
-                                  theme.colorScheme.onSurface.withOpacity(0.6),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text(
+              'Review submissions',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : _error != null
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(_error!, style: theme.textTheme.bodyMedium),
+                              const SizedBox(height: 16),
+                              FilledButton(
+                                  onPressed: _load, child: const Text('Retry')),
+                            ],
+                          ),
+                        ),
+                      )
+                    : _scans.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.inbox_outlined,
+                                    size: 64, color: theme.colorScheme.outline),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'No submissions yet',
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    color:
+                                        theme.colorScheme.onSurface.withOpacity(0.6),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : RefreshIndicator(
+                            onRefresh: _load,
+                            child: ListView.builder(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              itemCount: _scans.length,
+                              itemBuilder: (context, index) {
+                                final scan = _scans[index];
+                                return _buildScanTile(context, theme, scan);
+                              },
                             ),
                           ),
-                        ],
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _load,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _scans.length,
-                        itemBuilder: (context, index) {
-                          final scan = _scans[index];
-                          return _buildScanTile(context, theme, scan);
-                        },
-                      ),
-                    ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildScanTile(BuildContext context, ThemeData theme, CloudScan scan) {
     final dateFormat = DateFormat('MMM dd, yyyy • HH:mm');
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 16),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -160,20 +251,23 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (scan.imageUrl != null && scan.imageUrl!.isNotEmpty)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      scan.imageUrl!,
-                      width: 80,
-                      height: 80,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Icon(Icons.eco,
-                          size: 48, color: theme.colorScheme.outline),
+                  GestureDetector(
+                    onTap: () => _showImageDialog(context, scan.imageUrl!),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        scan.imageUrl!,
+                        width: 80,
+                        height: 80,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Icon(Icons.eco,
+                            size: 48, color: theme.colorScheme.outline),
+                      ),
                     ),
                   )
                 else
                   Icon(Icons.eco, size: 48, color: theme.colorScheme.outline),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -183,14 +277,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         style: theme.textTheme.titleMedium
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       Text(
                         dateFormat.format(scan.scanDate),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurface.withOpacity(0.6),
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       Chip(
                         label: Text(scan.status),
                         padding: EdgeInsets.zero,
@@ -201,10 +295,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: 10,
+              runSpacing: 10,
               children: [
                 if (scan.status != 'approved')
                   FilledButton.icon(

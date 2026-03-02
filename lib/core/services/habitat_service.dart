@@ -3,15 +3,17 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:herbascan/core/models/plant.dart';
 import 'package:herbascan/core/models/plant_habitat.dart';
+import 'package:herbascan/core/services/database_service.dart';
 import 'package:herbascan/core/services/error_logger.dart';
 
 /// Single source of truth for static habitat data (Static Habitat Heatmap).
-/// Loads from assets/data/plant_habitats.json; no third-party location API.
+/// Resolves from SQLite first (synced from catalog_habitat); if missing, falls back to assets/data/plant_habitats.json.
 class HabitatService {
   static final HabitatService _instance = HabitatService._internal();
   factory HabitatService() => _instance;
   HabitatService._internal();
 
+  final DatabaseService _db = DatabaseService();
   Map<String, PlantHabitat>? _byPlantId;
 
   Future<void> _ensureLoaded() async {
@@ -52,10 +54,19 @@ class HabitatService {
   }
 
   /// Get habitat data by plant id (e.g. lagundi-001).
+  /// SQLite first (synced from Supabase), then asset fallback.
   Future<PlantHabitat?> getHabitatByPlantId(String plantId) async {
     if (plantId.isEmpty) {
       if (kDebugMode) debugPrint('[HabitatService] getHabitatByPlantId: plantId is empty');
       return null;
+    }
+    final fromDb = await _db.getPlantHabitat(plantId);
+    if (fromDb != null) {
+      if (kDebugMode) {
+        debugPrint(
+            '[HabitatService] Found habitat for "$plantId" from DB: coords=${fromDb.knownCoordinates.length}, regions=${fromDb.regionNames.length}');
+      }
+      return fromDb;
     }
     await _ensureLoaded();
     final habitat = _byPlantId?[plantId];

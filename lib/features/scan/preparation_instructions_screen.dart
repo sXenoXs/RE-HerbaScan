@@ -178,91 +178,19 @@ class _PreparationInstructionsScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Preparation Instructions'),
+        title: Text(AppLocalizations.of(context).preparationGuide),
         elevation: 0,
       ),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header Card
-            Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    theme.colorScheme.primary,
-                    theme.colorScheme.primaryContainer,
-                  ],
-                ),
-              ),
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    plant.commonName,
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    plant.scientificName,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: Colors.white.withOpacity(0.9),
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Condition Badge
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF48BB78), // Vibrant green
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF48BB78).withOpacity(0.3),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.medical_services_outlined,
-                          size: 18,
-                          color: Colors.white,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'For ${preparationMethod.condition}',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Title Section
+                  // Title (H1) – confirms user opened the right recipe
                   Text(
                     preparationMethod.title,
                     style: theme.textTheme.titleLarge?.copyWith(
@@ -297,17 +225,6 @@ class _PreparationInstructionsScreenState
                   ),
 
                   const SizedBox(height: 16),
-
-                  // Description
-                  Text(
-                    preparationMethod.description,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      height: 1.5,
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
 
                   // Steps Section (interactive checklist)
                   _buildSectionHeader(
@@ -375,51 +292,61 @@ class _PreparationInstructionsScreenState
 
                   const SizedBox(height: 24),
 
-                  // Dosage Information
-                  _buildInfoCard(
-                    context,
-                    'Dosage',
-                    preparationMethod.dosage,
-                    const Color(0xFF6366F1), // Vibrant indigo/purple
-                    Colors.white,
-                    Icons.medication_outlined,
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Frequency Information
-                  _buildInfoCard(
-                    context,
-                    'Frequency',
-                    preparationMethod.frequency,
-                    const Color(0xFF48BB78), // Vibrant green
-                    Colors.white,
-                    Icons.schedule_outlined,
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Duration Information
-                  _buildInfoCard(
-                    context,
-                    'Duration',
-                    preparationMethod.duration,
-                    const Color(0xFF38A169), // Darker green
-                    Colors.white,
-                    Icons.calendar_today_outlined,
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Add Schedule to Device Calendar
-                  FilledButton.icon(
-                    onPressed: () => _addScheduleToCalendar(context),
-                    icon: const Icon(Icons.calendar_today, size: 20),
-                    label: Text(
-                        AppLocalizations.of(context).addScheduleToCalendar),
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 14),
+                  // Unified Regimen card (Dosage, Frequency, Duration + Calendar button)
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: theme.colorScheme.outline.withOpacity(0.2),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            Icons.medication_outlined,
+                            color: theme.colorScheme.primary,
+                          ),
+                          title: Text('Dosage'),
+                          subtitle: Text(preparationMethod.dosage),
+                        ),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            Icons.schedule_outlined,
+                            color: theme.colorScheme.primary,
+                          ),
+                          title: Text('Frequency'),
+                          subtitle: Text(preparationMethod.frequency),
+                        ),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            Icons.calendar_today_outlined,
+                            color: theme.colorScheme.primary,
+                          ),
+                          title: Text('Duration'),
+                          subtitle: Text(preparationMethod.duration),
+                        ),
+                        const Divider(height: 24),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton.icon(
+                            onPressed: () => _addScheduleToCalendar(context),
+                            icon: const Icon(Icons.calendar_today, size: 20),
+                            label: Text(
+                                AppLocalizations.of(context).addScheduleToCalendar),
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 14),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -435,11 +362,10 @@ class _PreparationInstructionsScreenState
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color:
-                            theme.colorScheme.errorContainer.withOpacity(0.3),
+                        color: const Color(0xFF6B2D2D),
                         border: Border.all(
-                          color: theme.colorScheme.error.withOpacity(0.5),
-                          width: 2,
+                          color: theme.colorScheme.error.withOpacity(0.6),
+                          width: 1,
                         ),
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -454,14 +380,14 @@ class _PreparationInstructionsScreenState
                                 Icon(
                                   Icons.warning_amber_rounded,
                                   size: 20,
-                                  color: theme.colorScheme.error,
+                                  color: Colors.white,
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
                                     warning,
                                     style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.onErrorContainer,
+                                      color: Colors.white,
                                       height: 1.4,
                                     ),
                                   ),
@@ -525,38 +451,6 @@ class _PreparationInstructionsScreenState
                     const SizedBox(height: 24),
                   ],
 
-                  // Medical Disclaimer
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest
-                          .withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          Icons.local_hospital,
-                          size: 20,
-                          color: theme.colorScheme.primary,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Always consult with a healthcare professional before using herbal remedies, especially if you are pregnant, nursing, taking medications, or have existing medical conditions.',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                              height: 1.5,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
                 ],
               ),
             ),
@@ -703,66 +597,6 @@ class _PreparationInstructionsScreenState
                     ),
             ),
           ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoCard(
-    BuildContext context,
-    String label,
-    String value,
-    Color bgColor,
-    Color textColor,
-    IconData icon,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: bgColor.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            size: 28,
-            color: textColor,
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: textColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        letterSpacing: 0.3,
-                      ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  value,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: textColor,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        height: 1.4,
-                      ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );

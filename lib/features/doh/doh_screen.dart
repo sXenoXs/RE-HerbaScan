@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/providers/plant_provider.dart';
 import 'package:herbascan/core/models/plant.dart';
+import 'package:herbascan/core/widgets/plant_image.dart';
 import 'package:herbascan/features/scan/plant_detail_screen.dart';
 import 'package:herbascan/core/services/usage_analytics.dart';
 
@@ -267,15 +268,11 @@ class _DOHScreenState extends State<DOHScreen> {
                   Container(
                     width: double.infinity,
                     color: theme.colorScheme.surfaceContainerHighest,
-                    child: plant.imagePath.isNotEmpty
-                        ? Image.asset(
-                            plant.imagePath,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return _buildPlaceholderImage(theme);
-                            },
-                          )
-                        : _buildPlaceholderImage(theme),
+                    child: PlantImage(
+                      plant: plant,
+                      fit: BoxFit.cover,
+                      errorWidget: (_, __, ___) => _buildPlaceholderImage(theme),
+                    ),
                   ),
                   // DOH Badge
                   Positioned(

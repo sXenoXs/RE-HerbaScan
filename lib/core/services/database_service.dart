@@ -1,7 +1,10 @@
 import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:herbascan/core/models/catalog_condition.dart';
 import 'package:herbascan/core/models/plant.dart';
+import 'package:herbascan/core/models/plant_habitat.dart';
+import 'package:herbascan/core/models/safety_profile.dart';
 import 'package:herbascan/core/models/scan_result.dart';
 
 /// Local SQLite DB for plants and scan history. Catalog rule: plant catalog is 1-to-1
@@ -9,13 +12,17 @@ import 'package:herbascan/core/models/scan_result.dart';
 class DatabaseService {
   static Database? _database;
   static const String _databaseName = 'herbascan.db';
-  static const int _databaseVersion = 3;
+  static const int _databaseVersion = 6;
 
   // Table names
   static const String _plantsTable = 'plants';
   static const String _scanHistoryTable = 'scan_history';
   static const String _medicinalUsesTable = 'medicinal_uses';
   static const String _preparationMethodsTable = 'preparation_methods';
+  static const String _safetyProfilesTable = 'safety_profiles';
+  static const String _plantHabitatsTable = 'plant_habitats';
+  static const String _conditionsTable = 'catalog_conditions';
+  static const String _conditionPlantsTable = 'catalog_condition_plants';
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -52,6 +59,7 @@ class DatabaseService {
         ecology TEXT NOT NULL,
         habitat TEXT NOT NULL,
         image_path TEXT NOT NULL,
+        image_url TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       )
@@ -108,6 +116,32 @@ class DatabaseService {
       )
     ''');
 
+    // Create safety_profiles table (synced from catalog_safety)
+    await db.execute('''
+      CREATE TABLE $_safetyProfilesTable (
+        plant_id TEXT PRIMARY KEY,
+        is_generally_safe INTEGER NOT NULL DEFAULT 1,
+        pregnancy_warning INTEGER NOT NULL DEFAULT 0,
+        known_side_effects TEXT NOT NULL DEFAULT '[]',
+        drug_interactions TEXT NOT NULL DEFAULT '[]',
+        strict_contraindications TEXT NOT NULL DEFAULT '[]'
+      )
+    ''');
+    await db.execute(
+        'CREATE INDEX idx_safety_profiles_plant ON $_safetyProfilesTable (plant_id)');
+
+    // Create plant_habitats table (synced from catalog_habitat)
+    await db.execute('''
+      CREATE TABLE $_plantHabitatsTable (
+        plant_id TEXT PRIMARY KEY,
+        known_coordinates TEXT NOT NULL DEFAULT '[]',
+        region_names TEXT NOT NULL DEFAULT '[]',
+        climate_notes TEXT NOT NULL DEFAULT ''
+      )
+    ''');
+    await db.execute(
+        'CREATE INDEX idx_plant_habitats_plant ON $_plantHabitatsTable (plant_id)');
+
     // Create indexes
     await db.execute(
         'CREATE INDEX idx_plants_doh ON $_plantsTable (is_doh_approved)');
@@ -143,12 +177,333 @@ class DatabaseService {
         print('ℹ️ preparation_methods columns may already exist: $e');
       }
     }
+    if (oldVersion < 4) {
+      try {
+        await db.execute(
+            'ALTER TABLE $_plantsTable ADD COLUMN image_url TEXT');
+        print('✅ Added image_url to plants table');
+      } catch (e) {
+        print('ℹ️ image_url column may already exist: $e');
+      }
+    }
+    if (oldVersion < 5) {
+      try {
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS $_safetyProfilesTable (
+            plant_id TEXT PRIMARY KEY,
+            is_generally_safe INTEGER NOT NULL DEFAULT 1,
+            pregnancy_warning INTEGER NOT NULL DEFAULT 0,
+            known_side_effects TEXT NOT NULL DEFAULT '[]',
+            drug_interactions TEXT NOT NULL DEFAULT '[]',
+            strict_contraindications TEXT NOT NULL DEFAULT '[]'
+          )
+        ''');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_safety_profiles_plant ON $_safetyProfilesTable (plant_id)');
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS $_plantHabitatsTable (
+            plant_id TEXT PRIMARY KEY,
+            known_coordinates TEXT NOT NULL DEFAULT '[]',
+            region_names TEXT NOT NULL DEFAULT '[]',
+            climate_notes TEXT NOT NULL DEFAULT ''
+          )
+        ''');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_plant_habitats_plant ON $_plantHabitatsTable (plant_id)');
+        print('✅ Added safety_profiles and plant_habitats tables');
+      } catch (e) {
+        print('ℹ️ safety_profiles/plant_habitats may already exist: $e');
+      }
+    }
+    if (oldVersion < 6) {
+      try {
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS $_conditionsTable (
+            id INTEGER PRIMARY KEY,
+            name TEXT NOT NULL,
+            icon_key TEXT NOT NULL DEFAULT 'healing',
+            color_hex TEXT NOT NULL DEFAULT 'FF6366F1',
+            is_default INTEGER NOT NULL DEFAULT 0,
+            sort_order INTEGER NOT NULL DEFAULT 0
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS $_conditionPlantsTable (
+            condition_id INTEGER NOT NULL,
+            plant_id TEXT NOT NULL,
+            PRIMARY KEY (condition_id, plant_id),
+            FOREIGN KEY (plant_id) REFERENCES $_plantsTable (id)
+          )
+        ''');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_condition_plants_plant ON $_conditionPlantsTable (plant_id)');
+        print('✅ Added catalog_conditions and catalog_condition_plants tables');
+      } catch (e) {
+        print('ℹ️ catalog_conditions/condition_plants may already exist: $e');
+      }
+    }
   }
 
   // Plant operations
   Future<void> insertPlant(Plant plant) async {
     final db = await database;
-    await db.insert(_plantsTable, plant.toJson());
+    await db.insert(_plantsTable, _plantToRow(plant));
+  }
+
+  /// Converts Plant to a row map with snake_case keys for DB.
+  Map<String, dynamic> _plantToRow(Plant plant) {
+    return {
+      'id': plant.id,
+      'common_name': plant.commonName,
+      'scientific_name': plant.scientificName,
+      'local_name': plant.localName,
+      'english_name': plant.englishName,
+      'family': plant.family,
+      'genus': plant.genus,
+      'species': plant.species,
+      'is_doh_approved': plant.isDOHApproved ? 1 : 0,
+      'morphology': plant.morphology,
+      'ecology': plant.ecology,
+      'habitat': plant.habitat,
+      'image_path': plant.imagePath,
+      'image_url': plant.imageUrl,
+      'created_at': plant.createdAt.toIso8601String(),
+      'updated_at': plant.updatedAt.toIso8601String(),
+    };
+  }
+
+  Future<void> deleteMedicinalUsesForPlant(String plantId) async {
+    final db = await database;
+    await db.delete(
+      _medicinalUsesTable,
+      where: 'plant_id = ?',
+      whereArgs: [plantId],
+    );
+  }
+
+  Future<void> deletePreparationMethodsForPlant(String plantId) async {
+    final db = await database;
+    await db.delete(
+      _preparationMethodsTable,
+      where: 'plant_id = ?',
+      whereArgs: [plantId],
+    );
+  }
+
+  /// Replaces a plant and its relations (for sync from Supabase).
+  Future<void> replacePlantFromSync(Plant plant) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      final row = _plantToRow(plant);
+      final count = await txn.update(
+        _plantsTable,
+        row,
+        where: 'id = ?',
+        whereArgs: [plant.id],
+      );
+      if (count == 0) {
+        await txn.insert(_plantsTable, row);
+      }
+      await txn.delete(
+        _medicinalUsesTable,
+        where: 'plant_id = ?',
+        whereArgs: [plant.id],
+      );
+      await txn.delete(
+        _preparationMethodsTable,
+        where: 'plant_id = ?',
+        whereArgs: [plant.id],
+      );
+      for (var use in plant.medicinalUses) {
+        await txn.insert(_medicinalUsesTable, {
+          'plant_id': plant.id,
+          'condition': use.condition,
+          'description': use.description,
+          'effectiveness': use.effectiveness,
+          'active_compounds': use.activeCompounds.join(','),
+          'dosage': use.dosage,
+          'duration': use.duration,
+        });
+      }
+      for (var method in plant.preparationMethods) {
+        final map = <String, dynamic>{
+          'id': method.id,
+          'plant_id': plant.id,
+          'condition': method.condition,
+          'title': method.title,
+          'description': method.description,
+          'steps': method.steps.join('|'),
+          'dosage': method.dosage,
+          'frequency': method.frequency,
+          'duration': method.duration,
+          'warnings': method.warnings.join('|'),
+          'preparation_type': method.preparationType,
+        };
+        if (method.stepDetails != null && method.stepDetails!.isNotEmpty) {
+          map['step_details_json'] =
+              jsonEncode(method.stepDetails!.map((s) => s.toJson()).toList());
+        }
+        if (method.schedule != null) {
+          map['schedule_json'] = jsonEncode(method.schedule!.toJson());
+        }
+        await txn.insert(_preparationMethodsTable, map);
+      }
+    });
+  }
+
+  /// Replaces safety profile for a plant (for sync from catalog_safety).
+  Future<void> replaceSafetyFromSync(SafetyProfile profile) async {
+    final db = await database;
+    final row = {
+      'plant_id': profile.plantId,
+      'is_generally_safe': profile.isGenerallySafe ? 1 : 0,
+      'pregnancy_warning': profile.pregnancyWarning ? 1 : 0,
+      'known_side_effects': jsonEncode(profile.knownSideEffects),
+      'drug_interactions': jsonEncode(profile.drugInteractions),
+      'strict_contraindications': jsonEncode(profile.strictContraindications),
+    };
+    await db.insert(
+      _safetyProfilesTable,
+      row,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  /// Replaces habitat for a plant (for sync from catalog_habitat).
+  Future<void> replaceHabitatFromSync(PlantHabitat habitat) async {
+    final db = await database;
+    final row = {
+      'plant_id': habitat.plantId,
+      'known_coordinates': jsonEncode(habitat.knownCoordinates.map((e) => e.toJson()).toList()),
+      'region_names': jsonEncode(habitat.regionNames),
+      'climate_notes': habitat.climateNotes,
+    };
+    await db.insert(
+      _plantHabitatsTable,
+      row,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  /// Returns safety profile from local DB (synced from Supabase), or null if not present.
+  Future<SafetyProfile?> getSafetyProfile(String plantId) async {
+    final db = await database;
+    final maps = await db.query(
+      _safetyProfilesTable,
+      where: 'plant_id = ?',
+      whereArgs: [plantId],
+    );
+    if (maps.isEmpty) return null;
+    return _rowToSafetyProfile(maps.first);
+  }
+
+  /// Returns plant habitat from local DB (synced from Supabase), or null if not present.
+  Future<PlantHabitat?> getPlantHabitat(String plantId) async {
+    final db = await database;
+    final maps = await db.query(
+      _plantHabitatsTable,
+      where: 'plant_id = ?',
+      whereArgs: [plantId],
+    );
+    if (maps.isEmpty) return null;
+    return _rowToPlantHabitat(maps.first);
+  }
+
+  /// Replaces all conditions (for sync from catalog_conditions).
+  Future<void> replaceConditionsFromSync(List<CatalogCondition> conditions) async {
+    final db = await database;
+    await db.delete(_conditionsTable);
+    for (var c in conditions) {
+      await db.insert(_conditionsTable, {
+        'id': c.id,
+        'name': c.name,
+        'icon_key': c.iconKey,
+        'color_hex': c.colorHex,
+        'is_default': c.isDefault ? 1 : 0,
+        'sort_order': c.sortOrder,
+      });
+    }
+  }
+
+  /// Replaces all condition–plant links (for sync from catalog_condition_plants).
+  Future<void> replaceConditionPlantsFromSync(List<MapEntry<int, String>> pairs) async {
+    final db = await database;
+    await db.delete(_conditionPlantsTable);
+    for (var e in pairs) {
+      await db.insert(_conditionPlantsTable, {
+        'condition_id': e.key,
+        'plant_id': e.value,
+      });
+    }
+  }
+
+  /// Returns all conditions from local DB (synced from Supabase), ordered by sort_order.
+  Future<List<CatalogCondition>> getConditions() async {
+    final db = await database;
+    final maps = await db.query(_conditionsTable, orderBy: 'sort_order ASC, id ASC');
+    return maps.map((row) => CatalogCondition.fromRow(row)).toList();
+  }
+
+  /// Returns plant_ids linked to a condition (from catalog_condition_plants).
+  Future<List<String>> getPlantIdsForCondition(int conditionId) async {
+    final db = await database;
+    final maps = await db.query(
+      _conditionPlantsTable,
+      where: 'condition_id = ?',
+      whereArgs: [conditionId],
+      columns: ['plant_id'],
+    );
+    return maps.map((m) => m['plant_id'] as String).toList();
+  }
+
+  static SafetyProfile _rowToSafetyProfile(Map<String, dynamic> row) {
+    final list = (String s) {
+      if (s.isEmpty || s == '[]') return <String>[];
+      try {
+        final decoded = jsonDecode(s) as List<dynamic>?;
+        return decoded?.map((e) => e.toString()).toList() ?? [];
+      } catch (_) {
+        return <String>[];
+      }
+    };
+    return SafetyProfile(
+      plantId: row['plant_id'] as String? ?? '',
+      name: '',
+      isGenerallySafe: (row['is_generally_safe'] as int?) == 1,
+      pregnancyWarning: (row['pregnancy_warning'] as int?) == 1,
+      knownSideEffects: list(row['known_side_effects'] as String? ?? '[]'),
+      drugInteractions: list(row['drug_interactions'] as String? ?? '[]'),
+      strictContraindications: list(row['strict_contraindications'] as String? ?? '[]'),
+    );
+  }
+
+  static PlantHabitat _rowToPlantHabitat(Map<String, dynamic> row) {
+    List<HabitatPoint> coords = [];
+    try {
+      final s = row['known_coordinates'] as String? ?? '[]';
+      if (s.isNotEmpty && s != '[]') {
+        final decoded = jsonDecode(s) as List<dynamic>?;
+        if (decoded != null) {
+          coords = decoded
+              .map((e) => HabitatPoint.fromJson(e as Map<String, dynamic>))
+              .toList();
+        }
+      }
+    } catch (_) {}
+    List<String> regions = [];
+    try {
+      final s = row['region_names'] as String? ?? '[]';
+      if (s.isNotEmpty && s != '[]') {
+        final decoded = jsonDecode(s) as List<dynamic>?;
+        regions = decoded?.map((e) => e.toString()).toList() ?? [];
+      }
+    } catch (_) {}
+    return PlantHabitat(
+      plantId: row['plant_id'] as String? ?? '',
+      knownCoordinates: coords,
+      regionNames: regions,
+      climateNotes: row['climate_notes'] as String? ?? '',
+    );
   }
 
   Future<List<Plant>> getAllPlants() async {
@@ -277,8 +632,9 @@ class DatabaseService {
       habitat: map['habitat'],
       medicinalUses: medicinalUses,
       preparationMethods: preparationMethods,
-      safetyWarnings: [], // TODO: Add safety warnings table
+      safetyWarnings: [], // TODO: synced from Supabase or safety table
       imagePath: map['image_path'],
+      imageUrl: map['image_url'] as String?,
       createdAt: DateTime.parse(map['created_at']),
       updatedAt: DateTime.parse(map['updated_at']),
     );

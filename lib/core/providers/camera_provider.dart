@@ -68,6 +68,11 @@ class CameraProvider extends ChangeNotifier {
   }
 
   Future<void> _initializeCamera() async {
+    if (Platform.isWindows) {
+      _errorMessage = 'Camera is not supported on Windows. Use a phone for scanning.';
+      notifyListeners();
+      return;
+    }
     try {
       _cameras = await availableCameras();
       if (_cameras.isNotEmpty) {

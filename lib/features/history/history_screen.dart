@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -45,9 +46,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
     super.dispose();
   }
 
+  static void _debugHistory(String message) {
+    if (kDebugMode) debugPrint('[HistoryScreen] $message');
+  }
+
   Future<void> _loadCloudScans() async {
+    final auth = context.read<AuthProvider>();
+    final isLoggedIn = auth.isLoggedIn;
+    final userId = auth.user?.id;
+    _debugHistory('_loadCloudScans: start isLoggedIn=$isLoggedIn userId=$userId');
     setState(() => _cloudLoading = true);
     final list = await HerbariumService().getMyScans();
+    _debugHistory('_loadCloudScans: getMyScans returned ${list.length} scan(s)');
     if (mounted) {
       setState(() {
         _cloudScans = list;
@@ -578,6 +588,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
+  /// Display name for a cloud scan: plant_id, or first prediction (from predictions or metadata), or fallback.
+  String _cloudScanDisplayName(CloudScan cloud) {
+    if (cloud.plantId != null && cloud.plantId!.trim().isNotEmpty) {
+      return cloud.plantId!;
+    }
+    final predictions = cloud.predictions ?? cloud.metadata?['predictions'] as List<dynamic>?;
+    if (predictions != null && predictions.isNotEmpty) {
+      final first = predictions.first as Map<String, dynamic>?;
+      final name = first?['plantName'] ?? first?['plantId'] ?? first?['label'];
+      if (name != null && name.toString().trim().isNotEmpty) {
+        return name.toString();
+      }
+    }
+    return 'Unknown plant';
+  }
+
   Widget _buildCloudScanCard(
       BuildContext context, ThemeData theme, CloudScan cloud) {
     final dateFormat = DateFormat('MMM dd, yyyy • HH:mm');
@@ -604,7 +630,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               )
             : Icon(Icons.eco, size: 48, color: theme.colorScheme.outline),
         title: Text(
-          cloud.plantId ?? 'Unknown plant',
+          _cloudScanDisplayName(cloud),
           style: theme.textTheme.titleMedium
               ?.copyWith(fontWeight: FontWeight.bold),
           maxLines: 1,
@@ -779,13 +805,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
         ),
       ),
       child: InkWell(
-        onTap: () {
+        onTap: () async {
           // Navigate to PlantResultScreen to view full scan results
-          Navigator.of(context).push(
+          await Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => PlantResultScreen.fromScanResult(scan),
             ),
           );
+          // Refresh cloud list when returning so any "Save to cloud" from detail shows up
+          if (mounted) _loadCloudScans();
         },
         borderRadius: BorderRadius.circular(16),
         child: Padding(
@@ -910,13 +938,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   ],
                 ),
               ),
-              // Delete Button
+              // Delete (trash) only – save is in Plant Result screen
               IconButton(
                 icon: Icon(
                   Icons.delete_outline,
                   color: theme.colorScheme.error,
                 ),
                 onPressed: () => _showDeleteConfirmation(context, scan),
+                tooltip: appLocalizations.delete,
               ),
             ],
           ),

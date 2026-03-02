@@ -2,14 +2,16 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:herbascan/core/models/plant.dart';
 import 'package:herbascan/core/models/safety_profile.dart';
+import 'package:herbascan/core/services/database_service.dart';
 
 /// Single source of truth for deterministic safety data (Contraindication Engine).
-/// Loads from assets/data/safety_profiles.json; no LLM at runtime.
+/// Resolves from SQLite first (synced from catalog_safety); if missing, falls back to assets/data/safety_profiles.json.
 class SafetyProfileService {
   static final SafetyProfileService _instance = SafetyProfileService._internal();
   factory SafetyProfileService() => _instance;
   SafetyProfileService._internal();
 
+  final DatabaseService _db = DatabaseService();
   Map<String, SafetyProfile>? _byKey;
   Map<String, SafetyProfile>? _byPlantId;
 
@@ -49,7 +51,10 @@ class SafetyProfileService {
   }
 
   /// Get safety profile by Plant (uses id then commonName).
+  /// Resolves from SQLite (synced from Supabase) first; if missing, falls back to asset JSON.
   Future<SafetyProfile?> getSafetyProfile(Plant plant) async {
+    final fromDb = await _db.getSafetyProfile(plant.id);
+    if (fromDb != null) return fromDb;
     await _ensureLoaded();
     if (_byPlantId == null || _byKey == null) return null;
     final byId = _byPlantId![plant.id];
@@ -59,12 +64,16 @@ class SafetyProfileService {
   }
 
   /// Get safety profile by plant id (e.g. lagundi-001).
+  /// SQLite first, then asset fallback.
   Future<SafetyProfile?> getSafetyProfileByPlantId(String plantId) async {
+    final fromDb = await _db.getSafetyProfile(plantId);
+    if (fromDb != null) return fromDb;
     await _ensureLoaded();
     return _byPlantId?[plantId];
   }
 
   /// Get safety profile by common name or prediction label (e.g. Bawang, AloeVera, Lagundi).
+  /// Uses asset-backed map only (no plant_id in DB for name lookup).
   Future<SafetyProfile?> getSafetyProfileByCommonName(String name) async {
     if (name.isEmpty) return null;
     await _ensureLoaded();

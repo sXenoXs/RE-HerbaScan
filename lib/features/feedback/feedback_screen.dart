@@ -64,7 +64,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
             : _featureController.text.trim(),
         createdAt: DateTime.now(),
         metadata: {
-          'app_version': '0.8.8',
+          'app_version': '0.8.9',
           'platform': Theme.of(context).platform.name,
         },
       );

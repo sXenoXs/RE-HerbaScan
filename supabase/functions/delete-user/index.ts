@@ -1,8 +1,7 @@
 // Supabase Edge Function: delete-user
-// Allows the authenticated user to delete their own account.
-// Called from the Flutter app with Authorization: Bearer <access_token>.
+// (1) Self-delete: authenticated user deletes their own account (no body).
+// (2) Admin delete: body { "user_id": "<uuid>" }; caller must be admin. Client must delete storage first.
 // Uses the service role to perform auth.admin.deleteUser(id).
-// See: https://supabase.com/docs/guides/auth
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -12,7 +11,6 @@ const corsHeaders = {
 };
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -31,7 +29,6 @@ Deno.serve(async (req) => {
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Get the current user from the JWT (validates the token and returns user id)
     const authClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -43,11 +40,38 @@ Deno.serve(async (req) => {
       );
     }
 
-    const userId = user.id;
+    let targetUserId: string;
 
-    // Delete the user using the service role (admin API)
+    const contentType = req.headers.get("content-type") || "";
+    if (contentType.includes("application/json")) {
+      try {
+        const body = await req.json() as { user_id?: string };
+        if (body?.user_id && typeof body.user_id === "string") {
+          // Admin delete: verify caller is admin
+          const { data: profile } = await authClient
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .single();
+          if (profile?.role !== "admin") {
+            return new Response(
+              JSON.stringify({ message: "Forbidden: admin only" }),
+              { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+          targetUserId = body.user_id;
+        } else {
+          targetUserId = user.id;
+        }
+      } catch {
+        targetUserId = user.id;
+      }
+    } else {
+      targetUserId = user.id;
+    }
+
     const adminClient = createClient(supabaseUrl, supabaseServiceRoleKey);
-    const { error: deleteError } = await adminClient.auth.admin.deleteUser(userId);
+    const { error: deleteError } = await adminClient.auth.admin.deleteUser(targetUserId);
     if (deleteError) {
       return new Response(
         JSON.stringify({ message: deleteError.message }),

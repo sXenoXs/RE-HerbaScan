@@ -10,8 +10,8 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 
 ## 🚀 Current Development Status
 
-**Version**: v0.8.8  
-**Last Updated**: February 2026
+**Version**: v0.8.9  
+**Last Updated**: March 2026
 **Project Phase**: Phase 35 Complete (AI Explanation Content Standardization & Complete Plant Database Migration)  
 **Overall Progress**: 90% Complete - **PRODUCTION READY** 
 
@@ -102,7 +102,7 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **Tap to Expand Plant Image**: ✅ **NEW** Implemented tap to expand feature - tap plant image to view in full-screen with Hero animation, pinch-to-zoom (0.5x-4.0x), and pan gestures
 - **Full Screen Reading Mode**: ✅ **NEW** Implemented full-screen reading mode for Summary tab - distraction-free view with larger text and regenerate capability
 - **AI Explanation Tab Simplification**: ✅ **NEW** Removed 'Original' sub-tab from AI Explanation section - simplified navigation to only Heatmap and Summary tabs
-- **Version Update**: ✅ **NEW** Updated all version references to v0.8.8 across the application (splash, settings, app info, feedback, docs)
+- **Version Update**: ✅ **NEW** Updated all version references to v0.8.9 across the application (splash, settings, app info, feedback, docs)
 
 ### 🔄 In Progress (Phase 6: Offline CAM Fix)
 
@@ -112,7 +112,7 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **Beta Testing**: User testing with TESTING_GUIDE.md
 - **Data Collection**: Gathering user feedback and metrics
 
-### ✅ Recently Fixed (v0.8.8)
+### ✅ Recently Fixed (v0.8.9)
 
 - **Online GradCAM Prediction Mapping**: Fixed "Unknown" plant names in online GradCAM predictions
 - **Backend Response Field Mapping**: Corrected mapping from backend 'class' and 'class_index' to Flutter format
@@ -499,7 +499,7 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - [x] Implemented usability assessment with clear status indicators
 - [x] Added refresh functionality for regenerating explanations
 - [x] Created API key management system
-- [x] **Content Standardization** (v0.8.8): Standardized structure with four sections (Taxonomy, Ecology, Medicinal Uses, Safety) - identical format for online and offline
+- [x] **Content Standardization** (v0.8.9): Standardized structure with four sections (Taxonomy, Ecology, Medicinal Uses, Safety) - identical format for online and offline
 
 ### Phase 10: Beta Testing & Deployment (🔄 In Progress)
 
@@ -640,7 +640,7 @@ herbascan/
 
 ## 📊 Progress Metrics
 
-- **Version**: v0.8.8
+- **Version**: v0.8.9
 - **Code Files Created**: 50+ files
 - **Lines of Code**: 10,000+ lines
 - **Features Implemented**: 45+ core features
@@ -719,7 +719,7 @@ HerbaScan is designed to work seamlessly in rural areas without internet connect
 
 ## 🔧 Development Notes
 
-### Recent Changes (Version v0.8.8 – February 2026)
+### Recent Changes (Version v0.8.9 – March 2026)
 
 - **Scan History**: Swipe between Device & Cloud tabs; pull-to-refresh on Cloud; distinct offline vs no-scans messages.
 - **Auth & Account**: Signup 6-digit confirmation flow; stronger password rules and dynamic requirements UI; change password with live requirements; delete account (Settings → Account); friendly auth error messages.
@@ -727,7 +727,7 @@ HerbaScan is designed to work seamlessly in rural areas without internet connect
 - **Safety & XAI**: Contraindication Engine (safety_profiles.json); no live LLM – explanations from cache/offline/fallback only; Summary tab fixes and taxonomy formatting.
 - **Settings & Offline**: Offline toggle and management tiles clarified; Offline Storage Info refreshes before showing dialog.
 - **Backend**: Railway `/identify` allows unauthenticated requests when `SUPABASE_JWT_SECRET` unset; 6-digit OTP password reset and auth deep links documented.
-- **Version**: All app version references set to v0.8.8 (splash, settings, app info, feedback, docs).
+- **Version**: All app version references set to v0.8.9 (splash, settings, app info, feedback, docs).
 
 ### Known Issues
 

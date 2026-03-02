@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/models/plant.dart';
 import 'package:herbascan/core/services/habitat_service.dart';
@@ -34,6 +35,72 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
     super.dispose();
   }
 
+  Widget _buildPlantHeaderImage(ThemeData theme) {
+    final plant = widget.plant;
+    if (plant.imageUrl != null && plant.imageUrl!.trim().isNotEmpty) {
+      return CachedNetworkImage(
+        imageUrl: plant.imageUrl!,
+        fit: BoxFit.cover,
+        placeholder: (_, __) => Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                theme.colorScheme.primary,
+                theme.colorScheme.secondary,
+              ],
+            ),
+          ),
+        ),
+        errorWidget: (_, __, ___) => Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                theme.colorScheme.primary,
+                theme.colorScheme.secondary,
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    if (plant.imagePath.isNotEmpty) {
+      return Image.asset(
+        plant.imagePath,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  theme.colorScheme.primary,
+                  theme.colorScheme.secondary,
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    }
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            theme.colorScheme.primary,
+            theme.colorScheme.secondary,
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -66,38 +133,8 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
                 background: Stack(
                   fit: StackFit.expand,
                   children: [
-                    // Plant image or gradient background
-                    widget.plant.imagePath.isNotEmpty
-                        ? Image.asset(
-                            widget.plant.imagePath,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      theme.colorScheme.primary,
-                                      theme.colorScheme.secondary,
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          )
-                        : Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  theme.colorScheme.primary,
-                                  theme.colorScheme.secondary,
-                                ],
-                              ),
-                            ),
-                          ),
+                    // Plant image: Supabase URL first, then asset
+                    _buildPlantHeaderImage(theme),
                     // Overlay for better text readability
                     Container(
                       decoration: BoxDecoration(
