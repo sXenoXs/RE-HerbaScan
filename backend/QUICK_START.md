@@ -1,8 +1,8 @@
 # HerbaScan Backend - Quick Start Guide
 
-**Last Updated**: February 2026  
-**Backend Version**: 0.8.8  
-**Flutter App Version**: v0.8.8
+**Last Updated**: March 2026  
+**Backend Version**: 0.8.9  
+**Flutter App Version**: v0.8.9
 
 **Model Standardization**: MobileNetV2 Only (Phase 34) - HerbaScan custom model deprecated  
 **AI Explanation Standardization**: Phase 35 Complete - Structured format with 42 plants
@@ -32,7 +32,7 @@ Before deploying, make sure you have:
   - `MobileNetV2_model.keras` (MobileNetV2 architecture model - `.keras` format) - **REQUIRED**
   - `labels.json` (plant class labels - optional, for backward compatibility)
   
-  **Note:** MobileNetV2 model is required. HerbaScan custom model (`herbascan_model.keras`) is deprecated as of Phase 34 (Model Standardization). The backend uses only MobileNetV2 for prediction consistency between offline CAM and online GradCAM. The Flutter app (v0.8.8) now includes complete structured explanations for all 42 plants with standardized format (Phase 35).
+  **Note:** MobileNetV2 model is required. HerbaScan custom model (`herbascan_model.keras`) is deprecated as of Phase 34 (Model Standardization). The backend uses only MobileNetV2 for prediction consistency between offline CAM and online GradCAM. The Flutter app (v0.8.9) now includes complete structured explanations for all 42 plants with standardized format (Phase 35).
 
 ---
 
@@ -268,7 +268,7 @@ Once deployed, you have:
 - ✅ Base64 encoded heatmap images
 - ✅ Top-3 predictions with confidence scores
 - ✅ Ready for Flutter integration
-- ✅ Integrated with Hybrid XAI Explanation System (v0.8.8) - supports 42 plants with complete structured offline explanations (taxonomy, ecology, medicinal_preparation, safety_consideration)
+- ✅ Integrated with Hybrid XAI Explanation System (v0.8.9) - supports 42 plants with complete structured offline explanations (taxonomy, ecology, medicinal_preparation, safety_consideration)
 
 ### Next Steps
 

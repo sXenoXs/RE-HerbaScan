@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 import 'package:image/image.dart' as img;
+import 'package:herbascan/core/platform_utils_stub.dart' if (dart.library.io) 'package:herbascan/core/platform_utils_io.dart' as platform_utils;
 
 class PlantPrediction {
   final String label;
@@ -29,6 +30,7 @@ class TflitePlantService {
   static const int inputSize = 224;
 
   Future<void> loadModel() async {
+    if (platform_utils.isDesktop()) return;
     try {
       // Load MobileNetV2 multi-output model (ONLY MODEL - HerbaScan deprecated)
       try {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:herbascan/core/providers/auth_provider.dart';
 import 'package:herbascan/features/auth/forgot_password_screen.dart';
@@ -40,7 +41,13 @@ class _LoginScreenState extends State<LoginScreen> {
             email: _emailController.text.trim(),
             password: _passwordController.text,
           );
-      if (mounted) Navigator.of(context).pop(true);
+      if (mounted) {
+        if (context.canPop()) {
+          Navigator.of(context).pop(true);
+        } else {
+          context.go('/admin');
+        }
+      }
     } catch (e) {
       setState(() {
         final raw = e.toString();

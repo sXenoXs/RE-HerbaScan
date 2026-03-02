@@ -1,9 +1,11 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:herbascan/core/models/plant.dart';
 import 'package:herbascan/core/models/scan_result.dart';
 import 'package:herbascan/core/services/plant_service.dart';
 import 'package:herbascan/core/services/database_service.dart';
 import 'package:herbascan/core/services/database_init_service.dart';
+import 'package:herbascan/core/services/catalog_sync_service.dart';
 
 class PlantProvider extends ChangeNotifier {
   final PlantService _plantService = PlantService();
@@ -45,6 +47,19 @@ class PlantProvider extends ChangeNotifier {
       print('✅ Database initialized successfully');
     } catch (e) {
       print('❌ Error initializing database: $e');
+    }
+
+    // When online, sync catalog from Supabase (admin-editable master)
+    try {
+      final connectivity = await Connectivity().checkConnectivity();
+      final online = connectivity.any((c) =>
+          c == ConnectivityResult.mobile || c == ConnectivityResult.wifi);
+      if (online) {
+        final synced = await CatalogSyncService().syncFromSupabase();
+        if (synced) print('✅ Catalog synced from Supabase');
+      }
+    } catch (e) {
+      print('ℹ️ Catalog sync skipped or failed: $e');
     }
 
     await loadPlants();

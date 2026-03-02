@@ -201,6 +201,9 @@ This runs your `20260223000000_herbarium_schema.sql` file in Supabase **without*
 - In the left sidebar, open **Table Editor**.
 - You should see `profiles` and `scans` under the `public` schema. You can open them to see the columns (no data yet).
 
+**Step 6b – Admin user management (optional)**  
+- Run the second migration `supabase/migrations/20260228000000_profiles_admin_and_email.sql` in the SQL Editor to add `is_active` and `email` to `profiles`, backfill email, and add admin policies for listing and deactivating users. Required for the Admin Web Portal **User Management** module.
+
 **If you get an error**
 - If it says something like “relation already exists”, you may have run the migration before. That’s okay; the script uses `CREATE TABLE IF NOT EXISTS` so it’s safe to run again in most cases.
 - If the error is about a trigger or policy already existing, you can drop it first in a new query (e.g. `DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;`) then run the migration again, or ask for help with the exact error message.
@@ -256,8 +259,11 @@ This runs your `20260223000000_herbarium_schema.sql` file in Supabase **without*
 
 Ensure the bucket name in your policy is `herbarium-images` (the UI may add `bucket_id = 'herbarium-images'` for you when the policy is scoped to that bucket).
 
+**Alternative: apply policies via SQL migration**
+- If you see **403 "new row violates row-level security policy"** when saving to cloud, the bucket exists but storage RLS policies are missing. Run the migration **`supabase/migrations/20260302000000_storage_herbarium_policies.sql`** in Dashboard → SQL Editor (or run `npx supabase db push`). It creates INSERT, SELECT, UPDATE, and DELETE policies so authenticated users can upload to their own folder (`user_id/scan_id.jpg`). Create the bucket first (Step 2 above) if it does not exist.
+
 **Step 4 – Save**
-- Create each policy and save. After that, the app can upload to `herbarium-images/{user_id}/{scan_id}.jpg` and RLS will enforce access.
+- Create each policy and save (or run the migration above). After that, the app can upload to `herbarium-images/{user_id}/{scan_id}.jpg` and RLS will enforce access.
 
 ---
 
@@ -302,11 +308,11 @@ The app’s **Settings → Account → Delete account** option calls the Supabas
 2. Link the project (if not already): `npx supabase link --project-ref YOUR_PROJECT_REF`.
 3. Deploy the function: `npx supabase functions deploy delete-user`.
 
-The function lives in `supabase/functions/delete-user/index.ts`. It reads the `Authorization: Bearer <access_token>` header, validates the JWT and gets the user id, then calls `auth.admin.deleteUser(userId)` with the service role. The app sends the user’s access token when invoking the function.
+The function lives in `supabase/functions/delete-user/index.ts`. (1) **Self-delete:** with no body, it deletes the authenticated user. (2) **Admin delete:** with body `{ "user_id": "<uuid>" }`, it verifies the caller is admin (via `profiles.role`), then deletes that user. The Flutter app deletes the user’s storage objects (herbarium-images) before invoking the function for admin delete.
 
-**If the function is not deployed:** Tapping **Delete account** will show an error (e.g. function not found). Deploy the function as above to enable account deletion.
+**If the function is not deployed:** Tapping **Delete account** will show a 404 error; the app now shows a message that includes the deploy command (`npx supabase functions deploy delete-user`). Deploy as above to enable account deletion.
 
-**Storage:** If the user has objects in Storage (e.g. herbarium scan images), Supabase may block deletion until those are removed. The function does not delete Storage objects; you can add cleanup in the function (e.g. list and delete objects under the user’s folder) or rely on Storage RLS and manual cleanup. For a simple setup, deleting the auth user and profile is enough; any orphaned Storage objects can be cleaned later.
+**Storage:** For self-delete, Supabase may block deletion until storage is removed. For admin delete, the app removes the user’s folder in `herbarium-images` before calling the function.
 
 ---
 

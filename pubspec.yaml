@@ -2,7 +2,7 @@ name: herbascan
 description: "HerbaScan: A CNN-Based Mobile Application for Herbal Plant Recognition and Data Retrieval"
 publish_to: "none"
 
-version: 0.8.8+1
+version: 0.8.9+1
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
@@ -19,6 +19,7 @@ dependencies:
 
   # Database
   sqflite: ^2.4.0
+  sqflite_common_ffi: ^2.3.7  # Desktop (Windows/Linux/macOS) only; mobile unchanged
   path: ^1.9.0
 
   # Camera and Image Processing
@@ -68,6 +69,12 @@ dependencies:
   # Static Habitat Heatmap (OpenStreetMap; no API key)
   flutter_map: ^7.0.2
   latlong2: ^0.9.1
+
+  # Routing (web + admin guard)
+  go_router: ^14.6.2
+
+  # Plant catalog images from Supabase Storage (admin uploads)
+  cached_network_image: ^3.4.1
 
 dev_dependencies:
   flutter_test:

@@ -27,6 +27,8 @@ class PlantResultScreen extends StatefulWidget {
   final String? method; // 'grad-cam' or 'cam'
   final bool? fallbackUsed; // True if offline was fallback
   final bool isFromHistory; // True if opened from history (don't auto-save)
+  /// When opening from history, pass the ScanResult so "Save to cloud" can use it.
+  final ScanResult? scanResultFromHistory;
 
   const PlantResultScreen({
     super.key,
@@ -38,6 +40,7 @@ class PlantResultScreen extends StatefulWidget {
     this.method,
     this.fallbackUsed,
     this.isFromHistory = false, // Default to false for new scans
+    this.scanResultFromHistory,
   });
 
   /// Factory constructor to create PlantResultScreen from ScanResult
@@ -81,6 +84,7 @@ class PlantResultScreen extends StatefulWidget {
       method: method,
       fallbackUsed: fallbackUsed,
       isFromHistory: true, // Mark as from history to disable auto-save
+      scanResultFromHistory: scanResult, // So "Save to cloud" can upload without re-saving to device
     );
   }
 
@@ -113,9 +117,12 @@ class _PlantResultScreenState extends State<PlantResultScreen>
   void initState() {
     super.initState();
 
-    // If opened from history, mark as already saved (don't auto-save)
+    // If opened from history, mark as already saved and keep ScanResult for "Save to cloud"
     if (widget.isFromHistory) {
       _isSaved = true;
+      if (widget.scanResultFromHistory != null) {
+        _savedScanResult = widget.scanResultFromHistory;
+      }
     }
 
     // Initialize TabController with defaults first (will be updated after settings load)
@@ -268,10 +275,42 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                   icon: const Icon(Icons.share),
                   tooltip: 'Share Results',
                 ),
-                IconButton(
-                  onPressed: _saveResults,
+                PopupMenuButton<String>(
                   icon: const Icon(Icons.save),
-                  tooltip: 'Save Results',
+                  tooltip: 'Save',
+                  onSelected: (value) async {
+                    if (value == 'save_device') {
+                      await _saveToDeviceOnly();
+                    } else if (value == 'save_cloud') {
+                      await _saveToCloudOnly();
+                    }
+                  },
+                  itemBuilder: (context) {
+                    final auth = Provider.of<AuthProvider>(context, listen: false);
+                    return [
+                      const PopupMenuItem<String>(
+                        value: 'save_device',
+                        child: Row(
+                          children: [
+                            Icon(Icons.phone_android),
+                            SizedBox(width: 12),
+                            Text('Save to device'),
+                          ],
+                        ),
+                      ),
+                      if (auth.isLoggedIn)
+                        const PopupMenuItem<String>(
+                          value: 'save_cloud',
+                          child: Row(
+                            children: [
+                              Icon(Icons.cloud_upload),
+                              SizedBox(width: 12),
+                              Text('Save to cloud'),
+                            ],
+                          ),
+                        ),
+                    ];
+                  },
                 ),
               ],
             ),
@@ -1291,74 +1330,99 @@ class _PlantResultScreenState extends State<PlantResultScreen>
     }
   }
 
-  Future<void> _saveResults() async {
-    final auth = Provider.of<AuthProvider>(context, listen: false);
+  /// Save only to device history (from save dropdown).
+  Future<void> _saveToDeviceOnly() async {
     if (!_isSaved) {
       await _saveResultsAutomatically();
       if (!mounted) return;
-      if (auth.isLoggedIn && _savedScanResult != null) {
-        try {
-          await HerbariumService()
-              .uploadScan(_savedScanResult!, widget.imagePath);
-          if (mounted) setState(() => _savedToCloud = true);
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Saved to device and Personal Herbarium'),
-                backgroundColor: Colors.green,
-              ),
-            );
-          }
-        } catch (_) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Saved to device. Cloud upload failed.'),
-                backgroundColor: Colors.orange,
-              ),
-            );
-          }
-        }
-      } else {
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(_isSaved ? 'Scan already saved to history' : 'Scan saved to device history'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  /// Save to cloud / Personal Herbarium (from save dropdown). Saves to device first if needed.
+  Future<void> _saveToCloudOnly() async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    if (!auth.isLoggedIn) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sign in to save to cloud'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+    if (!_isSaved) {
+      await _saveResultsAutomatically();
+      if (!mounted) return;
+    }
+    if (_savedScanResult == null) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Scan saved to device history'),
+            content: Text('Save to device first, then try again.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+    if (_savedToCloud) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Already in Personal Herbarium'),
             backgroundColor: Colors.green,
           ),
         );
       }
       return;
     }
-    if (auth.isLoggedIn && !_savedToCloud && _savedScanResult != null) {
-      try {
-        await HerbariumService()
-            .uploadScan(_savedScanResult!, widget.imagePath);
-        if (mounted) setState(() => _savedToCloud = true);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Added to Personal Herbarium'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      } catch (_) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Cloud upload failed. Try again.'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
+    // Check image file exists (often missing when opened from history after app/data clear)
+    if (widget.imagePath.isEmpty || !await File(widget.imagePath).exists()) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Image file not found. Cannot upload to cloud.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
       }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Scan already saved to history'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      return;
+    }
+    try {
+      final scanId = await HerbariumService().uploadScan(_savedScanResult!, widget.imagePath);
+      if (!mounted) return;
+      if (scanId != null) {
+        setState(() => _savedToCloud = true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Added to Personal Herbarium'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not save to cloud. Check connection or try again.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cloud upload failed. Try again.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
     }
   }
 

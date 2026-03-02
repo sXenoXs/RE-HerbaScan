@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
@@ -11,13 +13,23 @@ import 'package:herbascan/core/providers/plant_provider.dart';
 import 'package:herbascan/core/providers/camera_provider.dart';
 import 'package:herbascan/core/providers/language_provider.dart';
 import 'package:herbascan/core/providers/offline_provider.dart';
-import 'package:herbascan/features/splash/splash_screen.dart';
+import 'package:herbascan/core/routing/app_router.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/services/performance_monitor.dart';
 import 'package:herbascan/core/widgets/auth_deeplink_handler.dart';
+// Desktop-only: init SQLite FFI so DB works on Windows/Linux/macOS. Mobile and web unchanged.
+import 'package:herbascan/core/init_database_factory_stub.dart'
+    if (dart.library.ffi) 'package:herbascan/core/init_database_factory_ffi.dart' as db_factory;
+import 'package:herbascan/core/platform_utils_stub.dart'
+    if (dart.library.io) 'package:herbascan/core/platform_utils_io.dart' as platform_utils;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize SQLite for desktop (Windows/Linux/macOS). No change to mobile or web.
+  if (!kIsWeb && platform_utils.isDesktop()) {
+    db_factory.initDatabaseFactory();
+  }
 
   if (isSupabaseConfigured) {
     await Supabase.initialize(
@@ -30,17 +42,27 @@ void main() async {
   final performanceMonitor = PerformanceMonitor();
   performanceMonitor.startTimer(PerformanceOperation.appStart);
 
-  // Lock app to portrait orientation
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
+  // Lock app to portrait orientation (skip on web)
+  if (!kIsWeb) {
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+  }
 
   runApp(const HerbaScanApp());
 }
 
-class HerbaScanApp extends StatelessWidget {
+class HerbaScanApp extends StatefulWidget {
   const HerbaScanApp({super.key});
+
+  @override
+  State<HerbaScanApp> createState() => _HerbaScanAppState();
+}
+
+class _HerbaScanAppState extends State<HerbaScanApp> {
+  final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
+  late final GoRouter _router = createAppRouter(_rootNavigatorKey);
 
   @override
   Widget build(BuildContext context) {
@@ -55,29 +77,27 @@ class HerbaScanApp extends StatelessWidget {
       ],
       child: Consumer2<LanguageProvider, AppProvider>(
         builder: (context, languageProvider, appProvider, child) {
-          final navigatorKey = GlobalKey<NavigatorState>();
-          return MaterialApp(
-            navigatorKey: navigatorKey,
-            key: ValueKey('${appProvider.isDarkMode}_${languageProvider.locale}'),
-            title: 'HerbaScan',
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: appProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-            locale: languageProvider.locale,
-            localizationsDelegates: const [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: const [
-              Locale('en', 'US'), // English
-              Locale('fil', 'PH'), // Filipino
-            ],
-            home: AuthDeepLinkHandler(
-              navigatorKey: navigatorKey,
-              child: const SplashScreen(),
+          return AuthDeepLinkHandler(
+            navigatorKey: _rootNavigatorKey,
+            child: MaterialApp.router(
+              routerConfig: _router,
+              key: ValueKey('${appProvider.isDarkMode}_${languageProvider.locale}'),
+              title: 'HerbaScan',
+              debugShowCheckedModeBanner: false,
+              theme: AppTheme.lightTheme,
+              darkTheme: AppTheme.darkTheme,
+              themeMode: appProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+              locale: languageProvider.locale,
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: const [
+                Locale('en', 'US'), // English
+                Locale('fil', 'PH'), // Filipino
+              ],
             ),
           );
         },

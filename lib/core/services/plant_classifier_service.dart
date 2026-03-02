@@ -2,6 +2,7 @@
 import 'package:tflite_flutter/tflite_flutter.dart';
 import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
+import 'package:herbascan/core/platform_utils_stub.dart' if (dart.library.io) 'package:herbascan/core/platform_utils_io.dart' as platform_utils;
 // Old GradCAM service removed - replaced with AdaptiveGradCAMService
 // import 'package:herbascan/core/services/gradcam_service.dart';
 
@@ -16,6 +17,7 @@ class PlantClassifierService {
   static const int _numClasses = 41; // Based on your labels.txt
   
   Future<void> loadModels() async {
+    if (platform_utils.isDesktop()) return;
     try {
       print('🔄 Loading AI models...');
       

@@ -120,6 +120,8 @@ class AppLocalizations {
       _localizedValues[locale.languageCode]!['timerFinished']!;
   String get openingCalendar =>
       _localizedValues[locale.languageCode]!['openingCalendar']!;
+  String get preparationGuide =>
+      _localizedValues[locale.languageCode]!['preparationGuide']!;
 
   // Contraindication Engine (Safety Informatics)
   String get drugInteractions =>
@@ -353,6 +355,7 @@ class AppLocalizations {
       'addScheduleToCalendar': 'Add Schedule to Device Calendar',
       'timerFinished': 'Timer finished',
       'openingCalendar': 'Opening calendar to add event',
+      'preparationGuide': 'Preparation Guide',
       'drugInteractions': 'Drug interactions',
       'notSafeForPregnancy': 'Not safe for pregnancy',
       'knownSideEffects': 'Known side effects',
@@ -502,6 +505,7 @@ class AppLocalizations {
       'addScheduleToCalendar': 'Idagdag ang Iskedyul sa Kalendaryo ng Device',
       'timerFinished': 'Tapos na ang timer',
       'openingCalendar': 'Binubuksan ang kalendaryo para magdagdag ng event',
+      'preparationGuide': 'Gabay sa Paghahanda',
       'drugInteractions': 'Pakikipag-ugnayan sa gamot',
       'notSafeForPregnancy': 'Hindi ligtas para sa pagbubuntis',
       'knownSideEffects': 'Kilalang side effects',

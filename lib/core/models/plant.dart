@@ -15,6 +15,8 @@ class Plant {
   final List<PreparationMethod> preparationMethods;
   final List<String> safetyWarnings;
   final String imagePath;
+  /// Optional Supabase Storage URL for admin-uploaded image. When set, app uses CachedNetworkImage.
+  final String? imageUrl;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -35,6 +37,7 @@ class Plant {
     required this.preparationMethods,
     required this.safetyWarnings,
     required this.imagePath,
+    this.imageUrl,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -63,6 +66,7 @@ class Plant {
       safetyWarnings: (json['safetyWarnings'] as List<dynamic>?)
           ?.cast<String>() ?? [],
       imagePath: json['imagePath'] ?? '',
+      imageUrl: json['imageUrl'] as String? ?? json['image_url'] as String?,
       createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
       updatedAt: DateTime.parse(json['updatedAt'] ?? DateTime.now().toIso8601String()),
     );
@@ -87,6 +91,7 @@ class Plant {
       'preparationMethods': preparationMethods.map((method) => method.toJson()).toList(),
       'safetyWarnings': safetyWarnings,
       'imagePath': imagePath,
+      if (imageUrl != null) 'imageUrl': imageUrl,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };

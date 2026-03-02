@@ -27,6 +27,38 @@ class PlantDataService {
       _getLuyaData(),
       _getGotuKolaData(),
       _getAloeVeraData(),
+      // Batch 1 (42-plant scope)
+      _getAdelfaData(),
+      _getAlagawData(),
+      _getBalanoyData(),
+      _getBanabaData(),
+      _getBignayData(),
+      // Batch 2 (42-plant scope)
+      _getCalamansiData(),
+      _getDayapData(),
+      _getGumamelaData(),
+      _getGuyabanoData(),
+      _getIpilIpilData(),
+      // Batch 3 (42-plant scope)
+      _getKahelData(),
+      _getKakawateData(),
+      _getKamantigueData(),
+      _getKamiasData(),
+      _getKamoteData(),
+      // Batch 4 (42-plant scope)
+      _getKamotengKahoyData(),
+      _getMangoData(),
+      _getManiData(),
+      _getMayanaData(),
+      _getPandanData(),
+      // Batch 5 (42-plant scope)
+      _getPomeloData(),
+      _getSaluyotData(),
+      _getSampaSampalukanData(),
+      _getSampalokData(),
+      _getSilingLabuyoData(),
+      // Batch 6 (42-plant scope)
+      _getTubaTubaData(),
     ];
   }
 
@@ -131,7 +163,8 @@ class PlantDataService {
             const PreparationStepDetail(
                 instruction: 'Boil 2 cups (500ml) of water in a pot'),
             const PreparationStepDetail(
-                instruction: 'Add the clean lagundi leaves to the boiling water'),
+                instruction:
+                    'Add the clean lagundi leaves to the boiling water'),
             const PreparationStepDetail(
               instruction:
                   'Reduce heat and simmer for 10-15 minutes until water reduces to 1 cup',
@@ -142,8 +175,7 @@ class PlantDataService {
                 instruction:
                     'Strain the decoction using clean cloth or strainer'),
             const PreparationStepDetail(
-                instruction:
-                    'Let cool to comfortable drinking temperature'),
+                instruction: 'Let cool to comfortable drinking temperature'),
           ],
           schedule: const PreparationSchedule(
             dosage: '1/2 cup',
@@ -725,8 +757,7 @@ class PlantDataService {
           stepDetails: [
             const PreparationStepDetail(
                 instruction: 'Collect 10-15 mature niyog-niyogan seeds'),
-            const PreparationStepDetail(
-                instruction: 'Crush seeds slightly'),
+            const PreparationStepDetail(instruction: 'Crush seeds slightly'),
             const PreparationStepDetail(instruction: 'Boil 2 cups of water'),
             const PreparationStepDetail(
                 instruction: 'Add crushed seeds to boiling water'),
@@ -735,8 +766,7 @@ class PlantDataService {
               hasTimer: true,
               timerDurationSeconds: 900,
             ),
-            const PreparationStepDetail(
-                instruction: 'Strain the decoction'),
+            const PreparationStepDetail(instruction: 'Strain the decoction'),
             const PreparationStepDetail(
                 instruction: 'Let cool to drinking temperature'),
           ],
@@ -1620,10 +1650,10 @@ class PlantDataService {
   static Plant _getGotuKolaData() {
     return Plant(
       id: 'gotu-kola-001',
-      commonName: 'Gotu Kola',
+      commonName: 'Takip-kuhol',
       scientificName: 'Centella asiatica',
       localName: 'Takip-kuhol / Pegaga',
-      englishName: 'Gotu Kola / Indian Pennywort',
+      englishName: 'Takip-kuhol / Indian Pennywort',
       family: 'Apiaceae',
       genus: 'Centella',
       species: 'asiatica',
@@ -1663,13 +1693,13 @@ class PlantDataService {
         PreparationMethod(
           id: _uuid.v4(),
           condition: 'General Health / Cognitive Support',
-          title: 'Gotu Kola Tea',
+          title: 'Takip-kuhol Tea',
           description: 'Brain tonic tea',
           steps: [
-            'Gather 1 cup fresh gotu kola leaves (or 2 tablespoons dried)',
+            'Gather 1 cup fresh takip-kuhol leaves (or 2 tablespoons dried)',
             'Wash fresh leaves thoroughly',
             'Boil 2 cups of water',
-            'Add gotu kola leaves',
+            'Add takip-kuhol leaves',
             'Steep for 10-15 minutes',
             'Strain and serve',
             'Can be consumed warm or cold',
@@ -1793,6 +1823,1684 @@ class PlantDataService {
         'Keep out of reach of children for internal use',
       ],
       imagePath: 'assets/images/aloe_vera.jpg',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  // ==================== BATCH 1 (42-plant scope) ====================
+
+  static Plant _getAdelfaData() {
+    return Plant(
+      id: 'adelfa-001',
+      commonName: 'Adelfa',
+      scientificName: 'Nerium oleander',
+      localName: 'Adelfa',
+      englishName: 'Oleander',
+      family: 'Apocynaceae',
+      genus: 'Nerium',
+      species: 'oleander',
+      isDOHApproved: false,
+      morphology:
+          'Evergreen shrub or small tree with leathery lanceolate leaves in whorls of three. Showy funnel-shaped flowers in white, pink, or red. Prominent midrib; all parts highly toxic.',
+      ecology:
+          'Widely cultivated as ornamental in tropical and subtropical areas. Drought-tolerant; found in gardens, roadsides, and parks. Thrives in full sun.',
+      habitat:
+          'Lowland to mid-elevation; well-drained soil. Grown as ornamental only. Not for medicinal use.',
+      medicinalUses: [
+        MedicinalUse(
+          condition: 'Skin Conditions',
+          description:
+              'TRADITIONAL USE ONLY – NOT RECOMMENDED. Historically, external poultices were used for skin conditions, but risk of systemic absorption and poisoning makes this highly dangerous. Do not use for medication.',
+          effectiveness: 'Not recommended - Highly toxic',
+          activeCompounds: ['Oleandrin (cardiac glycoside)', 'Nerioside'],
+          dosage: 'None – do not use',
+          duration: 'N/A',
+        ),
+      ],
+      preparationMethods: [],
+      safetyWarnings: [
+        'HIGHLY TOXIC – Do not use for medication',
+        'Ingestion of any part can cause cardiac arrest and death',
+        'Contact with sap causes severe skin irritation',
+        'Smoke from burning leaves is toxic',
+      ],
+      imagePath: 'assets/images/adelfa.jpg',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  static Plant _getAlagawData() {
+    return Plant(
+      id: 'alagaw-001',
+      commonName: 'Alagaw',
+      scientificName: 'Premna odorata',
+      localName: 'Alagaw',
+      englishName: 'Fragrant Premna',
+      family: 'Lamiaceae',
+      genus: 'Premna',
+      species: 'odorata',
+      isDOHApproved: false,
+      morphology:
+          'Small tree or shrub with opposite, hairy, aromatic leaves. Small greenish-white flowers. Leaf shape and aromatic properties are key identifying features.',
+      ecology:
+          'Native to the Philippines; found in secondary forests and thickets at low altitudes. Aromatic leaves when crushed.',
+      habitat:
+          'Lowland secondary forests, thickets. Prefers partial shade and well-drained soil.',
+      medicinalUses: [
+        MedicinalUse(
+          condition: 'Cough',
+          description:
+              'Traditional remedy for coughs and phlegm. Decoction of leaves helps loosen mucus and ease breathing.',
+          effectiveness: 'Moderate - Traditional use',
+          activeCompounds: [
+            'Essential oils',
+            'Flavonoids',
+            'Aromatic compounds'
+          ],
+          dosage: '1/2 cup decoction 2-3 times daily',
+          duration: '3-7 days; consult if symptoms persist',
+        ),
+        MedicinalUse(
+          condition: 'Digestive Issues',
+          description:
+              'Used for gas pain and indigestion. Boiled leaf water may be taken for relief.',
+          effectiveness: 'Moderate - Traditional use',
+          activeCompounds: ['Essential oils', 'Volatile compounds'],
+          dosage: '1/2 cup decoction as needed',
+          duration: 'As needed',
+        ),
+      ],
+      preparationMethods: [
+        PreparationMethod(
+          id: _uuid.v4(),
+          condition: 'Cough',
+          title: 'Alagaw Leaf Decoction',
+          description: 'Decoction for cough and phlegm',
+          steps: [
+            'Gather a handful of fresh alagaw leaves',
+            'Wash leaves thoroughly',
+            'Boil 2 cups of water in a pot',
+            'Add the leaves and simmer for 10-15 minutes',
+            'Strain and drink warm',
+            'May be used as wash for wounds when cooled',
+          ],
+          dosage: '1/2 cup 2-3 times daily',
+          frequency: '2-3 times daily',
+          duration: '3-7 days',
+          warnings: [
+            'Consult a doctor if pregnant or breastfeeding',
+            'Consult if symptoms persist',
+          ],
+          preparationType: 'Decoction',
+        ),
+      ],
+      safetyWarnings: [
+        'Generally considered safe for traditional use',
+        'Not DOH-approved; consult doctor if symptoms persist',
+        'Consult if pregnant or breastfeeding',
+      ],
+      imagePath: 'assets/images/alagaw.jpg',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  static Plant _getBalanoyData() {
+    return Plant(
+      id: 'balanoy-001',
+      commonName: 'Balanoy',
+      scientificName: 'Ocimum basilicum',
+      localName: 'Balanoy',
+      englishName: 'Basil',
+      family: 'Lamiaceae',
+      genus: 'Ocimum',
+      species: 'basilicum',
+      isDOHApproved: false,
+      morphology:
+          'Aromatic herb with oval to lanceolate leaves and square stems. Strong aromatic scent. Spikes of white or purplish flowers.',
+      ecology:
+          'Often grown in gardens. Prefers moist, fertile soil and full sun. Widely cultivated.',
+      habitat:
+          'Lowland gardens; well-drained, fertile soil. Full sun to partial shade.',
+      medicinalUses: [
+        MedicinalUse(
+          condition: 'Digestive Issues',
+          description:
+              'Used for gas pain and indigestion. Tea from leaves helps relieve bloating and discomfort.',
+          effectiveness: 'Moderate - Traditional and culinary use',
+          activeCompounds: ['Essential oils', 'Eugenol', 'Linalool'],
+          dosage: '1 cup tea as needed',
+          duration: 'As needed',
+        ),
+        MedicinalUse(
+          condition: 'Wound Healing',
+          description:
+              'Crushed leaves applied to insect bites or minor cuts to reduce itching and inflammation.',
+          effectiveness: 'Moderate - Traditional use',
+          activeCompounds: ['Essential oils', 'Antioxidants'],
+          dosage: 'Topical application',
+          duration: 'Until relief',
+        ),
+      ],
+      preparationMethods: [
+        PreparationMethod(
+          id: _uuid.v4(),
+          condition: 'Digestive Issues',
+          title: 'Balanoy Tea',
+          description: 'Infusion for gas and indigestion',
+          steps: [
+            'Gather fresh balanoy leaves',
+            'Wash thoroughly',
+            'Boil water and pour over 1 tablespoon fresh leaves',
+            'Steep for 10 minutes',
+            'Strain and drink warm',
+          ],
+          dosage: '1 cup as needed',
+          frequency: 'As needed',
+          duration: 'As needed',
+          warnings: [
+            'Avoid large amounts of concentrated essential oil on sensitive skin',
+          ],
+          preparationType: 'Tea/Infusion',
+        ),
+      ],
+      safetyWarnings: [
+        'Safe for culinary and medicinal use in moderation',
+        'Concentrated essential oil may irritate sensitive skin',
+        'Avoid large amounts of concentrated oil on skin',
+      ],
+      imagePath: 'assets/images/balanoy.jpg',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  static Plant _getBanabaData() {
+    return Plant(
+      id: 'banaba-001',
+      commonName: 'Banaba',
+      scientificName: 'Lagerstroemia speciosa',
+      localName: 'Banaba',
+      englishName: 'Queen Crape Myrtle',
+      family: 'Lythraceae',
+      genus: 'Lagerstroemia',
+      species: 'speciosa',
+      isDOHApproved: false,
+      morphology:
+          'Deciduous tropical tree with elliptical to oblong leaves. Showy pink to purple flowers in large panicles. Characteristic tree growth habit.',
+      ecology:
+          'Found in secondary forests; widely planted as ornamental shade tree along roads. Beautiful purple flowers.',
+      habitat:
+          'Lowland to mid-elevation; secondary forests and cultivated areas. Prefers well-drained soil.',
+      medicinalUses: [
+        MedicinalUse(
+          condition: 'Diabetes',
+          description:
+              'Traditional use for mild diabetes management. Leaf tea may help support blood sugar levels; use under medical supervision with diabetes medications.',
+          effectiveness: 'Moderate - Traditional use; consult for diabetes',
+          activeCompounds: ['Corosolic acid', 'Ellagitannins', 'Flavonoids'],
+          dosage: '1 cup leaf tea daily as substitute for water',
+          duration: 'Under medical supervision',
+        ),
+        MedicinalUse(
+          condition: 'Kidney Stones',
+          description:
+              'Used for urinary tract health and kidney support. Tea used traditionally for urinary wellness.',
+          effectiveness: 'Moderate - Traditional use',
+          activeCompounds: ['Tannins', 'Flavonoids'],
+          dosage:
+              '1 cup dried leaf tea per gallon water, boiled 30 min; drink as substitute for water',
+          duration: 'Consult doctor for kidney disorders',
+        ),
+      ],
+      preparationMethods: [
+        PreparationMethod(
+          id: _uuid.v4(),
+          condition: 'Diabetes',
+          title: 'Banaba Leaf Tea',
+          description:
+              'Dried leaf decoction for traditional blood sugar support',
+          steps: [
+            'Air-dry banaba leaves',
+            'Use 1 cup dried leaves per gallon of water',
+            'Boil for 30 minutes',
+            'Strain and cool',
+            'Drink as substitute for water or tea daily',
+          ],
+          dosage: 'As substitute for water or tea',
+          frequency: 'Daily',
+          duration: 'Under medical supervision if diabetic',
+          warnings: [
+            'Consult doctor if taking diabetes medications (risk of hypoglycemia)',
+            'Consult doctor for kidney disorders',
+          ],
+          preparationType: 'Decoction',
+        ),
+      ],
+      safetyWarnings: [
+        'Generally safe in traditional use',
+        'Concurrent use with diabetes medications requires supervision to avoid hypoglycemia',
+        'Consult doctor for kidney disorders',
+      ],
+      imagePath: 'assets/images/banaba.jpg',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  static Plant _getBignayData() {
+    return Plant(
+      id: 'bignay-001',
+      commonName: 'Bignay',
+      scientificName: 'Antidesma bunius',
+      localName: 'Bignay',
+      englishName: 'Bignay',
+      family: 'Phyllanthaceae',
+      genus: 'Antidesma',
+      species: 'bunius',
+      isDOHApproved: false,
+      morphology:
+          'Small dioecious tree with elliptical to oblong leaves. Small flowers in spikes. Small round fruits that turn from green to red to black when ripe.',
+      ecology:
+          'Found in thickets and open places. Produces clustered fruits that ripen unevenly (green, red, black).',
+      habitat: 'Lowland thickets and open areas. Tropical; well-drained soil.',
+      medicinalUses: [
+        MedicinalUse(
+          condition: 'Hypertension',
+          description:
+              'Traditional use for blood pressure management. Leaves or bark prepared as tea; fruits rich in antioxidants.',
+          effectiveness: 'Moderate - Traditional use',
+          activeCompounds: ['Antioxidants', 'Polyphenols', 'Flavonoids'],
+          dosage: 'Tea from leaves or bark; or consume fruits in moderation',
+          duration: 'Consult if on blood pressure medication',
+        ),
+      ],
+      preparationMethods: [
+        PreparationMethod(
+          id: _uuid.v4(),
+          condition: 'Hypertension',
+          title: 'Bignay Leaf or Bark Tea',
+          description:
+              'Tea for general wellness and traditional blood pressure support',
+          steps: [
+            'Gather fresh bignay leaves or bark',
+            'Wash thoroughly',
+            'Boil in water for 10-15 minutes',
+            'Strain and drink warm',
+            'Fruits may be eaten raw or made into wine/vinegar',
+          ],
+          dosage: '1 cup 1-2 times daily',
+          frequency: '1-2 times daily',
+          duration: 'As needed; consult if on medication',
+          warnings: [
+            'Unripe fruits may cause hyperacidity in some',
+            'Consult doctor if taking blood pressure medication',
+          ],
+          preparationType: 'Decoction',
+        ),
+      ],
+      safetyWarnings: [
+        'Generally safe',
+        'Unripe fruits may cause hyperacidity in some individuals',
+        'Consult physician if on blood pressure medication',
+      ],
+      imagePath: 'assets/images/bignay.jpg',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  // ==================== BATCH 2 (42-plant scope) ====================
+
+  static Plant _getCalamansiData() {
+    return Plant(
+      id: 'calamansi-001',
+      commonName: 'Calamansi',
+      scientificName: 'Citrus × microcarpa',
+      localName: 'Calamansi',
+      englishName: 'Calamondin',
+      family: 'Rutaceae',
+      genus: 'Citrus',
+      species: 'microcarpa',
+      isDOHApproved: false,
+      morphology:
+          'Small shrubby tree with small oval to elliptical leaves and small white flowers. Small round green to orange fruits. Staple in Filipino kitchens; bears fruit year-round.',
+      ecology:
+          'Widely cultivated in the Philippines. Prefers warm, humid conditions. Grown in backyards and farms.',
+      habitat:
+          'Lowland to mid-elevation; well-drained soil, full sun. Tropical; cultivated nationwide.',
+      medicinalUses: [
+        MedicinalUse(
+          condition: 'Cough',
+          description:
+              'Juice with warm water (and honey) used for sore throat and cough. High in Vitamin C; supports respiratory wellness.',
+          effectiveness: 'Moderate - Traditional use',
+          activeCompounds: ['Vitamin C', 'Citric acid', 'Flavonoids'],
+          dosage: 'Squeeze 2-3 fruits into warm water; drink 2-3 times daily',
+          duration: '3-7 days for cough',
+        ),
+        MedicinalUse(
+          condition: 'Skin Conditions',
+          description:
+              'Cut fruit rubbed on dark skin areas (elbows, knees) as mild bleach; rinse after. Avoid sun exposure after application.',
+          effectiveness: 'Traditional use - use with caution',
+          activeCompounds: ['Vitamin C', 'Acids'],
+          dosage: 'Topical only; rinse after',
+          duration: 'As needed',
+        ),
+      ],
+      preparationMethods: [
+        PreparationMethod(
+          id: _uuid.v4(),
+          condition: 'Cough',
+          title: 'Calamansi Juice for Cough',
+          description: 'Warm juice drink for sore throat and cough',
+          steps: [
+            'Wash 2-3 calamansi fruits',
+            'Cut and squeeze into a cup',
+            'Add warm water (and optional honey)',
+            'Drink while warm',
+          ],
+          dosage: '1 cup 2-3 times daily',
+          frequency: '2-3 times daily',
+          duration: '3-7 days',
+          warnings: [
+            'Highly acidic; avoid if you have hyperacidity or gastric ulcers',
+            'Skin application followed by sun can cause phytophotodermatitis',
+          ],
+          preparationType: 'Juice',
+        ),
+      ],
+      safetyWarnings: [
+        'Highly acidic; avoid undiluted juice if hyperacidity or gastric ulcers',
+        'Application on skin plus sun exposure can cause skin darkening or burns',
+      ],
+      imagePath: 'assets/images/calamansi.jpg',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  static Plant _getDayapData() {
+    return Plant(
+      id: 'dayap-001',
+      commonName: 'Dayap',
+      scientificName: 'Citrus aurantifolia',
+      localName: 'Dayap',
+      englishName: 'Lime',
+      family: 'Rutaceae',
+      genus: 'Citrus',
+      species: 'aurantifolia',
+      isDOHApproved: false,
+      morphology:
+          'Shrub or small tree with sharp spines. Small oval leaves, small white flowers. Small round green to yellow acidic fruits.',
+      ecology:
+          'Widely distributed in the Philippines; cultivated for acidic fruits. Tropical; prefers well-drained soil.',
+      habitat: 'Lowland gardens and farms. Full sun; well-drained soil.',
+      medicinalUses: [
+        MedicinalUse(
+          condition: 'Digestive Issues',
+          description:
+              'Zest oils inhaled to relieve nausea. Juice with water for hydration and Vitamin C.',
+          effectiveness: 'Moderate - Traditional use',
+          activeCompounds: ['Vitamin C', 'Citric acid', 'Essential oils'],
+          dosage: 'Inhale rind for nausea; juice diluted for hydration',
+          duration: 'As needed',
+        ),
+      ],
+      preparationMethods: [
+        PreparationMethod(
+          id: _uuid.v4(),
+          condition: 'Digestive Issues',
+          title: 'Dayap for Nausea',
+          description: 'Inhale zest to relieve nausea',
+          steps: [
+            'Take a fresh dayap (lime) fruit',
+            'Squeeze or scratch the rind near the nostrils',
+            'Inhale the zest oils gently',
+            'Juice mixed with water can be drunk for hydration',
+          ],
+          dosage: 'As needed for nausea',
+          frequency: 'As needed',
+          duration: 'As needed',
+          warnings: [
+            'Highly acidic; use with caution if GERD',
+            'Photosensitive – wash hands after handling before sun exposure',
+          ],
+          preparationType: 'Inhalation / Juice',
+        ),
+      ],
+      safetyWarnings: [
+        'Highly acidic; use with caution if you have GERD',
+        'Photosensitive – wash hands after handling before going into the sun',
+      ],
+      imagePath: 'assets/images/dayap.jpg',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  static Plant _getGumamelaData() {
+    return Plant(
+      id: 'gumamela-001',
+      commonName: 'Gumamela',
+      scientificName: 'Hibiscus rosa-sinensis',
+      localName: 'Gumamela',
+      englishName: 'Hibiscus',
+      family: 'Malvaceae',
+      genus: 'Hibiscus',
+      species: 'rosa-sinensis',
+      isDOHApproved: false,
+      morphology:
+          'Evergreen shrub with ovate to lanceolate leaves with serrated margins. Large showy funnel-shaped flowers in various colors. Widely grown as ornamental hedge.',
+      ecology:
+          'Native to tropical Asia; widely cultivated in the Philippines. Blooms year-round in sunny conditions.',
+      habitat: 'Lowland gardens; full sun to partial shade. Well-drained soil.',
+      medicinalUses: [
+        MedicinalUse(
+          condition: 'Inflammation',
+          description:
+              'Poultice of crushed flower buds and leaves applied to boils, abscesses, and swellings to hasten ripening and relieve pain.',
+          effectiveness: 'Moderate - Traditional use',
+          activeCompounds: ['Mucilage', 'Flavonoids', 'Anthocyanins'],
+          dosage: 'Topical poultice as needed',
+          duration: 'Until swelling improves',
+        ),
+        MedicinalUse(
+          condition: 'Skin Conditions',
+          description:
+              'Crushed flowers and leaves applied to boils and skin swellings. Dried petals brewed as mild tea.',
+          effectiveness: 'Moderate - Traditional external use',
+          activeCompounds: ['Mucilage', 'Flavonoids'],
+          dosage: 'Poultice 1-2 times daily',
+          duration: 'As needed',
+        ),
+      ],
+      preparationMethods: [
+        PreparationMethod(
+          id: _uuid.v4(),
+          condition: 'Inflammation',
+          title: 'Gumamela Poultice',
+          description: 'Poultice for boils and swellings',
+          steps: [
+            'Gather fresh gumamela flower buds and leaves',
+            'Wash thoroughly',
+            'Crush into a paste',
+            'Apply directly to boil or swelling',
+            'Replace when dry; use 1-2 times daily',
+          ],
+          dosage: 'Topical application',
+          frequency: '1-2 times daily',
+          duration: 'Until improvement',
+          warnings: [
+            'External use preferred',
+            'Caution with internal use during pregnancy (emmenagogue effects)',
+          ],
+          preparationType: 'Poultice',
+        ),
+      ],
+      safetyWarnings: [
+        'Generally safe for external use',
+        'Caution with internal consumption during pregnancy',
+      ],
+      imagePath: 'assets/images/gumamela.jpg',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  static Plant _getGuyabanoData() {
+    return Plant(
+      id: 'guyabano-001',
+      commonName: 'Guyabano',
+      scientificName: 'Annona muricata',
+      localName: 'Guyabano',
+      englishName: 'Soursop',
+      family: 'Annonaceae',
+      genus: 'Annona',
+      species: 'muricata',
+      isDOHApproved: false,
+      morphology:
+          'Small tropical tree with oblong to elliptical leaves. Large, spiny, heart-shaped green fruits. Grows well in humid tropical lowlands.',
+      ecology:
+          'Tropical tree bearing large spiny fruits. Cultivated and naturalized in the Philippines.',
+      habitat: 'Lowland tropical; humid conditions. Well-drained soil.',
+      medicinalUses: [
+        MedicinalUse(
+          condition: 'Inflammation',
+          description:
+              'Leaves boiled as tea traditionally used for inflammation support. Fruit is nutritious (Vitamin C, fiber). Use leaves sparingly; long-term excessive use linked to neurotoxicity.',
+          effectiveness: 'Traditional use - anecdotal; use leaves sparingly',
+          activeCompounds: ['Annonacin', 'Vitamin C', 'Fiber'],
+          dosage: 'Fruit: as food. Leaf tea: traditional use only, sparingly',
+          duration: 'Do not use leaves long-term or in excess',
+        ),
+      ],
+      preparationMethods: [
+        PreparationMethod(
+          id: _uuid.v4(),
+          condition: 'Inflammation',
+          title: 'Guyabano Fruit (Nutrition)',
+          description: 'Ripe fruit for nutrition; leaf tea use sparingly',
+          steps: [
+            'Fruit: eat ripe for Vitamin C and fiber',
+            'Leaf tea: if used traditionally, boil a few leaves in water, strain; use sparingly and not long-term',
+          ],
+          dosage: 'Fruit as food. Leaves: not recommended for regular use',
+          frequency: 'Fruit as desired; leaves avoid regular use',
+          duration: 'Avoid long-term leaf consumption',
+          warnings: [
+            'Long-term excessive leaf/seed consumption linked to neurotoxicity (annonacin)',
+            'Use leaves sparingly; fruit is safe',
+          ],
+          preparationType: 'Food / Tea (leaves sparingly)',
+        ),
+      ],
+      safetyWarnings: [
+        'Fruit is healthy and safe',
+        'Long-term excessive consumption of leaves or seeds linked to neurotoxicity',
+        'Use leaves sparingly; do not consume regularly',
+      ],
+      imagePath: 'assets/images/guyabano.jpg',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  static Plant _getIpilIpilData() {
+    return Plant(
+      id: 'ipil-ipil-001',
+      commonName: 'Ipil-ipil',
+      scientificName: 'Leucaena leucocephala',
+      localName: 'Ipil-ipil',
+      englishName: 'Lead Tree',
+      family: 'Fabaceae',
+      genus: 'Leucaena',
+      species: 'leucocephala',
+      isDOHApproved: false,
+      morphology:
+          'Fast-growing tree with bipinnately compound leaves (small leaflets). Small white flowers in round heads. Flat brown pods. Often used for reforestation and firewood.',
+      ecology:
+          'Grows aggressively in open areas. Produces flat brown pods. Tropical; drought-tolerant.',
+      habitat:
+          'Lowland to mid-elevation; open areas, reforestation sites. Well-drained soil.',
+      medicinalUses: [
+        MedicinalUse(
+          condition: 'Digestive Issues',
+          description:
+              'TRADITIONAL USE ONLY – not recommended. Mature seeds were historically roasted and eaten to expel roundworms. Contains mimosine; can cause hair loss and stomach issues. Not recommended without expert supervision.',
+          effectiveness: 'Not recommended - potential toxicity',
+          activeCompounds: ['Mimosine'],
+          dosage: 'Do not use without expert supervision',
+          duration: 'N/A',
+        ),
+      ],
+      preparationMethods: [],
+      safetyWarnings: [
+        'Contains mimosine; ingestion can cause hair loss (alopecia) and stomach issues',
+        'Not recommended for human medicinal use without expert supervision',
+      ],
+      imagePath: 'assets/images/ipil_ipil.jpg',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  // ==================== BATCH 3 (42-plant scope) ====================
+
+  static Plant _getKahelData() {
+    return Plant(
+      id: 'kahel-001',
+      commonName: 'Kahel',
+      scientificName: 'Citrus sinensis',
+      localName: 'Kahel',
+      englishName: 'Orange',
+      family: 'Rutaceae',
+      genus: 'Citrus',
+      species: 'sinensis',
+      isDOHApproved: false,
+      morphology:
+          'Small to medium-sized evergreen tree with oval to elliptical leaves and white flowers. Round orange fruits. Less common in lowlands than Calamansi; cultivated for sweet fruit.',
+      ecology:
+          'Evergreen tree cultivated for its sweet fruit. Prefers well-drained soil and full sun.',
+      habitat:
+          'Lowland to mid-elevation; cultivated. Well-drained soil; full sun.',
+      medicinalUses: [
+        MedicinalUse(
+          condition: 'Cough',
+          description:
+              'Freshly squeezed juice is high in Vitamin C; supports immune function and cough relief. Peel zest used in aromatherapy for mood.',
+          effectiveness: 'Moderate - Traditional use',
+          activeCompounds: ['Vitamin C', 'Flavonoids', 'Essential oils'],
+          dosage: 'Juice as desired; zest for aromatherapy',
+          duration: 'As needed',
+        ),
+        MedicinalUse(
+          condition: 'Respiratory Issues',
+          description:
+              'Vitamin C in juice supports respiratory wellness and immune function.',
+          effectiveness: 'Moderate - Traditional use',
+          activeCompounds: ['Vitamin C', 'Antioxidants'],
+          dosage: '1 glass juice daily',
+          duration: 'As needed',
+        ),
+      ],
+      preparationMethods: [
+        PreparationMethod(
+          id: _uuid.v4(),
+          condition: 'Cough',
+          title: 'Kahel Juice for Immune and Cough Support',
+          description: 'Fresh orange juice for Vitamin C',
+          steps: [
+            'Select ripe kahel (orange) fruits',
+            'Wash and cut; squeeze juice',
+            'Drink fresh or chilled',
+            'Peel zest can be used for aromatherapy',
+          ],
+          dosage: '1 glass daily or as needed',
+          frequency: 'As needed',
+          duration: 'As needed',
+          warnings: [
+            'High acid may irritate acid reflux or mouth ulcers',
+          ],
+          preparationType: 'Juice',
+        ),
+      ],
+      safetyWarnings: [
+        'Safe for consumption',
+        'High acid content may irritate those with acid reflux or mouth ulcers',
+      ],
+      imagePath: 'assets/images/kahel.jpg',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  static Plant _getKakawateData() {
+    return Plant(
+      id: 'kakawate-001',
+      commonName: 'Kakawate',
+      scientificName: 'Gliricidia sepium',
+      localName: 'Kakawate',
+      englishName: 'Madre de Cacao',
+      family: 'Fabaceae',
+      genus: 'Gliricidia',
+      species: 'sepium',
+      isDOHApproved: false,
+      morphology:
+          'Medium-sized tree with pinnately compound leaves (oval leaflets). Pink to purple flowers in masses. Used as living fence or shade tree; sheds leaves in dry season.',
+      ecology:
+          'Widely used as living fence or shade tree. Produces masses of pink/lilac flowers. Tropical.',
+      habitat:
+          'Lowland; open areas and fences. Well-drained soil; drought-tolerant when established.',
+      medicinalUses: [
+        MedicinalUse(
+          condition: 'Skin Conditions',
+          description:
+              'EXTERNAL USE ONLY. Juice from leaves or boiled leaf water applied to itchy skin, scabies, and dermatitis. Leaves and bark are toxic if ingested; do not consume.',
+          effectiveness: 'Moderate - Traditional external use only',
+          activeCompounds: ['Flavonoids', 'Tannins'],
+          dosage: 'Topical application only',
+          duration: 'As needed; external only',
+        ),
+      ],
+      preparationMethods: [
+        PreparationMethod(
+          id: _uuid.v4(),
+          condition: 'Skin Conditions',
+          title: 'Kakawate Leaf Wash',
+          description: 'External wash for itch and scabies',
+          steps: [
+            'Gather fresh kakawate leaves',
+            'Extract juice by crushing or boil leaves in water',
+            'Cool and strain',
+            'Apply juice or boiled water to affected skin only',
+            'Do not ingest any part of the plant',
+          ],
+          dosage: 'Topical only',
+          frequency: '1-2 times daily',
+          duration: 'Until improvement',
+          warnings: [
+            'External use only. Toxic if ingested.',
+            'Do not consume leaves or bark',
+          ],
+          preparationType: 'Wash / Topical',
+        ),
+      ],
+      safetyWarnings: [
+        'External use only. Leaves and bark are toxic to humans if ingested.',
+        'Do not consume.',
+      ],
+      imagePath: 'assets/images/kakawate.jpg',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  static Plant _getKamantigueData() {
+    return Plant(
+      id: 'kamantigue-001',
+      commonName: 'Kamantigue',
+      scientificName: 'Impatiens balsamina',
+      localName: 'Kamantigue',
+      englishName: 'Garden Balsam',
+      family: 'Balsaminaceae',
+      genus: 'Impatiens',
+      species: 'balsamina',
+      isDOHApproved: false,
+      morphology:
+          'Annual succulent herb with lanceolate to elliptic leaves. Showy flowers in various colors. Grows well in moist, shaded areas.',
+      ecology:
+          'Cultivated for colorful flowers. Prefers moist, shaded conditions. Annual herb.',
+      habitat: 'Lowland gardens; moist, shaded areas. Well-drained soil.',
+      medicinalUses: [
+        MedicinalUse(
+          condition: 'Fungal Infections',
+          description:
+              'Crushed fresh flowers or leaves applied as poultice to fungal skin infections and whitlow (paronychia). External use generally safe.',
+          effectiveness: 'Moderate - Traditional external use',
+          activeCompounds: ['Flavonoids', 'Tannins'],
+          dosage: 'Poultice applied to affected area',
+          duration: 'Until infection improves',
+        ),
+        MedicinalUse(
+          condition: 'Skin Conditions',
+          description:
+              'Poultice of flowers or leaves applied to fingernail infection and skin infections.',
+          effectiveness: 'Moderate - Traditional use',
+          activeCompounds: ['Tannins', 'Mucilage'],
+          dosage: 'Topical poultice 1-2 times daily',
+          duration: 'As needed',
+        ),
+      ],
+      preparationMethods: [
+        PreparationMethod(
+          id: _uuid.v4(),
+          condition: 'Fungal Infections',
+          title: 'Kamantigue Poultice',
+          description: 'Poultice for fungal infection and whitlow',
+          steps: [
+            'Gather fresh kamantigue flowers or leaves',
+            'Wash thoroughly',
+            'Crush into a paste',
+            'Apply directly to fungal infection or fingernail area',
+            'Replace when dry; 1-2 times daily',
+          ],
+          dosage: 'Topical only',
+          frequency: '1-2 times daily',
+          duration: 'Until improvement',
+          warnings: [
+            'External use preferred. Contains calcium oxalate; internal use not recommended without supervision',
+          ],
+          preparationType: 'Poultice',
+        ),
+      ],
+      safetyWarnings: [
+        'External use is generally safe',
+        'Internal use not recommended without supervision (calcium oxalate)',
+      ],
+      imagePath: 'assets/images/kamantigue.jpg',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  static Plant _getKamiasData() {
+    return Plant(
+      id: 'kamias-001',
+      commonName: 'Kamias',
+      scientificName: 'Averrhoa bilimbi',
+      localName: 'Kamias',
+      englishName: 'Bilimbi',
+      family: 'Oxalidaceae',
+      genus: 'Averrhoa',
+      species: 'bilimbi',
+      isDOHApproved: false,
+      morphology:
+          'Small tropical tree with pinnately compound leaves (small leaflets). Small red to purple flowers. Oblong green sour fruits borne in clusters on the trunk (cauliflory).',
+      ecology:
+          'Bears clusters of sour, cylinder-shaped fruits on the trunk. Widely cultivated in backyards.',
+      habitat:
+          'Lowland tropical; well-drained soil. Full sun to partial shade.',
+      medicinalUses: [
+        MedicinalUse(
+          condition: 'Skin Conditions',
+          description:
+              'Crushed leaves applied as paste to itchy skin or swollen mumps. Fruit used as souring agent in food. High oxalate content – avoid excessive fruit/juice; people with kidney issues should avoid.',
+          effectiveness: 'Moderate - Traditional use',
+          activeCompounds: ['Oxalic acid', 'Vitamin C', 'Organic acids'],
+          dosage: 'Paste topical; fruit in moderation',
+          duration: 'Topical as needed',
+        ),
+        MedicinalUse(
+          condition: 'Inflammation',
+          description:
+              'Traditional use for rheumatism; leaves crushed and applied. Use with caution; high oxalate.',
+          effectiveness: 'Traditional use - caution for kidney issues',
+          activeCompounds: ['Oxalates', 'Acids'],
+          dosage: 'Traditional poultice; avoid excessive consumption',
+          duration: 'As needed',
+        ),
+      ],
+      preparationMethods: [
+        PreparationMethod(
+          id: _uuid.v4(),
+          condition: 'Skin Conditions',
+          title: 'Kamias Leaf Paste',
+          description: 'Paste for itchy skin or mumps',
+          steps: [
+            'Gather fresh kamias leaves',
+            'Wash and crush into a paste',
+            'Apply to itchy skin or swollen mumps',
+            'Fruit can be eaten as souring agent in moderation',
+          ],
+          dosage: 'Topical as needed',
+          frequency: '1-2 times daily',
+          duration: 'As needed',
+          warnings: [
+            'High oxalate content. Excessive fruit or juice can cause acute kidney injury.',
+            'People with kidney issues should avoid.',
+          ],
+          preparationType: 'Paste / Topical',
+        ),
+      ],
+      safetyWarnings: [
+        'High oxalate content. Excessive consumption of fruit or juice can cause acute kidney injury.',
+        'People with kidney issues should avoid.',
+      ],
+      imagePath: 'assets/images/kamias.jpg',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  static Plant _getKamoteData() {
+    return Plant(
+      id: 'kamote-001',
+      commonName: 'Kamote',
+      scientificName: 'Ipomoea batatas',
+      localName: 'Kamote',
+      englishName: 'Sweet Potato',
+      family: 'Convolvulaceae',
+      genus: 'Ipomoea',
+      species: 'batatas',
+      isDOHApproved: false,
+      morphology:
+          'Creeping vine with heart-shaped to palmately lobed leaves. Tuberous roots. Staple crop; grows easily in various soil types.',
+      ecology:
+          'Creeping vine with tuberous roots. Staple crop nationwide. Drought-tolerant.',
+      habitat:
+          'Lowland to mid-elevation; various soils. Full sun; well-drained preferred.',
+      medicinalUses: [
+        MedicinalUse(
+          condition: 'Fever',
+          description:
+              'Leaves (talbos) boiled and eaten or juiced; traditional/anecdotal use for dengue support (platelet count). Nutritious; ensure leaves are cooked or washed thoroughly.',
+          effectiveness: 'Traditional/anecdotal for dengue; nutritious',
+          activeCompounds: ['Vitamins', 'Fiber', 'Antioxidants'],
+          dosage: 'Boiled tops as food; leaf juice per traditional practice',
+          duration: 'As needed; not a substitute for medical care',
+        ),
+        MedicinalUse(
+          condition: 'Wound Healing',
+          description:
+              'Leaf decoction used to wash sores; leaves are nutritious and support general health.',
+          effectiveness: 'Moderate - Traditional use',
+          activeCompounds: ['Vitamins', 'Mucilage'],
+          dosage: 'Leaf wash for wounds; leaves in diet',
+          duration: 'As needed',
+        ),
+      ],
+      preparationMethods: [
+        PreparationMethod(
+          id: _uuid.v4(),
+          condition: 'Fever',
+          title: 'Kamote Tops (Talbos)',
+          description:
+              'Boiled leaves for nutrition and traditional dengue support',
+          steps: [
+            'Gather young kamote tops (talbos)',
+            'Wash thoroughly to remove soil',
+            'Boil briefly and eat as salad or side dish',
+            'Alternatively, juice leaves for traditional use (anecdotal for dengue); seek medical care for dengue',
+          ],
+          dosage: 'As food or per traditional use',
+          frequency: 'As needed',
+          duration: 'Not a substitute for medical treatment',
+          warnings: [
+            'Ensure leaves are cooked or washed thoroughly',
+            'Dengue requires medical care; leaf use is anecdotal only',
+          ],
+          preparationType: 'Boiled / Juice',
+        ),
+      ],
+      safetyWarnings: [
+        'Leaves and roots are nutritious and generally safe',
+        'Ensure leaves are cooked or washed thoroughly to remove soil contaminants',
+      ],
+      imagePath: 'assets/images/kamote.jpg',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  // ==================== BATCH 4 (42-plant scope) ====================
+
+  static Plant _getKamotengKahoyData() {
+    return Plant(
+      id: 'kamoteng-kahoy-001',
+      commonName: 'Kamoteng-kahoy',
+      scientificName: 'Manihot esculenta',
+      localName: 'Kamoteng-kahoy',
+      englishName: 'Cassava',
+      family: 'Euphorbiaceae',
+      genus: 'Manihot',
+      species: 'esculenta',
+      isDOHApproved: false,
+      morphology:
+          'Woody shrub with palmately lobed leaves (5-7 deep lobes). Tuberous roots. Drought-tolerant; thrives in poor soils.',
+      ecology:
+          'Grown for starchy tuberous roots. Drought-tolerant. Tropical; widely cultivated.',
+      habitat:
+          'Lowland to mid-elevation; poor to well-drained soils. Full sun.',
+      medicinalUses: [
+        MedicinalUse(
+          condition: 'Wound Healing',
+          description:
+              'Starch from roots sometimes used as powder for rashes and minor skin wounds. Tubers must be peeled and thoroughly cooked before eating – raw roots and leaves are TOXIC (cyanogenic glycosides).',
+          effectiveness:
+              'Traditional use - root must be cooked; starch for skin',
+          activeCompounds: [
+            'Starch',
+            'Cyanogenic glycosides (removed by cooking)'
+          ],
+          dosage: 'Starch topically; tubers as food only when fully cooked',
+          duration: 'Topical as needed',
+        ),
+        MedicinalUse(
+          condition: 'Skin Conditions',
+          description:
+              'Cassava starch used as powder for rashes. External use only. Never eat raw roots or leaves.',
+          effectiveness: 'Traditional - external only',
+          activeCompounds: ['Starch'],
+          dosage: 'Starch as powder on affected skin',
+          duration: 'As needed',
+        ),
+      ],
+      preparationMethods: [
+        PreparationMethod(
+          id: _uuid.v4(),
+          condition: 'Skin Conditions',
+          title: 'Cassava Starch for Rashes',
+          description: 'Starch from cooked roots for minor skin rashes',
+          steps: [
+            'Peel tuberous roots and cook thoroughly (boil or fry) to remove toxins',
+            'Dry and powder the starch if using as topical',
+            'Apply starch powder to rash area',
+            'Never eat or use raw roots or leaves',
+          ],
+          dosage: 'Topical as needed',
+          frequency: 'As needed',
+          duration: 'Until improvement',
+          warnings: [
+            'TOXIC IF RAW. Contains cyanogenic glycosides. Never eat leaves or roots raw.',
+            'Tubers must be peeled and thoroughly cooked before any consumption',
+          ],
+          preparationType: 'Topical / Food (cooked only)',
+        ),
+      ],
+      safetyWarnings: [
+        'TOXIC IF RAW. Contains cyanogenic glycosides which release cyanide if eaten raw or improperly prepared.',
+        'Never eat the leaves or roots raw. Always peel and cook thoroughly.',
+      ],
+      imagePath: 'assets/images/kamoteng_kahoy.jpg',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  static Plant _getMangoData() {
+    return Plant(
+      id: 'mango-001',
+      commonName: 'Mango',
+      scientificName: 'Mangifera indica',
+      localName: 'Mango',
+      englishName: 'Mango',
+      family: 'Anacardiaceae',
+      genus: 'Mangifera',
+      species: 'indica',
+      isDOHApproved: false,
+      morphology:
+          'Large, spreading evergreen tree with lanceolate to oblong leaves. Small flowers in panicles. Large oval to kidney-shaped fruits. National fruit of the Philippines.',
+      ecology:
+          'Thrives in distinct wet and dry seasons. Widely cultivated. Large canopy.',
+      habitat: 'Lowland to mid-elevation; well-drained soil. Full sun.',
+      medicinalUses: [
+        MedicinalUse(
+          condition: 'Cough',
+          description:
+              'Young leaves boiled to make tea or gargle for sore throat (traditional). Fruit consumed ripe or green for nutrition.',
+          effectiveness: 'Moderate - Traditional use',
+          activeCompounds: ['Tannins', 'Vitamins', 'Polyphenols'],
+          dosage: 'Leaf tea/gargle as needed; fruit as food',
+          duration: 'As needed',
+        ),
+        MedicinalUse(
+          condition: 'Respiratory Issues',
+          description:
+              'Leaf tea or gargle used traditionally for sore throat and respiratory comfort.',
+          effectiveness: 'Traditional use',
+          activeCompounds: ['Tannins', 'Antioxidants'],
+          dosage: 'Tea or gargle from young leaves',
+          duration: 'As needed',
+        ),
+      ],
+      preparationMethods: [
+        PreparationMethod(
+          id: _uuid.v4(),
+          condition: 'Cough',
+          title: 'Mango Leaf Tea / Gargle',
+          description: 'Young leaves for sore throat',
+          steps: [
+            'Gather young mango leaves',
+            'Wash thoroughly',
+            'Boil in water for 10-15 minutes',
+            'Strain; use as tea or cool for gargle',
+            'Fruit can be eaten ripe or green',
+          ],
+          dosage: 'Gargle or 1 cup tea as needed',
+          frequency: '2-3 times daily',
+          duration: 'As needed',
+          warnings: [
+            'Sap from tree/stem can cause contact dermatitis in sensitive individuals (same family as poison ivy)',
+          ],
+          preparationType: 'Decoction / Gargle',
+        ),
+      ],
+      safetyWarnings: [
+        'Fruit is safe. Sap from tree or stem can cause contact dermatitis (itchy rash) in sensitive individuals.',
+      ],
+      imagePath: 'assets/images/mango.jpg',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  static Plant _getManiData() {
+    return Plant(
+      id: 'mani-001',
+      commonName: 'Mani',
+      scientificName: 'Arachis hypogaea',
+      localName: 'Mani',
+      englishName: 'Peanut',
+      family: 'Fabaceae',
+      genus: 'Arachis',
+      species: 'hypogaea',
+      isDOHApproved: false,
+      morphology:
+          'Low-growing annual herb with pinnately compound leaves (four leaflets). Yellow flowers. Pods develop underground; edible seeds (peanuts).',
+      ecology:
+          'Annual; buries pods underground to mature. Requires loose, sandy soil.',
+      habitat: 'Lowland; loose, sandy, well-drained soil. Full sun.',
+      medicinalUses: [
+        MedicinalUse(
+          condition: 'Digestive Issues',
+          description:
+              'High protein and fiber; seeds boiled, roasted, or fried as food. Peanut oil used for cooking. Common allergen – avoid if allergic. Risk of aflatoxin if stored improperly.',
+          effectiveness: 'Nutrition - high protein',
+          activeCompounds: ['Protein', 'Healthy fats', 'Fiber', 'Vitamins'],
+          dosage: 'As food in moderation',
+          duration: 'As part of diet',
+        ),
+      ],
+      preparationMethods: [
+        PreparationMethod(
+          id: _uuid.v4(),
+          condition: 'Digestive Issues',
+          title: 'Mani (Peanut) as Food',
+          description: 'Seeds for nutrition',
+          steps: [
+            'Use raw or roasted seeds',
+            'Boil, roast, or fry for consumption',
+            'Oil can be extracted for cooking',
+            'Store in dry place to avoid aflatoxin',
+          ],
+          dosage: 'As part of balanced diet',
+          frequency: 'As desired',
+          duration: 'Ongoing',
+          warnings: [
+            'Common cause of severe food allergy (anaphylaxis). Avoid completely if peanut allergic.',
+            'Aflatoxin (mold toxin) can develop in improperly stored peanuts.',
+          ],
+          preparationType: 'Food',
+        ),
+      ],
+      safetyWarnings: [
+        'Common cause of severe food allergies (anaphylaxis). Individuals with peanut allergy must avoid completely.',
+        'Aflatoxin can develop in improperly stored peanuts.',
+      ],
+      imagePath: 'assets/images/mani.jpg',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  static Plant _getMayanaData() {
+    return Plant(
+      id: 'mayana-001',
+      commonName: 'Mayana',
+      scientificName: 'Coleus scutellarioides',
+      localName: 'Mayana',
+      englishName: 'Coleus',
+      family: 'Lamiaceae',
+      genus: 'Coleus',
+      species: 'scutellarioides',
+      isDOHApproved: false,
+      morphology:
+          'Fleshy herb with ovate to heart-shaped leaves in various colors and patterns. Square stems. Widely cultivated for colorful, variegated foliage.',
+      ecology:
+          'Grows well in shade or partial sun. Tropical; common as ornamental.',
+      habitat:
+          'Lowland gardens; shade to partial sun. Moist, well-drained soil.',
+      medicinalUses: [
+        MedicinalUse(
+          condition: 'Pain',
+          description:
+              'Crushed fresh leaves applied as poultice to bruises, sprains, and mild swelling. Replace every few hours. Generally safe for external use.',
+          effectiveness: 'Moderate - Traditional external use',
+          activeCompounds: ['Mucilage', 'Flavonoids'],
+          dosage: 'Poultice on affected area',
+          duration: 'Until improvement',
+        ),
+        MedicinalUse(
+          condition: 'Inflammation',
+          description:
+              'Poultice of crushed leaves for swelling and inflammation. External use only.',
+          effectiveness: 'Traditional use',
+          activeCompounds: ['Anti-inflammatory compounds'],
+          dosage: 'Topical poultice',
+          duration: 'As needed',
+        ),
+      ],
+      preparationMethods: [
+        PreparationMethod(
+          id: _uuid.v4(),
+          condition: 'Pain',
+          title: 'Mayana Poultice for Bruises and Swelling',
+          description: 'Crushed leaves for bruises, sprains, swelling',
+          steps: [
+            'Gather 10-12 fresh mayana leaves',
+            'Wash and crush into a paste',
+            'Apply directly to bruise, sprain, or swelling',
+            'Replace every few hours',
+          ],
+          dosage: 'Topical; replace every few hours',
+          frequency: '2-3 times daily',
+          duration: 'Until improvement',
+          warnings: [
+            'External use. Not typically used for internal consumption.',
+          ],
+          preparationType: 'Poultice',
+        ),
+      ],
+      safetyWarnings: [
+        'Generally safe for external application.',
+        'Not typically used for internal consumption in the Philippines.',
+      ],
+      imagePath: 'assets/images/mayana.jpg',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  static Plant _getPandanData() {
+    return Plant(
+      id: 'pandan-001',
+      commonName: 'Pandan',
+      scientificName: 'Pandanus amaryllifolius',
+      localName: 'Pandan',
+      englishName: 'Pandan',
+      family: 'Pandanaceae',
+      genus: 'Pandanus',
+      species: 'amaryllifolius',
+      isDOHApproved: false,
+      morphology:
+          'Tropical shrub with long, narrow strap-shaped leaves in a fan-like rosette. Aromatic. Rarely flowers; propagated by suckers or cuttings.',
+      ecology:
+          'Fragrant leaves. Prefers moist soil. Widely used in cuisine and tradition.',
+      habitat: 'Lowland; moist soil. Shade to partial sun. Often in backyards.',
+      medicinalUses: [
+        MedicinalUse(
+          condition: 'Pain',
+          description:
+              'Traditional use for headache relief. Leaves boiled as mild tea for relaxation. Leaves tied in knots and boiled with rice or sweets for flavor. Mild diuretic.',
+          effectiveness: 'Moderate - Traditional use',
+          activeCompounds: ['Essential oils', 'Alkaloids'],
+          dosage: 'Tea as needed; leaves in cooking',
+          duration: 'As needed',
+        ),
+        MedicinalUse(
+          condition: 'Kidney Stones',
+          description:
+              'Mild diuretic; boiled leaf tea may support urinary flow. Used alongside diet for general wellness.',
+          effectiveness: 'Traditional - mild diuretic',
+          activeCompounds: ['Essential oils'],
+          dosage: '1 cup leaf tea as needed',
+          duration: 'As needed',
+        ),
+      ],
+      preparationMethods: [
+        PreparationMethod(
+          id: _uuid.v4(),
+          condition: 'Pain',
+          title: 'Pandan Leaf Tea',
+          description: 'Mild tea for relaxation and headache',
+          steps: [
+            'Gather fresh pandan leaves',
+            'Wash and cut into pieces',
+            'Boil in water for 10-15 minutes',
+            'Strain and drink as tea',
+            'Leaves can also be tied in knots and boiled with rice for flavor',
+          ],
+          dosage: '1 cup as needed',
+          frequency: 'As needed',
+          duration: 'As needed',
+          warnings: [
+            'Highly safe. Widely used in cuisine.',
+          ],
+          preparationType: 'Tea / Culinary',
+        ),
+      ],
+      safetyWarnings: [
+        'Highly safe. Widely used in cuisine and traditional preparation.',
+      ],
+      imagePath: 'assets/images/pandan.jpg',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  // ==================== BATCH 5 (42-plant scope) ====================
+
+  static Plant _getPomeloData() {
+    return Plant(
+      id: 'pomelo-001',
+      commonName: 'Pomelo',
+      scientificName: 'Citrus maxima',
+      localName: 'Pomelo',
+      englishName: 'Pomelo',
+      family: 'Rutaceae',
+      genus: 'Citrus',
+      species: 'maxima',
+      isDOHApproved: false,
+      morphology:
+          'Largest citrus tree. Large oval to elliptical leaves, white flowers, large round to pear-shaped fruits. Medium-sized tree with large leaves and winged petioles.',
+      ecology:
+          'Largest citrus fruit tree. Tropical; cultivated. Distinctive large leaves.',
+      habitat: 'Lowland to mid-elevation; well-drained soil. Full sun.',
+      medicinalUses: [
+        MedicinalUse(
+          condition: 'Cough',
+          description:
+              'Rind and leaves used traditionally for cough. Fruit eaten raw for nutrition. Boiled leaves used in aromatic baths. Drug interaction warning: like grapefruit, contains furanocoumarins – consult doctor if on maintenance medication.',
+          effectiveness: 'Traditional use',
+          activeCompounds: ['Vitamin C', 'Furanocoumarins', 'Essential oils'],
+          dosage: 'Fruit as food; leaf/rind tea per traditional use',
+          duration: 'As needed',
+        ),
+        MedicinalUse(
+          condition: 'Respiratory Issues',
+          description:
+              'Traditional use of rind and leaves for respiratory comfort. Consult doctor if on statins or blood pressure medication.',
+          effectiveness: 'Traditional use',
+          activeCompounds: ['Essential oils', 'Vitamin C'],
+          dosage: 'Per traditional preparation',
+          duration: 'As needed',
+        ),
+      ],
+      preparationMethods: [
+        PreparationMethod(
+          id: _uuid.v4(),
+          condition: 'Cough',
+          title: 'Pomelo Fruit and Leaf Use',
+          description:
+              'Fruit for nutrition; leaves for traditional bath or tea',
+          steps: [
+            'Fruit: eat raw for nutrition',
+            'Leaves: boil for aromatic bath (traditional)',
+            'Rind/leaves: traditional tea for cough – consult doctor if on medications',
+          ],
+          dosage: 'As food or per traditional use',
+          frequency: 'As needed',
+          duration: 'As needed',
+          warnings: [
+            'Drug interaction: Pomelo (like grapefruit) can interact with many medications (statins, blood pressure). Consult doctor if on maintenance medication.',
+          ],
+          preparationType: 'Food / Decoction',
+        ),
+      ],
+      safetyWarnings: [
+        'Drug interaction warning: Pomelo contains furanocoumarins which can interact dangerously with many medications (statins, blood pressure). Consult a doctor if on maintenance medication.',
+      ],
+      imagePath: 'assets/images/pomelo.jpg',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  static Plant _getSaluyotData() {
+    return Plant(
+      id: 'saluyot-001',
+      commonName: 'Saluyot',
+      scientificName: 'Corchorus olitorius',
+      localName: 'Saluyot',
+      englishName: 'Jute',
+      family: 'Malvaceae',
+      genus: 'Corchorus',
+      species: 'olitorius',
+      isDOHApproved: false,
+      morphology:
+          'Erect, branched annual herb with lanceolate to ovate leaves and serrated margins. Small yellow flowers. Popular vegetable in Ilocano cuisine.',
+      ecology:
+          'Thrives in open, low-lying areas. Very popular as vegetable. Mucilaginous when cooked.',
+      habitat: 'Lowland; open areas. Well-drained soil; full sun.',
+      medicinalUses: [
+        MedicinalUse(
+          condition: 'Digestive Issues',
+          description:
+              'Leaves boiled in soups (Dinengdeng/Bulanglang). Mucilaginous texture supports digestion. Rich in vitamins and minerals.',
+          effectiveness: 'Moderate - Nutritious, traditional use',
+          activeCompounds: ['Mucilage', 'Vitamins', 'Minerals', 'Fiber'],
+          dosage: 'As vegetable in soups',
+          duration: 'As part of diet',
+        ),
+        MedicinalUse(
+          condition: 'Inflammation',
+          description:
+              'Mild anti-inflammatory; nutritious leaves used in traditional cooking for general wellness.',
+          effectiveness: 'Traditional use',
+          activeCompounds: ['Antioxidants', 'Mucilage'],
+          dosage: 'As food',
+          duration: 'As needed',
+        ),
+      ],
+      preparationMethods: [
+        PreparationMethod(
+          id: _uuid.v4(),
+          condition: 'Digestive Issues',
+          title: 'Saluyot in Soup (Dinengdeng/Bulanglang)',
+          description: 'Boiled leaves for digestive health',
+          steps: [
+            'Gather fresh saluyot leaves',
+            'Wash thoroughly',
+            'Boil in soups (Dinengdeng or Bulanglang)',
+            'The mucilaginous (slimy) texture helps digestion',
+          ],
+          dosage: 'As part of meal',
+          frequency: 'As desired',
+          duration: 'As part of diet',
+          warnings: [
+            'Safe and highly nutritious.',
+          ],
+          preparationType: 'Food',
+        ),
+      ],
+      safetyWarnings: [
+        'Safe and highly nutritious. Rich in vitamins and minerals.',
+      ],
+      imagePath: 'assets/images/saluyot.jpg',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  static Plant _getSampaSampalukanData() {
+    return Plant(
+      id: 'sampa-sampalukan-001',
+      commonName: 'Sampa-sampalukan',
+      scientificName: 'Phyllanthus niruri',
+      localName: 'Sampa-sampalukan',
+      englishName: 'Stone Breaker',
+      family: 'Phyllanthaceae',
+      genus: 'Phyllanthus',
+      species: 'niruri',
+      isDOHApproved: false,
+      morphology:
+          'Small, erect herb with small elliptic leaves arranged in two rows along the stem. Small flowers. Often mistaken for a weed; grows in roadsides, gardens, wastelands.',
+      ecology:
+          'Grows in roadsides, gardens, and wastelands. Bitter when boiled.',
+      habitat: 'Lowland; disturbed areas. Well-drained to moist soil.',
+      medicinalUses: [
+        MedicinalUse(
+          condition: 'Kidney Stones',
+          description:
+              'Whole plant (roots included) washed and boiled to make bitter tea. Traditional use for kidney stones and liver support. Self-medication for serious liver/kidney issues is risky – consult a doctor.',
+          effectiveness:
+              'Traditional use - consult doctor for serious conditions',
+          activeCompounds: ['Phyllanthin', 'Lignans', 'Tannins'],
+          dosage: 'Decoction per traditional use; consult doctor',
+          duration: 'Do not self-treat serious kidney/liver issues',
+        ),
+      ],
+      preparationMethods: [
+        PreparationMethod(
+          id: _uuid.v4(),
+          condition: 'Kidney Stones',
+          title: 'Sampa-sampalukan Decoction',
+          description: 'Bitter tea for traditional kidney/liver support',
+          steps: [
+            'Gather whole plant (roots included)',
+            'Wash thoroughly',
+            'Boil in water to make a bitter tea',
+            'Strain and drink per traditional use',
+            'Consult a doctor for kidney stones or liver conditions',
+          ],
+          dosage: 'Per traditional use; medical supervision recommended',
+          frequency: 'As traditionally used',
+          duration: 'Consult doctor',
+          warnings: [
+            'Use with caution. Self-medication for serious liver/kidney issues is risky.',
+            'Consult a doctor for hepatitis or kidney stones.',
+          ],
+          preparationType: 'Decoction',
+        ),
+      ],
+      safetyWarnings: [
+        'Use with caution. While popularly used for hepatitis B and stones, self-medication for serious liver/kidney issues is risky. Consult a doctor.',
+      ],
+      imagePath: 'assets/images/sampa_sampalukan.jpg',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  static Plant _getSampalokData() {
+    return Plant(
+      id: 'sampalok-001',
+      commonName: 'Sampalok',
+      scientificName: 'Tamarindus indica',
+      localName: 'Sampalok',
+      englishName: 'Tamarind',
+      family: 'Fabaceae',
+      genus: 'Tamarindus',
+      species: 'indica',
+      isDOHApproved: false,
+      morphology:
+          'Large, slow-growing tree with pinnately compound leaves (small leaflets). Yellow flowers. Brown pod-like fruits with sour/sweet pulp. Highly drought-resistant.',
+      ecology: 'Produces pods with sour/sweet pulp. Tropical; long-lived tree.',
+      habitat:
+          'Lowland to mid-elevation; drought-resistant. Well-drained soil; full sun.',
+      medicinalUses: [
+        MedicinalUse(
+          condition: 'Fever',
+          description: 'Leaves boiled to make tea for fevers. Traditional use.',
+          effectiveness: 'Moderate - Traditional use',
+          activeCompounds: ['Tartaric acid', 'Vitamins', 'Polyphenols'],
+          dosage: 'Leaf tea as needed',
+          duration: 'As needed',
+        ),
+        MedicinalUse(
+          condition: 'Digestive Issues',
+          description:
+              'Ripe pulp eaten or mixed with water as mild laxative for constipation. High doses are strong laxative. Acidity can affect teeth enamel if consumed excessively.',
+          effectiveness: 'Traditional use',
+          activeCompounds: ['Tartaric acid', 'Fiber'],
+          dosage: 'Pulp in moderation',
+          duration: 'As needed',
+        ),
+      ],
+      preparationMethods: [
+        PreparationMethod(
+          id: _uuid.v4(),
+          condition: 'Fever',
+          title: 'Sampalok Leaf Tea for Fever',
+          description: 'Boiled leaves for fever',
+          steps: [
+            'Gather fresh sampalok leaves',
+            'Wash thoroughly',
+            'Boil in water for 10-15 minutes',
+            'Strain and drink as tea',
+            'Ripe pulp can be eaten or mixed with water for constipation (in moderation)',
+          ],
+          dosage: 'Tea as needed; pulp in moderation',
+          frequency: 'As needed',
+          duration: 'As needed',
+          warnings: [
+            'High doses of pulp are strong laxative.',
+            'Acidity can be harsh on teeth enamel if consumed excessively.',
+          ],
+          preparationType: 'Decoction / Food',
+        ),
+      ],
+      safetyWarnings: [
+        'Generally safe. High doses of pulp are a strong laxative.',
+        'Acidity can be harsh on teeth enamel if consumed excessively.',
+      ],
+      imagePath: 'assets/images/sampalok.jpg',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  static Plant _getSilingLabuyoData() {
+    return Plant(
+      id: 'siling-labuyo-001',
+      commonName: 'Siling Labuyo',
+      scientificName: 'Capsicum frutescens',
+      localName: 'Siling Labuyo',
+      englishName: 'Bird\'s Eye Chili',
+      family: 'Solanaceae',
+      genus: 'Capsicum',
+      species: 'frutescens',
+      isDOHApproved: false,
+      morphology:
+          'Small perennial shrub with ovate to lanceolate leaves. Small white flowers. Small elongated fruits that turn from green to red; very hot. Grows wild or cultivated.',
+      ecology:
+          'Bears very hot, small chili peppers. Tropical; cultivated and naturalized.',
+      habitat: 'Lowland; well-drained soil. Full sun.',
+      medicinalUses: [
+        MedicinalUse(
+          condition: 'Pain',
+          description:
+              'Crushed chilies mixed with oil (e.g. coconut oil) rubbed on aching joints as counter-irritant for rheumatism and arthritis. Wash hands after handling; avoid eyes and sensitive membranes.',
+          effectiveness: 'Moderate - Traditional external use',
+          activeCompounds: ['Capsaicin', 'Essential oils'],
+          dosage: 'Liniment applied to joints',
+          duration: 'As needed',
+        ),
+        MedicinalUse(
+          condition: 'Gout',
+          description:
+              'Traditional liniment for joint pain and arthritis. External use only; counter-irritant effect.',
+          effectiveness: 'Traditional use',
+          activeCompounds: ['Capsaicin'],
+          dosage: 'Topical liniment',
+          duration: 'As needed',
+        ),
+        MedicinalUse(
+          condition: 'Digestive Issues',
+          description:
+              'Used in small amounts in food to stimulate digestion. Internal excess can cause gastritis.',
+          effectiveness: 'Traditional culinary use',
+          activeCompounds: ['Capsaicin'],
+          dosage: 'Small amounts in food',
+          duration: 'As part of diet',
+        ),
+      ],
+      preparationMethods: [
+        PreparationMethod(
+          id: _uuid.v4(),
+          condition: 'Pain',
+          title: 'Siling Labuyo Liniment',
+          description: 'Chili oil for joint pain (counter-irritant)',
+          steps: [
+            'Crush fresh siling labuyo chilies',
+            'Mix with coconut oil (or other carrier oil)',
+            'Apply to aching joints (rheumatism, arthritis)',
+            'Wash hands immediately after handling',
+            'Avoid contact with eyes and sensitive membranes',
+          ],
+          dosage: 'Topical as needed',
+          frequency: '1-2 times daily',
+          duration: 'As needed',
+          warnings: [
+            'Irritant. Wash hands immediately after handling.',
+            'Avoid contact with eyes and sensitive membranes.',
+            'Internal excess can cause gastritis.',
+          ],
+          preparationType: 'Liniment / Topical',
+        ),
+      ],
+      safetyWarnings: [
+        'Irritant. Wash hands immediately after handling.',
+        'Avoid contact with eyes and sensitive membranes.',
+        'Internal excess can cause gastritis.',
+      ],
+      imagePath: 'assets/images/siling_labuyo.jpg',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  // ==================== BATCH 6 (42-plant scope) ====================
+
+  static Plant _getTubaTubaData() {
+    return Plant(
+      id: 'tuba-tuba-001',
+      commonName: 'Tuba-tuba',
+      scientificName: 'Jatropha curcas',
+      localName: 'Tuba-tuba',
+      englishName: 'Jatropha',
+      family: 'Euphorbiaceae',
+      genus: 'Jatropha',
+      species: 'curcas',
+      isDOHApproved: false,
+      morphology:
+          'Drought-resistant shrub with palmately lobed leaves. Small greenish flowers. Often used as living fence. Produces fruits with oil-rich seeds. Seeds and sap are toxic.',
+      ecology:
+          'Drought-resistant shrub; used as living fence. Produces fruits containing oil-rich seeds. Tropical.',
+      habitat:
+          'Lowland; drought-tolerant. Well-drained soil; full sun. Often as fence or boundary.',
+      medicinalUses: [
+        MedicinalUse(
+          condition: 'Pain',
+          description:
+              'TRADITIONAL USE ONLY – NOT RECOMMENDED. Leaves were traditionally used for sprains; risks outweigh benefits for non-experts. Do not ingest seeds. Sap is a strong irritant. Seeds contain Curcin (toxalbumin) – ingestion causes severe vomiting, diarrhea, dehydration, shock.',
+          effectiveness: 'Not recommended - toxic',
+          activeCompounds: ['Curcin (toxalbumin)', 'Sap irritants'],
+          dosage: 'Do not use for medication',
+          duration: 'N/A',
+        ),
+      ],
+      preparationMethods: [],
+      safetyWarnings: [
+        'DANGER: TOXIC. Seeds contain Curcin (toxalbumin). Ingestion causes severe vomiting, diarrhea, dehydration, shock.',
+        'Sap is a strong irritant. Do not use for medication.',
+        'Do not ingest seeds.',
+      ],
+      imagePath: 'assets/images/tuba_tuba.jpg',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );

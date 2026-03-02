@@ -96,8 +96,46 @@ class AuthService {
     if (session == null) {
       throw Exception('Not signed in');
     }
+    try {
+      final res = await _client.functions.invoke(
+        'delete-user',
+        headers: {
+          'Authorization': 'Bearer ${session.accessToken}',
+        },
+      );
+      if (res.status == 404) {
+        throw Exception(
+          'Delete account is not available: the delete-user function is not deployed. '
+          'Deploy it with: npx supabase functions deploy delete-user (see supabase/README.md).',
+        );
+      }
+      if (res.status != 200) {
+        final msg = res.data != null
+            ? (res.data is Map ? (res.data as Map)['message'] ?? res.data.toString() : res.data.toString())
+            : 'Failed to delete account (${res.status})';
+        throw Exception(msg.toString());
+      }
+    } on FunctionException catch (e) {
+      if (e.status == 404) {
+        throw Exception(
+          'Delete account is not available: the delete-user function is not deployed. '
+          'Deploy it with: npx supabase functions deploy delete-user (see supabase/README.md).',
+        );
+      }
+      rethrow;
+    }
+  }
+
+  /// Admin: delete another user. Caller must be admin. Invokes delete-user with body { user_id }.
+  /// Client must delete the user's storage objects before calling this (see AdminUserService.deleteUser).
+  Future<void> adminDeleteUser(String targetUserId) async {
+    final session = currentSession;
+    if (session == null) {
+      throw Exception('Not signed in');
+    }
     final res = await _client.functions.invoke(
       'delete-user',
+      body: {'user_id': targetUserId},
       headers: {
         'Authorization': 'Bearer ${session.accessToken}',
       },
@@ -105,7 +143,7 @@ class AuthService {
     if (res.status != 200) {
       final msg = res.data != null
           ? (res.data is Map ? (res.data as Map)['message'] ?? res.data.toString() : res.data.toString())
-          : 'Failed to delete account (${res.status})';
+          : 'Failed to delete user (${res.status})';
       throw Exception(msg.toString());
     }
   }

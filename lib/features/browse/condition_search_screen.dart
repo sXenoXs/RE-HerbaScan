@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:herbascan/core/constants/condition_icons.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
+import 'package:herbascan/core/models/catalog_condition.dart';
 import 'package:herbascan/core/providers/plant_provider.dart';
 import 'package:herbascan/core/models/plant.dart';
+import 'package:herbascan/core/services/condition_service.dart';
+import 'package:herbascan/core/widgets/plant_image.dart';
 import 'package:herbascan/features/scan/plant_detail_screen.dart';
 
 class ConditionSearchScreen extends StatefulWidget {
@@ -14,72 +18,41 @@ class ConditionSearchScreen extends StatefulWidget {
 
 class _ConditionSearchScreenState extends State<ConditionSearchScreen>
     with AutomaticKeepAliveClientMixin {
-  String? _selectedCondition;
+  CatalogCondition? _selectedCondition;
   List<Plant> _filteredPlants = [];
+  List<CatalogCondition> _conditions = [];
+  bool _loadingConditions = true;
+  final ConditionService _conditionService = ConditionService();
 
   @override
   bool get wantKeepAlive => true;
 
-  // Common medical conditions from the plant database
-  final List<Map<String, dynamic>> _conditions = [
-    {'name': 'Cough', 'icon': Icons.sick, 'color': Color(0xFF3B82F6)},
-    {'name': 'Asthma', 'icon': Icons.air, 'color': Color(0xFF8B5CF6)},
-    {'name': 'Fever', 'icon': Icons.thermostat, 'color': Color(0xFFEF4444)},
-    {'name': 'Pain', 'icon': Icons.healing, 'color': Color(0xFFF59E0B)},
-    {'name': 'Diabetes', 'icon': Icons.water_drop, 'color': Color(0xFFEC4899)},
-    {
-      'name': 'Hypertension',
-      'icon': Icons.favorite,
-      'color': Color(0xFFDC2626)
-    },
-    {
-      'name': 'Diarrhea',
-      'icon': Icons.local_hospital,
-      'color': Color(0xFF8B5CF6)
-    },
-    {
-      'name': 'Kidney Stones',
-      'icon': Icons.bubble_chart,
-      'color': Color(0xFF06B6D4)
-    },
-    {
-      'name': 'Wound Healing',
-      'icon': Icons.medical_services,
-      'color': Color(0xFF10B981)
-    },
-    {
-      'name': 'Digestive Issues',
-      'icon': Icons.restaurant,
-      'color': Color(0xFFF97316)
-    },
-    {'name': 'Skin Conditions', 'icon': Icons.spa, 'color': Color(0xFF84CC16)},
-    {
-      'name': 'Gout',
-      'icon': Icons.accessibility_new,
-      'color': Color(0xFF6366F1)
-    },
-    {
-      'name': 'Respiratory Issues',
-      'icon': Icons.air,
-      'color': Color(0xFF14B8A6)
-    },
-    {
-      'name': 'Inflammation',
-      'icon': Icons.local_fire_department,
-      'color': Color(0xFFEF4444)
-    },
-    {
-      'name': 'Fungal Infections',
-      'icon': Icons.bug_report,
-      'color': Color(0xFFA855F7)
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadConditions();
+  }
 
-  void _selectCondition(String condition) {
+  Future<void> _loadConditions() async {
+    final list = await _conditionService.getConditions();
+    if (mounted) setState(() {
+      _conditions = list;
+      _loadingConditions = false;
+    });
+  }
+
+  Future<void> _selectCondition(CatalogCondition condition) async {
     final plantProvider = Provider.of<PlantProvider>(context, listen: false);
-    setState(() {
+    final plantIds = await _conditionService.getPlantIdsForCondition(condition.id);
+    List<Plant> plants;
+    if (plantIds.isNotEmpty) {
+      plants = plantProvider.plants.where((p) => plantIds.contains(p.id)).toList();
+    } else {
+      plants = plantProvider.getPlantsByCondition(condition.name);
+    }
+    if (mounted) setState(() {
       _selectedCondition = condition;
-      _filteredPlants = plantProvider.getPlantsByCondition(condition);
+      _filteredPlants = plants;
     });
   }
 
@@ -116,9 +89,11 @@ class _ConditionSearchScreenState extends State<ConditionSearchScreen>
 
             // Content
             Expanded(
-              child: _selectedCondition == null
-                  ? _buildConditionGrid(theme)
-                  : _buildPlantResults(theme, appLocalizations),
+              child: _loadingConditions
+                  ? const Center(child: CircularProgressIndicator())
+                  : _selectedCondition == null
+                      ? _buildConditionGrid(theme)
+                      : _buildPlantResults(theme, appLocalizations),
             ),
           ],
         ),
@@ -170,36 +145,27 @@ class _ConditionSearchScreenState extends State<ConditionSearchScreen>
   }
 
   Widget _buildSelectedConditionBanner(ThemeData theme) {
-    final condition = _conditions.firstWhere(
-      (c) => c['name'] == _selectedCondition,
-      orElse: () => _conditions.first,
-    );
+    final c = _selectedCondition!;
+    final color = c.color;
 
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: (condition['color'] as Color).withOpacity(0.1),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: condition['color'] as Color,
-          width: 2,
-        ),
+        border: Border.all(color: color, width: 2),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: condition['color'] as Color,
+              color: color,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              condition['icon'] as IconData,
-              color: Colors.white,
-              size: 24,
-            ),
+            child: Icon(getConditionIcon(c.iconKey), color: Colors.white, size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -207,10 +173,10 @@ class _ConditionSearchScreenState extends State<ConditionSearchScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _selectedCondition!,
+                  c.name,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: condition['color'] as Color,
+                    color: color,
                   ),
                 ),
                 Text(
@@ -249,18 +215,15 @@ class _ConditionSearchScreenState extends State<ConditionSearchScreen>
       itemCount: _conditions.length,
       itemBuilder: (context, index) {
         final condition = _conditions[index];
-        return _buildConditionCard(
-          condition['name'] as String,
-          condition['icon'] as IconData,
-          condition['color'] as Color,
-          theme,
-        );
+        return _buildConditionCard(condition, theme);
       },
     );
   }
 
-  Widget _buildConditionCard(
-      String name, IconData icon, Color color, ThemeData theme) {
+  Widget _buildConditionCard(CatalogCondition condition, ThemeData theme) {
+    final name = condition.name;
+    final icon = getConditionIcon(condition.iconKey);
+    final color = condition.color;
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
@@ -270,7 +233,7 @@ class _ConditionSearchScreenState extends State<ConditionSearchScreen>
         ),
       ),
       child: InkWell(
-        onTap: () => _selectCondition(name),
+        onTap: () => _selectCondition(condition),
         borderRadius: BorderRadius.circular(16),
         child: Container(
           padding: const EdgeInsets.all(12),
@@ -346,8 +309,7 @@ class _ConditionSearchScreenState extends State<ConditionSearchScreen>
     }
 
     return ListView.builder(
-      key:
-          PageStorageKey<String>('condition_search_plants_$_selectedCondition'),
+      key: PageStorageKey<String>('condition_search_plants_${_selectedCondition?.name ?? ''}'),
       padding: const EdgeInsets.all(16),
       itemCount: _filteredPlants.length,
       itemBuilder: (context, index) {
@@ -389,15 +351,13 @@ class _ConditionSearchScreenState extends State<ConditionSearchScreen>
                   borderRadius: BorderRadius.circular(8),
                 ),
                 clipBehavior: Clip.antiAlias,
-                child: plant.imagePath.isNotEmpty
-                    ? Image.asset(
-                        plant.imagePath,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return _buildPlaceholderImage(theme);
-                        },
-                      )
-                    : _buildPlaceholderImage(theme),
+                child: PlantImage(
+                  plant: plant,
+                  fit: BoxFit.cover,
+                  width: 80,
+                  height: 80,
+                  errorWidget: (_, __, ___) => _buildPlaceholderImage(theme),
+                ),
               ),
               const SizedBox(width: 16),
               // Plant Info
@@ -440,8 +400,9 @@ class _ConditionSearchScreenState extends State<ConditionSearchScreen>
   }
 
   String _getRelevantUses(Plant plant) {
+    final conditionName = _selectedCondition?.name ?? '';
     final relevantUses = plant.medicinalUses
-        .where((use) => use.condition.contains(_selectedCondition!))
+        .where((use) => use.condition.contains(conditionName))
         .map((use) => use.condition)
         .toList();
 

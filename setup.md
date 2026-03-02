@@ -1,6 +1,6 @@
 ## Quick Setup Instructions
 
-**Last Updated**: February 2026 · **App Version**: v0.8.8
+**Last Updated**: March 2026 · **App Version**: v0.8.9
 
 ### 1. Install Flutter
 
@@ -121,7 +121,7 @@ After successful setup:
 4. **Test Multi-language**: Switch between English and Filipino
 5. **Deploy**: Build APK with `flutter build apk` for release
 
-**Current Features Ready for Testing** (v0.8.8 – February 2026):
+**Current Features Ready for Testing** (v0.8.9 – March 2026):
 - ✅ Plant identification (camera + gallery)
 - ✅ GradCAM visualization with working overlay controls
 - ✅ XAI explanations from cache/offline/fallback only (no live LLM)
@@ -134,14 +134,14 @@ After successful setup:
 - ✅ Settings and preferences; offline management
 - ✅ Backend API for Grad-CAM (Railway); Postman collection
 
-**Recent Features (v0.8.8)**:
+**Recent Features (v0.8.9)**:
 - ✅ Signup 6-digit email confirmation; stronger password rules; delete account
 - ✅ Interactive preparation checklist, contextual timers, Focus Mode, calendar
 - ✅ Contraindication Engine; no live LLM (thesis-defensible)
 - ✅ Scan History: swipe between tabs, pull-to-refresh on Cloud, offline-aware
 - ✅ Friendly auth errors; 6-digit OTP password reset; auth deep links
 
-**Recent Fixes (v0.8.8)**:
+**Recent Fixes (v0.8.9)**:
 - ✅ Summary tab content and layout; taxonomy Markdown line breaks
 - ✅ Railway /identify 401 when not logged in (optional JWT)
 - ✅ Calendar add-event on Android (queries intent); Focus Mode contrast
@@ -288,8 +288,8 @@ The app uses SQLite for local storage. The database is created automatically on 
 - **Format**: JSON with taxonomy, ecology, medicinal uses, safety; structured safety profiles
 - **Status**: ✅ Automatically included in app assets
 
-### Online Explanations (No Live LLM in v0.8.8)
-- **Behavior**: As of v0.8.8, the app does **not** use live generative AI at runtime. Explanations come only from: SharedPreferences/file cache (read-only), offline `plant_explanations.json`, and fallback text. Safety is fully deterministic via the Contraindication Engine (`safety_profiles.json`).
+### Online Explanations (No Live LLM in v0.8.9)
+- **Behavior**: As of v0.8.9, the app does **not** use live generative AI at runtime. Explanations come only from: SharedPreferences/file cache (read-only), offline `plant_explanations.json`, and fallback text. Safety is fully deterministic via the Contraindication Engine (`safety_profiles.json`).
 - **Offline data**: `assets/data/plant_explanations.json` and `assets/data/safety_profiles.json`.
 - **Fallback**: If no cached or offline explanation is found, a fallback message is shown.
 
@@ -328,7 +328,7 @@ The app uses SQLite for local storage. The database is created automatically on 
 
 ### API Configuration
 - **Backend (GradCAM)**: `lib/core/services/online_gradcam_service.dart` – set base URL to your Railway deployment. Optional JWT: see `supabase/README.md` and `backend/README.md`.
-- **No live LLM in v0.8.8**: Explanations use cache/offline JSON and fallback only.
+- **No live LLM in v0.8.9**: Explanations use cache/offline JSON and fallback only.
 
 ### Backend API URL
 - **Location**: `lib/core/services/online_gradcam_service.dart`
