@@ -1,9 +1,11 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:herbascan/core/config/supabase_config.dart';
 import 'package:herbascan/core/models/cloud_scan.dart';
 import 'package:herbascan/core/models/scan_result.dart';
+import 'package:path_provider/path_provider.dart';
 
 const String _bucket = 'herbarium-images';
 
@@ -161,6 +163,68 @@ class HerbariumService {
       return true;
     } catch (_) {
       return false;
+    }
+  }
+
+  /// Download a cloud scan image to local storage and build a ScanResult for device history.
+  /// Returns the ScanResult on success, null on failure. Caller should call PlantProvider.addScanResult(result).
+  Future<ScanResult?> downloadToDevice(CloudScan scan) async {
+    if (scan.imageUrl == null || scan.imageUrl!.isEmpty) {
+      if (kDebugMode) debugPrint('[HerbariumService] downloadToDevice: no imageUrl');
+      return null;
+    }
+    try {
+      final response = await http.get(Uri.parse(scan.imageUrl!));
+      if (response.statusCode != 200) {
+        if (kDebugMode) debugPrint('[HerbariumService] downloadToDevice: HTTP ${response.statusCode}');
+        return null;
+      }
+      final dir = await getApplicationDocumentsDirectory();
+      final localDir = dir.path;
+      final filePath = '$localDir/${scan.id}.jpg';
+      final file = File(filePath);
+      await file.writeAsBytes(response.bodyBytes);
+
+      final predictions = <Prediction>[];
+      final rawPreds = scan.predictions ?? scan.metadata?['predictions'] as List<dynamic>?;
+      if (rawPreds != null) {
+        for (final p in rawPreds) {
+          if (p is Map<String, dynamic>) {
+            predictions.add(Prediction.fromJson(p));
+          } else if (p is Map) {
+            predictions.add(Prediction.fromJson(Map<String, dynamic>.from(p)));
+          }
+        }
+      }
+      if (predictions.isEmpty && scan.plantId != null) {
+        predictions.add(Prediction(
+          plantId: scan.plantId!,
+          plantName: scan.plantId!,
+          scientificName: '',
+          confidence: scan.confidenceScore ?? 0,
+          features: {},
+        ));
+      }
+
+      final result = ScanResult(
+        id: scan.id,
+        plant: null,
+        confidenceScore: scan.confidenceScore ?? 0,
+        predictions: predictions,
+        imagePath: filePath,
+        scanDate: scan.scanDate,
+        gradCAMPath: null,
+        metadata: scan.metadata ?? {},
+        isOfflineScan: false,
+      );
+      if (kDebugMode) debugPrint('[HerbariumService] downloadToDevice: saved $filePath');
+      return result;
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('[HerbariumService] downloadToDevice: $e');
+        debugPrint('[HerbariumService] downloadToDevice stack: $st');
+      }
+      return null;
     }
   }
 }

@@ -10,7 +10,7 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 
 ## 🚀 Current Development Status
 
-**Version**: v0.8.9  
+**Version**: v0.9.0  
 **Last Updated**: March 2026
 **Project Phase**: Phase 35 Complete (AI Explanation Content Standardization & Complete Plant Database Migration)  
 **Overall Progress**: 90% Complete - **PRODUCTION READY** 
@@ -19,7 +19,7 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 
 - **Project Architecture**: ✅ Flutter project structure with MVVM pattern
 - **UI/UX Design**: ✅ All main screens implemented with Material Design 3
-- **State Management**: ✅ Provider pattern with 5 core providers (including OfflineProvider)
+- **State Management**: ✅ Provider pattern with 6 core providers (App, Plant, Camera, Language, Offline, Auth)
 - **Database Schema**: ✅ SQLite database with proper relationships
 - **Multi-language Support**: ✅ English/Filipino localization system
 - **Navigation**: ✅ Bottom navigation with 5 main sections
@@ -83,11 +83,10 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **Hybrid XAI Explanation System**: ✅ **UPDATED** Standardized structured format with four required sections: Taxonomy, Ecology & Habitat, Medicinal Uses, Safety Protocol
 - **Markdown Text Formatting**: ✅ **UPDATED** Uses h3 headers (###) for structured sections, rich text with proper formatting (bold, italic, headers, lists)
 - **Usability Assessment**: ✅ **NEW** Clear status indicators (USABLE/USE WITH CAUTION/NOT RECOMMENDED) based on heatmap analysis
-- **Content Standardization**: ✅ **COMPLETE** Online (Gemini) and offline (JSON) explanations now provide identical data depth and structure
-  - All 42 plants migrated to structured format with taxonomy, ecology, medicinal_preparation, and safety_consideration
-  - Source badge correctly displays "Online" for GradCAM (Online) mode and "Offline" for CAM (Offline) mode
+- **Content Standardization**: ✅ **COMPLETE** Explanations use identical structure from cache, offline JSON, and fallback only (no live LLM at runtime)
+  - All 42 plants in structured format with taxonomy, ecology, medicinal_preparation, and safety_consideration
+  - Source badge displays "Online" for GradCAM (Online) mode and "Offline" for CAM (Offline) mode
 - **Refresh Functionality**: ✅ **NEW** Refresh button regenerates both GradCAM heatmap and AI explanation
-- **API Key Management**: ✅ **NEW** Secure API key configuration system for Gemini API
 - **Scroll Position Persistence**: ✅ **NEW** Condition Search Screen now preserves scroll position when navigating back from selected condition
 - **Feedback Screen Text Contrast**: ✅ **NEW** Fixed poor text contrast on selected feedback chips - dark green text on light green background for optimal readability
 - **Scan Screen AppBar Title Visibility**: ✅ **NEW** Fixed invisible "Scan Plant" title - changed to white text for readability against dark camera background
@@ -102,7 +101,7 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **Tap to Expand Plant Image**: ✅ **NEW** Implemented tap to expand feature - tap plant image to view in full-screen with Hero animation, pinch-to-zoom (0.5x-4.0x), and pan gestures
 - **Full Screen Reading Mode**: ✅ **NEW** Implemented full-screen reading mode for Summary tab - distraction-free view with larger text and regenerate capability
 - **AI Explanation Tab Simplification**: ✅ **NEW** Removed 'Original' sub-tab from AI Explanation section - simplified navigation to only Heatmap and Summary tabs
-- **Version Update**: ✅ **NEW** Updated all version references to v0.8.9 across the application (splash, settings, app info, feedback, docs)
+- **Version Update**: ✅ **NEW** Updated all version references to v0.9.0 across the application (splash, settings, app info, feedback, docs)
 
 ### 🔄 In Progress (Phase 6: Offline CAM Fix)
 
@@ -112,7 +111,7 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **Beta Testing**: User testing with TESTING_GUIDE.md
 - **Data Collection**: Gathering user feedback and metrics
 
-### ✅ Recently Fixed (v0.8.9)
+### ✅ Recently Fixed (v0.9.0)
 
 - **Online GradCAM Prediction Mapping**: Fixed "Unknown" plant names in online GradCAM predictions
 - **Backend Response Field Mapping**: Corrected mapping from backend 'class' and 'class_index' to Flutter format
@@ -360,10 +359,11 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 
 #### Database Schema
 
-- [x] **Plants Table**: Core plant information
+- [x] **Plants Table**: Core plant information (including optional image_url from Supabase)
 - [x] **Medicinal Uses Table**: Therapeutic applications
 - [x] **Preparation Methods Table**: Traditional preparation instructions
 - [x] **Scan History Table**: User scan results and AI predictions
+- [x] **Catalog tables** (synced from Supabase): catalog_conditions, catalog_condition_plants, catalog_plant_anatomy, safety_profiles, plant_habitats
 - [x] **Indexes**: Optimized database performance
 
 #### Multi-language Support
@@ -492,14 +492,12 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - [x] Improved visual hierarchy
 
 ### Phase 9: Hybrid XAI Explanation System (✅ COMPLETED)
-- [x] Implemented offline (JSON) + online (Gemini API) explanation system
+- [x] Implemented explanation system from cache, offline JSON, and fallback only (no live LLM at runtime)
 - [x] Created offline explanation database for all 42 plants (expanded from 16)
-- [x] Integrated Gemini API for online explanations
 - [x] Added markdown text formatting
 - [x] Implemented usability assessment with clear status indicators
 - [x] Added refresh functionality for regenerating explanations
-- [x] Created API key management system
-- [x] **Content Standardization** (v0.8.9): Standardized structure with four sections (Taxonomy, Ecology, Medicinal Uses, Safety) - identical format for online and offline
+- [x] **Content Standardization** (v0.9.0): Standardized structure with four sections (Taxonomy, Ecology, Medicinal Uses, Safety) - identical format for online and offline
 
 ### Phase 10: Beta Testing & Deployment (🔄 In Progress)
 
@@ -527,8 +525,7 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **AI/ML**: TensorFlow Lite with offline processing, GradCAM visualization, and hybrid XAI explanations
 - **Offline Processing**: Add a offline functionality for rural areas
 - **GradCAM**: Explainable AI heatmap generation with working interactive visualization and overlay controls
-- **XAI Explanations**: Hybrid text-based explanations (offline JSON + online Gemini API) with markdown formatting
-- **Hybrid XAI**: Text-based explanations with offline (JSON) and online (Gemini API) support, markdown formatting, and usability assessment
+- **XAI Explanations**: Text-based explanations from cache, offline JSON, and fallback only (no live LLM); markdown formatting and usability assessment
 - **Connectivity**: Real-time network monitoring with connectivity_plus
 - **Localization**: Flutter's built-in i18n system
 
@@ -583,9 +580,9 @@ herbascan/
 ├── lib/                   ✅ (50+ files)
 │   ├── core/              ✅
 │   │   ├── models/        ✅ (Plant, ScanResult, UserFeedback)
-│   │   ├── providers/     ✅ (5 providers: App, Plant, Camera, Language, Offline)
-│   │   ├── services/      ✅ (18 services: Database, Plant, Offline, GradCAM, 
-│   │   │                     XAI Explanation, Gemini API, Config, Performance, 
+│   │   ├── providers/     ✅ (6 providers: App, Auth, Plant, Camera, Language, Offline)
+│   │   ├── services/      ✅ (Database, Plant, Offline, GradCAM, XAI Explanation,
+│   │   │                     Auth, Herbarium, CatalogSync, Config, Performance, 
 │   │   │                     Analytics, Error Logger, Feedback, etc.)
 │   │   ├── widgets/       ✅ (Offline indicators, GradCAM visualization)
 │   │   ├── theme/         ✅ (Material Design 3)
@@ -640,13 +637,13 @@ herbascan/
 
 ## 📊 Progress Metrics
 
-- **Version**: v0.8.9
+- **Version**: v0.9.0
 - **Code Files Created**: 50+ files
 - **Lines of Code**: 10,000+ lines
 - **Features Implemented**: 45+ core features
 - **Screens Created**: 19 screens
-- **Providers**: 5 state management providers (App, Plant, Camera, Language, Offline)
-- **Services**: 18 services (Database, Plant, Offline, GradCAM, XAI Explanation, Gemini API, Config, Performance, Analytics, Error Logger, Feedback, etc.)
+- **Providers**: 6 state management providers (App, Auth, Plant, Camera, Language, Offline)
+- **Services**: Database, Plant, Offline, GradCAM, XAI Explanation, Auth, Herbarium, CatalogSync, Config, Performance, Analytics, Error Logger, Feedback, and others
 - **Models**: 3 data models (Plant, ScanResult, UserFeedback)
 - **Database Tables**: 4 tables with relationships
 - **Plant Database**: 42 medicinal plants (10 DOH-approved + 32 additional)
@@ -719,15 +716,19 @@ HerbaScan is designed to work seamlessly in rural areas without internet connect
 
 ## 🔧 Development Notes
 
-### Recent Changes (Version v0.8.9 – March 2026)
+### Recent Changes (Version v0.9.0 – March 2026)
 
-- **Scan History**: Swipe between Device & Cloud tabs; pull-to-refresh on Cloud; distinct offline vs no-scans messages.
-- **Auth & Account**: Signup 6-digit confirmation flow; stronger password rules and dynamic requirements UI; change password with live requirements; delete account (Settings → Account); friendly auth error messages.
-- **Preparation Guide**: Interactive checklist, contextual timers from step text, Focus Mode with timer and mark-done, calendar add-to-device with pre-fill, improved visibility and contrast.
+For the full list of changes, see **CHANGELOG.md** (authoritative source). Summary:
+
+- **Scan History**: Swipe between Device & Cloud tabs; pull-to-refresh on Cloud; select mode with batch sync (Device → Cloud, Cloud → Device); Select all / Deselect all; save/export from Plant Result screen only.
+- **Auth & Account**: Signup 6-digit confirmation flow; stronger password rules; change password with live requirements; delete account (Settings → Account); account deactivation by admin (sign-out with message); friendly auth error messages; 6-digit OTP password reset and auth deep links.
+- **Preparation Guide**: Preparation Guide (renamed from Instructions); interactive checklist and contextual timers; timer notifications and persistence (SharedPreferences, flutter_local_notifications); Focus Mode with timer and mark-done; calendar add-to-device with pre-fill.
 - **Safety & XAI**: Contraindication Engine (safety_profiles.json); no live LLM – explanations from cache/offline/fallback only; Summary tab fixes and taxonomy formatting.
+- **Admin**: Cloud-first catalog sync from Supabase; Admin Plant Metadata (tabbed editor: Identity, Ecology, Medicinal, Preparations, Safety); Condition Search management (add/edit/delete conditions, map plants); Factory Reset; 2D interactive plant anatomy (catalog_plant_anatomy); Image Review and User Management; admin works on Windows and mobile; RLS via `is_admin()` to avoid recursion.
+- **Labels & models**: App uses `assets/models/class_indices.json` (name→index); offline CAM uses `mobilenetv2_multi_output.tflite`. No `labels.txt`.
 - **Settings & Offline**: Offline toggle and management tiles clarified; Offline Storage Info refreshes before showing dialog.
-- **Backend**: Railway `/identify` allows unauthenticated requests when `SUPABASE_JWT_SECRET` unset; 6-digit OTP password reset and auth deep links documented.
-- **Version**: All app version references set to v0.8.9 (splash, settings, app info, feedback, docs).
+- **Backend**: Railway `/identify` allows unauthenticated requests when `SUPABASE_JWT_SECRET` unset; see supabase/README.md and backend/README.md.
+- **Version**: All app version references set to v0.9.0 (splash, settings, app info, feedback, docs).
 
 ### Known Issues
 
@@ -791,10 +792,7 @@ HerbaScan is designed to work seamlessly in rural areas without internet connect
    - Install Flutter and Dart extensions
    - Use `Ctrl+Shift+P` → "Flutter: Select Device" to choose device
 
-4. **Gemini API Key** (Optional, for online explanations):
-   - Get API key from: https://makersuite.google.com/app/apikey
-   - Configure in app using `ConfigService.setGeminiApiKey('YOUR_API_KEY')`
-   - See `lib/core/services/config_service.dart` for details
+4. **No API key required for XAI**: Explanations come from cache, offline JSON, and fallback only (no live LLM at runtime).
 
 ### Installation
 
@@ -816,14 +814,7 @@ HerbaScan is designed to work seamlessly in rural areas without internet connect
    flutter run
    ```
 
-4. **Configure Gemini API Key** (Optional, for online XAI explanations):
-   ```dart
-   // In your app initialization code or settings screen
-   await ConfigService.setGeminiApiKey('YOUR_GEMINI_API_KEY');
-   ```
-   - Without API key: App uses offline explanations from JSON
-   - With API key: App uses online Gemini API for richer explanations
-   - See `lib/core/services/config_service.dart` for implementation details
+4. **XAI explanations**: No API key needed. The app uses cache, offline `plant_explanations.json`, and fallback text only (no live LLM).
 
 ### For Android Development
 
@@ -1121,10 +1112,11 @@ After converting your model, you need to extract CAM weights and create a multi-
 
 The app uses SQLite for local data storage with the following tables:
 
-- **plants**: Plant information and metadata
+- **plants**: Plant information and metadata (optional image_url from Supabase)
 - **medicinal_uses**: Medicinal applications for each plant
 - **preparation_methods**: Traditional preparation instructions
 - **scan_history**: User scan results and AI predictions
+- **Catalog tables** (synced from Supabase when online): safety_profiles, plant_habitats, catalog_conditions, catalog_condition_plants, catalog_plant_anatomy
 
 ## DOH-Approved Plants
 
@@ -1220,10 +1212,11 @@ The app includes comprehensive information about all 10 official DOH-approved he
 
 ## 📚 Documentation
 
+**CHANGELOG.md** is the authoritative source for detailed change history and should be kept up to date with every release.
+
 ### Main Documentation Files
 - **README.md** (this file) - Project overview and setup
-
-- **Setup.md** - Flutter setup instructions
+- **setup.md** - Flutter setup instructions
 
 ### Backend Documentation
 - **backend/README.md** - Complete backend documentation (1,500+ lines)

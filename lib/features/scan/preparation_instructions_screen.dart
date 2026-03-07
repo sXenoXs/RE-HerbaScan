@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:add_2_calendar/add_2_calendar.dart';
 import 'package:flutter/material.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/models/plant.dart';
+import 'package:herbascan/core/services/preparation_notification_service.dart';
 import 'package:herbascan/core/utils/preparation_step_parser.dart';
 import 'package:herbascan/features/scan/preparation_focus_mode_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PreparationInstructionsScreen extends StatefulWidget {
   final Plant plant;
@@ -26,13 +29,18 @@ class _PreparationInstructionsScreenState
   late List<bool> _stepCompleted;
   int? _activeTimerStepIndex;
   int _timerRemainingSeconds = 0;
+  bool _timerPaused = false;
   Timer? _timer;
+
+  static String _prefsKey(PreparationMethod method) =>
+      'prep_state_${method.id}';
 
   @override
   void initState() {
     super.initState();
     final stepCount = widget.preparationMethod.stepInstructions.length;
     _stepCompleted = List.filled(stepCount, false);
+    _loadState();
   }
 
   @override
@@ -40,6 +48,89 @@ class _PreparationInstructionsScreenState
     _timer?.cancel();
     super.dispose();
   }
+
+  Future<void> _loadState() async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = _prefsKey(widget.preparationMethod);
+    final jsonStr = prefs.getString(key);
+    if (jsonStr == null) return;
+    try {
+      final map = jsonDecode(jsonStr) as Map<String, dynamic>;
+      final completed = map['stepCompleted'] as List<dynamic>?;
+      final stepCount = widget.preparationMethod.stepInstructions.length;
+      if (completed != null && completed.length == stepCount) {
+        setState(() {
+          _stepCompleted = completed.cast<bool>();
+        });
+      }
+      final activeIndex = map['activeTimerStepIndex'] as int?;
+      final remaining = map['timerRemainingSeconds'] as int? ?? 0;
+      final paused = map['timerPaused'] as bool? ?? false;
+      final endEpochMs = map['timerEndEpochMs'] as int?;
+      if (activeIndex != null && activeIndex >= 0 && activeIndex < stepCount) {
+        int remainingToUse = remaining;
+        if (!paused && endEpochMs != null) {
+          final end = DateTime.fromMillisecondsSinceEpoch(endEpochMs);
+          final now = DateTime.now();
+          if (end.isAfter(now)) {
+            remainingToUse = end.difference(now).inSeconds;
+          } else {
+            remainingToUse = 0;
+          }
+        }
+        if (remainingToUse > 0) {
+          setState(() {
+            _activeTimerStepIndex = activeIndex;
+            _timerRemainingSeconds = remainingToUse;
+            _timerPaused = paused;
+          });
+          if (!paused) _startTimer(activeIndex, remainingToUse);
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _saveState() async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = _prefsKey(widget.preparationMethod);
+    final map = <String, dynamic>{
+      'stepCompleted': _stepCompleted,
+      'activeTimerStepIndex': _activeTimerStepIndex,
+      'timerRemainingSeconds': _timerRemainingSeconds,
+      'timerPaused': _timerPaused,
+    };
+    if (_activeTimerStepIndex != null && !_timerPaused && _timer != null) {
+      map['timerEndEpochMs'] =
+          DateTime.now().add(Duration(seconds: _timerRemainingSeconds))
+              .millisecondsSinceEpoch;
+    }
+    await prefs.setString(key, jsonEncode(map));
+  }
+
+  Future<void> _resetProgress() async {
+    _timer?.cancel();
+    _timer = null;
+    final stepCount = widget.preparationMethod.stepInstructions.length;
+    for (int i = 0; i < stepCount; i++) {
+      await PreparationNotificationService().cancelTimer(_stepId(i));
+    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_prefsKey(widget.preparationMethod));
+    setState(() {
+      _stepCompleted = List.filled(stepCount, false);
+      _activeTimerStepIndex = null;
+      _timerRemainingSeconds = 0;
+      _timerPaused = false;
+    });
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Progress reset')),
+      );
+    }
+  }
+
+  String _stepId(int stepIndex) =>
+      '${widget.preparationMethod.id}_$stepIndex';
 
   int? _getTimerSecondsForStep(int index) {
     final stepDetails = widget.preparationMethod.stepDetails;
@@ -148,7 +239,10 @@ class _PreparationInstructionsScreenState
     setState(() {
       _activeTimerStepIndex = stepIndex;
       _timerRemainingSeconds = durationSeconds;
+      _timerPaused = false;
     });
+    PreparationNotificationService().scheduleTimer(_stepId(stepIndex), durationSeconds);
+    _saveState();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
       setState(() {
@@ -157,8 +251,10 @@ class _PreparationInstructionsScreenState
           _timer?.cancel();
           _timer = null;
           _activeTimerStepIndex = null;
+          _timerPaused = false;
         }
       });
+      _saveState();
       if (_timerRemainingSeconds == 0) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -168,6 +264,57 @@ class _PreparationInstructionsScreenState
         );
       }
     });
+  }
+
+  void _pauseTimer() {
+    if (_activeTimerStepIndex == null) return;
+    _timer?.cancel();
+    _timer = null;
+    PreparationNotificationService().cancelTimer(_stepId(_activeTimerStepIndex!));
+    setState(() => _timerPaused = true);
+    _saveState();
+  }
+
+  void _resumeTimer() {
+    if (_activeTimerStepIndex == null || _timerRemainingSeconds <= 0) return;
+    setState(() => _timerPaused = false);
+    PreparationNotificationService().scheduleTimer(_stepId(_activeTimerStepIndex!), _timerRemainingSeconds);
+    _saveState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {
+        _timerRemainingSeconds--;
+        if (_timerRemainingSeconds <= 0) {
+          _timer?.cancel();
+          _timer = null;
+          _activeTimerStepIndex = null;
+          _timerPaused = false;
+        }
+      });
+      _saveState();
+      if (_timerRemainingSeconds == 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).timerFinished),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    });
+  }
+
+  void _resetTimer() {
+    _timer?.cancel();
+    _timer = null;
+    if (_activeTimerStepIndex != null) {
+      PreparationNotificationService().cancelTimer(_stepId(_activeTimerStepIndex!));
+    }
+    setState(() {
+      _activeTimerStepIndex = null;
+      _timerRemainingSeconds = 0;
+      _timerPaused = false;
+    });
+    _saveState();
   }
 
   @override
@@ -180,6 +327,34 @@ class _PreparationInstructionsScreenState
       appBar: AppBar(
         title: Text(AppLocalizations.of(context).preparationGuide),
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Reset Progress',
+            onPressed: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Reset Progress?'),
+                  content: const Text(
+                    'This will clear all completed steps and stop any running timer.',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: const Text('Reset'),
+                    ),
+                  ],
+                ),
+              );
+              if (confirm == true) await _resetProgress();
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -276,6 +451,7 @@ class _PreparationInstructionsScreenState
                           setState(() {
                             _stepCompleted[index] = !_stepCompleted[index];
                           });
+                          _saveState();
                         },
                         stepIndex: index,
                         timerSeconds: timerSec,
@@ -283,9 +459,13 @@ class _PreparationInstructionsScreenState
                         timerRemainingSeconds: _activeTimerStepIndex == index
                             ? _timerRemainingSeconds
                             : 0,
+                        isTimerPaused: _activeTimerStepIndex == index && _timerPaused,
                         onStartTimer: timerSec != null
                             ? () => _startTimer(index, timerSec)
                             : null,
+                        onPauseTimer: _activeTimerStepIndex == index ? _pauseTimer : null,
+                        onResumeTimer: _activeTimerStepIndex == index ? _resumeTimer : null,
+                        onResetTimer: _activeTimerStepIndex == index ? _resetTimer : null,
                       );
                     },
                   ),
@@ -338,8 +518,8 @@ class _PreparationInstructionsScreenState
                           child: FilledButton.icon(
                             onPressed: () => _addScheduleToCalendar(context),
                             icon: const Icon(Icons.calendar_today, size: 20),
-                            label: Text(
-                                AppLocalizations.of(context).addScheduleToCalendar),
+                            label: Text(AppLocalizations.of(context)
+                                .addScheduleToCalendar),
                             style: FilledButton.styleFrom(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 20, vertical: 14),
@@ -450,7 +630,6 @@ class _PreparationInstructionsScreenState
                     ),
                     const SizedBox(height: 24),
                   ],
-
                 ],
               ),
             ),
@@ -497,7 +676,11 @@ class _PreparationInstructionsScreenState
     int? timerSeconds,
     bool isTimerActive = false,
     int timerRemainingSeconds = 0,
+    bool isTimerPaused = false,
     VoidCallback? onStartTimer,
+    VoidCallback? onPauseTimer,
+    VoidCallback? onResumeTimer,
+    VoidCallback? onResetTimer,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -568,21 +751,47 @@ class _PreparationInstructionsScreenState
             Padding(
               padding: const EdgeInsets.only(left: 44),
               child: isTimerActive
-                  ? Row(
+                  ? Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        Icon(
-                          Icons.timer,
-                          size: 20,
-                          color: theme.colorScheme.primary,
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.timer,
+                              size: 20,
+                              color: theme.colorScheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${_formatDuration(timerRemainingSeconds)} remaining',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${_formatDuration(timerRemainingSeconds)} remaining',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: theme.colorScheme.primary,
+                        if (isTimerPaused)
+                          TextButton.icon(
+                            onPressed: onResumeTimer,
+                            icon: const Icon(Icons.play_arrow, size: 18),
+                            label: const Text('Resume'),
+                          )
+                        else
+                          TextButton.icon(
+                            onPressed: onPauseTimer,
+                            icon: const Icon(Icons.pause, size: 18),
+                            label: const Text('Pause'),
                           ),
-                        ),
+                        if (onResetTimer != null)
+                          TextButton.icon(
+                            onPressed: onResetTimer,
+                            icon: const Icon(Icons.refresh, size: 18),
+                            label: const Text('Reset'),
+                          ),
                       ],
                     )
                   : ElevatedButton.icon(

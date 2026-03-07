@@ -16,6 +16,8 @@ import 'package:herbascan/features/scan/plant_detail_screen.dart';
 import 'package:uuid/uuid.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:gal/gal.dart';
 import 'dart:io';
 import 'dart:convert';
 
@@ -284,6 +286,8 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                       await _saveToDeviceOnly();
                     } else if (value == 'save_cloud') {
                       await _saveToCloudOnly();
+                    } else if (value == 'save_camera_roll') {
+                      await _saveToCameraRoll();
                     }
                   },
                   itemBuilder: (context) {
@@ -310,6 +314,16 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                             ],
                           ),
                         ),
+                      const PopupMenuItem<String>(
+                        value: 'save_camera_roll',
+                        child: Row(
+                          children: [
+                            Icon(Icons.photo_library_outlined),
+                            SizedBox(width: 12),
+                            Text('Save to Camera Roll'),
+                          ],
+                        ),
+                      ),
                     ];
                   },
                 ),
@@ -1202,13 +1216,74 @@ class _PlantResultScreenState extends State<PlantResultScreen>
     }
   }
 
-  void _shareResults() {
-    // TODO: Implement sharing functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Share functionality not implemented yet'),
-      ),
-    );
+  Future<void> _shareResults() async {
+    final top = widget.predictions.isNotEmpty ? widget.predictions.first : null;
+    final plantName = top?['plantName'] ?? top?['label'] ?? 'Unknown Plant';
+    final confidence = (top?['confidence'] ?? 0.0) is num
+        ? ((top!['confidence'] as num) * 100).toStringAsFixed(1)
+        : '0';
+    final textPayload =
+        'I identified $plantName using HerbaScan! It\'s a $confidence% match. '
+        'Identified using AI-powered plant recognition.';
+    try {
+      if (widget.imagePath.isNotEmpty && File(widget.imagePath).existsSync()) {
+        await Share.shareXFiles(
+          [XFile(widget.imagePath)],
+          text: textPayload,
+        );
+      } else {
+        await Share.share(textPayload);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Share failed: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _saveToCameraRoll() async {
+    try {
+      if (widget.imagePath.isNotEmpty && File(widget.imagePath).existsSync()) {
+        await Gal.putImage(widget.imagePath);
+      } else if (widget.gradcamImageBytes != null &&
+          widget.gradcamImageBytes!.isNotEmpty) {
+        await Gal.putImageBytes(widget.gradcamImageBytes!);
+      } else if (_regeneratedGradcamImageBytes != null &&
+          _regeneratedGradcamImageBytes!.isNotEmpty) {
+        await Gal.putImageBytes(_regeneratedGradcamImageBytes!);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text('No image available to save to gallery')),
+          );
+        }
+        return;
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Saved to Camera Roll')),
+        );
+      }
+    } on GalException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(
+                  e.type == GalExceptionType.accessDenied
+                      ? 'Permission denied to save to gallery'
+                      : 'Could not save to gallery: ${e.platformException.message ?? e.toString()}')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not save to gallery: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _saveResultsAutomatically() async {

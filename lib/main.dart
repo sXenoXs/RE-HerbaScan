@@ -17,6 +17,7 @@ import 'package:herbascan/core/routing/app_router.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/services/performance_monitor.dart';
 import 'package:herbascan/core/widgets/auth_deeplink_handler.dart';
+import 'package:herbascan/core/services/preparation_notification_service.dart';
 // Desktop-only: init SQLite FFI so DB works on Windows/Linux/macOS. Mobile and web unchanged.
 import 'package:herbascan/core/init_database_factory_stub.dart'
     if (dart.library.ffi) 'package:herbascan/core/init_database_factory_ffi.dart' as db_factory;
@@ -25,6 +26,9 @@ import 'package:herbascan/core/platform_utils_stub.dart'
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Preparation step timer notifications (mobile)
+  await PreparationNotificationService().init();
 
   // Initialize SQLite for desktop (Windows/Linux/macOS). No change to mobile or web.
   if (!kIsWeb && platform_utils.isDesktop()) {
@@ -98,6 +102,17 @@ class _HerbaScanAppState extends State<HerbaScanApp> {
                 Locale('en', 'US'), // English
                 Locale('fil', 'PH'), // Filipino
               ],
+              builder: (context, child) {
+                return MediaQuery(
+                  data: MediaQuery.of(context).copyWith(
+                    textScaler: MediaQuery.of(context).textScaler.clamp(
+                      minScaleFactor: 0.85,
+                      maxScaleFactor: 1.15,
+                    ),
+                  ),
+                  child: child!,
+                );
+              },
             ),
           );
         },

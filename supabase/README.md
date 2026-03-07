@@ -298,6 +298,12 @@ To see **Review submissions** in Settings and open the admin dashboard (list all
 
 ---
 
+## Account deactivation (admin)
+
+Admins can set `is_active = false` on a user’s row in `public.profiles`. When that user next opens the app or when their role is reloaded, the app signs them out and shows an alert: “Your account has been deactivated by an administrator.” They must contact an admin to be reactivated (`is_active = true`).
+
+---
+
 ## Delete account (Edge Function)
 
 The app’s **Settings → Account → Delete account** option calls the Supabase Edge Function **`delete-user`** so users can permanently delete their Personal Herbarium account. Supabase Auth does not allow client apps to delete users directly; the function uses the **service role** to perform the deletion.
