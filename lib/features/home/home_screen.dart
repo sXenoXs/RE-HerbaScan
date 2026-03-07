@@ -390,23 +390,34 @@ class _HomeDashboardState extends State<HomeDashboard> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildStatItem(
-                theme,
-                '${stats['totalScans']}',
-                'Plants Identified',
-                Icons.eco,
+              Expanded(
+                flex: 1,
+                child: _buildStatItem(
+                  theme,
+                  '${stats['totalScans']}',
+                  'Plants Identified',
+                  Icons.eco,
+                ),
               ),
-              _buildStatItem(
-                theme,
-                '${stats['dohApprovedPlants']}',
-                'DOH Approved',
-                Icons.verified,
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 1,
+                child: _buildStatItem(
+                  theme,
+                  '${stats['dohApprovedPlants']}',
+                  'DOH Approved',
+                  Icons.verified,
+                ),
               ),
-              _buildStatItem(
-                theme,
-                '${(stats['averageConfidence'] * 100).toStringAsFixed(1)}%',
-                'Avg Accuracy',
-                Icons.analytics,
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 1,
+                child: _buildStatItem(
+                  theme,
+                  '${(stats['averageConfidence'] * 100).toStringAsFixed(1)}%',
+                  'Avg Accuracy',
+                  Icons.analytics,
+                ),
               ),
             ],
           ),
@@ -418,6 +429,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
   Widget _buildStatItem(
       ThemeData theme, String value, String label, IconData icon) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
           icon,
@@ -431,14 +443,20 @@ class _HomeDashboardState extends State<HomeDashboard> {
             fontWeight: FontWeight.bold,
             color: theme.colorScheme.primary,
           ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
         ),
         const SizedBox(height: 4),
-        Text(
-          label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurface.withOpacity(0.6),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
+            ),
+            textAlign: TextAlign.center,
           ),
-          textAlign: TextAlign.center,
         ),
       ],
     );
@@ -546,12 +564,12 @@ class _HomeDashboardState extends State<HomeDashboard> {
           const SizedBox(width: 16),
           Expanded(
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Flexible(
-                      flex: 1,
+                    Expanded(
                       child: Text(
                         scan.plant?.commonName ??
                             scan.topPrediction?.plantName ??
@@ -560,7 +578,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                           fontWeight: FontWeight.w600,
                         ),
                         overflow: TextOverflow.ellipsis,
-                        maxLines: 2,
+                        maxLines: 1,
                       ),
                     ),
                     if (_getMethodLabel(scan) != null) ...[
@@ -575,14 +593,21 @@ class _HomeDashboardState extends State<HomeDashboard> {
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurface.withOpacity(0.6),
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
-          Text(
-            scan.formattedScanDate,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.4),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              scan.formattedScanDate,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.4),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

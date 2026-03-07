@@ -9,6 +9,7 @@ import 'package:herbascan/core/providers/offline_provider.dart';
 import 'package:herbascan/core/models/scan_result.dart';
 import 'package:herbascan/core/models/cloud_scan.dart';
 import 'package:herbascan/core/services/herbarium_service.dart';
+import 'package:gal/gal.dart';
 import 'package:herbascan/features/auth/login_screen.dart';
 import 'package:herbascan/features/scan/plant_result_screen.dart';
 import 'package:herbascan/features/scan/scan_screen.dart';
@@ -32,6 +33,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
   int _historyTabIndex = 0; // 0 = Device, 1 = Cloud
   List<CloudScan> _cloudScans = [];
   bool _cloudLoading = false;
+  bool _selectMode = false;
+  final Set<String> _selectedDeviceIds = {};
+  final Set<String> _selectedCloudIds = {};
+  bool _batchOperationInProgress = false;
 
   @override
   void initState() {
@@ -54,10 +59,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final auth = context.read<AuthProvider>();
     final isLoggedIn = auth.isLoggedIn;
     final userId = auth.user?.id;
-    _debugHistory('_loadCloudScans: start isLoggedIn=$isLoggedIn userId=$userId');
+    _debugHistory(
+        '_loadCloudScans: start isLoggedIn=$isLoggedIn userId=$userId');
     setState(() => _cloudLoading = true);
     final list = await HerbariumService().getMyScans();
-    _debugHistory('_loadCloudScans: getMyScans returned ${list.length} scan(s)');
+    _debugHistory(
+        '_loadCloudScans: getMyScans returned ${list.length} scan(s)');
     if (mounted) {
       setState(() {
         _cloudScans = list;
@@ -162,6 +169,44 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return sorted;
   }
 
+  Future<void> _exportScanToGallery(
+      BuildContext context, ScanResult scan) async {
+    if (scan.imagePath.isEmpty || !File(scan.imagePath).existsSync()) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Image file not found')),
+        );
+      }
+      return;
+    }
+    try {
+      await Gal.putImage(scan.imagePath);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Saved to Camera Roll')),
+        );
+      }
+    } on GalException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e.type == GalExceptionType.accessDenied
+                  ? 'Permission denied to save to gallery'
+                  : 'Could not save to gallery: ${e.platformException.message ?? e.toString()}',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not save to gallery: $e')),
+        );
+      }
+    }
+  }
+
   void _showDeleteConfirmation(BuildContext context, ScanResult scan) {
     final appLocalizations = AppLocalizations.of(context);
     final theme = Theme.of(context);
@@ -256,9 +301,90 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(appLocalizations.scanHistory),
+        title: Text(_selectMode
+            ? '${_historyTabIndex == 0 ? _selectedDeviceIds.length : _selectedCloudIds.length} selected'
+            : appLocalizations.scanHistory),
+        leading: _selectMode
+            ? IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () {
+                  setState(() {
+                    _selectMode = false;
+                    _selectedDeviceIds.clear();
+                    _selectedCloudIds.clear();
+                  });
+                },
+                tooltip: 'Cancel',
+              )
+            : null,
         actions: [
-          if (_historyTabIndex == 0 && sortedScans.isNotEmpty)
+          if (_selectMode && _historyTabIndex == 0) ...[
+            TextButton.icon(
+              onPressed: sortedScans.isEmpty
+                  ? null
+                  : () {
+                      setState(() {
+                        final allSelected =
+                            _selectedDeviceIds.length == sortedScans.length;
+                        if (allSelected) {
+                          _selectedDeviceIds.clear();
+                        } else {
+                          _selectedDeviceIds
+                              .addAll(sortedScans.map((s) => s.id));
+                        }
+                      });
+                    },
+              icon: Icon(
+                _selectedDeviceIds.length == sortedScans.length &&
+                        sortedScans.isNotEmpty
+                    ? Icons.deselect
+                    : Icons.select_all,
+              ),
+              label: Text(
+                _selectedDeviceIds.length == sortedScans.length &&
+                        sortedScans.isNotEmpty
+                    ? 'Deselect all'
+                    : 'Select all',
+              ),
+            ),
+          ],
+          if (_selectMode && _historyTabIndex == 1) ...[
+            TextButton.icon(
+              onPressed: _cloudScans.isEmpty
+                  ? null
+                  : () {
+                      setState(() {
+                        final allSelected =
+                            _selectedCloudIds.length == _cloudScans.length;
+                        if (allSelected) {
+                          _selectedCloudIds.clear();
+                        } else {
+                          _selectedCloudIds
+                              .addAll(_cloudScans.map((c) => c.id));
+                        }
+                      });
+                    },
+              icon: Icon(
+                _selectedCloudIds.length == _cloudScans.length &&
+                        _cloudScans.isNotEmpty
+                    ? Icons.deselect
+                    : Icons.select_all,
+              ),
+              label: Text(
+                _selectedCloudIds.length == _cloudScans.length &&
+                        _cloudScans.isNotEmpty
+                    ? 'Deselect all'
+                    : 'Select all',
+              ),
+            ),
+          ],
+          if (!_selectMode && _historyTabIndex == 0 && sortedScans.isNotEmpty)
+            TextButton.icon(
+              onPressed: () => setState(() => _selectMode = true),
+              icon: const Icon(Icons.checklist_rtl),
+              label: const Text('Select'),
+            ),
+          if (_historyTabIndex == 0 && sortedScans.isNotEmpty && !_selectMode)
             PopupMenuButton<String>(
               icon: const Icon(Icons.sort),
               onSelected: (value) {
@@ -332,11 +458,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 ),
               ],
             ),
-          if (_historyTabIndex == 0 && sortedScans.isNotEmpty)
+          if (_historyTabIndex == 0 && sortedScans.isNotEmpty && !_selectMode)
             IconButton(
               icon: const Icon(Icons.delete_sweep),
               onPressed: () => _showDeleteAllConfirmation(context),
               tooltip: appLocalizations.deleteAll,
+            ),
+          if (!_selectMode && _historyTabIndex == 1 && _cloudScans.isNotEmpty)
+            TextButton.icon(
+              onPressed: () => setState(() => _selectMode = true),
+              icon: const Icon(Icons.checklist_rtl),
+              label: const Text('Select'),
             ),
         ],
       ),
@@ -393,23 +525,147 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ),
           ),
           Expanded(
-            child: PageView(
-              controller: _historyPageController,
-              onPageChanged: (int index) {
-                setState(() => _historyTabIndex = index);
-                if (index == 1 && authProvider.isLoggedIn) _loadCloudScans();
-              },
+            child: Stack(
               children: [
-                _buildDeviceHistory(context, theme, appLocalizations,
-                    plantProvider, sortedScans),
-                _buildCloudHistory(
-                    context, theme, authProvider, offlineProvider),
+                PageView(
+                  controller: _historyPageController,
+                  onPageChanged: (int index) {
+                    setState(() => _historyTabIndex = index);
+                    if (index == 1 && authProvider.isLoggedIn)
+                      _loadCloudScans();
+                  },
+                  children: [
+                    _buildDeviceHistory(context, theme, appLocalizations,
+                        plantProvider, sortedScans),
+                    _buildCloudHistory(
+                        context, theme, authProvider, offlineProvider),
+                  ],
+                ),
+                if (_batchOperationInProgress)
+                  Container(
+                    color: Colors.black26,
+                    child: const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
               ],
             ),
           ),
+          if (_selectMode &&
+              (_selectedDeviceIds.isNotEmpty || _selectedCloudIds.isNotEmpty))
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+              ),
+              child: SafeArea(
+                child: Row(
+                  children: [
+                    if (_historyTabIndex == 0)
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: _batchOperationInProgress
+                              ? null
+                              : () => _batchSyncSelectedToCloud(
+                                  context, plantProvider, sortedScans),
+                          icon: const Icon(Icons.cloud_upload),
+                          label: const Text('Sync Selected to Cloud'),
+                        ),
+                      )
+                    else
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: _batchOperationInProgress
+                              ? null
+                              : () => _batchDownloadSelectedToDevice(
+                                  context, plantProvider),
+                          icon: const Icon(Icons.download),
+                          label: const Text('Download Selected to Device'),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );
+  }
+
+  Future<void> _batchSyncSelectedToCloud(
+    BuildContext context,
+    PlantProvider plantProvider,
+    List<ScanResult> sortedScans,
+  ) async {
+    final toSync =
+        sortedScans.where((s) => _selectedDeviceIds.contains(s.id)).toList();
+    if (toSync.isEmpty) return;
+    setState(() => _batchOperationInProgress = true);
+    int done = 0;
+    try {
+      for (final scan in toSync) {
+        if (!mounted) break;
+        final id = await HerbariumService().uploadScan(scan, scan.imagePath);
+        if (id != null) done++;
+      }
+      if (mounted) {
+        setState(() {
+          _selectMode = false;
+          _selectedDeviceIds.clear();
+          _batchOperationInProgress = false;
+        });
+        _loadCloudScans();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$done scan(s) synced to cloud')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _batchOperationInProgress = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Sync failed: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _batchDownloadSelectedToDevice(
+    BuildContext context,
+    PlantProvider plantProvider,
+  ) async {
+    final toDownload =
+        _cloudScans.where((c) => _selectedCloudIds.contains(c.id)).toList();
+    if (toDownload.isEmpty) return;
+    setState(() => _batchOperationInProgress = true);
+    int done = 0;
+    try {
+      for (final cloud in toDownload) {
+        if (!mounted) break;
+        final result = await HerbariumService().downloadToDevice(cloud);
+        if (result != null) {
+          await plantProvider.addScanResult(result);
+          done++;
+        }
+      }
+      if (mounted) {
+        setState(() {
+          _selectMode = false;
+          _selectedCloudIds.clear();
+          _batchOperationInProgress = false;
+        });
+        await plantProvider.loadScanHistory();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$done scan(s) downloaded to device')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _batchOperationInProgress = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Download failed: $e')),
+        );
+      }
+    }
   }
 
   Widget _buildDeviceHistory(
@@ -433,7 +689,23 @@ class _HistoryScreenState extends State<HistoryScreen> {
             itemCount: sortedScans.length,
             itemBuilder: (context, index) {
               final scan = sortedScans[index];
-              return _buildScanCard(context, theme, scan);
+              final isSelected = _selectedDeviceIds.contains(scan.id);
+              return _buildScanCard(
+                context,
+                theme,
+                scan,
+                isSelectMode: _selectMode,
+                isSelected: isSelected,
+                onToggleSelect: () {
+                  setState(() {
+                    if (isSelected) {
+                      _selectedDeviceIds.remove(scan.id);
+                    } else {
+                      _selectedDeviceIds.add(scan.id);
+                    }
+                  });
+                },
+              );
             },
           ),
         ),
@@ -504,7 +776,23 @@ class _HistoryScreenState extends State<HistoryScreen> {
         itemCount: _cloudScans.length,
         itemBuilder: (context, index) {
           final cloud = _cloudScans[index];
-          return _buildCloudScanCard(context, theme, cloud);
+          final isSelected = _selectedCloudIds.contains(cloud.id);
+          return _buildCloudScanCard(
+            context,
+            theme,
+            cloud,
+            isSelectMode: _selectMode,
+            isSelected: isSelected,
+            onToggleSelect: () {
+              setState(() {
+                if (isSelected) {
+                  _selectedCloudIds.remove(cloud.id);
+                } else {
+                  _selectedCloudIds.add(cloud.id);
+                }
+              });
+            },
+          );
         },
       ),
     );
@@ -593,7 +881,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
     if (cloud.plantId != null && cloud.plantId!.trim().isNotEmpty) {
       return cloud.plantId!;
     }
-    final predictions = cloud.predictions ?? cloud.metadata?['predictions'] as List<dynamic>?;
+    final predictions =
+        cloud.predictions ?? cloud.metadata?['predictions'] as List<dynamic>?;
     if (predictions != null && predictions.isNotEmpty) {
       final first = predictions.first as Map<String, dynamic>?;
       final name = first?['plantName'] ?? first?['plantId'] ?? first?['label'];
@@ -605,30 +894,52 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Widget _buildCloudScanCard(
-      BuildContext context, ThemeData theme, CloudScan cloud) {
+    BuildContext context,
+    ThemeData theme,
+    CloudScan cloud, {
+    bool isSelectMode = false,
+    bool isSelected = false,
+    VoidCallback? onToggleSelect,
+  }) {
     final dateFormat = DateFormat('MMM dd, yyyy • HH:mm');
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
+        border: Border.all(
+          color: isSelectMode && isSelected
+              ? theme.colorScheme.primary
+              : theme.colorScheme.outline.withOpacity(0.2),
+          width: isSelectMode && isSelected ? 2 : 1,
+        ),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.all(12),
-        leading: cloud.imageUrl != null && cloud.imageUrl!.isNotEmpty
-            ? ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  cloud.imageUrl!,
-                  width: 72,
-                  height: 72,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Icon(Icons.eco,
-                      size: 48, color: theme.colorScheme.outline),
-                ),
-              )
-            : Icon(Icons.eco, size: 48, color: theme.colorScheme.outline),
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isSelectMode)
+              Checkbox(
+                value: isSelected,
+                onChanged: (_) => onToggleSelect?.call(),
+              ),
+            if (isSelectMode) const SizedBox(width: 8),
+            cloud.imageUrl != null && cloud.imageUrl!.isNotEmpty
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      cloud.imageUrl!,
+                      width: 72,
+                      height: 72,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Icon(Icons.eco,
+                          size: 48, color: theme.colorScheme.outline),
+                    ),
+                  )
+                : Icon(Icons.eco, size: 48, color: theme.colorScheme.outline),
+          ],
+        ),
         title: Text(
           _cloudScanDisplayName(cloud),
           style: theme.textTheme.titleMedium
@@ -642,33 +953,71 @@ class _HistoryScreenState extends State<HistoryScreen> {
             color: theme.colorScheme.onSurface.withOpacity(0.6),
           ),
         ),
-        trailing: IconButton(
-          icon: const Icon(Icons.delete_outline),
-          onPressed: () async {
-            final ok = await showDialog<bool>(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                title: const Text('Delete from cloud?'),
-                actions: [
-                  TextButton(
-                      onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('Cancel')),
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx, true),
-                    child: Text('Delete',
-                        style: TextStyle(color: theme.colorScheme.error)),
+        onTap: isSelectMode ? onToggleSelect : null,
+        trailing: isSelectMode
+            ? null
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.download),
+                    onPressed: () => _downloadCloudScanToDevice(context, cloud),
+                    tooltip: 'Download to device',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: () async {
+                      final ok = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Delete from cloud?'),
+                          actions: [
+                            TextButton(
+                                onPressed: () => Navigator.pop(ctx, false),
+                                child: const Text('Cancel')),
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, true),
+                              child: Text('Delete',
+                                  style: TextStyle(
+                                      color: theme.colorScheme.error)),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (ok == true) {
+                        await HerbariumService().deleteScan(cloud.id);
+                        if (mounted) _loadCloudScans();
+                      }
+                    },
+                    tooltip: 'Delete',
                   ),
                 ],
               ),
-            );
-            if (ok == true) {
-              await HerbariumService().deleteScan(cloud.id);
-              if (mounted) _loadCloudScans();
-            }
-          },
-        ),
       ),
     );
+  }
+
+  Future<void> _downloadCloudScanToDevice(
+      BuildContext context, CloudScan cloud) async {
+    setState(() => _batchOperationInProgress = true);
+    try {
+      final result = await HerbariumService().downloadToDevice(cloud);
+      if (result != null && mounted) {
+        await context.read<PlantProvider>().addScanResult(result);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Downloaded to device')),
+          );
+        }
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Could not download. Check connection.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _batchOperationInProgress = false);
+    }
   }
 
   Widget _buildEmptyState(BuildContext context, ThemeData theme,
@@ -791,7 +1140,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Widget _buildScanCard(
-      BuildContext context, ThemeData theme, ScanResult scan) {
+    BuildContext context,
+    ThemeData theme,
+    ScanResult scan, {
+    bool isSelectMode = false,
+    bool isSelected = false,
+    VoidCallback? onToggleSelect,
+  }) {
     final appLocalizations = AppLocalizations.of(context);
     final dateFormat = DateFormat('MMM dd, yyyy • HH:mm');
 
@@ -801,18 +1156,23 @@ class _HistoryScreenState extends State<HistoryScreen> {
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: theme.colorScheme.outline.withOpacity(0.2),
+          color: isSelectMode && isSelected
+              ? theme.colorScheme.primary
+              : theme.colorScheme.outline.withOpacity(0.2),
+          width: isSelectMode && isSelected ? 2 : 1,
         ),
       ),
       child: InkWell(
         onTap: () async {
-          // Navigate to PlantResultScreen to view full scan results
+          if (isSelectMode && onToggleSelect != null) {
+            onToggleSelect();
+            return;
+          }
           await Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => PlantResultScreen.fromScanResult(scan),
             ),
           );
-          // Refresh cloud list when returning so any "Save to cloud" from detail shows up
           if (mounted) _loadCloudScans();
         },
         borderRadius: BorderRadius.circular(16),
@@ -820,6 +1180,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
           padding: const EdgeInsets.all(12.0),
           child: Row(
             children: [
+              if (isSelectMode)
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Checkbox(
+                    value: isSelected,
+                    onChanged: (_) => onToggleSelect?.call(),
+                  ),
+                ),
               // Plant Image
               Container(
                 width: 80,
@@ -840,15 +1208,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     : _buildPlaceholderImage(theme),
               ),
               const SizedBox(width: 16),
-              // Scan Info
+              // Scan Info – use Expanded so title/date can shrink and avoid overflow in select mode
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
+                    // Title row: plant name gets remaining space; method label can scale down to avoid overflow
                     Row(
                       children: [
-                        Flexible(
-                          flex: 1,
+                        Expanded(
                           child: Text(
                             scan.plant?.commonName ??
                                 scan.topPrediction?.plantName ??
@@ -857,24 +1226,28 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                             overflow: TextOverflow.ellipsis,
-                            maxLines: 2,
+                            maxLines: 1,
                           ),
                         ),
                         if (_getMethodLabel(scan) != null) ...[
-                          const SizedBox(width: 8),
-                          _buildMethodLabel(theme, _getMethodLabel(scan)!),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: _buildMethodLabel(theme, _getMethodLabel(scan)!),
+                            ),
+                          ),
                         ],
                       ],
                     ),
                     const SizedBox(height: 4),
                     Builder(
                       builder: (context) {
-                        // Get scientific name from scan result
                         final existingScientificName =
                             scan.plant?.scientificName ??
                                 scan.topPrediction?.scientificName;
 
-                        // If scientific name exists and is not empty, use it
                         if (existingScientificName != null &&
                             existingScientificName.isNotEmpty &&
                             existingScientificName != 'Unknown') {
@@ -890,14 +1263,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           );
                         }
 
-                        // Otherwise, resolve from plant data cache
                         final plantName = scan.plant?.commonName ??
                             scan.topPrediction?.plantName ??
                             'Unknown Plant';
                         final resolvedScientificName =
                             _resolveScientificName(plantName);
-
-                        // If resolved name is same as common name, show "Species not listed"
                         final displayName =
                             (resolvedScientificName == plantName ||
                                     resolvedScientificName.isEmpty)
@@ -924,19 +1294,38 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           color: theme.colorScheme.onSurface.withOpacity(0.5),
                         ),
                         const SizedBox(width: 4),
-                        Text(
-                          dateFormat.format(scan.scanDate),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface.withOpacity(0.5),
+                        Flexible(
+                          child: Text(
+                            dateFormat.format(scan.scanDate),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface.withOpacity(0.5),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 4),
-                    _buildConfidenceBadge(
-                        theme, appLocalizations, scan.confidenceScore),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildConfidenceBadge(
+                              theme, appLocalizations, scan.confidenceScore),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
+              ),
+              // Export to Camera Roll
+              IconButton(
+                icon: Icon(
+                  Icons.photo_library_outlined,
+                  color: theme.colorScheme.primary,
+                ),
+                onPressed: () => _exportScanToGallery(context, scan),
+                tooltip: 'Save to Camera Roll',
               ),
               // Delete (trash) only – save is in Plant Result screen
               IconButton(
@@ -979,6 +1368,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
             Icons.verified,
@@ -986,12 +1376,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
             color: badgeColor,
           ),
           const SizedBox(width: 4),
-          Text(
-            '$percentage% ${appLocalizations.confidence}',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: badgeColor,
-              fontWeight: FontWeight.bold,
-              fontSize: 11,
+          Flexible(
+            child: Text(
+              '$percentage%',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: badgeColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 11,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ),
         ],

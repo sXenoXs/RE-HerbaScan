@@ -1,6 +1,6 @@
 ## Quick Setup Instructions
 
-**Last Updated**: March 2026 · **App Version**: v0.8.9
+**Last Updated**: March 2026 · **App Version**: v0.9.0
 
 ### 1. Install Flutter
 
@@ -121,27 +121,30 @@ After successful setup:
 4. **Test Multi-language**: Switch between English and Filipino
 5. **Deploy**: Build APK with `flutter build apk` for release
 
-**Current Features Ready for Testing** (v0.8.9 – March 2026):
+**Current Features Ready for Testing** (v0.9.0 – March 2026). For full detail see **CHANGELOG.md**.
+
 - ✅ Plant identification (camera + gallery)
 - ✅ GradCAM visualization with working overlay controls
 - ✅ XAI explanations from cache/offline/fallback only (no live LLM)
 - ✅ Contraindication Engine (safety_profiles.json) and structured safety
-- ✅ Offline processing and offline CAM heatmap generation
+- ✅ Offline processing and offline CAM heatmap generation; labels from `class_indices.json`
 - ✅ Multi-language support (English/Filipino)
-- ✅ Scan history with Device/Cloud tabs, swipe, pull-to-refresh
-- ✅ Accounts: signup with 6-digit confirmation, change password/email, delete account
-- ✅ Interactive preparation guide with timers, Focus Mode, calendar add
+- ✅ Scan history: Device/Cloud tabs, swipe, pull-to-refresh, select mode, batch sync (Device→Cloud, Cloud→Device), Select all/Deselect all; save/export from Plant Result only
+- ✅ Accounts: signup with 6-digit confirmation, change password/email, delete account; account deactivation by admin
+- ✅ Interactive preparation guide (Preparation Guide) with checklist, timers, timer notifications & persistence, Focus Mode, calendar add
+- ✅ Share (native OS) and export to gallery (Plant Result; History device cards)
+- ✅ Admin: Image Review, Plant Metadata (cloud-first catalog), Condition Search, User Management; Factory Reset; 2D plant anatomy
 - ✅ Settings and preferences; offline management
 - ✅ Backend API for Grad-CAM (Railway); Postman collection
 
-**Recent Features (v0.8.9)**:
+**Recent Features (v0.9.0)**:
 - ✅ Signup 6-digit email confirmation; stronger password rules; delete account
 - ✅ Interactive preparation checklist, contextual timers, Focus Mode, calendar
 - ✅ Contraindication Engine; no live LLM (thesis-defensible)
 - ✅ Scan History: swipe between tabs, pull-to-refresh on Cloud, offline-aware
 - ✅ Friendly auth errors; 6-digit OTP password reset; auth deep links
 
-**Recent Fixes (v0.8.9)**:
+**Recent Fixes (v0.9.0)**:
 - ✅ Summary tab content and layout; taxonomy Markdown line breaks
 - ✅ Railway /identify 401 when not logged in (optional JWT)
 - ✅ Calendar add-event on Android (queries intent); Focus Mode contrast
@@ -181,10 +184,10 @@ herbascan/
 
 ## AI Model Integration
 
-The app includes pre-trained models:
-1. **MobileNet V2 Feature Extractor**: `mobilenetv2_feature_extractor.tflite`
-2. **Random Forest Classifier**: `random_forest_distilled.tflite`
-3. **Class Labels**: `labels.json` and `labels.txt`
+The app uses the following for offline inference:
+1. **Multi-output TFLite model**: `mobilenetv2_multi_output.tflite` (feature maps + predictions)
+2. **CAM weights**: `mobilenetv2_cam_weights.json` (for offline CAM heatmaps)
+3. **Class labels**: `class_indices.json` (name→index format; the app does not use `labels.txt`)
 
 **Model Files Location**: `assets/models/`
 
@@ -197,7 +200,7 @@ HerbaScan includes a Python backend API for true Grad-CAM computation:
 #### Prerequisites
 - Python 3.8+ installed
 - Virtual environment (recommended)
-- Model files: `backend/models/mobilenetv2_rf.h5` and `backend/models/labels.json`
+- Model files: `backend/models/MobileNetV2_model.keras` (required) and `backend/models/labels.json` (optional)
 - Railway account (for deployment) - Optional but recommended
 
 #### Setup Steps
@@ -224,8 +227,8 @@ HerbaScan includes a Python backend API for true Grad-CAM computation:
    ```
 
 4. **Place model files**:
-   - Copy `mobilenetv2_rf.h5` to `backend/models/`
-   - Copy `labels.json` to `backend/models/`
+   - Copy `MobileNetV2_model.keras` to `backend/models/`
+   - Copy `labels.json` to `backend/models/` (optional)
 
 5. **Run locally**:
    ```bash
@@ -262,8 +265,8 @@ python extract_cam_weights.py
 # Create multi-output TFLite model
 python create_multi_output_tflite.py
 
-# Copy to Flutter assets
-cp models/cam_weights.json ../assets/models/
+# Copy to Flutter assets (app uses class_indices.json for labels, not labels.txt)
+cp models/mobilenetv2_cam_weights.json ../assets/models/
 cp models/mobilenetv2_multi_output.tflite ../assets/models/
 ```
 
@@ -271,12 +274,13 @@ cp models/mobilenetv2_multi_output.tflite ../assets/models/
 
 ## Database Setup
 
-The app uses SQLite for local storage. The database is created automatically on first run with the following tables:
+The app uses SQLite for local storage. The database is created automatically on first run. Tables include:
 
-- `plants` - Plant information (42 medicinal plants: 10 DOH-approved + 32 additional)
+- `plants` - Plant information (42 medicinal plants: 10 DOH-approved + 32 additional; optional image_url from Supabase)
 - `medicinal_uses` - Medicinal applications and therapeutic uses
 - `preparation_methods` - Preparation instructions and dosage guidelines
 - `scan_history` - User scan results with GradCAM paths and metadata
+- Catalog tables (synced from Supabase when online): `safety_profiles`, `plant_habitats`, `catalog_conditions`, `catalog_condition_plants`, `catalog_plant_anatomy`
 
 **Plant Database**: The app automatically initializes with 42 plants on first launch (10 DOH-approved + 32 additional). See main README for full list.
 
@@ -288,8 +292,8 @@ The app uses SQLite for local storage. The database is created automatically on 
 - **Format**: JSON with taxonomy, ecology, medicinal uses, safety; structured safety profiles
 - **Status**: ✅ Automatically included in app assets
 
-### Online Explanations (No Live LLM in v0.8.9)
-- **Behavior**: As of v0.8.9, the app does **not** use live generative AI at runtime. Explanations come only from: SharedPreferences/file cache (read-only), offline `plant_explanations.json`, and fallback text. Safety is fully deterministic via the Contraindication Engine (`safety_profiles.json`).
+### Online Explanations (No Live LLM in v0.9.0)
+- **Behavior**: As of v0.9.0, the app does **not** use live generative AI at runtime. Explanations come only from: SharedPreferences/file cache (read-only), offline `plant_explanations.json`, and fallback text. Safety is fully deterministic via the Contraindication Engine (`safety_profiles.json`).
 - **Offline data**: `assets/data/plant_explanations.json` and `assets/data/safety_profiles.json`.
 - **Fallback**: If no cached or offline explanation is found, a fallback message is shown.
 
@@ -328,7 +332,7 @@ The app uses SQLite for local storage. The database is created automatically on 
 
 ### API Configuration
 - **Backend (GradCAM)**: `lib/core/services/online_gradcam_service.dart` – set base URL to your Railway deployment. Optional JWT: see `supabase/README.md` and `backend/README.md`.
-- **No live LLM in v0.8.9**: Explanations use cache/offline JSON and fallback only.
+- **No live LLM in v0.9.0**: Explanations use cache/offline JSON and fallback only.
 
 ### Backend API URL
 - **Location**: `lib/core/services/online_gradcam_service.dart`

@@ -1,7 +1,10 @@
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:herbascan/core/config/supabase_config.dart';
+import 'package:herbascan/core/providers/auth_provider.dart';
 import 'package:herbascan/features/auth/change_password_screen.dart';
 
 /// Handles auth deep links (herbascan://auth/callback) for password reset and
@@ -23,6 +26,7 @@ class AuthDeepLinkHandler extends StatefulWidget {
 
 class _AuthDeepLinkHandlerState extends State<AuthDeepLinkHandler> {
   final AppLinks _appLinks = AppLinks();
+  bool _deactivationDialogShown = false;
 
   @override
   void initState() {
@@ -69,5 +73,39 @@ class _AuthDeepLinkHandlerState extends State<AuthDeepLinkHandler> {
   }
 
   @override
-  Widget build(BuildContext context) => widget.child;
+  Widget build(BuildContext context) {
+    return Consumer<AuthProvider>(
+      builder: (context, auth, child) {
+        if (auth.wasDeactivatedByAdmin && !_deactivationDialogShown) {
+          _deactivationDialogShown = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!context.mounted) return;
+            showDialog<void>(
+              context: context,
+              barrierDismissible: false,
+              builder: (ctx) => AlertDialog(
+                title: const Text('Account deactivated'),
+                content: const Text(
+                  'Your account has been deactivated by an administrator.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(ctx).pop();
+                      auth.clearDeactivatedFlag();
+                      _deactivationDialogShown = false;
+                      if (context.mounted) context.go('/login');
+                    },
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+            );
+          });
+        }
+        return child!;
+      },
+      child: widget.child,
+    );
+  }
 }

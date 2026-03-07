@@ -1,8 +1,8 @@
 # HerbaScan Backend - Quick Start Guide
 
 **Last Updated**: March 2026  
-**Backend Version**: 0.8.9  
-**Flutter App Version**: v0.8.9
+**Backend Version**: 0.9.0  
+**Flutter App Version**: v0.9.0
 
 **Model Standardization**: MobileNetV2 Only (Phase 34) - HerbaScan custom model deprecated  
 **AI Explanation Standardization**: Phase 35 Complete - Structured format with 42 plants
@@ -32,7 +32,7 @@ Before deploying, make sure you have:
   - `MobileNetV2_model.keras` (MobileNetV2 architecture model - `.keras` format) - **REQUIRED**
   - `labels.json` (plant class labels - optional, for backward compatibility)
   
-  **Note:** MobileNetV2 model is required. HerbaScan custom model (`herbascan_model.keras`) is deprecated as of Phase 34 (Model Standardization). The backend uses only MobileNetV2 for prediction consistency between offline CAM and online GradCAM. The Flutter app (v0.8.9) now includes complete structured explanations for all 42 plants with standardized format (Phase 35).
+  **Note:** MobileNetV2 model is required. HerbaScan custom model is deprecated. The Flutter app uses `assets/models/class_indices.json` for labels (not `labels.txt`) and `mobilenetv2_multi_output.tflite` for offline CAM. For full change history see the project **CHANGELOG.md**.
 
 ---
 
@@ -268,7 +268,7 @@ Once deployed, you have:
 - ✅ Base64 encoded heatmap images
 - ✅ Top-3 predictions with confidence scores
 - ✅ Ready for Flutter integration
-- ✅ Integrated with Hybrid XAI Explanation System (v0.8.9) - supports 42 plants with complete structured offline explanations (taxonomy, ecology, medicinal_preparation, safety_consideration)
+- ✅ Integrated with Hybrid XAI Explanation System (v0.9.0) - supports 42 plants with complete structured offline explanations (taxonomy, ecology, medicinal_preparation, safety_consideration)
 
 ### Next Steps
 
@@ -351,8 +351,7 @@ python create_multi_output_tflite.py
 # Copy to Flutter assets (MobileNetV2 only)
 cp models/mobilenetv2_cam_weights.json ../assets/models/
 cp models/mobilenetv2_multi_output.tflite ../assets/models/
-# Note: Frontend uses class_indices.json (name:index), not labels.json (index:name)
-# Note: HerbaScan model files are deprecated - only MobileNetV2 is required
+# Frontend uses class_indices.json for labels (not labels.txt). Keep class_indices.json in sync with backend labels.
 ```
 
 ---

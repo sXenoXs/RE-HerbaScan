@@ -16,12 +16,21 @@ class AuthProvider extends ChangeNotifier {
   User? _user;
   AppRole _role = AppRole.user;
   bool _initialized = false;
+  bool _deactivatedByAdmin = false;
 
   User? get user => _user;
   AppRole get role => _role;
   bool get isLoggedIn => _user != null;
   bool get isAdmin => _role == AppRole.admin;
   bool get initialized => _initialized;
+
+  /// True after sign-out due to admin deactivation (is_active: false).
+  bool get wasDeactivatedByAdmin => _deactivatedByAdmin;
+
+  void clearDeactivatedFlag() {
+    _deactivatedByAdmin = false;
+    notifyListeners();
+  }
 
   /// JWT access token for Railway /identify and Supabase API calls.
   String? get accessToken => _auth.accessToken;
@@ -62,7 +71,8 @@ class AuthProvider extends ChangeNotifier {
       _debugAuth('_loadRole: profiles result=$res');
       final isActive = res?['is_active'] as bool? ?? true;
       if (!isActive) {
-        _debugAuth('_loadRole: user inactive, signing out');
+        _debugAuth('_loadRole: user inactive (deactivated by admin), signing out');
+        _deactivatedByAdmin = true;
         await _auth.signOut();
         _user = null;
         _role = AppRole.user;
