@@ -13,17 +13,17 @@
 
 1. [Executive Summary](#1-executive-summary)
 2. [Core Features & Business Logic](#2-core-features--business-logic)
-   - 2.1 Feature Inventory
-   - 2.2 Offline-First Sync Strategy
-   - 2.3 Hybrid XAI Explanation System (No-LLM)
-   - 2.4 Admin Portal
-   - 2.5 UI/UX Redesign (March 2026)
+  - 2.1 Feature Inventory
+  - 2.2 Offline-First Sync Strategy
+  - 2.3 Hybrid XAI Explanation System (No-LLM)
+  - 2.4 Admin Portal
+  - 2.5 UI/UX Redesign (March 2026)
 3. [System Architecture](#3-system-architecture)
-   - 3.1 Flutter Frontend Layer
-   - 3.2 Python FastAPI Backend (Railway)
-   - 3.3 Supabase Cloud Layer
-   - 3.4 SQLite Local Layer
-   - 3.5 Asset Bundle
+  - 3.1 Flutter Frontend Layer
+  - 3.2 Python FastAPI Backend (Railway)
+  - 3.3 Supabase Cloud Layer
+  - 3.4 SQLite Local Layer
+  - 3.5 Asset Bundle
 4. [Architecture Diagram](#4-architecture-diagram)
 5. [ML Pipeline & Data Flow](#5-ml-pipeline--data-flow)
 6. [Deployment & Infrastructure](#6-deployment--infrastructure)
@@ -46,16 +46,18 @@ The application serves communities—particularly in rural areas with limited co
 
 ### Current Production State (v0.9.3 – March 2026)
 
-| Dimension              | State                                                                              |
-|------------------------|------------------------------------------------------------------------------------|
-| **Overall progress**   | ~90% — all core features implemented; beta testing pending                        |
-| **AI Model**           | MobileNetV2-only (HerbaScan custom model deprecated in Phase 34)                  |
-| **XAI Explanations**   | Fully deterministic — no live LLM at runtime (Gemini removed in CHANGELOG)        |
-| **Plant Database**     | 42 medicinal plants, all migrated to structured 4-section format (Phase 35)       |
-| **Cloud Backend**      | FastAPI on Railway (`re-herbascan-production.up.railway.app`) — Grad-CAM provider |
-| **Auth & Cloud DB**    | Supabase (Auth, PostgreSQL, Storage, Edge Functions)                               |
-| **Local DB**           | SQLite v7 (8 tables), offline-first with Supabase sync                            |
-| **Admin Portal**       | Full Flutter AdminWebScreen on all platforms via GoRouter `/admin`                 |
+
+| Dimension            | State                                                                             |
+| -------------------- | --------------------------------------------------------------------------------- |
+| **Overall progress** | ~90% — all core features implemented; beta testing pending                        |
+| **AI Model**         | MobileNetV2-only (HerbaScan custom model deprecated in Phase 34)                  |
+| **XAI Explanations** | Fully deterministic — no live LLM at runtime (Gemini removed in CHANGELOG)        |
+| **Plant Database**   | 42 medicinal plants, all migrated to structured 4-section format (Phase 35)       |
+| **Cloud Backend**    | FastAPI on Railway (`re-herbascan-production.up.railway.app`) — Grad-CAM provider |
+| **Auth & Cloud DB**  | Supabase (Auth, PostgreSQL, Storage, Edge Functions)                              |
+| **Local DB**         | SQLite v7 (8 tables), offline-first with Supabase sync                            |
+| **Admin Portal**     | Full Flutter AdminWebScreen on all platforms via GoRouter `/admin`                |
+
 
 ---
 
@@ -64,71 +66,86 @@ The application serves communities—particularly in rural areas with limited co
 ### 2.1 Feature Inventory
 
 #### Scan & Identification
-| Feature | Status | Notes |
-|---------|--------|-------|
-| Camera capture + pinch-to-zoom | ✅ | Real device only |
-| Gallery image selection | ✅ | |
-| Online Grad-CAM (Railway) | ✅ | True gradient-based heatmap |
-| Offline CAM (TFLite) | ✅ | Bicubic interpolation + Gaussian blur |
-| Adaptive fallback (online → offline) | ✅ | `AdaptiveGradCAMService` |
-| Top-3 predictions with confidence % | ✅ | |
-| Full-screen tap-to-expand plant image | ✅ | Hero animation + pinch-to-zoom |
-| Full-screen heatmap mode | ✅ | Zoomable, live opacity controls |
-| Scan history (Device tab) | ✅ | SQLite `scan_history` |
-| Scan history (Cloud tab) | ✅ | Supabase `scans` table, swipe + pull-to-refresh |
-| Cloud save (Personal Herbarium) | ✅ | Opt-in when signed in, upsert on duplicate |
-| Heatmap in cloud sync | ✅ | Upload stores heatmap as `{scan_id}_gradcam.jpg` in Storage; metadata `gradcam_url`; download restores `gradCAMPath` |
+
+
+| Feature                               | Status | Notes                                                                                                                |
+| ------------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------- |
+| Camera capture + pinch-to-zoom        | ✅      | Real device only                                                                                                     |
+| Gallery image selection               | ✅      |                                                                                                                      |
+| Online Grad-CAM (Railway)             | ✅      | True gradient-based heatmap                                                                                          |
+| Offline CAM (TFLite)                  | ✅      | Bicubic interpolation + Gaussian blur                                                                                |
+| Adaptive fallback (online → offline)  | ✅      | `AdaptiveGradCAMService`                                                                                             |
+| Top-3 predictions with confidence %   | ✅      |                                                                                                                      |
+| Full-screen tap-to-expand plant image | ✅      | Hero animation + pinch-to-zoom                                                                                       |
+| Full-screen heatmap mode              | ✅      | Zoomable, live opacity controls                                                                                      |
+| Scan history (Device tab)             | ✅      | SQLite `scan_history`                                                                                                |
+| Scan history (Cloud tab)              | ✅      | Supabase `scans` table, swipe + pull-to-refresh                                                                      |
+| Cloud save (Personal Herbarium)       | ✅      | Opt-in when signed in, upsert on duplicate                                                                           |
+| Heatmap in cloud sync                 | ✅      | Upload stores heatmap as `{scan_id}_gradcam.jpg` in Storage; metadata `gradcam_url`; download restores `gradCAMPath` |
+
 
 #### Plant Knowledge
-| Feature | Status | Notes |
-|---------|--------|-------|
-| 42-plant database | ✅ | 10 DOH-approved + 32 additional |
-| Plant Detail screen (4 tabs) | ✅ | Taxonomy / Ecology / Medicinal / Safety |
-| Interactive 2D plant silhouette | ✅ | SVG path hit-testing, DB-backed anatomy data |
-| Static habitat heatmap (OSM) | ✅ | `flutter_map` + curated coordinates |
-| Preparation guide (interactive) | ✅ | Checklist, contextual timers, Focus Mode |
-| Calendar add-to-device | ✅ | Android `ACTION_INSERT` intent |
-| Contraindication Engine | ✅ | Deterministic — `safety_profiles.json` |
-| Condition-based search (15+ conditions) | ✅ | DB-backed, admin-manageable |
-| Browse / search / grid / list view | ✅ | |
-| DOH Approved Plants screen | ✅ | |
+
+
+| Feature                                 | Status | Notes                                        |
+| --------------------------------------- | ------ | -------------------------------------------- |
+| 42-plant database                       | ✅      | 10 DOH-approved + 32 additional              |
+| Plant Detail screen (4 tabs)            | ✅      | Taxonomy / Ecology / Medicinal / Safety      |
+| Interactive 2D plant silhouette         | ✅      | SVG path hit-testing, DB-backed anatomy data |
+| Static habitat heatmap (OSM)            | ✅      | `flutter_map` + curated coordinates          |
+| Preparation guide (interactive)         | ✅      | Checklist, contextual timers, Focus Mode     |
+| Calendar add-to-device                  | ✅      | Android `ACTION_INSERT` intent               |
+| Contraindication Engine                 | ✅      | Deterministic — `safety_profiles.json`       |
+| Condition-based search (15+ conditions) | ✅      | DB-backed, admin-manageable                  |
+| Browse / search / grid / list view      | ✅      |                                              |
+| DOH Approved Plants screen              | ✅      |                                              |
+
 
 #### Auth & Account
-| Feature | Status | Notes |
-|---------|--------|-------|
-| Email + password sign-up | ✅ | |
-| 6-digit OTP signup confirmation | ✅ | |
-| 6-digit OTP password reset | ✅ | Bulletproof; avoids link-scanner issue |
-| Change password (with live requirements) | ✅ | |
-| Change email | ✅ | |
-| Delete account | ✅ | Calls `delete-user` Edge Function |
-| RBAC (user / admin) | ✅ | `profiles.role` + `is_admin()` SECURITY DEFINER |
-| Friendly auth error messages | ✅ | |
+
+
+| Feature                                  | Status | Notes                                           |
+| ---------------------------------------- | ------ | ----------------------------------------------- |
+| Email + password sign-up                 | ✅      |                                                 |
+| 6-digit OTP signup confirmation          | ✅      |                                                 |
+| 6-digit OTP password reset               | ✅      | Bulletproof; avoids link-scanner issue          |
+| Change password (with live requirements) | ✅      |                                                 |
+| Change email                             | ✅      |                                                 |
+| Delete account                           | ✅      | Calls `delete-user` Edge Function               |
+| RBAC (user / admin)                      | ✅      | `profiles.role` + `is_admin()` SECURITY DEFINER |
+| Friendly auth error messages             | ✅      |                                                 |
+
 
 #### Settings & Offline
-| Feature | Status | Notes |
-|---------|--------|-------|
-| Offline mode toggle | ✅ | `OfflineProvider` ↔ `AppProvider` sync |
-| Offline storage info + refresh | ✅ | |
-| Clear offline data | ✅ | Wipes device scan history |
-| Persistent user preferences | ✅ | `SharedPreferences` |
-| English / Filipino localization | ✅ | |
-| System Diagnostics | ✅ | Renamed from Offline Demo; 2×2 stat cards, connection banner |
-| De-jargonified AI labels | ✅ | e.g. "Show Prediction Confidence", "Show AI Reasoning Heatmap" in Settings |
+
+
+| Feature                         | Status | Notes                                                                      |
+| ------------------------------- | ------ | -------------------------------------------------------------------------- |
+| Offline mode toggle             | ✅      | `OfflineProvider` ↔ `AppProvider` sync                                     |
+| Offline storage info + refresh  | ✅      |                                                                            |
+| Clear offline data              | ✅      | Wipes device scan history                                                  |
+| Persistent user preferences     | ✅      | `SharedPreferences`                                                        |
+| English / Filipino localization | ✅      |                                                                            |
+| System Diagnostics              | ✅      | Renamed from Offline Demo; 2×2 stat cards, connection banner               |
+| De-jargonified AI labels        | ✅      | e.g. "Show Prediction Confidence", "Show AI Reasoning Heatmap" in Settings |
+
 
 #### Admin Portal (all platforms)
-| Feature | Status | Notes |
-|---------|--------|-------|
-| Image Review (Pending / All) | ✅ | Approve / Reject / Delete submissions |
-| Plant Metadata editor (5-tab form) | ✅ | Cloud-first, syncs to SQLite |
-| Editable safety + habitat tabs | ✅ | Writes to Supabase `catalog_safety` / `catalog_habitat` |
-| Full medicinal uses + preparations editors | ✅ | |
-| Condition Search management | ✅ | Add / edit / delete custom conditions + plant mapping |
-| User Management | ✅ | Deactivate, delete; card layout (no DataTable overflow) |
-| Factory Reset | ✅ | Re-seeds 42 plants, safety, habitat, conditions to Supabase |
-| 2D Silhouette admin seed | ✅ | `catalog_plant_anatomy` insert templates |
-| Instant local sync | ✅ | After catalog/condition/plant save, admin triggers local SQLite sync so browse/detail see changes without app restart |
-| Condition list plant count | ✅ | Admin "X plants" matches browse (same two-step logic: explicit mappings then keyword fallback) |
+
+
+| Feature                                    | Status | Notes                                                                                                                 |
+| ------------------------------------------ | ------ | --------------------------------------------------------------------------------------------------------------------- |
+| Image Review (Pending / All)               | ✅      | Approve / Reject / Delete submissions                                                                                 |
+| Plant Metadata editor (5-tab form)         | ✅      | Cloud-first, syncs to SQLite                                                                                          |
+| Editable safety + habitat tabs             | ✅      | Writes to Supabase `catalog_safety` / `catalog_habitat`                                                               |
+| Full medicinal uses + preparations editors | ✅      |                                                                                                                       |
+| Condition Search management                | ✅      | Add / edit / delete custom conditions + plant mapping                                                                 |
+| User Management                            | ✅      | Deactivate, delete; card layout (no DataTable overflow)                                                               |
+| Factory Reset                              | ✅      | Re-seeds 42 plants, safety, habitat, conditions to Supabase                                                           |
+| 2D Silhouette admin seed                   | ✅      | `catalog_plant_anatomy` insert templates                                                                              |
+| Instant local sync                         | ✅      | After catalog/condition/plant save, admin triggers local SQLite sync so browse/detail see changes without app restart |
+| Condition list plant count                 | ✅      | Admin "X plants" matches browse (same two-step logic: explicit mappings then keyword fallback)                        |
+
 
 ---
 
@@ -142,24 +159,26 @@ The following reflects the CHANGELOG UI/UX redesign (design system and screen-by
 
 **Key screen changes:**
 
-| Screen | Changes |
-|--------|---------|
-| Splash | Solid background (`surfaceColor`/`darkScaffold`), linear progress bar, eco icon |
-| Onboarding | De-jargonified copy, single botanical palette, Skip top-right, FilledButton |
-| Home | BottomAppBar, center FAB, stats ribbon, Recent Scans horizontal scroll, DOH Spotlight carousel |
-| Browse | SearchBar (Material 3), SegmentedButton All/DOH, "Search by Medical Condition" banner |
-| Scan | Edge-to-edge camera, corner-bracket reticle, glassmorphic controls, tips bottom sheet |
-| Plant Result | Insights + AI Vision tabs; glassmorphic hero, Save/Share over image; no nested Heatmap/Summary sub-tabs |
-| Plant Detail | SliverAppBar hero, Quick Facts card, taxonomy 2×2 grid, medicinal cards, safety tab |
-| History | TabBar in SliverAppBar, device cards (thumbnail + confidence pill), select mode, swipe export/delete, batch Sync/Download, heatmap from cloud |
-| Settings | Grouped cards (Account, App Preferences, Scanning & AI, Support, Developer Options) |
-| DOH | Compact disclaimer banner, grid cards with glassmorphic DOH badge |
-| Help | Disclaimer banner, best-practices carousel, FAQ accordion |
-| Auth/OTP | Botanical header widget, pinput 6-box OTP, password requirements micro-pills |
-| Condition Search | Directory grid; tap opens ConditionResultsScreen |
-| Habitat Map | Edge-to-edge map, floating back/zoom, DraggableScrollableSheet info panel |
-| Preparation Guide / Focus Mode | Warnings at top, checklist, contextual timers, FAB for Focus Mode |
-| System Diagnostics | Renamed from Offline Demo; 2×2 stat cards, connection banner, Force Sync / Wipe Cache |
+
+| Screen                         | Changes                                                                                                                                       |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Splash                         | Solid background (`surfaceColor`/`darkScaffold`), linear progress bar, eco icon                                                               |
+| Onboarding                     | De-jargonified copy, single botanical palette, Skip top-right, FilledButton                                                                   |
+| Home                           | BottomAppBar, center FAB, stats ribbon, Recent Scans horizontal scroll, DOH Spotlight carousel                                                |
+| Browse                         | SearchBar (Material 3), SegmentedButton All/DOH, "Search by Medical Condition" banner                                                         |
+| Scan                           | Edge-to-edge camera, corner-bracket reticle, glassmorphic controls, tips bottom sheet                                                         |
+| Plant Result                   | Insights + AI Vision tabs; glassmorphic hero, Save/Share over image; no nested Heatmap/Summary sub-tabs                                       |
+| Plant Detail                   | SliverAppBar hero, Quick Facts card, taxonomy 2×2 grid, medicinal cards, safety tab                                                           |
+| History                        | TabBar in SliverAppBar, device cards (thumbnail + confidence pill), select mode, swipe export/delete, batch Sync/Download, heatmap from cloud |
+| Settings                       | Grouped cards (Account, App Preferences, Scanning & AI, Support, Developer Options)                                                           |
+| DOH                            | Compact disclaimer banner, grid cards with glassmorphic DOH badge                                                                             |
+| Help                           | Disclaimer banner, best-practices carousel, FAQ accordion                                                                                     |
+| Auth/OTP                       | Botanical header widget, pinput 6-box OTP, password requirements micro-pills                                                                  |
+| Condition Search               | Directory grid; tap opens ConditionResultsScreen                                                                                              |
+| Habitat Map                    | Edge-to-edge map, floating back/zoom, DraggableScrollableSheet info panel                                                                     |
+| Preparation Guide / Focus Mode | Warnings at top, checklist, contextual timers, FAB for Focus Mode                                                                             |
+| System Diagnostics             | Renamed from Offline Demo; 2×2 stat cards, connection banner, Force Sync / Wipe Cache                                                         |
+
 
 **Save/export:** Save to device/cloud and export from **Plant Result screen** only (and History device card export to gallery). Batch sync/download in History select mode; Select all / Deselect all.
 
@@ -187,6 +206,7 @@ App Launch (PlantProvider._initializeData)
 ```
 
 **Key design decisions:**
+
 - **Idempotent writes:** All sync methods use `ConflictAlgorithm.replace` and delete child rows before re-inserting, preventing UNIQUE constraint failures on concurrent refreshes.
 - **Offline-first data access:** Safety → SQLite first, fall back to `safety_profiles.json`; Habitat → SQLite first, fall back to `plant_habitats.json`; Conditions → SQLite first, fall back to 15 hardcoded defaults.
 - **Fresh install protection:** `_ensureCatalogTablesExist()` runs in `onOpen` callback — all catalog tables are created if missing, so existing installs get schema updates without data loss.
@@ -227,13 +247,15 @@ Rendered in the app as `PlantExplanation` with `formattedExplanation` producing 
 
 `SafetyProfileService` loads from `assets/data/safety_profiles.json` (SQLite first if synced):
 
-| Field | Type | Purpose |
-|-------|------|---------|
-| `is_generally_safe` | bool | Green card in UI |
-| `pregnancy_warning` | bool | Red warning card |
-| `known_side_effects` | list | Yellow card |
-| `drug_interactions` | list | Orange card |
-| `strict_contraindications` | list | Red card |
+
+| Field                      | Type | Purpose          |
+| -------------------------- | ---- | ---------------- |
+| `is_generally_safe`        | bool | Green card in UI |
+| `pregnancy_warning`        | bool | Red warning card |
+| `known_side_effects`       | list | Yellow card      |
+| `drug_interactions`        | list | Orange card      |
+| `strict_contraindications` | list | Red card         |
+
 
 The `ContraindicationEngineWidget` renders these deterministically on the Plant Detail Safety tab and the PlantResult Summary tab with no network calls.
 
@@ -242,6 +264,7 @@ The `ContraindicationEngineWidget` renders these deterministically on the Plant 
 ### 2.4 Admin Portal
 
 The Admin Portal is a **fully integrated Flutter feature** accessible on all platforms (Android, Windows desktop, web) via GoRouter route `/admin` (protected by auth + role guard). It renders as:
+
 - **Wide screen (≥ 800px):** `NavigationRail` sidebar with 3 modules.
 - **Narrow screen:** Drawer with gradient header.
 
@@ -257,12 +280,14 @@ if (loc == '/admin') {
 
 #### Admin Modules
 
-| Module | Service | Supabase Tables |
-|--------|---------|-----------------|
-| Image Review | `HerbariumService` | `scans`, `storage.objects` |
+
+| Module                        | Service                    | Supabase Tables                                                                                                                         |
+| ----------------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Image Review                  | `HerbariumService`         | `scans`, `storage.objects`                                                                                                              |
 | Plant Metadata (5-tab editor) | `CatalogPlantAdminService` | `catalog_plants`, `catalog_medicinal_uses`, `catalog_preparation_methods`, `catalog_safety`, `catalog_habitat`, `catalog_plant_anatomy` |
-| Condition Search | `CatalogPlantAdminService` | `catalog_conditions`, `catalog_condition_plants` |
-| User Management | `AdminUserService` | `profiles` |
+| Condition Search              | `CatalogPlantAdminService` | `catalog_conditions`, `catalog_condition_plants`                                                                                        |
+| User Management               | `AdminUserService`         | `profiles`                                                                                                                              |
+
 
 #### delete-user Edge Function
 
@@ -277,7 +302,7 @@ if (loc == '/admin') {
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                     USER DEVICE (Android / iOS)                     │
+│                     USER DEVICE (Android)                           │
 │                                                                     │
 │  ┌──────────┐  ┌──────────────────────────────────────────────┐    │
 │  │ Flutter  │  │              Feature Screens                 │    │
@@ -367,24 +392,28 @@ if (loc == '/admin') {
 
 #### State Management — 6 Providers
 
-| Provider | Responsibility |
-|----------|---------------|
-| `AppProvider` | Theme, language, offline mode toggle, app-wide preferences |
-| `AuthProvider` | Supabase session, user role (`user` / `admin`), sign-in/out/OTP flows |
-| `PlantProvider` | Plant catalog (42 plants), scan history, anatomy data, catalog sync trigger |
-| `CameraProvider` | Camera init, capture, gallery selection, zoom controls (skipped on desktop) |
-| `LanguageProvider` | English / Filipino localization, runtime switching |
-| `OfflineProvider` | Connectivity monitoring (`connectivity_plus`), offline mode, sync state |
+
+| Provider           | Responsibility                                                              |
+| ------------------ | --------------------------------------------------------------------------- |
+| `AppProvider`      | Theme, language, offline mode toggle, app-wide preferences                  |
+| `AuthProvider`     | Supabase session, user role (`user` / `admin`), sign-in/out/OTP flows       |
+| `PlantProvider`    | Plant catalog (42 plants), scan history, anatomy data, catalog sync trigger |
+| `CameraProvider`   | Camera init, capture, gallery selection, zoom controls (skipped on desktop) |
+| `LanguageProvider` | English / Filipino localization, runtime switching                          |
+| `OfflineProvider`  | Connectivity monitoring (`connectivity_plus`), offline mode, sync state     |
+
 
 #### Routing (GoRouter — `lib/core/routing/app_router.dart`)
 
-| Route | Screen | Guard |
-|-------|---------|-------|
-| `/` | `SplashScreen` | None |
-| `/login` | `LoginScreen` | None |
-| `/home` | `HomeScreen` | None |
-| `/onboarding` | `OnboardingScreen` | None |
-| `/admin` | `AdminWebScreen` | Login + admin role |
+
+| Route         | Screen             | Guard              |
+| ------------- | ------------------ | ------------------ |
+| `/`           | `SplashScreen`     | None               |
+| `/login`      | `LoginScreen`      | None               |
+| `/home`       | `HomeScreen`       | None               |
+| `/onboarding` | `OnboardingScreen` | None               |
+| `/admin`      | `AdminWebScreen`   | Login + admin role |
+
 
 > **Note:** `HomeScreen` receives `showUnauthorizedSnackBar` query param when redirected from `/admin` without admin role.
 
@@ -418,12 +447,14 @@ HerbariumService ──► Supabase Storage + scans table
 
 #### Endpoints
 
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| `GET` | `/` | None | API info + model status |
-| `GET` | `/health` | None | `{ status, model_loaded, labels_loaded, num_classes }` |
-| `GET` | `/test` | None | Debug/connectivity check |
-| `POST` | `/identify` | Optional JWT | Plant identification + Grad-CAM |
+
+| Method | Path        | Auth         | Description                                            |
+| ------ | ----------- | ------------ | ------------------------------------------------------ |
+| `GET`  | `/`         | None         | API info + model status                                |
+| `GET`  | `/health`   | None         | `{ status, model_loaded, labels_loaded, num_classes }` |
+| `GET`  | `/test`     | None         | Debug/connectivity check                               |
+| `POST` | `/identify` | Optional JWT | Plant identification + Grad-CAM                        |
+
 
 #### `/identify` Request / Response
 
@@ -431,6 +462,7 @@ HerbariumService ──► Supabase Storage + scans table
 **Optional Header:** `Authorization: Bearer <Supabase access token>`
 
 **Response:**
+
 ```json
 {
   "plant_name":      "Vitex negundo",
@@ -448,12 +480,14 @@ HerbariumService ──► Supabase Storage + scans table
 
 #### JWT Behaviour (`SUPABASE_JWT_SECRET` env var)
 
-| Scenario | Behaviour |
-|----------|-----------|
+
+| Scenario                                    | Behaviour                                    |
+| ------------------------------------------- | -------------------------------------------- |
 | `SUPABASE_JWT_SECRET` not set (recommended) | All requests allowed (anonymous + signed-in) |
-| Set, no Bearer header | Request allowed (anonymous scan) |
-| Set, valid Bearer token | Request allowed |
-| Set, invalid/expired Bearer token | 401 returned |
+| Set, no Bearer header                       | Request allowed (anonymous scan)             |
+| Set, valid Bearer token                     | Request allowed                              |
+| Set, invalid/expired Bearer token           | 401 returned                                 |
+
 
 **Recommendation from `supabase/README.md`:** Leave `SUPABASE_JWT_SECRET` unset to prevent 401 errors for anonymous users.
 
@@ -522,35 +556,41 @@ SET search_path = public
 AS $$ SELECT EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin') $$;
 ```
 
-| Table | Public SELECT | User CUD | Admin CUD |
-|-------|-------------|----------|-----------|
-| `profiles` | No | Own row | All rows |
-| `scans` | No | Own rows | All rows |
-| `catalog_*` | Yes | No | Yes (via `is_admin()`) |
-| `plant_metadata` | No | No | Yes |
+
+| Table            | Public SELECT | User CUD | Admin CUD              |
+| ---------------- | ------------- | -------- | ---------------------- |
+| `profiles`       | No            | Own row  | All rows               |
+| `scans`          | No            | Own rows | All rows               |
+| `catalog_*`      | Yes           | No       | Yes (via `is_admin()`) |
+| `plant_metadata` | No            | No       | Yes                    |
+
 
 #### Storage Bucket: `herbarium-images`
 
-| Path pattern | Operation | Allowed to |
-|-------------|-----------|-----------|
-| `{user_id}/*` | INSERT / SELECT / DELETE | Authenticated owner |
+
+| Path pattern                      | Operation                | Allowed to                                                              |
+| --------------------------------- | ------------------------ | ----------------------------------------------------------------------- |
+| `{user_id}/*`                     | INSERT / SELECT / DELETE | Authenticated owner                                                     |
 | `{user_id}/{scan_id}_gradcam.jpg` | INSERT / SELECT / DELETE | Authenticated owner (heatmap image; URL in scan metadata `gradcam_url`) |
-| `plant-catalog/*` | INSERT / SELECT / DELETE | Admins |
-| `*` (SELECT) | SELECT | Admins |
+| `plant-catalog/*`                 | INSERT / SELECT / DELETE | Admins                                                                  |
+| `*` (SELECT)                      | SELECT                   | Admins                                                                  |
+
 
 RLS policies applied via `20260302000000_storage_herbarium_policies.sql`.
 
 #### Authentication
 
-| Flow | Mechanism |
-|------|----------|
-| Sign up | Email + password → optional 6-digit OTP confirmation |
-| Sign in | Email + password |
-| Password reset | Forgot password screen → email with 6-digit code → `verifyOtp(type: recovery)` → Change password |
-| Change email | `updateEmail()` + redirect URL |
-| Delete account | `delete-user` Edge Function (JWKS-verified) |
-| Deep links | `herbascan://auth/callback` → `AuthDeepLinkHandler` |
-| Session restore | `Supabase.instance.client.auth.currentSession` on app open |
+
+| Flow            | Mechanism                                                                                        |
+| --------------- | ------------------------------------------------------------------------------------------------ |
+| Sign up         | Email + password → optional 6-digit OTP confirmation                                             |
+| Sign in         | Email + password                                                                                 |
+| Password reset  | Forgot password screen → email with 6-digit code → `verifyOtp(type: recovery)` → Change password |
+| Change email    | `updateEmail()` + redirect URL                                                                   |
+| Delete account  | `delete-user` Edge Function (JWKS-verified)                                                      |
+| Deep links      | `herbascan://auth/callback` → `AuthDeepLinkHandler`                                              |
+| Session restore | `Supabase.instance.client.auth.currentSession` on app open                                       |
+
 
 #### Edge Function: `delete-user`
 
@@ -568,17 +608,19 @@ RLS policies applied via `20260302000000_storage_herbarium_policies.sql`.
 
 #### Tables
 
-| Table | Primary Key | Purpose |
-|-------|-------------|---------|
-| `plants` | `id text` | 42 medicinal plants + `image_url` (Supabase Storage URL or null) |
-| `medicinal_uses` | `id integer` | Therapeutic applications per plant |
-| `preparation_methods` | `id text` | Preparation steps, step_details_json, schedule_json |
-| `scan_history` | `id text` | Local scan results with GradCAM paths, predictions, metadata |
-| `catalog_conditions` | `id text` | Condition list (synced from Supabase) |
-| `catalog_condition_plants` | `(condition_id, plant_id)` | Condition–plant mapping |
-| `safety_profiles` | `plant_id text` | Structured safety data (synced from catalog_safety) |
-| `plant_habitats` | `plant_id text` | Known coordinates, region names, climate notes |
-| `catalog_plant_anatomy` | `id text` | SVG path data for 2D interactive silhouette |
+
+| Table                      | Primary Key                | Purpose                                                          |
+| -------------------------- | -------------------------- | ---------------------------------------------------------------- |
+| `plants`                   | `id text`                  | 42 medicinal plants + `image_url` (Supabase Storage URL or null) |
+| `medicinal_uses`           | `id integer`               | Therapeutic applications per plant                               |
+| `preparation_methods`      | `id text`                  | Preparation steps, step_details_json, schedule_json              |
+| `scan_history`             | `id text`                  | Local scan results with GradCAM paths, predictions, metadata     |
+| `catalog_conditions`       | `id text`                  | Condition list (synced from Supabase)                            |
+| `catalog_condition_plants` | `(condition_id, plant_id)` | Condition–plant mapping                                          |
+| `safety_profiles`          | `plant_id text`            | Structured safety data (synced from catalog_safety)              |
+| `plant_habitats`           | `plant_id text`            | Known coordinates, region names, climate notes                   |
+| `catalog_plant_anatomy`    | `id text`                  | SVG path data for 2D interactive silhouette                      |
+
 
 #### Database Initialization
 
@@ -590,16 +632,18 @@ On **every open**, `_ensureCatalogTablesExist()` runs `CREATE TABLE IF NOT EXIST
 
 ### 3.5 Asset Bundle
 
-| Asset | Format | Purpose |
-|-------|--------|---------|
+
+| Asset                                           | Format | Purpose                                                   |
+| ----------------------------------------------- | ------ | --------------------------------------------------------- |
 | `assets/models/mobilenetv2_multi_output.tflite` | TFLite | Offline inference (2 outputs: feature maps + predictions) |
-| `assets/models/mobilenetv2_cam_weights.json` | JSON | CAM weight matrix (1280 features × 42 classes) |
-| `assets/models/class_indices.json` | JSON | Label map (name → index, e.g. `"Adelfa": 0`) |
-| `assets/data/plant_explanations.json` | JSON | 4-section XAI explanations for all 42 plants (~150 KB) |
-| `assets/data/safety_profiles.json` | JSON | Contraindication Engine data for all 42 plants |
-| `assets/data/plant_habitats.json` | JSON | Known coordinates + region names for habitat map |
-| `assets/data/doh_plants.json` | JSON | DOH-approved plant metadata |
-| `assets/images/*.jpg` | JPEG | Plant images (placeholder_plant.jpg for new batches) |
+| `assets/models/mobilenetv2_cam_weights.json`    | JSON   | CAM weight matrix (1280 features × 42 classes)            |
+| `assets/models/class_indices.json`              | JSON   | Label map (name → index, e.g. `"Adelfa": 0`)              |
+| `assets/data/plant_explanations.json`           | JSON   | 4-section XAI explanations for all 42 plants (~150 KB)    |
+| `assets/data/safety_profiles.json`              | JSON   | Contraindication Engine data for all 42 plants            |
+| `assets/data/plant_habitats.json`               | JSON   | Known coordinates + region names for habitat map          |
+| `assets/data/doh_plants.json`                   | JSON   | DOH-approved plant metadata                               |
+| `assets/images/*.jpg`                           | JPEG   | Plant images (placeholder_plant.jpg for new batches)      |
+
 
 > **Label format note:** Frontend uses `class_indices.json` (`name → index`). Backend uses `backend/models/labels.json` (`index → name`). Both must be kept in sync when retraining.
 
@@ -714,6 +758,8 @@ flowchart TD
     style XAI fill:#2c3e50,color:#fff,stroke:#7f8c8d
 ```
 
+
+
 ---
 
 ## 5. ML Pipeline & Data Flow
@@ -812,31 +858,37 @@ The backend returns labels in dataset format (e.g., `"4Vitex negundo(VN)"`). The
 
 ### 6.1 Railway (Python FastAPI Backend)
 
-| Parameter | Value |
-|-----------|-------|
-| **Platform** | Railway (PaaS, Docker-based) |
-| **URL** | `https://re-herbascan-production.up.railway.app` |
-| **Build** | Docker (`backend/Dockerfile`) |
-| **Start** | From `backend/Procfile` or `railway.json` |
+
+| Parameter          | Value                                                  |
+| ------------------ | ------------------------------------------------------ |
+| **Platform**       | Railway (PaaS, Docker-based)                           |
+| **URL**            | `https://re-herbascan-production.up.railway.app`       |
+| **Build**          | Docker (`backend/Dockerfile`)                          |
+| **Start**          | From `backend/Procfile` or `railway.json`              |
 | **Root Directory** | `backend/` (monorepo; set in Railway service settings) |
-| **Watch Path** | `backend/**` (only redeploys on backend changes) |
-| **Memory** | ~300–450 MB (TensorFlow model in memory) |
-| **Cold start** | ~10–30 seconds (TF model load) |
-| **Warm request** | 2–4 seconds (inference + Grad-CAM) |
+| **Watch Path**     | `backend/`** (only redeploys on backend changes)       |
+| **Memory**         | ~300–450 MB (TensorFlow model in memory)               |
+| **Cold start**     | ~10–30 seconds (TF model load)                         |
+| **Warm request**   | 2–4 seconds (inference + Grad-CAM)                     |
+
 
 #### Required Files in `backend/models/`
 
-| File | Required | Notes |
-|------|----------|-------|
-| `MobileNetV2_model.keras` | ✅ Yes | Primary model; use Git LFS or Railway Volumes if >100 MB |
-| `labels.json` | Optional | Index→name mapping; backend works without it |
+
+| File                      | Required | Notes                                                    |
+| ------------------------- | -------- | -------------------------------------------------------- |
+| `MobileNetV2_model.keras` | ✅ Yes    | Primary model; use Git LFS or Railway Volumes if >100 MB |
+| `labels.json`             | Optional | Index→name mapping; backend works without it             |
+
 
 #### Environment Variables
 
-| Variable | Required | Default | Notes |
-|----------|----------|---------|-------|
-| `PORT` | Optional | 8000 | Railway injects automatically |
+
+| Variable              | Required          | Default | Notes                            |
+| --------------------- | ----------------- | ------- | -------------------------------- |
+| `PORT`                | Optional          | 8000    | Railway injects automatically    |
 | `SUPABASE_JWT_SECRET` | ❌ Not recommended | (unset) | Leave unset for universal access |
+
 
 #### Continuous Deployment
 
@@ -846,22 +898,24 @@ Git push to linked branch → Railway auto-redeploys (Dockerfile rebuild).
 
 ### 6.2 Supabase Configuration Checklist
 
-| Step | Action |
-|------|--------|
-| 1 | Create project → copy URL + anon key → set in `supabase_config.dart` |
-| 2 | SQL Editor: run `20260223000000_herbarium_schema.sql` (profiles + scans) |
-| 3 | SQL Editor: run `20260228000000_profiles_admin_and_email.sql` (is_active, email) |
-| 4 | SQL Editor: run `20260228000001_plant_metadata.sql` (plant_metadata table) |
-| 5 | SQL Editor: run `20260301000000_fix_profiles_rls_recursion.sql` (is_admin() fn) |
-| 6 | SQL Editor: run `20260302000000_storage_herbarium_policies.sql` (storage RLS) |
-| 7 | SQL Editor: run `20260302100000_catalog_plants_schema.sql` + `100001_storage_plant_catalog.sql` |
-| 8 | SQL Editor: run `20260302200000_catalog_plant_anatomy.sql` |
-| 9 | Storage → Create bucket `herbarium-images` |
-| 10 | Auth → URL Configuration → Site URL: `herbascan://auth/callback`; Redirect URLs: `herbascan://*` |
-| 11 | Auth → Providers → Email → (recommended) disable "Confirm email" for mobile |
-| 12 | Auth → Providers → Email → (recommended, Pro plan) enable Leaked Password Protection |
-| 13 | CLI: `npx supabase functions deploy delete-user` |
-| 14 | SQL Editor: `UPDATE public.profiles SET role = 'admin' WHERE id = '<your UUID>';` |
+
+| Step | Action                                                                                           |
+| ---- | ------------------------------------------------------------------------------------------------ |
+| 1    | Create project → copy URL + anon key → set in `supabase_config.dart`                             |
+| 2    | SQL Editor: run `20260223000000_herbarium_schema.sql` (profiles + scans)                         |
+| 3    | SQL Editor: run `20260228000000_profiles_admin_and_email.sql` (is_active, email)                 |
+| 4    | SQL Editor: run `20260228000001_plant_metadata.sql` (plant_metadata table)                       |
+| 5    | SQL Editor: run `20260301000000_fix_profiles_rls_recursion.sql` (is_admin() fn)                  |
+| 6    | SQL Editor: run `20260302000000_storage_herbarium_policies.sql` (storage RLS)                    |
+| 7    | SQL Editor: run `20260302100000_catalog_plants_schema.sql` + `100001_storage_plant_catalog.sql`  |
+| 8    | SQL Editor: run `20260302200000_catalog_plant_anatomy.sql`                                       |
+| 9    | Storage → Create bucket `herbarium-images`                                                       |
+| 10   | Auth → URL Configuration → Site URL: `herbascan://auth/callback`; Redirect URLs: `herbascan://`* |
+| 11   | Auth → Providers → Email → (recommended) disable "Confirm email" for mobile                      |
+| 12   | Auth → Providers → Email → (recommended, Pro plan) enable Leaked Password Protection             |
+| 13   | CLI: `npx supabase functions deploy delete-user`                                                 |
+| 14   | SQL Editor: `UPDATE public.profiles SET role = 'admin' WHERE id = '<your UUID>';`                |
+
 
 ---
 
@@ -894,26 +948,28 @@ flutter analyze
 
 #### Key Dependencies
 
-| Package | Version | Purpose |
-|---------|---------|---------|
-| `provider` | ^6.1.2 | State management |
-| `go_router` | ^14.6.2 | Declarative routing + admin guard |
-| `supabase_flutter` | — | Auth, DB, Storage, Edge Functions |
-| `sqflite` | ^2.4.0 | Local SQLite |
-| `sqflite_common_ffi` | ^2.3.7 | Desktop SQLite |
-| `tflite_flutter` | ^0.11.0 | On-device ML inference |
-| `camera` | ^0.11.2+1 | Camera capture |
-| `flutter_map` | ^7.0.2 | OpenStreetMap habitat visualization |
-| `path_drawing` | ^1.0.1 | SVG path parsing for 2D silhouette |
-| `connectivity_plus` | ^7.0.0 | Network status monitoring |
-| `add_2_calendar` | ^2.2.5 | Calendar add-event for prep schedule |
-| `flutter_markdown` | ^0.6.18 | XAI explanation rendering |
-| `cached_network_image` | ^3.4.1 | Supabase Storage plant images |
-| `http` | ^1.2.2 | Railway API calls |
-| `pinput` | ^5.0.0 | 6-box OTP input (signup/reset code screens) |
-| `gal` | ^2.3.0 | Export to gallery / camera roll |
-| `share_plus` | ^10.0.0 | Native OS share |
-| `flutter_local_notifications` | ^18.0.0 | Preparation timer notifications |
+
+| Package                       | Version   | Purpose                                     |
+| ----------------------------- | --------- | ------------------------------------------- |
+| `provider`                    | ^6.1.2    | State management                            |
+| `go_router`                   | ^14.6.2   | Declarative routing + admin guard           |
+| `supabase_flutter`            | —         | Auth, DB, Storage, Edge Functions           |
+| `sqflite`                     | ^2.4.0    | Local SQLite                                |
+| `sqflite_common_ffi`          | ^2.3.7    | Desktop SQLite                              |
+| `tflite_flutter`              | ^0.11.0   | On-device ML inference                      |
+| `camera`                      | ^0.11.2+1 | Camera capture                              |
+| `flutter_map`                 | ^7.0.2    | OpenStreetMap habitat visualization         |
+| `path_drawing`                | ^1.0.1    | SVG path parsing for 2D silhouette          |
+| `connectivity_plus`           | ^7.0.0    | Network status monitoring                   |
+| `add_2_calendar`              | ^2.2.5    | Calendar add-event for prep schedule        |
+| `flutter_markdown`            | ^0.6.18   | XAI explanation rendering                   |
+| `cached_network_image`        | ^3.4.1    | Supabase Storage plant images               |
+| `http`                        | ^1.2.2    | Railway API calls                           |
+| `pinput`                      | ^5.0.0    | 6-box OTP input (signup/reset code screens) |
+| `gal`                         | ^2.3.0    | Export to gallery / camera roll             |
+| `share_plus`                  | ^10.0.0   | Native OS share                             |
+| `flutter_local_notifications` | ^18.0.0   | Preparation timer notifications             |
+
 
 #### Phase 2 Model Extraction (for updating TFLite assets)
 
@@ -942,19 +998,21 @@ flutter clean && flutter pub get && flutter run
 
 ## 7. Known Constraints & Open Items
 
-| Item | Status | Notes |
-|------|--------|-------|
-| Beta testing with real users | ⏳ Pending | TESTING_GUIDE.md + 50+ test cases ready |
-| App Store / Google Play preparation | ⏳ Pending | APK builds successfully |
-| Offline CAM accuracy parity with Grad-CAM | ⚠️ Known gap | CAM is approximation; true gradients only online |
-| 2D silhouette SVG data | ⚠️ Partial | Seed templates exist; real SVG paths needed per plant |
-| Railway cold start latency | ⚠️ Acceptable | 10–30s cold; 2–4s warm; no always-on plan |
-| Supabase built-in email rate limit | ⚠️ Dev only | 2 emails/hour; use custom SMTP for production |
-| `SUPABASE_JWT_SECRET` on Railway | ✅ Resolved | Recommended unset (all users can scan without 401) |
-| Live LLM / Gemini API | ✅ Removed | Thesis-defensible; all explanations deterministic |
-| HerbaScan custom model | ✅ Deprecated | MobileNetV2-only for online/offline consistency |
-| RLS recursion on profiles | ✅ Fixed | `is_admin()` SECURITY DEFINER function applied |
-| Delete-user 401 (JWKS) | ✅ Fixed | `verify_jwt = false` in `config.toml` + JWKS internal |
+
+| Item                                      | Status        | Notes                                                 |
+| ----------------------------------------- | ------------- | ----------------------------------------------------- |
+| Beta testing with real users              | ⏳ Pending     | TESTING_GUIDE.md + 50+ test cases ready               |
+| App Store / Google Play preparation       | ⏳ Pending     | APK builds successfully                               |
+| Offline CAM accuracy parity with Grad-CAM | ⚠️ Known gap  | CAM is approximation; true gradients only online      |
+| 2D silhouette SVG data                    | ⚠️ Partial    | Seed templates exist; real SVG paths needed per plant |
+| Railway cold start latency                | ⚠️ Acceptable | 10–30s cold; 2–4s warm; no always-on plan             |
+| Supabase built-in email rate limit        | ⚠️ Dev only   | 2 emails/hour; use custom SMTP for production         |
+| `SUPABASE_JWT_SECRET` on Railway          | ✅ Resolved    | Recommended unset (all users can scan without 401)    |
+| Live LLM / Gemini API                     | ✅ Removed     | Thesis-defensible; all explanations deterministic     |
+| HerbaScan custom model                    | ✅ Deprecated  | MobileNetV2-only for online/offline consistency       |
+| RLS recursion on profiles                 | ✅ Fixed       | `is_admin()` SECURITY DEFINER function applied        |
+| Delete-user 401 (JWKS)                    | ✅ Fixed       | `verify_jwt = false` in `config.toml` + JWKS internal |
+
 
 **SnackBar:** Uses floating behavior (`SnackBarBehavior.floating`) so status messages do not displace the camera FAB or bottom nav.
 

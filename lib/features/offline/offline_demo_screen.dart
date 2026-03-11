@@ -80,12 +80,10 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
   Widget _buildStatusBanner(
       BuildContext context, OfflineProvider offlineProvider) {
     final isOffline = offlineProvider.isFullyOffline;
-    final bgColor =
-        isOffline ? AppTheme.warningBgLight : AppTheme.safeBgLight;
+    final bgColor = isOffline ? AppTheme.warningBgLight : AppTheme.safeBgLight;
     final iconColor =
         isOffline ? AppTheme.warningAmber : AppTheme.botanicalPrimary;
-    final icon =
-        isOffline ? Icons.cloud_off_rounded : Icons.cloud_done_rounded;
+    final icon = isOffline ? Icons.cloud_off_rounded : Icons.cloud_done_rounded;
     final message = isOffline
         ? 'System Offline • Operating via Local SQLite'
         : 'System Online • Connected to Supabase Cloud';
@@ -115,18 +113,13 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
 
   Widget _buildStatsGrid(
       BuildContext context, OfflineProvider offlineProvider) {
-    final totalPlants =
-        offlineProvider.offlineStats['totalPlants'] ?? 0;
-    final totalScans =
-        offlineProvider.offlineStats['totalScans'] ?? 0;
-    final pendingSync =
-        offlineProvider.offlineStats['pendingSync'] ?? 0;
-    final aiReady =
-        offlineProvider.offlineStats['aiInitialized'] == true;
+    final totalPlants = offlineProvider.offlineStats['totalPlants'] ?? 0;
+    final totalScans = offlineProvider.offlineStats['totalScans'] ?? 0;
+    final pendingSync = offlineProvider.offlineStats['pendingSync'] ?? 0;
+    final aiReady = offlineProvider.offlineStats['aiInitialized'] == true;
 
-    final pendingColor = pendingSync == 0
-        ? AppTheme.textSecondary
-        : AppTheme.warningAmber;
+    final pendingColor =
+        pendingSync == 0 ? AppTheme.textSecondary : AppTheme.warningAmber;
 
     return GridView.count(
       crossAxisCount: 2,
@@ -150,8 +143,7 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
           subtitle: aiReady ? 'TFLite Engine Ready' : 'AI model unavailable',
           icon: Icons.memory_rounded,
           iconColor: aiReady ? AppTheme.botanicalPrimary : AppTheme.errorDeep,
-          bgColor:
-              aiReady ? AppTheme.safeBgLight : AppTheme.errorBgLight,
+          bgColor: aiReady ? AppTheme.safeBgLight : AppTheme.errorBgLight,
         ),
         _buildStatCard(
           context,
@@ -167,9 +159,8 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
           subtitle: 'Waiting to backup to cloud',
           icon: Icons.cloud_upload_rounded,
           iconColor: pendingColor,
-          bgColor: pendingSync == 0
-              ? AppTheme.safeBgLight
-              : AppTheme.warningBgLight,
+          bgColor:
+              pendingSync == 0 ? AppTheme.safeBgLight : AppTheme.warningBgLight,
         ),
       ],
     );
@@ -268,7 +259,7 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
                 ),
               ),
               value: provider.isOfflineMode,
-              activeColor: AppTheme.botanicalPrimary,
+              activeThumbColor: AppTheme.botanicalPrimary,
               onChanged: (_) async {
                 await provider.toggleOfflineMode();
               },

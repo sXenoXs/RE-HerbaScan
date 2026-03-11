@@ -123,7 +123,8 @@ class _AdminPlantCatalogEditorScreenState
     // 1. Write to Supabase
     var ok = await _adminService.saveCatalogPlant(_plant,
         climateNotes: _climateNotes);
-    if (ok) ok = await _adminService.saveCatalogSafety(_plant.id, safetyProfile);
+    if (ok)
+      ok = await _adminService.saveCatalogSafety(_plant.id, safetyProfile);
     if (ok) ok = await _adminService.saveCatalogHabitat(_plant.id, habitat);
 
     // 2. Write to local SQLite immediately — no app restart needed
@@ -260,12 +261,10 @@ class _AdminPlantCatalogEditorScreenState
               PopupMenuItem(
                 value: 'seed',
                 child: Row(children: [
-                  Icon(Icons.restore,
-                      color: Theme.of(ctx).colorScheme.error),
+                  Icon(Icons.restore, color: Theme.of(ctx).colorScheme.error),
                   const SizedBox(width: 12),
                   Text('Seed Defaults',
-                      style: TextStyle(
-                          color: Theme.of(ctx).colorScheme.error)),
+                      style: TextStyle(color: Theme.of(ctx).colorScheme.error)),
                 ]),
               ),
             ],
@@ -319,19 +318,29 @@ class _AdminPlantCatalogEditorScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // DOH toggle at top (elevated card)
+          // DOH toggle at top (elevated card) — theme-aware so text is visible in dark mode
           Card(
             elevation: 0,
-            color: _plant.isDOHApproved
-                ? AppTheme.safeBgLight
-                : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
+            color: theme.brightness == Brightness.dark
+                ? theme.colorScheme.surfaceContainerHighest
+                : (_plant.isDOHApproved
+                    ? AppTheme.safeBgLight
+                    : theme.colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.4)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: SwitchListTile(
-              title: const Text('DOH Approved',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: const Text(
-                  'Shows verified shield badge and appears in DOH Spotlight'),
+              title: Text(
+                'DOH Approved',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              subtitle: Text(
+                'Shows verified shield badge and appears in DOH Spotlight',
+                style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+              ),
               value: _plant.isDOHApproved,
               activeThumbColor: AppTheme.botanicalPrimary,
               onChanged: (v) =>
@@ -495,8 +504,7 @@ class _AdminPlantCatalogEditorScreenState
               onDismissed: (_) {
                 setState(() {
                   _habitatCoordinates =
-                      List<HabitatPoint>.from(_habitatCoordinates)
-                        ..removeAt(i);
+                      List<HabitatPoint>.from(_habitatCoordinates)..removeAt(i);
                 });
               },
               child: Padding(
@@ -595,10 +603,10 @@ class _AdminPlantCatalogEditorScreenState
                       child: TextField(
                         decoration: const InputDecoration(
                             isDense: true, hintText: 'Region name'),
-                        controller: TextEditingController(
-                            text: _habitatRegionNames[i])
-                          ..selection = TextSelection.collapsed(
-                              offset: _habitatRegionNames[i].length),
+                        controller:
+                            TextEditingController(text: _habitatRegionNames[i])
+                              ..selection = TextSelection.collapsed(
+                                  offset: _habitatRegionNames[i].length),
                         onChanged: (v) {
                           final list = List<String>.from(_habitatRegionNames);
                           list[i] = v;
@@ -662,9 +670,8 @@ class _AdminPlantCatalogEditorScreenState
                         ),
                       ),
                       Icon(Icons.chevron_right,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurfaceVariant),
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant),
                     ],
                   ),
                 ),
@@ -698,8 +705,8 @@ class _AdminPlantCatalogEditorScreenState
                   if (added != null && mounted) {
                     setState(() {
                       _plant = _copyWith(
-                          medicinalUses:
-                              List<MedicinalUse>.from(uses)..add(added));
+                          medicinalUses: List<MedicinalUse>.from(uses)
+                            ..add(added));
                     });
                   }
                 },
@@ -731,8 +738,8 @@ class _AdminPlantCatalogEditorScreenState
                     final updated = await _openMedicinalUseEditor(use);
                     if (updated != null && mounted) {
                       setState(() {
-                        final list = List<MedicinalUse>.from(uses)..[i] =
-                            updated;
+                        final list = List<MedicinalUse>.from(uses)
+                          ..[i] = updated;
                         _plant = _copyWith(medicinalUses: list);
                       });
                     }
@@ -754,7 +761,8 @@ class _AdminPlantCatalogEditorScreenState
               child: Text('No medicinal uses added yet.',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5))),
+                      color:
+                          theme.colorScheme.onSurface.withValues(alpha: 0.5))),
             ),
         ],
       ),
@@ -793,7 +801,8 @@ class _AdminPlantCatalogEditorScreenState
                     setState(() {
                       _plant = _copyWith(
                           preparationMethods:
-                              List<PreparationMethod>.from(methods)..add(added));
+                              List<PreparationMethod>.from(methods)
+                                ..add(added));
                     });
                   }
                 },
@@ -812,8 +821,7 @@ class _AdminPlantCatalogEditorScreenState
               child: ListTile(
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                title: Text(
-                    method.title.isEmpty ? '(No title)' : method.title,
+                title: Text(method.title.isEmpty ? '(No title)' : method.title,
                     style: const TextStyle(fontWeight: FontWeight.w600)),
                 subtitle: method.condition.isNotEmpty
                     ? Text('For: ${method.condition}',
@@ -967,14 +975,13 @@ class _AdminPlantCatalogEditorScreenState
                         hintText: 'Item',
                         focusedBorder: OutlineInputBorder(
                           borderSide: BorderSide(
-                              color: borderColor ??
-                                  AppTheme.botanicalPrimary,
+                              color: borderColor ?? AppTheme.botanicalPrimary,
                               width: 2),
                         ),
                       ),
                       controller: TextEditingController(text: items[i])
-                        ..selection = TextSelection.collapsed(
-                            offset: (items[i]).length),
+                        ..selection =
+                            TextSelection.collapsed(offset: (items[i]).length),
                       maxLines: 1,
                       onChanged: (v) {
                         final list = List<String>.from(items);
@@ -1029,8 +1036,7 @@ class _EditMedicinalUseScreenState extends State<_EditMedicinalUseScreen> {
     _conditionController = TextEditingController(text: u?.condition ?? '');
     _effectivenessController =
         TextEditingController(text: u?.effectiveness ?? '');
-    _descriptionController =
-        TextEditingController(text: u?.description ?? '');
+    _descriptionController = TextEditingController(text: u?.description ?? '');
     _dosageController = TextEditingController(text: u?.dosage ?? '');
     _durationController = TextEditingController(text: u?.duration ?? '');
     _activeCompounds = u != null ? List.from(u.activeCompounds) : [];
@@ -1068,7 +1074,9 @@ class _EditMedicinalUseScreenState extends State<_EditMedicinalUseScreen> {
             ? 'Add Medicinal Use'
             : 'Edit Medicinal Use'),
       ),
-      bottomNavigationBar: Padding(
+      bottomNavigationBar: AnimatedPadding(
+        duration: const Duration(milliseconds: 150),
+        curve: Curves.easeOut,
         padding: EdgeInsets.fromLTRB(
             16,
             8,
@@ -1083,8 +1091,7 @@ class _EditMedicinalUseScreenState extends State<_EditMedicinalUseScreen> {
             minimumSize: const Size(double.infinity, 48),
           ),
           child: const Text('Done',
-              style:
-                  TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
         ),
       ),
       body: SingleChildScrollView(
@@ -1094,29 +1101,23 @@ class _EditMedicinalUseScreenState extends State<_EditMedicinalUseScreen> {
           children: [
             TextField(
               controller: _conditionController,
-              decoration:
-                  const InputDecoration(labelText: 'Condition (title)'),
+              decoration: const InputDecoration(labelText: 'Condition (title)'),
               autofocus: true,
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _effectivenessController,
               decoration: const InputDecoration(
-                  labelText:
-                      'Effectiveness (e.g. High – DOH approved)'),
+                  labelText: 'Effectiveness (e.g. High – DOH approved)'),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _descriptionController,
-              decoration:
-                  const InputDecoration(labelText: 'Description'),
+              decoration: const InputDecoration(labelText: 'Description'),
               maxLines: 3,
             ),
             const SizedBox(height: 12),
-            _buildStringListSection(
-                theme,
-                'Active compounds',
-                _activeCompounds,
+            _buildStringListSection(theme, 'Active compounds', _activeCompounds,
                 (list) => setState(() => _activeCompounds = list)),
             const SizedBox(height: 12),
             TextField(
@@ -1146,8 +1147,7 @@ class _EditMedicinalUseScreenState extends State<_EditMedicinalUseScreen> {
                     ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(width: 8),
             TextButton.icon(
-              onPressed: () =>
-                  onChanged(List<String>.from(items)..add('')),
+              onPressed: () => onChanged(List<String>.from(items)..add('')),
               icon: const Icon(Icons.add, size: 18),
               label: const Text('Add'),
             ),
@@ -1160,12 +1160,10 @@ class _EditMedicinalUseScreenState extends State<_EditMedicinalUseScreen> {
             child: Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    decoration: const InputDecoration(
-                        isDense: true, hintText: 'Compound'),
-                    controller: TextEditingController(text: items[i])
-                      ..selection = TextSelection.collapsed(
-                          offset: items[i].length),
+                  child: _EditableListRow(
+                    value: items[i],
+                    hintText: 'Compound',
+                    maxLines: 1,
                     onChanged: (v) {
                       final list = List<String>.from(items)..[i] = v;
                       onChanged(list);
@@ -1173,8 +1171,7 @@ class _EditMedicinalUseScreenState extends State<_EditMedicinalUseScreen> {
                   ),
                 ),
                 IconButton(
-                  icon:
-                      const Icon(Icons.remove_circle_outline, size: 20),
+                  icon: const Icon(Icons.remove_circle_outline, size: 20),
                   onPressed: () =>
                       onChanged(List<String>.from(items)..removeAt(i)),
                 ),
@@ -1187,13 +1184,67 @@ class _EditMedicinalUseScreenState extends State<_EditMedicinalUseScreen> {
   }
 }
 
+// One row in the editable list; owns its controller to avoid creating one per build (reduces lag).
+class _EditableListRow extends StatefulWidget {
+  const _EditableListRow({
+    required this.value,
+    required this.hintText,
+    required this.maxLines,
+    required this.onChanged,
+  });
+  final String value;
+  final String hintText;
+  final int maxLines;
+  final ValueChanged<String> onChanged;
+
+  @override
+  State<_EditableListRow> createState() => _EditableListRowState();
+}
+
+class _EditableListRowState extends State<_EditableListRow> {
+  late TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.value);
+    _controller.selection =
+        TextSelection.collapsed(offset: widget.value.length);
+  }
+
+  @override
+  void didUpdateWidget(_EditableListRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value && _controller.text != widget.value) {
+      _controller.text = widget.value;
+      _controller.selection =
+          TextSelection.collapsed(offset: widget.value.length);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: _controller,
+      decoration: InputDecoration(isDense: true, hintText: widget.hintText),
+      maxLines: widget.maxLines,
+      onChanged: widget.onChanged,
+    );
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // Full-screen Preparation Method Editor
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class _EditPreparationMethodScreen extends StatefulWidget {
-  const _EditPreparationMethodScreen(
-      {this.initial, required this.plantId});
+  const _EditPreparationMethodScreen({this.initial, required this.plantId});
 
   final PreparationMethod? initial;
   final String plantId;
@@ -1223,18 +1274,14 @@ class _EditPreparationMethodScreenState
     final id = m?.id ??
         '${widget.plantId}-prep-${DateTime.now().millisecondsSinceEpoch}';
     _idController = TextEditingController(text: id);
-    _conditionController =
-        TextEditingController(text: m?.condition ?? '');
+    _conditionController = TextEditingController(text: m?.condition ?? '');
     _titleController = TextEditingController(text: m?.title ?? '');
-    _descriptionController =
-        TextEditingController(text: m?.description ?? '');
+    _descriptionController = TextEditingController(text: m?.description ?? '');
     _preparationTypeController =
         TextEditingController(text: m?.preparationType ?? '');
     _dosageController = TextEditingController(text: m?.dosage ?? '');
-    _frequencyController =
-        TextEditingController(text: m?.frequency ?? '');
-    _durationController =
-        TextEditingController(text: m?.duration ?? '');
+    _frequencyController = TextEditingController(text: m?.frequency ?? '');
+    _durationController = TextEditingController(text: m?.duration ?? '');
     _steps = m != null ? List.from(m.steps) : [];
     _warnings = m != null ? List.from(m.warnings) : [];
   }
@@ -1281,7 +1328,9 @@ class _EditPreparationMethodScreenState
             ? 'Add Preparation Method'
             : 'Edit Preparation Method'),
       ),
-      bottomNavigationBar: Padding(
+      bottomNavigationBar: AnimatedPadding(
+        duration: const Duration(milliseconds: 150),
+        curve: Curves.easeOut,
         padding: EdgeInsets.fromLTRB(
             16,
             8,
@@ -1296,8 +1345,7 @@ class _EditPreparationMethodScreenState
             minimumSize: const Size(double.infinity, 48),
           ),
           child: const Text('Done',
-              style: TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.w600)),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
         ),
       ),
       body: SingleChildScrollView(
@@ -1313,21 +1361,19 @@ class _EditPreparationMethodScreenState
             const SizedBox(height: 12),
             TextField(
               controller: _conditionController,
-              decoration: const InputDecoration(
-                  labelText: 'Condition (e.g. Cough)'),
+              decoration:
+                  const InputDecoration(labelText: 'Condition (e.g. Cough)'),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _preparationTypeController,
               decoration: const InputDecoration(
-                  labelText:
-                      'Preparation type (e.g. decoction, tea)'),
+                  labelText: 'Preparation type (e.g. decoction, tea)'),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _descriptionController,
-              decoration:
-                  const InputDecoration(labelText: 'Description'),
+              decoration: const InputDecoration(labelText: 'Description'),
               maxLines: 2,
             ),
             const SizedBox(height: 12),
@@ -1341,8 +1387,7 @@ class _EditPreparationMethodScreenState
             const SizedBox(height: 8),
             TextField(
               controller: _frequencyController,
-              decoration:
-                  const InputDecoration(labelText: 'Frequency'),
+              decoration: const InputDecoration(labelText: 'Frequency'),
             ),
             const SizedBox(height: 8),
             TextField(
@@ -1358,8 +1403,8 @@ class _EditPreparationMethodScreenState
               decoration: InputDecoration(
                   labelText: 'ID (unique)',
                   helperText: 'Auto-generated if empty',
-                  helperStyle: TextStyle(
-                      color: theme.colorScheme.onSurfaceVariant)),
+                  helperStyle:
+                      TextStyle(color: theme.colorScheme.onSurfaceVariant)),
             ),
           ],
         ),
@@ -1369,6 +1414,8 @@ class _EditPreparationMethodScreenState
 
   Widget _buildStringListSection(ThemeData theme, String title,
       List<String> items, void Function(List<String>) onChanged) {
+    final hintText = title == 'Steps' ? 'Step instruction' : 'Item';
+    final maxLines = title == 'Steps' ? 2 : 1;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1379,8 +1426,7 @@ class _EditPreparationMethodScreenState
                     ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(width: 8),
             TextButton.icon(
-              onPressed: () =>
-                  onChanged(List<String>.from(items)..add('')),
+              onPressed: () => onChanged(List<String>.from(items)..add('')),
               icon: const Icon(Icons.add, size: 18),
               label: const Text('Add'),
             ),
@@ -1394,16 +1440,10 @@ class _EditPreparationMethodScreenState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: TextField(
-                    decoration: InputDecoration(
-                        isDense: true,
-                        hintText: title == 'Steps'
-                            ? 'Step instruction'
-                            : 'Item'),
-                    controller: TextEditingController(text: items[i])
-                      ..selection = TextSelection.collapsed(
-                          offset: items[i].length),
-                    maxLines: title == 'Steps' ? 2 : 1,
+                  child: _EditableListRow(
+                    value: items[i],
+                    hintText: hintText,
+                    maxLines: maxLines,
                     onChanged: (v) {
                       final list = List<String>.from(items)..[i] = v;
                       onChanged(list);
@@ -1411,10 +1451,9 @@ class _EditPreparationMethodScreenState
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.remove_circle_outline,
-                      size: 20),
-                  onPressed: () => onChanged(
-                      List<String>.from(items)..removeAt(i)),
+                  icon: const Icon(Icons.remove_circle_outline, size: 20),
+                  onPressed: () =>
+                      onChanged(List<String>.from(items)..removeAt(i)),
                 ),
               ],
             ),
@@ -1424,4 +1463,3 @@ class _EditPreparationMethodScreenState
     );
   }
 }
-

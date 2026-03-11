@@ -103,55 +103,75 @@ class _AdminPlantMetadataScreenState extends State<AdminPlantMetadataScreen> {
 
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('Factory Reset Database?'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Restore the entire Supabase catalog to bundled defaults. '
-                'This will overwrite all 42 plants, safety, habitat, and conditions. '
-                'Uploaded plant images in Storage will be removed.',
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Type RESET to confirm:',
-                style: TextStyle(
-                    color: theme.colorScheme.error,
-                    fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: confirmController,
-                autofocus: true,
-                decoration: const InputDecoration(
-                  hintText: 'RESET',
-                  border: OutlineInputBorder(),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return AlertDialog(
+              title: const Text('Factory Reset Database?'),
+              content: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(ctx).size.height * 0.5,
                 ),
-                onChanged: (_) => setDialogState(() {}),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Restore the entire Supabase catalog to bundled defaults. '
+                        'This will overwrite all 42 plants, safety, habitat, and conditions. '
+                        'Uploaded plant images in Storage will be removed.',
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Type RESET to confirm:',
+                        style: TextStyle(
+                            color: theme.colorScheme.error,
+                            fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: confirmController,
+                        autofocus: true,
+                        decoration: const InputDecoration(
+                          hintText: 'RESET',
+                          border: OutlineInputBorder(),
+                        ),
+                        onChanged: (_) {
+                          if (ctx.mounted) setDialogState(() {});
+                        },
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ],
-          ),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Cancel')),
-            FilledButton(
-              onPressed: confirmController.text == 'RESET'
-                  ? () => Navigator.pop(ctx, true)
-                  : null,
-              style: FilledButton.styleFrom(
-                  backgroundColor: theme.colorScheme.error),
-              child: const Text('Factory Reset'),
-            ),
-          ],
-        ),
-      ),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Cancel')),
+                FilledButton(
+                  onPressed: confirmController.text.trim().toUpperCase() == 'RESET'
+                      ? () => Navigator.pop(ctx, true)
+                      : null,
+                  style: FilledButton.styleFrom(
+                      backgroundColor: theme.colorScheme.error),
+                  child: const Text('Factory Reset'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
 
-    confirmController.dispose();
+    // Defer disposal by two frames so the dialog route is fully torn down before we dispose.
+    // Fixes _dependents.isEmpty when tapping Cancel (TextField still dependent in single-frame defer).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        confirmController.dispose();
+      });
+    });
+
     if (confirm != true || !mounted) return;
 
     setState(() => _resetting = true);
