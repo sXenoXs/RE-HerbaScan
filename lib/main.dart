@@ -85,7 +85,8 @@ class _HerbaScanAppState extends State<HerbaScanApp> {
             navigatorKey: _rootNavigatorKey,
             child: MaterialApp.router(
               routerConfig: _router,
-              key: ValueKey('${appProvider.isDarkMode}_${languageProvider.locale}'),
+              // Key by locale only so theme toggle does not replace the whole tree (avoids _dependents.isEmpty).
+              key: ValueKey(languageProvider.locale.toString()),
               title: 'HerbaScan',
               debugShowCheckedModeBanner: false,
               theme: AppTheme.lightTheme,

@@ -8,6 +8,8 @@ import 'package:herbascan/features/browse/browse_screen.dart';
 import 'package:herbascan/features/history/history_screen.dart';
 import 'package:herbascan/features/doh/doh_screen.dart';
 import 'package:herbascan/features/settings/settings_screen.dart';
+import 'package:herbascan/features/scan/plant_result_screen.dart';
+import 'package:herbascan/features/scan/plant_detail_screen.dart';
 import 'package:herbascan/core/models/scan_result.dart';
 import 'package:herbascan/core/models/plant.dart';
 import 'package:herbascan/core/widgets/plant_image.dart';
@@ -439,10 +441,19 @@ class _HomeDashboardState extends State<HomeDashboard> {
             ? AppTheme.warningAmber
             : AppTheme.errorDeep;
 
-    return Container(
-      width: cardWidth,
-      margin: const EdgeInsets.only(right: 12),
-      decoration: BoxDecoration(
+    return InkWell(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => PlantResultScreen.fromScanResult(scan),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: cardWidth,
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
         color: theme.cardTheme.color ?? Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
@@ -452,10 +463,10 @@ class _HomeDashboardState extends State<HomeDashboard> {
             offset: const Offset(0, 4),
           ),
         ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        children: [
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -522,7 +533,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
               ),
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -598,36 +610,46 @@ class _HomeDashboardState extends State<HomeDashboard> {
 
   Widget _buildDOHPlantItem(
       BuildContext context, ThemeData theme, Plant plant) {
-    return Container(
-      width: 72,
-      margin: const EdgeInsets.only(right: 16),
-      child: Column(
-        children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: const BoxDecoration(shape: BoxShape.circle),
-            clipBehavior: Clip.antiAlias,
-            child: PlantImage(
-              plant: plant,
-              fit: BoxFit.cover,
+    return InkWell(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => PlantDetailScreen(plant: plant),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(36),
+      child: Container(
+        width: 72,
+        margin: const EdgeInsets.only(right: 16),
+        child: Column(
+          children: [
+            Container(
               width: 64,
               height: 64,
+              decoration: const BoxDecoration(shape: BoxShape.circle),
+              clipBehavior: Clip.antiAlias,
+              child: PlantImage(
+                plant: plant,
+                fit: BoxFit.cover,
+                width: 64,
+                height: 64,
+              ),
             ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            plant.commonName,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurface,
-              fontWeight: FontWeight.w500,
-              fontSize: 10,
+            const SizedBox(height: 6),
+            Text(
+              plant.commonName,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurface,
+                fontWeight: FontWeight.w500,
+                fontSize: 10,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

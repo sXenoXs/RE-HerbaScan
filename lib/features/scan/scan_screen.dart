@@ -23,6 +23,7 @@ class _ScanScreenState extends State<ScanScreen>
   Timer? _zoomUpdateTimer;
   double? _pendingZoomLevel;
   bool _isCameraReady = false;
+  CameraProvider? _cameraProvider;
 
   // Reticle pulse animation
   late AnimationController _reticleController;
@@ -32,6 +33,7 @@ class _ScanScreenState extends State<ScanScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _cameraProvider = Provider.of<CameraProvider>(context, listen: false);
 
     _reticleController = AnimationController(
       vsync: this,
@@ -56,6 +58,12 @@ class _ScanScreenState extends State<ScanScreen>
     if (state == AppLifecycleState.inactive ||
         state == AppLifecycleState.paused) {
       setState(() => _isCameraReady = false);
+      // Release flashlight when app goes to background so quick-settings torch works (e.g. Samsung).
+      if (_cameraProvider != null &&
+          _cameraProvider!.cameraController != null &&
+          _cameraProvider!.cameraController!.value.isInitialized) {
+        _cameraProvider!.setFlashMode(FlashMode.off);
+      }
     } else if (state == AppLifecycleState.resumed) {
       _initializeCameraAndModels();
     }
@@ -77,6 +85,12 @@ class _ScanScreenState extends State<ScanScreen>
     WidgetsBinding.instance.removeObserver(this);
     _zoomUpdateTimer?.cancel();
     _reticleController.dispose();
+    // Release flashlight so system no longer shows "light is being used by HerbaScan" (e.g. Samsung).
+    if (_cameraProvider != null &&
+        _cameraProvider!.cameraController != null &&
+        _cameraProvider!.cameraController!.value.isInitialized) {
+      _cameraProvider!.setFlashMode(FlashMode.off);
+    }
     super.dispose();
   }
 

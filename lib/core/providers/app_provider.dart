@@ -120,19 +120,16 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Toggle dark mode
+  // Toggle dark mode — update UI immediately, persist in background to avoid lag
   Future<void> toggleDarkMode() async {
     if (_isThemeChanging) return; // Prevent rapid toggling
 
     _isThemeChanging = true;
     _isDarkMode = !_isDarkMode;
-    await _saveSettings();
+    notifyListeners(); // Theme updates immediately (no wait for disk)
+    _isThemeChanging = false;
 
-    // Use a post-frame callback to ensure smooth theme transitions
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-      _isThemeChanging = false;
-    });
+    _saveSettings(); // Persist in background (unawaited)
   }
 
   // Get app statistics

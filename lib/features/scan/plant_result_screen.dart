@@ -177,12 +177,10 @@ class _PlantResultScreenState extends State<PlantResultScreen>
     final topPrediction = widget.predictions.first;
     final plantName = topPrediction['plantName'] ?? 'Unknown Plant';
     final confidence = (topPrediction['confidence'] ?? 0.0).toDouble();
-    final scientificName = (topPrediction['scientificName'] as String?)
-            ?.trim()
-            .isNotEmpty ==
-        true
-        ? topPrediction['scientificName'] as String
-        : plantName;
+    final scientificName =
+        (topPrediction['scientificName'] as String?)?.trim().isNotEmpty == true
+            ? topPrediction['scientificName'] as String
+            : plantName;
 
     final hasHeatmap =
         widget.gradcamImageBytes != null || widget.gradCAMPath != null;
@@ -219,14 +217,16 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                 ),
                 const SizedBox(width: 8),
                 _buildGlassmorphicButton(
-                  icon: _isSaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                  icon: _isSaved
+                      ? Icons.bookmark_rounded
+                      : Icons.bookmark_border_rounded,
                   onTap: () => _showSaveOptions(context),
                 ),
                 const SizedBox(width: 12),
               ],
               flexibleSpace: FlexibleSpaceBar(
-                background: _buildHeroBackground(
-                    context, plantName, confidence),
+                background:
+                    _buildHeroBackground(context, plantName, confidence),
               ),
             ),
             // Pinned TabBar
@@ -456,8 +456,8 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                           ? () {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
-                                  builder: (_) => HabitatMapScreen(
-                                      plant: resolvedPlant),
+                                  builder: (_) =>
+                                      HabitatMapScreen(plant: resolvedPlant),
                                 ),
                               );
                             }
@@ -489,12 +489,16 @@ class _PlantResultScreenState extends State<PlantResultScreen>
     final theme = Theme.of(context);
     final isDisabled = onTap == null;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
+    return Listener(
+      behavior: HitTestBehavior.opaque,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
+            child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: isDisabled
@@ -541,6 +545,8 @@ class _PlantResultScreenState extends State<PlantResultScreen>
               ),
             ],
           ),
+        ),
+        ),
         ),
       ),
     );
@@ -684,7 +690,8 @@ class _PlantResultScreenState extends State<PlantResultScreen>
         method: _regeneratedMethod ?? widget.method,
         fallbackUsed: _regeneratedFallbackUsed ?? widget.fallbackUsed,
         onRefresh: _regenerateGradCAM,
-        onHeatmapTap: (bool showOverlay, double opacity,
+        onHeatmapTap: (bool showOverlay,
+            double opacity,
             Function(bool) onOverlayChanged,
             Function(double) onOpacityChanged) {
           Navigator.of(context).push(
@@ -822,8 +829,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                 height: 20,
                 child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(Colors.white)),
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
               ),
               const SizedBox(width: 16),
               const Expanded(
@@ -852,11 +858,9 @@ class _PlantResultScreenState extends State<PlantResultScreen>
 
       if (mounted) {
         setState(() {
-          _regeneratedGradcamImageBytes =
-              result['gradcam_image'] as Uint8List?;
+          _regeneratedGradcamImageBytes = result['gradcam_image'] as Uint8List?;
           _regeneratedMethod = result['method'] as String?;
-          _regeneratedFallbackUsed =
-              result['fallback_used'] as bool? ?? false;
+          _regeneratedFallbackUsed = result['fallback_used'] as bool? ?? false;
           _isRegenerating = false;
         });
 
@@ -896,8 +900,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
         'I identified $plantName using HerbaScan! It\'s a $confidence% match. '
         'Identified using AI-powered plant recognition.';
     try {
-      if (widget.imagePath.isNotEmpty &&
-          File(widget.imagePath).existsSync()) {
+      if (widget.imagePath.isNotEmpty && File(widget.imagePath).existsSync()) {
         await Share.shareXFiles([XFile(widget.imagePath)], text: textPayload);
       } else {
         await Share.share(textPayload);
@@ -912,8 +915,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
 
   Future<void> _saveToCameraRoll() async {
     try {
-      if (widget.imagePath.isNotEmpty &&
-          File(widget.imagePath).existsSync()) {
+      if (widget.imagePath.isNotEmpty && File(widget.imagePath).existsSync()) {
         await Gal.putImage(widget.imagePath);
       } else if (widget.gradcamImageBytes != null &&
           widget.gradcamImageBytes!.isNotEmpty) {
@@ -939,10 +941,9 @@ class _PlantResultScreenState extends State<PlantResultScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(
-                  e.type == GalExceptionType.accessDenied
-                      ? 'Permission denied to save to gallery'
-                      : 'Could not save to gallery: ${e.platformException.message ?? e.toString()}')),
+              content: Text(e.type == GalExceptionType.accessDenied
+                  ? 'Permission denied to save to gallery'
+                  : 'Could not save to gallery: ${e.platformException.message ?? e.toString()}')),
         );
       }
     } catch (e) {
@@ -1009,8 +1010,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
             await gradcamDir.create(recursive: true);
           }
           final timestamp = DateTime.now().millisecondsSinceEpoch;
-          final gradcamFile =
-              File('${gradcamDir.path}/gradcam_$timestamp.png');
+          final gradcamFile = File('${gradcamDir.path}/gradcam_$timestamp.png');
           await gradcamFile.writeAsBytes(widget.gradcamImageBytes!);
           savedGradCAMPath = gradcamFile.path;
         } catch (e) {
@@ -1034,8 +1034,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
           'method': widget.method ?? 'unknown',
           'fallbackUsed': widget.fallbackUsed ?? false,
         },
-        isOfflineScan:
-            widget.method == 'cam' || widget.fallbackUsed == true,
+        isOfflineScan: widget.method == 'cam' || widget.fallbackUsed == true,
       );
 
       await plantProvider.addScanResult(scanResult);
@@ -1057,8 +1056,9 @@ class _PlantResultScreenState extends State<PlantResultScreen>
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-            _isSaved ? 'Scan already saved to history' : 'Scan saved to device history'),
+        content: Text(_isSaved
+            ? 'Scan already saved to history'
+            : 'Scan saved to device history'),
         backgroundColor: AppTheme.safeGreen,
       ),
     );
@@ -1261,8 +1261,7 @@ class FullScreenHeatmapRoute extends StatefulWidget {
   });
 
   @override
-  State<FullScreenHeatmapRoute> createState() =>
-      _FullScreenHeatmapRouteState();
+  State<FullScreenHeatmapRoute> createState() => _FullScreenHeatmapRouteState();
 }
 
 class _FullScreenHeatmapRouteState extends State<FullScreenHeatmapRoute> {
@@ -1345,8 +1344,7 @@ class _FullScreenHeatmapRouteState extends State<FullScreenHeatmapRoute> {
             child: SafeArea(
               child: IconButton(
                 onPressed: () => Navigator.of(context).pop(),
-                icon:
-                    const Icon(Icons.close, color: Colors.white, size: 32),
+                icon: const Icon(Icons.close, color: Colors.white, size: 32),
                 style: IconButton.styleFrom(
                   backgroundColor: Colors.black.withOpacity(0.5),
                   shape: const CircleBorder(),
@@ -1380,7 +1378,7 @@ class _FullScreenHeatmapRouteState extends State<FullScreenHeatmapRoute> {
                         setState(() => _showOverlay = value);
                         widget.onOverlayChanged(value);
                       },
-                      activeColor: AppTheme.botanicalPrimary,
+                      activeThumbColor: AppTheme.botanicalPrimary,
                     ),
                     const SizedBox(height: 8),
                     Row(

@@ -474,14 +474,18 @@ class _HabitatInfoSheet extends StatelessWidget {
                 itemCount: habitat.regionNames.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 8),
                 itemBuilder: (context, index) {
+                  final chipBg = isDark
+                      ? theme.colorScheme.surfaceContainerHighest
+                      : AppTheme.safeBgLight;
                   return Chip(
                     label: Text(
                       habitat.regionNames[index],
                       style: theme.textTheme.labelSmall?.copyWith(
                         fontWeight: FontWeight.w500,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
-                    backgroundColor: AppTheme.safeBgLight,
+                    backgroundColor: chipBg,
                     side: BorderSide(
                       color: AppTheme.botanicalPrimary.withOpacity(0.25),
                     ),
