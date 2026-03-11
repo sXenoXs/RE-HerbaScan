@@ -1,6 +1,6 @@
 ## Quick Setup Instructions
 
-**Last Updated**: March 2026 · **App Version**: v0.9.0
+**Last Updated**: March 2026 · **App Version**: v0.9.3
 
 ### 1. Install Flutter
 
@@ -46,6 +46,9 @@ flutter run -d ios
 
 # For Web
 flutter run -d web
+
+# For Windows desktop (admin portal testing, no camera/TFLite)
+flutter run -d windows
 ```
 
 ## Development Setup
@@ -121,7 +124,7 @@ After successful setup:
 4. **Test Multi-language**: Switch between English and Filipino
 5. **Deploy**: Build APK with `flutter build apk` for release
 
-**Current Features Ready for Testing** (v0.9.0 – March 2026). For full detail see **CHANGELOG.md**.
+**Current Features Ready for Testing** (v0.9.3 – March 2026). For full detail see **CHANGELOG.md**.
 
 - ✅ Plant identification (camera + gallery)
 - ✅ GradCAM visualization with working overlay controls
@@ -137,18 +140,22 @@ After successful setup:
 - ✅ Settings and preferences; offline management
 - ✅ Backend API for Grad-CAM (Railway); Postman collection
 
-**Recent Features (v0.9.0)**:
-- ✅ Signup 6-digit email confirmation; stronger password rules; delete account
-- ✅ Interactive preparation checklist, contextual timers, Focus Mode, calendar
+**Recent Features (v0.9.3)**:
+- ✅ Signup 6-digit email confirmation; duplicate email handling; stronger password rules; delete account
+- ✅ Preparation Guide (renamed from Instructions); interactive checklist, contextual timers, Focus Mode, calendar; save/export from Plant Result only
+- ✅ Heatmap in cloud sync (upload/download gradcam image; metadata `gradcam_url`)
+- ✅ Admin instant local sync after catalog/condition/plant save; condition count 1:1 with browse
+- ✅ System Diagnostics (renamed from Offline Demo); design system (botanical green / Emerald, app_theme.dart)
 - ✅ Contraindication Engine; no live LLM (thesis-defensible)
-- ✅ Scan History: swipe between tabs, pull-to-refresh on Cloud, offline-aware
+- ✅ Scan History: swipe between tabs, pull-to-refresh on Cloud, select mode, batch sync; save/export from Plant Result only
 - ✅ Friendly auth errors; 6-digit OTP password reset; auth deep links
 
-**Recent Fixes (v0.9.0)**:
+**Recent Fixes (v0.9.3)**:
 - ✅ Summary tab content and layout; taxonomy Markdown line breaks
-- ✅ Railway /identify 401 when not logged in (optional JWT)
+- ✅ Railway /identify 401 when not logged in (optional JWT; recommend unset)
 - ✅ Calendar add-event on Android (queries intent); Focus Mode contrast
 - ✅ Offline/management settings copy and refresh behavior
+- ✅ SnackBar floating so camera FAB not displaced
 
 **Backend API Testing**:
 - See `backend/README.md` → "🧪 Testing with Postman" for complete testing guide
@@ -161,10 +168,12 @@ After successful setup:
 herbascan/
 ├── lib/                   # Dart source code
 │   ├── core/              # Core functionality
+│   │   ├── config/        # Supabase URL/anon key, auth redirect
 │   │   ├── models/        # Data models
 │   │   ├── providers/     # State management
 │   │   ├── services/      # Business logic
-│   │   ├── theme/         # App styling
+│   │   ├── widgets/       # Shared widgets (e.g. botanical auth header)
+│   │   ├── theme/         # App styling (app_theme.dart – botanical green)
 │   │   └── localization/  # Multi-language
 │   └── features/          # Feature modules
 │       ├── splash/        # App launch
@@ -177,6 +186,7 @@ herbascan/
 │   ├── data/              # JSON data files (doh_plants.json)
 │   ├── fonts/             # Custom fonts (Inter)
 │   └── icons/             # App icons and UI elements
+├── tests/                 # Testing plans (Unit, Integration, System, Acceptance, Performance, Usability, Compatibility, Security)
 ├── android/               # Android-specific code
 ├── ios/                   # iOS-specific code
 └── pubspec.yaml           # Dependencies
@@ -292,8 +302,8 @@ The app uses SQLite for local storage. The database is created automatically on 
 - **Format**: JSON with taxonomy, ecology, medicinal uses, safety; structured safety profiles
 - **Status**: ✅ Automatically included in app assets
 
-### Online Explanations (No Live LLM in v0.9.0)
-- **Behavior**: As of v0.9.0, the app does **not** use live generative AI at runtime. Explanations come only from: SharedPreferences/file cache (read-only), offline `plant_explanations.json`, and fallback text. Safety is fully deterministic via the Contraindication Engine (`safety_profiles.json`).
+### Online Explanations (No Live LLM in v0.9.3)
+- **Behavior**: As of v0.9.3, the app does **not** use live generative AI at runtime. Explanations come only from: SharedPreferences/file cache (read-only), offline `plant_explanations.json`, and fallback text. Safety is fully deterministic via the Contraindication Engine (`safety_profiles.json`).
 - **Offline data**: `assets/data/plant_explanations.json` and `assets/data/safety_profiles.json`.
 - **Fallback**: If no cached or offline explanation is found, a fallback message is shown.
 
@@ -331,13 +341,13 @@ The app uses SQLite for local storage. The database is created automatically on 
 ## Key Configuration Files
 
 ### API Configuration
-- **Backend (GradCAM)**: `lib/core/services/online_gradcam_service.dart` – set base URL to your Railway deployment. Optional JWT: see `supabase/README.md` and `backend/README.md`.
-- **No live LLM in v0.9.0**: Explanations use cache/offline JSON and fallback only.
+- **Backend (GradCAM)**: `lib/core/services/online_gradcam_service.dart` – set base URL to your Railway deployment. Default production URL: `https://re-herbascan-production.up.railway.app`. Optional JWT: see `supabase/README.md` (Step 3 – recommend leaving unset) and `backend/README.md`.
+- **No live LLM in v0.9.3**: Explanations use cache/offline JSON and fallback only.
 
 ### Backend API URL
 - **Location**: `lib/core/services/online_gradcam_service.dart`
-- **Default**: Set to your Railway deployment URL
-- **Format**: `https://YOUR-APP.up.railway.app`
+- **Default**: `https://re-herbascan-production.up.railway.app` (production)
+- **Format**: `https://YOUR-APP.up.railway.app` for custom deployment
 
 ### Offline Explanation Data
 - **Location**: `assets/data/plant_explanations.json`

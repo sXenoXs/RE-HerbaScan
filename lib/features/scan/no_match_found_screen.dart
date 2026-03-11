@@ -1,9 +1,8 @@
-import 'package:flutter/material.dart';
-import 'package:herbascan/core/localization/app_localizations.dart';
-import 'package:herbascan/features/scan/scan_screen.dart';
-import 'package:herbascan/features/browse/browse_screen.dart';
-import 'package:herbascan/features/browse/condition_search_screen.dart';
 import 'dart:io';
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'package:herbascan/core/theme/app_theme.dart';
+import 'package:herbascan/features/browse/browse_screen.dart';
 
 class NoMatchFoundScreen extends StatelessWidget {
   final String imagePath;
@@ -18,237 +17,152 @@ class NoMatchFoundScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final appLocalizations = AppLocalizations.of(context);
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        title: Text(appLocalizations.scanResults),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        automaticallyImplyLeading: false,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const SizedBox(height: 20),
-
-            // Error Icon
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.1),
-                shape: BoxShape.circle,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // 1. Blurred background image
+          if (imagePath.isNotEmpty)
+            ImageFiltered(
+              imageFilter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              child: Image.file(
+                File(imagePath),
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) =>
+                    Container(color: AppTheme.darkScaffold),
               ),
-              child: Icon(
-                Icons.search_off,
-                size: 60,
-                color: Colors.orange,
-              ),
-            ),
+            )
+          else
+            Container(color: AppTheme.darkScaffold),
 
-            const SizedBox(height: 24),
+          // 2. Dark scrim
+          Container(color: Colors.black.withOpacity(0.45)),
 
-            // Title
-            Text(
-              appLocalizations.noMatchFound,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.orange,
-              ),
-              textAlign: TextAlign.center,
-            ),
-
-            const SizedBox(height: 12),
-
-            // Description
-            Text(
-              appLocalizations.noMatchDescription,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
-              ),
-              textAlign: TextAlign.center,
-            ),
-
-            if (lowConfidence != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                'Confidence: ${(lowConfidence! * 100).toStringAsFixed(1)}%',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: Colors.orange,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-
-            const SizedBox(height: 32),
-
-            // Preview Image
-            if (imagePath.isNotEmpty)
-              Container(
-                width: 200,
-                height: 200,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Colors.orange.withOpacity(0.3),
-                    width: 2,
-                  ),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Image.file(
-                  File(imagePath),
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: theme.colorScheme.surfaceContainerHighest,
-                      child: Icon(
-                        Icons.broken_image,
-                        size: 48,
-                        color: theme.colorScheme.onSurfaceVariant,
+          // 3. Glassmorphic center card
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                  child: Container(
+                    padding: const EdgeInsets.all(28),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.25),
+                        width: 1,
                       ),
-                    );
-                  },
-                ),
-              ),
-
-            const SizedBox(height: 32),
-
-            // Possible Reasons
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Colors.blue.shade200,
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        color: Colors.blue.shade700,
-                        size: 24,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Possible reasons:',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue.shade700,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Icon with warning badge
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            color: AppTheme.warningAmber.withOpacity(0.18),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.eco_rounded,
+                            size: 40,
+                            color: AppTheme.warningAmber,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  _buildReasonItem(
-                      'Plant not in our database', Icons.storage, theme),
-                  _buildReasonItem('Image quality too low',
-                      Icons.image_not_supported, theme),
-                  _buildReasonItem('Unusual leaf angle or position',
-                      Icons.rotate_90_degrees_ccw, theme),
-                  _buildReasonItem('Young or damaged leaf', Icons.eco, theme),
-                ],
-              ),
-            ),
 
-            const SizedBox(height: 32),
+                        const SizedBox(height: 20),
 
-            // Action Buttons
-            Column(
-              children: [
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      // Go back to scan screen
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(
-                            builder: (context) => const ScanScreen()),
-                        (route) => route.isFirst,
-                      );
-                    },
-                    icon: const Icon(Icons.camera_alt),
-                    label: Text(appLocalizations.retake),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      // Navigate to browse screen
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(
-                            builder: (context) => const BrowseScreen()),
-                        (route) => route.isFirst,
-                      );
-                    },
-                    icon: const Icon(Icons.search),
-                    label: Text(appLocalizations.browseManually),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton.icon(
-                    onPressed: () {
-                      // Navigate to condition search
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const ConditionSearchScreen(),
+                        // Title
+                        Text(
+                          'Plant Not Recognized',
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                      );
-                    },
-                    icon: const Icon(Icons.medical_services),
-                    label: Text(appLocalizations.byCondition),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+
+                        const SizedBox(height: 10),
+
+                        // Description
+                        Text(
+                          "We don't recognize this plant. Ensure it's a clear single leaf.",
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: Colors.white.withOpacity(0.80),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+
+                        if (lowConfidence != null) ...[
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppTheme.warningAmber.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(100),
+                            ),
+                            child: Text(
+                              'Confidence: ${(lowConfidence! * 100).toStringAsFixed(1)}%',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: AppTheme.warningAmber,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+
+                        const SizedBox(height: 28),
+
+                        // Retake button
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton.icon(
+                            onPressed: () => Navigator.of(context).pop(),
+                            icon: const Icon(Icons.camera_alt_rounded, size: 18),
+                            label: const Text('Retake Photo'),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppTheme.botanicalPrimary,
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        // Browse catalog button
+                        SizedBox(
+                          width: double.infinity,
+                          child: TextButton(
+                            onPressed: () {
+                              Navigator.of(context).pushAndRemoveUntil(
+                                MaterialPageRoute(
+                                  builder: (_) => const BrowseScreen(),
+                                ),
+                                (route) => route.isFirst,
+                              );
+                            },
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Browse Catalog'),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildReasonItem(String text, IconData icon, ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            icon,
-            size: 20,
-            color: Colors.blue.shade600,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              text,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: Colors.blue.shade900,
               ),
             ),
           ),

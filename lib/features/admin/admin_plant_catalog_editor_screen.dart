@@ -1,14 +1,18 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 import 'package:herbascan/core/models/plant.dart';
 import 'package:herbascan/core/models/plant_habitat.dart';
 import 'package:herbascan/core/models/safety_profile.dart';
+import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/core/widgets/plant_image.dart';
 import 'package:herbascan/core/services/catalog_plant_admin_service.dart';
+import 'package:herbascan/core/services/database_service.dart';
 import 'package:herbascan/core/services/habitat_service.dart';
 import 'package:herbascan/core/services/safety_profile_service.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
+import 'package:herbascan/core/providers/plant_provider.dart';
 import 'package:herbascan/features/scan/habitat_map_screen.dart';
 
 /// Tabbed admin editor for one plant: Identity & Taxonomy, Ecology, Medicinal, Preparations, Safety.
@@ -50,6 +54,7 @@ class _AdminPlantCatalogEditorScreenState
   String _habitatClimateNotes = '';
 
   final CatalogPlantAdminService _adminService = CatalogPlantAdminService();
+  final DatabaseService _db = DatabaseService();
 
   @override
   void initState() {
@@ -97,29 +102,45 @@ class _AdminPlantCatalogEditorScreenState
 
   Future<void> _save() async {
     setState(() => _saving = true);
+
+    // Build objects once — reused for both Supabase and local SQLite writes
+    final safetyProfile = SafetyProfile(
+      plantId: _plant.id,
+      name: _plant.commonName,
+      isGenerallySafe: _isGenerallySafe,
+      pregnancyWarning: _pregnancyWarning,
+      knownSideEffects: _knownSideEffects,
+      drugInteractions: _drugInteractions,
+      strictContraindications: _strictContraindications,
+    );
+    final habitat = PlantHabitat(
+      plantId: _plant.id,
+      knownCoordinates: _habitatCoordinates,
+      regionNames: _habitatRegionNames,
+      climateNotes: _habitatClimateNotes,
+    );
+
+    // 1. Write to Supabase
     var ok = await _adminService.saveCatalogPlant(_plant,
         climateNotes: _climateNotes);
+    if (ok) ok = await _adminService.saveCatalogSafety(_plant.id, safetyProfile);
+    if (ok) ok = await _adminService.saveCatalogHabitat(_plant.id, habitat);
+
+    // 2. Write to local SQLite immediately — no app restart needed
     if (ok) {
-      final safetyProfile = SafetyProfile(
-        plantId: _plant.id,
-        name: _plant.commonName,
-        isGenerallySafe: _isGenerallySafe,
-        pregnancyWarning: _pregnancyWarning,
-        knownSideEffects: _knownSideEffects,
-        drugInteractions: _drugInteractions,
-        strictContraindications: _strictContraindications,
-      );
-      ok = await _adminService.saveCatalogSafety(_plant.id, safetyProfile);
+      try {
+        await _db.replacePlantFromSync(_plant);
+        await _db.replaceSafetyFromSync(safetyProfile);
+        await _db.replaceHabitatFromSync(habitat);
+        if (mounted) {
+          await context.read<PlantProvider>().loadPlants();
+        }
+      } catch (e) {
+        // Non-fatal: Supabase write succeeded; local will sync on next launch
+        debugPrint('[AdminEditor] Local sync after save failed: $e');
+      }
     }
-    if (ok) {
-      final habitat = PlantHabitat(
-        plantId: _plant.id,
-        knownCoordinates: _habitatCoordinates,
-        regionNames: _habitatRegionNames,
-        climateNotes: _habitatClimateNotes,
-      );
-      ok = await _adminService.saveCatalogHabitat(_plant.id, habitat);
-    }
+
     setState(() => _saving = false);
     if (mounted) {
       if (ok) {
@@ -208,8 +229,6 @@ class _AdminPlantCatalogEditorScreenState
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     if (_loading) {
       return Scaffold(
         appBar: AppBar(title: Text(widget.plant.commonName)),
@@ -232,41 +251,94 @@ class _AdminPlantCatalogEditorScreenState
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: _saving ? null : _seedFromDefaults,
-            child: const Text('Seed defaults'),
-          ),
-          FilledButton(
-            onPressed: _saving ? null : _save,
-            child: _saving
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Save'),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert_rounded),
+            onSelected: (action) {
+              if (action == 'seed') _seedFromDefaults();
+            },
+            itemBuilder: (ctx) => [
+              PopupMenuItem(
+                value: 'seed',
+                child: Row(children: [
+                  Icon(Icons.restore,
+                      color: Theme.of(ctx).colorScheme.error),
+                  const SizedBox(width: 12),
+                  Text('Seed Defaults',
+                      style: TextStyle(
+                          color: Theme.of(ctx).colorScheme.error)),
+                ]),
+              ),
+            ],
           ),
         ],
+      ),
+      // Persistent bottom save button
+      bottomNavigationBar: Padding(
+        padding: EdgeInsets.fromLTRB(
+            16,
+            8,
+            16,
+            MediaQuery.of(context).viewInsets.bottom +
+                MediaQuery.of(context).padding.bottom +
+                8),
+        child: FilledButton(
+          onPressed: _saving ? null : _save,
+          style: FilledButton.styleFrom(
+            backgroundColor: AppTheme.botanicalPrimary,
+            minimumSize: const Size(double.infinity, 48),
+          ),
+          child: _saving
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white))
+              : const Text('Save All Changes',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+        ),
       ),
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildIdentityTab(theme),
-          _buildEcologyTab(theme),
-          _buildMedicinalTab(theme),
-          _buildPreparationsTab(theme),
-          _buildSafetyTab(theme),
+          _buildIdentityTab(),
+          _buildEcologyTab(),
+          _buildMedicinalTab(),
+          _buildPreparationsTab(),
+          _buildSafetyTab(),
         ],
       ),
     );
   }
 
-  Widget _buildIdentityTab(ThemeData theme) {
+  // ─── Identity Tab ────────────────────────────────────────────────────────────
+
+  Widget _buildIdentityTab() {
+    final theme = Theme.of(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // DOH toggle at top (elevated card)
+          Card(
+            elevation: 0,
+            color: _plant.isDOHApproved
+                ? AppTheme.safeBgLight
+                : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12)),
+            child: SwitchListTile(
+              title: const Text('DOH Approved',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: const Text(
+                  'Shows verified shield badge and appears in DOH Spotlight'),
+              value: _plant.isDOHApproved,
+              activeThumbColor: AppTheme.botanicalPrimary,
+              onChanged: (v) =>
+                  setState(() => _plant = _copyWith(isDOHApproved: v)),
+            ),
+          ),
+          const SizedBox(height: 20),
           Center(
             child: SizedBox(
               width: 200,
@@ -284,29 +356,44 @@ class _AdminPlantCatalogEditorScreenState
             label: const Text('Upload image'),
           ),
           const SizedBox(height: 24),
+          // Name fields
           _textField('Common name', _plant.commonName,
               (v) => setState(() => _plant = _copyWith(commonName: v))),
           _textField('Scientific name', _plant.scientificName,
               (v) => setState(() => _plant = _copyWith(scientificName: v))),
-          _textField('Local name', _plant.localName,
-              (v) => setState(() => _plant = _copyWith(localName: v))),
+          // Grouped row: Family + Genus
+          Row(
+            children: [
+              Expanded(
+                child: _textField('Family', _plant.family,
+                    (v) => setState(() => _plant = _copyWith(family: v))),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _textField('Genus', _plant.genus,
+                    (v) => setState(() => _plant = _copyWith(genus: v))),
+              ),
+            ],
+          ),
+          // Grouped row: Species + Local Name
+          Row(
+            children: [
+              Expanded(
+                child: _textField('Species', _plant.species,
+                    (v) => setState(() => _plant = _copyWith(species: v))),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _textField('Local name', _plant.localName,
+                    (v) => setState(() => _plant = _copyWith(localName: v))),
+              ),
+            ],
+          ),
           _textField('English name', _plant.englishName,
               (v) => setState(() => _plant = _copyWith(englishName: v))),
-          _textField('Family', _plant.family,
-              (v) => setState(() => _plant = _copyWith(family: v))),
-          _textField('Genus', _plant.genus,
-              (v) => setState(() => _plant = _copyWith(genus: v))),
-          _textField('Species', _plant.species,
-              (v) => setState(() => _plant = _copyWith(species: v))),
           _textField('Morphology', _plant.morphology,
               (v) => setState(() => _plant = _copyWith(morphology: v)),
               maxLines: 4),
-          SwitchListTile(
-            title: const Text('DOH approved'),
-            value: _plant.isDOHApproved,
-            onChanged: (v) =>
-                setState(() => _plant = _copyWith(isDOHApproved: v)),
-          ),
         ],
       ),
     );
@@ -364,9 +451,13 @@ class _AdminPlantCatalogEditorScreenState
     );
   }
 
-  Widget _buildEcologyTab(ThemeData theme) {
+  // ─── Ecology Tab ─────────────────────────────────────────────────────────────
+
+  Widget _buildEcologyTab() {
+    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     final hasHabitatData = _habitatCoordinates.isNotEmpty;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -391,64 +482,82 @@ class _AdminPlantCatalogEditorScreenState
                   ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
           ...List.generate(_habitatCoordinates.length, (i) {
             final pt = _habitatCoordinates[i];
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 100,
-                    child: TextField(
-                      decoration: const InputDecoration(
-                          isDense: true, labelText: 'Lat'),
-                      controller: TextEditingController(text: pt.lat.toString())
-                        ..selection = TextSelection.collapsed(
-                            offset: pt.lat.toString().length),
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      onChanged: (v) {
-                        final n = double.tryParse(v);
-                        if (n != null) {
-                          final list =
-                              List<HabitatPoint>.from(_habitatCoordinates);
-                          list[i] = HabitatPoint(lat: n, lng: list[i].lng);
-                          setState(() => _habitatCoordinates = list);
-                        }
+            return Dismissible(
+              key: Key('coord_$i'),
+              direction: DismissDirection.endToStart,
+              background: Container(
+                color: AppTheme.errorColor.withValues(alpha: 0.1),
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.only(right: 16),
+                child: const Icon(Icons.delete_outline,
+                    color: AppTheme.errorColor),
+              ),
+              onDismissed: (_) {
+                setState(() {
+                  _habitatCoordinates =
+                      List<HabitatPoint>.from(_habitatCoordinates)
+                        ..removeAt(i);
+                });
+              },
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        decoration: const InputDecoration(
+                            isDense: true, labelText: 'Lat'),
+                        controller:
+                            TextEditingController(text: pt.lat.toString())
+                              ..selection = TextSelection.collapsed(
+                                  offset: pt.lat.toString().length),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        onChanged: (v) {
+                          final n = double.tryParse(v);
+                          if (n != null) {
+                            final list =
+                                List<HabitatPoint>.from(_habitatCoordinates);
+                            list[i] = HabitatPoint(lat: n, lng: list[i].lng);
+                            setState(() => _habitatCoordinates = list);
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        decoration: const InputDecoration(
+                            isDense: true, labelText: 'Lng'),
+                        controller:
+                            TextEditingController(text: pt.lng.toString())
+                              ..selection = TextSelection.collapsed(
+                                  offset: pt.lng.toString().length),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        onChanged: (v) {
+                          final n = double.tryParse(v);
+                          if (n != null) {
+                            final list =
+                                List<HabitatPoint>.from(_habitatCoordinates);
+                            list[i] = HabitatPoint(lat: list[i].lat, lng: n);
+                            setState(() => _habitatCoordinates = list);
+                          }
+                        },
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.remove_circle_outline),
+                      onPressed: () {
+                        setState(() {
+                          _habitatCoordinates =
+                              List<HabitatPoint>.from(_habitatCoordinates)
+                                ..removeAt(i);
+                        });
                       },
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  SizedBox(
-                    width: 100,
-                    child: TextField(
-                      decoration: const InputDecoration(
-                          isDense: true, labelText: 'Lng'),
-                      controller: TextEditingController(text: pt.lng.toString())
-                        ..selection = TextSelection.collapsed(
-                            offset: pt.lng.toString().length),
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      onChanged: (v) {
-                        final n = double.tryParse(v);
-                        if (n != null) {
-                          final list =
-                              List<HabitatPoint>.from(_habitatCoordinates);
-                          list[i] = HabitatPoint(lat: list[i].lat, lng: n);
-                          setState(() => _habitatCoordinates = list);
-                        }
-                      },
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.remove_circle_outline),
-                    onPressed: () {
-                      setState(() {
-                        _habitatCoordinates =
-                            List<HabitatPoint>.from(_habitatCoordinates)
-                              ..removeAt(i);
-                      });
-                    },
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           }),
@@ -464,33 +573,49 @@ class _AdminPlantCatalogEditorScreenState
               style: theme.textTheme.bodySmall
                   ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
           ...List.generate(_habitatRegionNames.length, (i) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      decoration: const InputDecoration(
-                          isDense: true, hintText: 'Region name'),
-                      controller:
-                          TextEditingController(text: _habitatRegionNames[i])
-                            ..selection = TextSelection.collapsed(
-                                offset: _habitatRegionNames[i].length),
-                      onChanged: (v) {
-                        final list = List<String>.from(_habitatRegionNames);
-                        list[i] = v;
-                        setState(() => _habitatRegionNames = list);
+            return Dismissible(
+              key: Key('region_$i'),
+              direction: DismissDirection.endToStart,
+              background: Container(
+                color: AppTheme.errorColor.withValues(alpha: 0.1),
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.only(right: 16),
+                child: const Icon(Icons.delete_outline,
+                    color: AppTheme.errorColor),
+              ),
+              onDismissed: (_) {
+                setState(() => _habitatRegionNames =
+                    List<String>.from(_habitatRegionNames)..removeAt(i));
+              },
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        decoration: const InputDecoration(
+                            isDense: true, hintText: 'Region name'),
+                        controller: TextEditingController(
+                            text: _habitatRegionNames[i])
+                          ..selection = TextSelection.collapsed(
+                              offset: _habitatRegionNames[i].length),
+                        onChanged: (v) {
+                          final list = List<String>.from(_habitatRegionNames);
+                          list[i] = v;
+                          setState(() => _habitatRegionNames = list);
+                        },
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.remove_circle_outline),
+                      onPressed: () {
+                        setState(() => _habitatRegionNames =
+                            List<String>.from(_habitatRegionNames)
+                              ..removeAt(i));
                       },
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.remove_circle_outline),
-                    onPressed: () {
-                      setState(() => _habitatRegionNames =
-                          List<String>.from(_habitatRegionNames)..removeAt(i));
-                    },
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           }),
@@ -521,19 +646,25 @@ class _AdminPlantCatalogEditorScreenState
                   child: Row(
                     children: [
                       Icon(Icons.map_outlined,
-                          color: theme.colorScheme.primary, size: 24),
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 24),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           l10n.whereItGrows,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: theme.colorScheme.primary,
-                          ),
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
                         ),
                       ),
                       Icon(Icons.chevron_right,
-                          color: theme.colorScheme.onSurfaceVariant),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurfaceVariant),
                     ],
                   ),
                 ),
@@ -545,7 +676,10 @@ class _AdminPlantCatalogEditorScreenState
     );
   }
 
-  Widget _buildMedicinalTab(ThemeData theme) {
+  // ─── Medicinal Tab ───────────────────────────────────────────────────────────
+
+  Widget _buildMedicinalTab() {
+    final theme = Theme.of(context);
     final uses = _plant.medicinalUses;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -560,12 +694,12 @@ class _AdminPlantCatalogEditorScreenState
               const SizedBox(width: 8),
               TextButton.icon(
                 onPressed: () async {
-                  final added = await _showMedicinalUseDialog(null);
+                  final added = await _openMedicinalUseEditor(null);
                   if (added != null && mounted) {
                     setState(() {
                       _plant = _copyWith(
-                          medicinalUses: List<MedicinalUse>.from(uses)
-                            ..add(added));
+                          medicinalUses:
+                              List<MedicinalUse>.from(uses)..add(added));
                     });
                   }
                 },
@@ -579,80 +713,67 @@ class _AdminPlantCatalogEditorScreenState
             final use = uses[i];
             return Card(
               margin: const EdgeInsets.only(bottom: 8),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                              use.condition.isEmpty
-                                  ? '(No condition)'
-                                  : use.condition,
-                              style: theme.textTheme.titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.w600)),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.edit_outlined, size: 20),
-                          onPressed: () async {
-                            final updated = await _showMedicinalUseDialog(use);
-                            if (updated != null && mounted) {
-                              setState(() {
-                                final list = List<MedicinalUse>.from(uses)
-                                  ..[i] = updated;
-                                _plant = _copyWith(medicinalUses: list);
-                              });
-                            }
-                          },
-                        ),
-                        IconButton(
-                          icon:
-                              const Icon(Icons.remove_circle_outline, size: 20),
-                          onPressed: () {
-                            setState(() {
-                              final list = List<MedicinalUse>.from(uses)
-                                ..removeAt(i);
-                              _plant = _copyWith(medicinalUses: list);
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                    if (use.effectiveness.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(use.effectiveness,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant)),
-                      ),
-                    if (use.description.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(use.description,
-                            style: theme.textTheme.bodySmall,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis),
-                      ),
-                  ],
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              child: ListTile(
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                title: Text(
+                    use.condition.isEmpty ? '(No condition)' : use.condition,
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: use.effectiveness.isNotEmpty
+                    ? Text(use.effectiveness,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant))
+                    : null,
+                trailing: TextButton(
+                  onPressed: () async {
+                    final updated = await _openMedicinalUseEditor(use);
+                    if (updated != null && mounted) {
+                      setState(() {
+                        final list = List<MedicinalUse>.from(uses)..[i] =
+                            updated;
+                        _plant = _copyWith(medicinalUses: list);
+                      });
+                    }
+                  },
+                  child: const Text('Edit'),
                 ),
+                onLongPress: () {
+                  setState(() {
+                    final list = List<MedicinalUse>.from(uses)..removeAt(i);
+                    _plant = _copyWith(medicinalUses: list);
+                  });
+                },
               ),
             );
           }),
+          if (uses.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Text('No medicinal uses added yet.',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5))),
+            ),
         ],
       ),
     );
   }
 
-  Future<MedicinalUse?> _showMedicinalUseDialog(MedicinalUse? initial) async {
-    return showDialog<MedicinalUse>(
-      context: context,
-      builder: (ctx) => _MedicinalUseEditDialog(initial: initial),
+  Future<MedicinalUse?> _openMedicinalUseEditor(MedicinalUse? initial) async {
+    return Navigator.of(context).push<MedicinalUse>(
+      MaterialPageRoute(
+        builder: (ctx) => _EditMedicinalUseScreen(initial: initial),
+        fullscreenDialog: true,
+      ),
     );
   }
 
-  Widget _buildPreparationsTab(ThemeData theme) {
+  // ─── Preparations Tab ────────────────────────────────────────────────────────
+
+  Widget _buildPreparationsTab() {
+    final theme = Theme.of(context);
     final methods = _plant.preparationMethods;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -667,13 +788,12 @@ class _AdminPlantCatalogEditorScreenState
               const SizedBox(width: 8),
               TextButton.icon(
                 onPressed: () async {
-                  final added = await _showPreparationMethodDialog(null);
+                  final added = await _openPreparationEditor(null);
                   if (added != null && mounted) {
                     setState(() {
                       _plant = _copyWith(
                           preparationMethods:
-                              List<PreparationMethod>.from(methods)
-                                ..add(added));
+                              List<PreparationMethod>.from(methods)..add(added));
                     });
                   }
                 },
@@ -687,82 +807,73 @@ class _AdminPlantCatalogEditorScreenState
             final method = methods[i];
             return Card(
               margin: const EdgeInsets.only(bottom: 8),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                              method.title.isEmpty
-                                  ? '(No title)'
-                                  : method.title,
-                              style: theme.textTheme.titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.w600)),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.edit_outlined, size: 20),
-                          onPressed: () async {
-                            final updated =
-                                await _showPreparationMethodDialog(method);
-                            if (updated != null && mounted) {
-                              setState(() {
-                                final list =
-                                    List<PreparationMethod>.from(methods)
-                                      ..[i] = updated;
-                                _plant = _copyWith(preparationMethods: list);
-                              });
-                            }
-                          },
-                        ),
-                        IconButton(
-                          icon:
-                              const Icon(Icons.remove_circle_outline, size: 20),
-                          onPressed: () {
-                            setState(() {
-                              final list = List<PreparationMethod>.from(methods)
-                                ..removeAt(i);
-                              _plant = _copyWith(preparationMethods: list);
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                    if (method.condition.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text('For: ${method.condition}',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant)),
-                      ),
-                    if (method.preparationType.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: Text(method.preparationType,
-                            style: theme.textTheme.bodySmall),
-                      ),
-                  ],
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              child: ListTile(
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                title: Text(
+                    method.title.isEmpty ? '(No title)' : method.title,
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: method.condition.isNotEmpty
+                    ? Text('For: ${method.condition}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant))
+                    : null,
+                trailing: TextButton(
+                  onPressed: () async {
+                    final updated = await _openPreparationEditor(method);
+                    if (updated != null && mounted) {
+                      setState(() {
+                        final list = List<PreparationMethod>.from(methods)
+                          ..[i] = updated;
+                        _plant = _copyWith(preparationMethods: list);
+                      });
+                    }
+                  },
+                  child: const Text('Edit'),
                 ),
+                onLongPress: () {
+                  setState(() {
+                    final list = List<PreparationMethod>.from(methods)
+                      ..removeAt(i);
+                    _plant = _copyWith(preparationMethods: list);
+                  });
+                },
               ),
             );
           }),
+          if (methods.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Text('No preparation methods added yet.',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                      color:
+                          theme.colorScheme.onSurface.withValues(alpha: 0.5))),
+            ),
         ],
       ),
     );
   }
 
-  Future<PreparationMethod?> _showPreparationMethodDialog(
+  Future<PreparationMethod?> _openPreparationEditor(
       PreparationMethod? initial) async {
-    return showDialog<PreparationMethod>(
-      context: context,
-      builder: (ctx) =>
-          _PreparationMethodEditDialog(initial: initial, plantId: _plant.id),
+    return Navigator.of(context).push<PreparationMethod>(
+      MaterialPageRoute(
+        builder: (ctx) => _EditPreparationMethodScreen(
+          initial: initial,
+          plantId: _plant.id,
+        ),
+        fullscreenDialog: true,
+      ),
     );
   }
 
-  Widget _buildSafetyTab(ThemeData theme) {
+  // ─── Safety Tab ──────────────────────────────────────────────────────────────
+
+  Widget _buildSafetyTab() {
+    final theme = Theme.of(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -772,29 +883,44 @@ class _AdminPlantCatalogEditorScreenState
             title: const Text('Generally safe for consumption'),
             value: _isGenerallySafe,
             onChanged: (v) => setState(() => _isGenerallySafe = v),
+            activeThumbColor: AppTheme.botanicalPrimary,
           ),
           SwitchListTile(
             title: const Text('Pregnancy warning'),
             value: _pregnancyWarning,
             onChanged: (v) => setState(() => _pregnancyWarning = v),
+            activeThumbColor: AppTheme.errorColor,
           ),
           const SizedBox(height: 16),
-          _buildListSection(theme, 'Known side effects', _knownSideEffects,
-              (list) => setState(() => _knownSideEffects = list)),
-          _buildListSection(theme, 'Drug interactions', _drugInteractions,
-              (list) => setState(() => _drugInteractions = list)),
           _buildListSection(
-              theme,
-              'Strict contraindications',
-              _strictContraindications,
-              (list) => setState(() => _strictContraindications = list)),
+            theme,
+            'Known side effects',
+            _knownSideEffects,
+            (list) => setState(() => _knownSideEffects = list),
+            borderColor: AppTheme.warningAmber,
+          ),
+          _buildListSection(
+            theme,
+            'Drug interactions',
+            _drugInteractions,
+            (list) => setState(() => _drugInteractions = list),
+            borderColor: Colors.orange,
+          ),
+          _buildListSection(
+            theme,
+            'Strict contraindications',
+            _strictContraindications,
+            (list) => setState(() => _strictContraindications = list),
+            borderColor: AppTheme.errorColor,
+          ),
         ],
       ),
     );
   }
 
   Widget _buildListSection(ThemeData theme, String title, List<String> items,
-      void Function(List<String>) onChanged) {
+      void Function(List<String>) onChanged,
+      {Color? borderColor}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: Column(
@@ -802,6 +928,16 @@ class _AdminPlantCatalogEditorScreenState
         children: [
           Row(
             children: [
+              if (borderColor != null)
+                Container(
+                  width: 4,
+                  height: 18,
+                  margin: const EdgeInsets.only(right: 8),
+                  decoration: BoxDecoration(
+                    color: borderColor,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
               Text(title,
                   style: theme.textTheme.titleSmall
                       ?.copyWith(fontWeight: FontWeight.bold)),
@@ -825,14 +961,20 @@ class _AdminPlantCatalogEditorScreenState
                 children: [
                   Expanded(
                     child: TextField(
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         isDense: true,
-                        border: OutlineInputBorder(),
+                        border: const OutlineInputBorder(),
                         hintText: 'Item',
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(
+                              color: borderColor ??
+                                  AppTheme.botanicalPrimary,
+                              width: 2),
+                        ),
                       ),
                       controller: TextEditingController(text: items[i])
-                        ..selection =
-                            TextSelection.collapsed(offset: (items[i]).length),
+                        ..selection = TextSelection.collapsed(
+                            offset: (items[i]).length),
                       maxLines: 1,
                       onChanged: (v) {
                         final list = List<String>.from(items);
@@ -858,18 +1000,21 @@ class _AdminPlantCatalogEditorScreenState
   }
 }
 
-/// Dialog to add or edit a [MedicinalUse].
-class _MedicinalUseEditDialog extends StatefulWidget {
-  const _MedicinalUseEditDialog({this.initial});
+// ═══════════════════════════════════════════════════════════════════════════════
+// Full-screen Medicinal Use Editor
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _EditMedicinalUseScreen extends StatefulWidget {
+  const _EditMedicinalUseScreen({this.initial});
 
   final MedicinalUse? initial;
 
   @override
-  State<_MedicinalUseEditDialog> createState() =>
-      _MedicinalUseEditDialogState();
+  State<_EditMedicinalUseScreen> createState() =>
+      _EditMedicinalUseScreenState();
 }
 
-class _MedicinalUseEditDialogState extends State<_MedicinalUseEditDialog> {
+class _EditMedicinalUseScreenState extends State<_EditMedicinalUseScreen> {
   late TextEditingController _conditionController;
   late TextEditingController _effectivenessController;
   late TextEditingController _descriptionController;
@@ -884,7 +1029,8 @@ class _MedicinalUseEditDialogState extends State<_MedicinalUseEditDialog> {
     _conditionController = TextEditingController(text: u?.condition ?? '');
     _effectivenessController =
         TextEditingController(text: u?.effectiveness ?? '');
-    _descriptionController = TextEditingController(text: u?.description ?? '');
+    _descriptionController =
+        TextEditingController(text: u?.description ?? '');
     _dosageController = TextEditingController(text: u?.dosage ?? '');
     _durationController = TextEditingController(text: u?.duration ?? '');
     _activeCompounds = u != null ? List.from(u.activeCompounds) : [];
@@ -900,7 +1046,7 @@ class _MedicinalUseEditDialogState extends State<_MedicinalUseEditDialog> {
     super.dispose();
   }
 
-  void _save() {
+  void _done() {
     final use = MedicinalUse(
       condition: _conditionController.text.trim(),
       effectiveness: _effectivenessController.text.trim(),
@@ -916,60 +1062,75 @@ class _MedicinalUseEditDialogState extends State<_MedicinalUseEditDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return AlertDialog(
-      title: Text(
-          widget.initial == null ? 'Add medicinal use' : 'Edit medicinal use'),
-      content: SingleChildScrollView(
-        child: SizedBox(
-          width: 400,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextField(
-                controller: _conditionController,
-                decoration:
-                    const InputDecoration(labelText: 'Condition (title)'),
-                autofocus: true,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _effectivenessController,
-                decoration: const InputDecoration(
-                    labelText: 'Effectiveness (e.g. High – DOH approved)'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(labelText: 'Description'),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 12),
-              _buildStringListSection(
-                  theme,
-                  'Active compounds',
-                  _activeCompounds,
-                  (list) => setState(() => _activeCompounds = list)),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _dosageController,
-                decoration: const InputDecoration(labelText: 'Dosage'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _durationController,
-                decoration: const InputDecoration(labelText: 'Duration'),
-              ),
-            ],
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.initial == null
+            ? 'Add Medicinal Use'
+            : 'Edit Medicinal Use'),
+      ),
+      bottomNavigationBar: Padding(
+        padding: EdgeInsets.fromLTRB(
+            16,
+            8,
+            16,
+            MediaQuery.of(context).viewInsets.bottom +
+                MediaQuery.of(context).padding.bottom +
+                8),
+        child: FilledButton(
+          onPressed: _done,
+          style: FilledButton.styleFrom(
+            backgroundColor: AppTheme.botanicalPrimary,
+            minimumSize: const Size(double.infinity, 48),
           ),
+          child: const Text('Done',
+              style:
+                  TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
         ),
       ),
-      actions: [
-        TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel')),
-        FilledButton(onPressed: _save, child: const Text('Save')),
-      ],
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: _conditionController,
+              decoration:
+                  const InputDecoration(labelText: 'Condition (title)'),
+              autofocus: true,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _effectivenessController,
+              decoration: const InputDecoration(
+                  labelText:
+                      'Effectiveness (e.g. High – DOH approved)'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _descriptionController,
+              decoration:
+                  const InputDecoration(labelText: 'Description'),
+              maxLines: 3,
+            ),
+            const SizedBox(height: 12),
+            _buildStringListSection(
+                theme,
+                'Active compounds',
+                _activeCompounds,
+                (list) => setState(() => _activeCompounds = list)),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _dosageController,
+              decoration: const InputDecoration(labelText: 'Dosage'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _durationController,
+              decoration: const InputDecoration(labelText: 'Duration'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -985,7 +1146,8 @@ class _MedicinalUseEditDialogState extends State<_MedicinalUseEditDialog> {
                     ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(width: 8),
             TextButton.icon(
-              onPressed: () => onChanged(List<String>.from(items)..add('')),
+              onPressed: () =>
+                  onChanged(List<String>.from(items)..add('')),
               icon: const Icon(Icons.add, size: 18),
               label: const Text('Add'),
             ),
@@ -1002,8 +1164,8 @@ class _MedicinalUseEditDialogState extends State<_MedicinalUseEditDialog> {
                     decoration: const InputDecoration(
                         isDense: true, hintText: 'Compound'),
                     controller: TextEditingController(text: items[i])
-                      ..selection =
-                          TextSelection.collapsed(offset: items[i].length),
+                      ..selection = TextSelection.collapsed(
+                          offset: items[i].length),
                     onChanged: (v) {
                       final list = List<String>.from(items)..[i] = v;
                       onChanged(list);
@@ -1011,7 +1173,8 @@ class _MedicinalUseEditDialogState extends State<_MedicinalUseEditDialog> {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.remove_circle_outline, size: 20),
+                  icon:
+                      const Icon(Icons.remove_circle_outline, size: 20),
                   onPressed: () =>
                       onChanged(List<String>.from(items)..removeAt(i)),
                 ),
@@ -1024,20 +1187,24 @@ class _MedicinalUseEditDialogState extends State<_MedicinalUseEditDialog> {
   }
 }
 
-/// Dialog to add or edit a [PreparationMethod].
-class _PreparationMethodEditDialog extends StatefulWidget {
-  const _PreparationMethodEditDialog({this.initial, required this.plantId});
+// ═══════════════════════════════════════════════════════════════════════════════
+// Full-screen Preparation Method Editor
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _EditPreparationMethodScreen extends StatefulWidget {
+  const _EditPreparationMethodScreen(
+      {this.initial, required this.plantId});
 
   final PreparationMethod? initial;
   final String plantId;
 
   @override
-  State<_PreparationMethodEditDialog> createState() =>
-      _PreparationMethodEditDialogState();
+  State<_EditPreparationMethodScreen> createState() =>
+      _EditPreparationMethodScreenState();
 }
 
-class _PreparationMethodEditDialogState
-    extends State<_PreparationMethodEditDialog> {
+class _EditPreparationMethodScreenState
+    extends State<_EditPreparationMethodScreen> {
   late TextEditingController _idController;
   late TextEditingController _conditionController;
   late TextEditingController _titleController;
@@ -1056,14 +1223,18 @@ class _PreparationMethodEditDialogState
     final id = m?.id ??
         '${widget.plantId}-prep-${DateTime.now().millisecondsSinceEpoch}';
     _idController = TextEditingController(text: id);
-    _conditionController = TextEditingController(text: m?.condition ?? '');
+    _conditionController =
+        TextEditingController(text: m?.condition ?? '');
     _titleController = TextEditingController(text: m?.title ?? '');
-    _descriptionController = TextEditingController(text: m?.description ?? '');
+    _descriptionController =
+        TextEditingController(text: m?.description ?? '');
     _preparationTypeController =
         TextEditingController(text: m?.preparationType ?? '');
     _dosageController = TextEditingController(text: m?.dosage ?? '');
-    _frequencyController = TextEditingController(text: m?.frequency ?? '');
-    _durationController = TextEditingController(text: m?.duration ?? '');
+    _frequencyController =
+        TextEditingController(text: m?.frequency ?? '');
+    _durationController =
+        TextEditingController(text: m?.duration ?? '');
     _steps = m != null ? List.from(m.steps) : [];
     _warnings = m != null ? List.from(m.warnings) : [];
   }
@@ -1081,7 +1252,7 @@ class _PreparationMethodEditDialogState
     super.dispose();
   }
 
-  void _save() {
+  void _done() {
     final method = PreparationMethod(
       id: _idController.text.trim().isEmpty
           ? '${widget.plantId}-prep-${DateTime.now().millisecondsSinceEpoch}'
@@ -1104,78 +1275,95 @@ class _PreparationMethodEditDialogState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return AlertDialog(
-      title: Text(widget.initial == null
-          ? 'Add preparation method'
-          : 'Edit preparation method'),
-      content: SingleChildScrollView(
-        child: SizedBox(
-          width: 450,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextField(
-                controller: _idController,
-                decoration: const InputDecoration(
-                    labelText: 'ID (unique)',
-                    helperText: 'Auto-generated if empty'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _titleController,
-                decoration: const InputDecoration(labelText: 'Title'),
-                autofocus: true,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _conditionController,
-                decoration:
-                    const InputDecoration(labelText: 'Condition (e.g. Cough)'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(labelText: 'Description'),
-                maxLines: 2,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _preparationTypeController,
-                decoration: const InputDecoration(
-                    labelText: 'Preparation type (e.g. decoction, tea)'),
-              ),
-              const SizedBox(height: 12),
-              _buildStringListSection(theme, 'Steps', _steps,
-                  (list) => setState(() => _steps = list)),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _dosageController,
-                decoration: const InputDecoration(labelText: 'Dosage'),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _frequencyController,
-                decoration: const InputDecoration(labelText: 'Frequency'),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _durationController,
-                decoration: const InputDecoration(labelText: 'Duration'),
-              ),
-              const SizedBox(height: 12),
-              _buildStringListSection(theme, 'Warnings', _warnings,
-                  (list) => setState(() => _warnings = list)),
-            ],
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.initial == null
+            ? 'Add Preparation Method'
+            : 'Edit Preparation Method'),
+      ),
+      bottomNavigationBar: Padding(
+        padding: EdgeInsets.fromLTRB(
+            16,
+            8,
+            16,
+            MediaQuery.of(context).viewInsets.bottom +
+                MediaQuery.of(context).padding.bottom +
+                8),
+        child: FilledButton(
+          onPressed: _done,
+          style: FilledButton.styleFrom(
+            backgroundColor: AppTheme.botanicalPrimary,
+            minimumSize: const Size(double.infinity, 48),
           ),
+          child: const Text('Done',
+              style: TextStyle(
+                  fontSize: 16, fontWeight: FontWeight.w600)),
         ),
       ),
-      actions: [
-        TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel')),
-        FilledButton(onPressed: _save, child: const Text('Save')),
-      ],
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: _titleController,
+              decoration: const InputDecoration(labelText: 'Title'),
+              autofocus: true,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _conditionController,
+              decoration: const InputDecoration(
+                  labelText: 'Condition (e.g. Cough)'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _preparationTypeController,
+              decoration: const InputDecoration(
+                  labelText:
+                      'Preparation type (e.g. decoction, tea)'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _descriptionController,
+              decoration:
+                  const InputDecoration(labelText: 'Description'),
+              maxLines: 2,
+            ),
+            const SizedBox(height: 12),
+            _buildStringListSection(theme, 'Steps', _steps,
+                (list) => setState(() => _steps = list)),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _dosageController,
+              decoration: const InputDecoration(labelText: 'Dosage'),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _frequencyController,
+              decoration:
+                  const InputDecoration(labelText: 'Frequency'),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _durationController,
+              decoration: const InputDecoration(labelText: 'Duration'),
+            ),
+            const SizedBox(height: 12),
+            _buildStringListSection(theme, 'Warnings', _warnings,
+                (list) => setState(() => _warnings = list)),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _idController,
+              decoration: InputDecoration(
+                  labelText: 'ID (unique)',
+                  helperText: 'Auto-generated if empty',
+                  helperStyle: TextStyle(
+                      color: theme.colorScheme.onSurfaceVariant)),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1191,7 +1379,8 @@ class _PreparationMethodEditDialogState
                     ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(width: 8),
             TextButton.icon(
-              onPressed: () => onChanged(List<String>.from(items)..add('')),
+              onPressed: () =>
+                  onChanged(List<String>.from(items)..add('')),
               icon: const Icon(Icons.add, size: 18),
               label: const Text('Add'),
             ),
@@ -1208,11 +1397,12 @@ class _PreparationMethodEditDialogState
                   child: TextField(
                     decoration: InputDecoration(
                         isDense: true,
-                        hintText:
-                            title == 'Steps' ? 'Step instruction' : 'Item'),
+                        hintText: title == 'Steps'
+                            ? 'Step instruction'
+                            : 'Item'),
                     controller: TextEditingController(text: items[i])
-                      ..selection =
-                          TextSelection.collapsed(offset: items[i].length),
+                      ..selection = TextSelection.collapsed(
+                          offset: items[i].length),
                     maxLines: title == 'Steps' ? 2 : 1,
                     onChanged: (v) {
                       final list = List<String>.from(items)..[i] = v;
@@ -1221,9 +1411,10 @@ class _PreparationMethodEditDialogState
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.remove_circle_outline, size: 20),
-                  onPressed: () =>
-                      onChanged(List<String>.from(items)..removeAt(i)),
+                  icon: const Icon(Icons.remove_circle_outline,
+                      size: 20),
+                  onPressed: () => onChanged(
+                      List<String>.from(items)..removeAt(i)),
                 ),
               ],
             ),
@@ -1233,3 +1424,4 @@ class _PreparationMethodEditDialogState
     );
   }
 }
+

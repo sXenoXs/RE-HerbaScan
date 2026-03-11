@@ -1,11 +1,17 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/models/plant.dart';
 import 'package:herbascan/core/models/plant_anatomy_part.dart';
 import 'package:herbascan/core/services/habitat_service.dart';
+import 'package:herbascan/core/models/plant_habitat.dart';
 import 'package:herbascan/core/providers/plant_provider.dart';
+import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/core/widgets/anatomy_interactive_view.dart';
 import 'package:herbascan/core/widgets/contraindication_engine_widget.dart';
 import 'package:herbascan/features/scan/habitat_map_screen.dart';
@@ -13,6 +19,7 @@ import 'package:herbascan/features/scan/preparation_instructions_screen.dart';
 
 class PlantDetailScreen extends StatefulWidget {
   final Plant plant;
+
   /// If set, the tab at this index (0–3) is selected when the screen opens.
   final int? initialTabIndex;
 
@@ -29,6 +36,14 @@ class PlantDetailScreen extends StatefulWidget {
 class _PlantDetailScreenState extends State<PlantDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final ScrollController _scrollController = ScrollController();
+
+  // Collapsed AppBar height (kToolbarHeight = 56)
+  static const double _expandedHeight = 320;
+  static const double _collapsedHeight = kToolbarHeight;
+
+  /// 0.0 = fully expanded, 1.0 = fully collapsed
+  double _collapseRatio = 0.0;
 
   @override
   void initState() {
@@ -39,79 +54,65 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
       vsync: this,
       initialIndex: (index != null && index >= 0 && index < 4) ? index : 0,
     );
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    final offset = _scrollController.offset;
+    final maxScroll = _expandedHeight - _collapsedHeight;
+    final ratio = (offset / maxScroll).clamp(0.0, 1.0);
+    if ((ratio - _collapseRatio).abs() > 0.01) {
+      setState(() => _collapseRatio = ratio);
+    }
   }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     _tabController.dispose();
     super.dispose();
   }
 
-  Widget _buildPlantHeaderImage(ThemeData theme) {
+  // ---------------------------------------------------------------------------
+  // Header image helper
+  // ---------------------------------------------------------------------------
+
+  Widget _buildPlantHeaderImage() {
     final plant = widget.plant;
     if (plant.imageUrl != null && plant.imageUrl!.trim().isNotEmpty) {
       return CachedNetworkImage(
         imageUrl: plant.imageUrl!,
         fit: BoxFit.cover,
-        placeholder: (_, __) => Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                theme.colorScheme.primary,
-                theme.colorScheme.secondary,
-              ],
-            ),
-          ),
-        ),
-        errorWidget: (_, __, ___) => Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                theme.colorScheme.primary,
-                theme.colorScheme.secondary,
-              ],
-            ),
-          ),
-        ),
+        placeholder: (_, __) => _fallbackGradient(),
+        errorWidget: (_, __, ___) => _fallbackGradient(),
       );
     }
     if (plant.imagePath.isNotEmpty) {
       return Image.asset(
         plant.imagePath,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  theme.colorScheme.primary,
-                  theme.colorScheme.secondary,
-                ],
-              ),
-            ),
-          );
-        },
+        errorBuilder: (_, __, ___) => _fallbackGradient(),
       );
     }
+    return _fallbackGradient();
+  }
+
+  Widget _fallbackGradient() {
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            theme.colorScheme.primary,
-            theme.colorScheme.secondary,
-          ],
+          colors: [AppTheme.botanicalPrimary, AppTheme.botanicalPrimaryL],
         ),
       ),
     );
   }
+
+  // ---------------------------------------------------------------------------
+  // Build
+  // ---------------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -119,141 +120,199 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
 
     return Scaffold(
       body: NestedScrollView(
-        headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+        controller: _scrollController,
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
-            // App Bar with Plant Image
+            // ── Immersive SliverAppBar (320 px expanded) ──────────────────
             SliverAppBar(
-              expandedHeight: 200,
+              expandedHeight: _expandedHeight,
               pinned: true,
-              centerTitle: true,
               forceElevated: innerBoxIsScrolled,
-              flexibleSpace: FlexibleSpaceBar(
-                centerTitle: true,
-                title: Text(
+              backgroundColor: theme.colorScheme.surface,
+              // Title fades in only as the image collapses away
+              title: Opacity(
+                opacity: _collapseRatio,
+                child: Text(
                   widget.plant.commonName,
                   style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    shadows: [
-                      Shadow(
-                        offset: Offset(0, 1),
-                        blurRadius: 3.0,
-                        color: Colors.black45,
-                      ),
-                    ],
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 18,
                   ),
                 ),
+              ),
+              flexibleSpace: FlexibleSpaceBar(
+                collapseMode: CollapseMode.parallax,
                 background: Stack(
                   fit: StackFit.expand,
                   children: [
-                    // Plant image: Supabase URL first, then asset
-                    _buildPlantHeaderImage(theme),
-                    // Overlay for better text readability
-                    Container(
+                    // Plant image fills full expanded area
+                    _buildPlantHeaderImage(),
+
+                    // Bottom gradient overlay for legibility
+                    const DecoratedBox(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.black.withOpacity(0.7),
-                          ],
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          stops: [0.0, 0.55],
+                          colors: [Colors.black54, Colors.transparent],
                         ),
                       ),
                     ),
+
+                    // Common name — bottom-left of expanded image
+                    Positioned(
+                      left: 16,
+                      right: widget.plant.isDOHApproved ? 120 : 16,
+                      bottom: 20,
+                      child: Text(
+                        widget.plant.commonName,
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 28,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          letterSpacing: -0.5,
+                          shadows: [
+                            Shadow(
+                              offset: Offset(0, 2),
+                              blurRadius: 6,
+                              color: Colors.black54,
+                            ),
+                          ],
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+
+                    // DOH badge — glassmorphic pill top-right
+                    if (widget.plant.isDOHApproved)
+                      Positioned(
+                        bottom: 16,
+                        right: 16,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(100),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.25),
+                                borderRadius: BorderRadius.circular(100),
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.4),
+                                  width: 1,
+                                ),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.verified_rounded,
+                                    color: Colors.white,
+                                    size: 14,
+                                  ),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'DOH Approved',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 12,
+                                      letterSpacing: 0.3,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
             ),
 
-            // Scientific Name, English Name, and DOH Badge
+            // ── Quick Facts Card ──────────────────────────────────────────
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    Text(
-                      widget.plant.scientificName,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontStyle: FontStyle.italic,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      widget.plant.englishName,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 12),
-                    if (widget.plant.isDOHApproved)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: Card(
+                  elevation: 0,
+                  color: theme.cardTheme.color,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.06),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
                         ),
-                        decoration: BoxDecoration(
-                          color: const Color(
-                              0xFF48BB78), // Vibrant green for better visibility
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF48BB78).withOpacity(0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
+                      ],
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.plant.scientificName,
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              fontStyle: FontStyle.italic,
+                              color: theme.colorScheme.onSurface,
+                              fontWeight: FontWeight.w500,
                             ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.verified,
-                              size: 20,
-                              color: Colors.white,
-                            ),
-                            const SizedBox(width: 6),
-                            const Text(
-                              'DOH Approved',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                                letterSpacing: 0.5,
+                          ),
+                          if (widget.plant.englishName.isNotEmpty &&
+                              widget.plant.englishName !=
+                                  widget.plant.commonName) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              widget.plant.englishName,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: AppTheme.textSecondary,
                               ),
                             ),
                           ],
-                        ),
+                        ],
                       ),
-                  ],
+                    ),
+                  ),
                 ),
               ),
             ),
 
-            // Tab Bar - Pinned at the top when scrolling
+            // ── Pinned Tab Bar ───────────────────────────────────────────
             SliverPersistentHeader(
               pinned: true,
               delegate: _SliverTabBarDelegate(
                 TabBar(
                   controller: _tabController,
-                  isScrollable: false, // Fixed tabs, evenly distributed
+                  isScrollable: false,
                   labelStyle: const TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                   ),
                   unselectedLabelStyle: const TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: 11,
-                    fontWeight: FontWeight.normal,
+                    fontWeight: FontWeight.w400,
                   ),
                   tabs: const [
-                    Tab(icon: Icon(Icons.science, size: 22), text: 'Taxonomy'),
-                    Tab(icon: Icon(Icons.nature, size: 22), text: 'Ecology'),
-                    Tab(
-                        icon: Icon(Icons.medical_services, size: 22),
-                        text: 'Medicinal'),
-                    Tab(icon: Icon(Icons.warning, size: 22), text: 'Safety'),
+                    Tab(icon: Icon(Icons.science_rounded, size: 20), text: 'Taxonomy'),
+                    Tab(icon: Icon(Icons.nature_rounded, size: 20), text: 'Ecology'),
+                    Tab(icon: Icon(Icons.medical_services_rounded, size: 20), text: 'Medicinal'),
+                    Tab(icon: Icon(Icons.shield_rounded, size: 20), text: 'Safety'),
                   ],
                 ),
                 theme.colorScheme.surface,
@@ -261,10 +320,11 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
             ),
           ];
         },
-        // Tab Views - Body content that scrolls with the header
+
+        // Tab content
         body: TabBarView(
           controller: _tabController,
-          physics: const ClampingScrollPhysics(), // Enable swipe navigation
+          physics: const ClampingScrollPhysics(),
           children: [
             _buildTaxonomyTab(theme),
             _buildEcologyTab(theme),
@@ -276,38 +336,99 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Taxonomy Tab — 2x2 micro-card grid + clean morphology text
+  // ---------------------------------------------------------------------------
+
   Widget _buildTaxonomyTab(ThemeData theme) {
-    return Builder(
-      builder: (context) {
-        return CustomScrollView(
-          // Use the inner scroll controller from NestedScrollView
-          slivers: [
-            SliverPadding(
-              padding: const EdgeInsets.all(16),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  _buildSectionTitle('Scientific Classification', theme),
-                  const SizedBox(height: 12),
-                  _buildTaxonomyCard(theme),
-                  const SizedBox(height: 20),
-                  _buildSectionTitle('Morphology', theme),
-                  const SizedBox(height: 12),
-                  _buildInfoCard(
-                    theme,
-                    widget.plant.morphology,
-                    Icons.eco,
-                  ),
-                  const SizedBox(
-                      height:
-                          20), // Extra padding at bottom for better scrolling
-                ]),
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.all(16),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([
+              _sectionHeader('Scientific Classification', theme),
+              const SizedBox(height: 12),
+              _buildTaxonomyGrid(theme),
+              const SizedBox(height: 24),
+              _sectionHeader('Morphology', theme),
+              const SizedBox(height: 8),
+              Text(
+                widget.plant.morphology,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  height: 1.65,
+                  color: theme.colorScheme.onSurface,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 24),
+            ]),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTaxonomyGrid(ThemeData theme) {
+    final items = [
+      _TaxonomyItem('Kingdom', 'Plantae', Icons.hub_rounded),
+      _TaxonomyItem('Family', widget.plant.family, Icons.account_tree_rounded),
+      _TaxonomyItem('Genus', widget.plant.genus, Icons.eco_rounded),
+      _TaxonomyItem('Species', widget.plant.species, Icons.grass_rounded),
+    ];
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: items.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 10,
+        crossAxisSpacing: 10,
+        mainAxisExtent: 100,
+      ),
+      itemBuilder: (context, index) {
+        final item = items[index];
+        return Container(
+          decoration: BoxDecoration(
+            color: AppTheme.botanicalPrimary.withOpacity(0.07),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(item.icon, color: AppTheme.botanicalPrimary, size: 18),
+              const SizedBox(height: 6),
+              Text(
+                item.label,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: AppTheme.textSecondary,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.4,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                item.value.isEmpty ? '—' : item.value,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  fontStyle: item.label == 'Genus' || item.label == 'Species'
+                      ? FontStyle.italic
+                      : FontStyle.normal,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         );
       },
     );
   }
+
+  // ---------------------------------------------------------------------------
+  // Ecology Tab — static mini-map preview + climate/habitat text
+  // ---------------------------------------------------------------------------
 
   Widget _buildEcologyTab(ThemeData theme) {
     final l10n = AppLocalizations.of(context);
@@ -317,38 +438,131 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
           padding: const EdgeInsets.all(16),
           sliver: SliverList(
             delegate: SliverChildListDelegate([
-              _buildSectionTitle('Ecology', theme),
-              const SizedBox(height: 12),
-              _buildInfoCard(
-                theme,
-                widget.plant.ecology,
-                Icons.public,
-              ),
-              const SizedBox(height: 20),
-              _buildSectionTitle('Habitat', theme),
-              const SizedBox(height: 12),
-              _buildInfoCard(
-                theme,
-                widget.plant.habitat,
-                Icons.landscape,
-              ),
-              const SizedBox(height: 20),
+              // Habitat mini-map (non-interactive)
               FutureBuilder<bool>(
                 future: HabitatService().hasHabitatData(widget.plant.id),
                 builder: (context, snapshot) {
                   if (snapshot.data != true) return const SizedBox.shrink();
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 20),
-                    child: _buildHabitatMapCard(theme, l10n),
+                    child: _buildMiniMap(theme, l10n),
                   );
                 },
               ),
+
+              _sectionHeader('Ecology', theme),
+              const SizedBox(height: 8),
+              Text(
+                widget.plant.ecology,
+                style: theme.textTheme.bodyMedium?.copyWith(height: 1.65),
+              ),
+              const SizedBox(height: 20),
+
+              _sectionHeader('Habitat', theme),
+              const SizedBox(height: 8),
+              Text(
+                widget.plant.habitat,
+                style: theme.textTheme.bodyMedium?.copyWith(height: 1.65),
+              ),
+              const SizedBox(height: 24),
             ]),
           ),
         ),
       ],
     );
   }
+
+  Widget _buildMiniMap(ThemeData theme, AppLocalizations l10n) {
+    return FutureBuilder<PlantHabitat?>(
+      future: HabitatService().getHabitatByPlantId(widget.plant.id),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data == null) {
+          return const SizedBox.shrink();
+        }
+        final habitat = snapshot.data!;
+        final List<LatLng> markers = habitat.knownCoordinates
+            .map((c) => LatLng(c.lat, c.lng))
+            .toList();
+
+        return Column(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: SizedBox(
+                height: 180,
+                child: AbsorbPointer(
+                  child: FlutterMap(
+                    options: MapOptions(
+                      initialCenter: markers.isNotEmpty
+                          ? markers.first
+                          : const LatLng(12.8797, 121.7740),
+                      initialZoom: 6,
+                    ),
+                    children: [
+                      TileLayer(
+                        urlTemplate:
+                            'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        userAgentPackageName: 'com.example.herbascan',
+                      ),
+                      MarkerLayer(
+                        markers: markers
+                            .map(
+                              (latlng) => Marker(
+                                point: latlng,
+                                width: 28,
+                                height: 28,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.botanicalPrimary,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.3),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(
+                                    Icons.eco_rounded,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => HabitatMapScreen(plant: widget.plant),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.open_in_full_rounded, size: 18),
+                label: Text(l10n.viewHabitatMap),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        );
+      },
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Medicinal Tab — static Cards (no accordions), Preparation cards
+  // ---------------------------------------------------------------------------
 
   Widget _buildMedicinalTab(ThemeData theme) {
     final plantProvider = context.read<PlantProvider>();
@@ -358,42 +572,32 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
           padding: const EdgeInsets.all(16),
           sliver: SliverList(
             delegate: SliverChildListDelegate([
-              // Hero: 2D Interactive Plant Silhouette (when anatomy data exists)
+              // Interactive anatomy silhouette (DOH plants)
               FutureBuilder<List<PlantAnatomyPart>>(
                 future: plantProvider.getPlantAnatomy(widget.plant.id),
                 builder: (context, snapshot) {
-                  if (!snapshot.hasData || (snapshot.data!).isEmpty) {
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
                     return const SizedBox.shrink();
                   }
                   final parts = snapshot.data!;
                   final l10n = AppLocalizations.of(context);
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: 20),
+                    padding: const EdgeInsets.only(bottom: 24),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          l10n.explorePlantParts,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
+                        _sectionHeader(l10n.explorePlantParts, theme),
                         const SizedBox(height: 8),
-                        Container(
-                          height: 400,
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerLow,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          clipBehavior: Clip.antiAlias,
-                          child: AnatomyInteractiveView(
-                            parts: parts,
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
                             height: 400,
-                            onPartTapped: (part) => _showAnatomyPartBottomSheet(
-                              context,
-                              part,
-                              theme,
+                            color: theme.colorScheme.surfaceContainerLow,
+                            child: AnatomyInteractiveView(
+                              parts: parts,
+                              height: 400,
+                              onPartTapped: (part) =>
+                                  _showAnatomyPartBottomSheet(context, part, theme),
                             ),
                           ),
                         ),
@@ -402,22 +606,296 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
                   );
                 },
               ),
-              _buildSectionTitle('Medicinal Uses', theme),
-              const SizedBox(height: 12),
-              ...widget.plant.medicinalUses
-                  .map((use) => _buildMedicinalUseCard(theme, use)),
-              const SizedBox(height: 20),
-              _buildSectionTitle('Preparation Methods', theme),
-              const SizedBox(height: 12),
-              ...widget.plant.preparationMethods
-                  .map((method) => _buildPreparationMethodCard(theme, method)),
-              const SizedBox(height: 20),
+
+              // Medicinal Uses — static cards, no accordion
+              if (widget.plant.medicinalUses.isNotEmpty) ...[
+                _sectionHeader('Medicinal Uses', theme),
+                const SizedBox(height: 12),
+                ...widget.plant.medicinalUses
+                    .map((use) => _buildMedicinalUseCard(theme, use)),
+                const SizedBox(height: 20),
+              ],
+
+              // Preparation Methods
+              if (widget.plant.preparationMethods.isNotEmpty) ...[
+                _sectionHeader('Preparation Methods', theme),
+                const SizedBox(height: 12),
+                ...widget.plant.preparationMethods
+                    .map((method) => _buildPreparationMethodCard(theme, method)),
+              ],
+              const SizedBox(height: 24),
             ]),
           ),
         ),
       ],
     );
   }
+
+  Widget _buildMedicinalUseCard(ThemeData theme, MedicinalUse use) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color ?? Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Condition chip + effectiveness
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppTheme.safeBgLight,
+                  borderRadius: BorderRadius.circular(100),
+                ),
+                child: Text(
+                  use.condition,
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.botanicalPrimary,
+                  ),
+                ),
+              ),
+              Text(
+                use.effectiveness,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: AppTheme.textSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            use.description,
+            style: theme.textTheme.bodyMedium?.copyWith(height: 1.55),
+          ),
+          if (use.activeCompounds.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: use.activeCompounds
+                  .map(
+                    (c) => Chip(
+                      label: Text(c),
+                      backgroundColor:
+                          AppTheme.botanicalPrimary.withOpacity(0.08),
+                      labelStyle: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12,
+                        color: AppTheme.botanicalPrimaryD,
+                      ),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
+          if (use.dosage.isNotEmpty || use.duration.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            const Divider(height: 1),
+            const SizedBox(height: 10),
+            if (use.dosage.isNotEmpty)
+              _infoRow(Icons.medication_rounded, 'Dosage', use.dosage, theme),
+            if (use.duration.isNotEmpty)
+              _infoRow(Icons.schedule_rounded, 'Duration', use.duration, theme),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _infoRow(
+      IconData icon, String label, String value, ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 16, color: AppTheme.textSecondary),
+          const SizedBox(width: 6),
+          Text(
+            '$label: ',
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPreparationMethodCard(
+      ThemeData theme, PreparationMethod method) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color ?? Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppTheme.botanicalPrimary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  child: Text(
+                    method.preparationType.toUpperCase(),
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.botanicalPrimaryD,
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: Text(
+              method.title,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+            child: Text(
+              'For ${method.condition}',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: AppTheme.textSecondary,
+              ),
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PreparationInstructionsScreen(
+                      plant: widget.plant,
+                      preparationMethod: method,
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+              label: const Text('Start Guide'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Safety Tab — disclaimer top, then ContraindicationEngineWidget
+  // ---------------------------------------------------------------------------
+
+  Widget _buildSafetyTab(ThemeData theme) {
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: _buildMedicalDisclaimerBanner(theme),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.all(16),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([
+              ContraindicationEngineWidget(plant: widget.plant),
+              const SizedBox(height: 24),
+            ]),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMedicalDisclaimerBanner(ThemeData theme) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.warningBgLight,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppTheme.warningAmber.withOpacity(0.35),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.medical_services_rounded,
+              color: AppTheme.warningAmber, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Always consult a licensed physician before using herbal remedies. '
+              'Information here is for educational purposes only.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: const Color(0xFF92400E),
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Anatomy bottom sheet
+  // ---------------------------------------------------------------------------
 
   void _showAnatomyPartBottomSheet(
     BuildContext context,
@@ -437,9 +915,8 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
             return Container(
               decoration: BoxDecoration(
                 color: theme.colorScheme.surface,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(24),
-                  topRight: Radius.circular(24),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(28),
                 ),
               ),
               child: Column(
@@ -449,14 +926,16 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4),
+                      color: theme.colorScheme.onSurfaceVariant
+                          .withOpacity(0.4),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                   Expanded(
                     child: ListView(
                       controller: scrollController,
-                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                      padding:
+                          const EdgeInsets.fromLTRB(20, 8, 20, 24),
                       children: [
                         Text(
                           part.title.isNotEmpty ? part.title : part.partName,
@@ -470,14 +949,17 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
                             spacing: 8,
                             runSpacing: 6,
                             children: part.conditions
-                                .map((c) => Chip(
-                                      label: Text(c),
-                                      backgroundColor: theme.colorScheme.primaryContainer,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
-                                    ))
+                                .map(
+                                  (c) => Chip(
+                                    label: Text(c),
+                                    backgroundColor:
+                                        theme.colorScheme.primaryContainer,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                  ),
+                                )
                                 .toList(),
                           ),
                         ],
@@ -500,340 +982,36 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
     );
   }
 
-  Widget _buildSafetyTab(ThemeData theme) {
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.all(16),
-          sliver: SliverList(
-            delegate: SliverChildListDelegate([
-              _buildSectionTitle('⚠️ Safety & Contraindications', theme),
-              const SizedBox(height: 12),
-              ContraindicationEngineWidget(plant: widget.plant),
-              const SizedBox(height: 20),
-            ]),
-          ),
-        ),
-      ],
-    );
-  }
+  // ---------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------
 
-  Widget _buildSectionTitle(String title, ThemeData theme) {
+  Widget _sectionHeader(String title, ThemeData theme) {
     return Text(
       title,
       style: theme.textTheme.titleMedium?.copyWith(
-        fontWeight: FontWeight.bold,
+        fontWeight: FontWeight.w700,
         color: theme.colorScheme.primary,
-      ),
-    );
-  }
-
-  Widget _buildTaxonomyCard(ThemeData theme) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _buildTaxonomyRow('Kingdom', 'Plantae', theme),
-            const Divider(),
-            _buildTaxonomyRow('Family', widget.plant.family, theme),
-            const Divider(),
-            _buildTaxonomyRow('Genus', widget.plant.genus, theme),
-            const Divider(),
-            _buildTaxonomyRow('Species', widget.plant.species, theme),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTaxonomyRow(String label, String value, ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              label,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Text(
-              value,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoCard(ThemeData theme, String content, IconData icon) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: theme.colorScheme.primary, size: 24),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                content,
-                style: theme.textTheme.bodyMedium?.copyWith(height: 1.6),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHabitatMapCard(
-      ThemeData theme, AppLocalizations l10n) {
-    return Card(
-      child: InkWell(
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (context) => HabitatMapScreen(plant: widget.plant),
-            ),
-          );
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.map_outlined,
-                color: theme.colorScheme.primary,
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      l10n.viewHabitatMap,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      l10n.whereItGrows,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.chevron_right,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMedicinalUseCard(ThemeData theme, MedicinalUse use) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      child: ExpansionTile(
-        leading: Icon(
-          Icons.local_hospital,
-          color: const Color(0xFF48BB78), // Vibrant green for better visibility
-          size: 28,
-        ),
-        title: Text(
-          use.condition,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.onSurface,
-            fontSize: 16,
-          ),
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: Text(
-            use.effectiveness,
-            style: TextStyle(
-              color:
-                  const Color(0xFF38A169), // Darker green for better contrast
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  use.description,
-                  style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
-                ),
-                const SizedBox(height: 12),
-                _buildInfoItem(
-                    'Active Compounds', use.activeCompounds.join(', '), theme),
-                _buildInfoItem('Dosage', use.dosage, theme),
-                _buildInfoItem('Duration', use.duration, theme),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPreparationMethodCard(
-      ThemeData theme, PreparationMethod method) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => PreparationInstructionsScreen(
-                plant: widget.plant,
-                preparationMethod: method,
-              ),
-            ),
-          );
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF48BB78), // Vibrant green background
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.medical_information,
-                  color: Colors.white, // White icon for better contrast
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      method.title,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
-                        fontSize: 15,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'For ${method.condition}',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.7),
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF38A169)
-                            .withOpacity(0.15), // Light green background
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: const Color(0xFF38A169).withOpacity(0.3),
-                          width: 1,
-                        ),
-                      ),
-                      child: Text(
-                        method.preparationType.toUpperCase(),
-                        style: TextStyle(
-                          color: const Color(0xFF38A169), // Dark green text
-                          fontWeight: FontWeight.bold,
-                          fontSize: 11,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoItem(String label, String value, ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 130,
-            child: Text(
-              '$label:',
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface,
-                fontSize: 13,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.8),
-                fontSize: 13,
-                height: 1.4,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
 }
 
-/// Custom delegate for the TabBar to be used as a pinned SliverPersistentHeader
+// ---------------------------------------------------------------------------
+// Data class for taxonomy grid
+// ---------------------------------------------------------------------------
+
+class _TaxonomyItem {
+  final String label;
+  final String value;
+  final IconData icon;
+  const _TaxonomyItem(this.label, this.value, this.icon);
+}
+
+// ---------------------------------------------------------------------------
+// Sliver TabBar delegate
+// ---------------------------------------------------------------------------
+
 class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
   final TabBar tabBar;
   final Color backgroundColor;
@@ -855,8 +1033,8 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
         boxShadow: overlapsContent
             ? [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 4,
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),
               ]

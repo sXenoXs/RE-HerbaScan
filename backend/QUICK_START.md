@@ -1,8 +1,8 @@
 # HerbaScan Backend - Quick Start Guide
 
 **Last Updated**: March 2026  
-**Backend Version**: 0.9.0  
-**Flutter App Version**: v0.9.0
+**Backend Version**: 0.9.3  
+**Flutter App Version**: v0.9.3
 
 **Model Standardization**: MobileNetV2 Only (Phase 34) - HerbaScan custom model deprecated  
 **AI Explanation Standardization**: Phase 35 Complete - Structured format with 42 plants
@@ -13,9 +13,7 @@ Your backend is **100% ready** to deploy! All code is written and tested.
 
 ```
 ✅ Python backend code complete
-✅ Dual model architecture support (MobileNetV2_model.keras, herbascan_model.keras)
-✅ Docker configuration ready
-✅ Railway deployment config ready (Procfile added)
+✅ MobileNetV2 model only (HerbaScan model deprecated); Docker and Railway config ready
 ✅ API documentation complete
 ✅ Postman testing collection ready
 ```
@@ -40,6 +38,8 @@ Before deploying, make sure you have:
 
 ### **Step 1: Create GitHub Repo**
 
+**Option A: Separate backend repo**
+
 ```bash
 cd backend
 git init
@@ -52,6 +52,9 @@ git commit -m "Initial commit: HerbaScan Grad-CAM API"
 git remote add origin https://github.com/YOUR_USERNAME/herbascan-backend.git
 git push -u origin main
 ```
+
+**Option B: Monorepo (main HerbaScan repo)**  
+If using the main HerbaScan repo, you do not need a separate backend repo. In Railway, create a service linked to the same repo, then set **Root Directory** to `backend` so only files under `backend/` are used for build and deploy. See `backend/README.md` → "Deploying on Railway (monorepo)".
 
 ### **Step 2: Deploy to Railway**
 
@@ -182,15 +185,14 @@ When you have a new trained model:
      assets:
        - assets/models/
        # This includes all files in assets/models/:
-       # - MobileNetV2_model.tflite
-       # - herbascan_model.tflite
-       # - class_indices.json
+       # - mobilenetv2_multi_output.tflite
        # - mobilenetv2_cam_weights.json
+       # - class_indices.json
    ```
 
 6. **Redeploy to Railway:**
    ```bash
-   git add backend/models/MobileNetV2_model.keras backend/models/herbascan_model.keras
+   git add backend/models/MobileNetV2_model.keras backend/models/labels.json
    git commit -m "Update models to v2.0"
    git push
    # Railway will automatically redeploy
@@ -268,7 +270,7 @@ Once deployed, you have:
 - ✅ Base64 encoded heatmap images
 - ✅ Top-3 predictions with confidence scores
 - ✅ Ready for Flutter integration
-- ✅ Integrated with Hybrid XAI Explanation System (v0.9.0) - supports 42 plants with complete structured offline explanations (taxonomy, ecology, medicinal_preparation, safety_consideration)
+- ✅ Integrated with Hybrid XAI Explanation System (v0.9.3) - supports 42 plants with complete structured offline explanations (taxonomy, ecology, medicinal_preparation, safety_consideration)
 
 ### Next Steps
 

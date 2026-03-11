@@ -1,6 +1,7 @@
 # HerbaScan – System Architecture & Product Requirements Document
 
-> **Version:** v0.9.0 · **Date:** March 4, 2026 · **Status:** Production-Ready (Thesis Phase)
+> **Version:** v0.9.3 · **Date:** March 11, 2026 · **Status:** Production-Ready (Thesis Phase)
+> **Revised** to reflect CHANGELOG through March 2026.
 >
 > **Source of Truth Hierarchy:** This document is derived from `CHANGELOG.md` as the absolute authority.
 > Any README or setup guide that contradicts the Changelog (e.g., mentions of the Gemini live LLM or the
@@ -16,6 +17,7 @@
    - 2.2 Offline-First Sync Strategy
    - 2.3 Hybrid XAI Explanation System (No-LLM)
    - 2.4 Admin Portal
+   - 2.5 UI/UX Redesign (March 2026)
 3. [System Architecture](#3-system-architecture)
    - 3.1 Flutter Frontend Layer
    - 3.2 Python FastAPI Backend (Railway)
@@ -42,7 +44,7 @@ The application serves communities—particularly in rural areas with limited co
 - **Informing** users with structured, deterministic plant knowledge (taxonomy, ecology, medicinal preparation, safety profile).
 - **Empowering** researchers and administrators through a cloud-backed admin portal for dataset building and plant catalog management.
 
-### Current Production State (v0.9.0 – March 2026)
+### Current Production State (v0.9.3 – March 2026)
 
 | Dimension              | State                                                                              |
 |------------------------|------------------------------------------------------------------------------------|
@@ -75,6 +77,7 @@ The application serves communities—particularly in rural areas with limited co
 | Scan history (Device tab) | ✅ | SQLite `scan_history` |
 | Scan history (Cloud tab) | ✅ | Supabase `scans` table, swipe + pull-to-refresh |
 | Cloud save (Personal Herbarium) | ✅ | Opt-in when signed in, upsert on duplicate |
+| Heatmap in cloud sync | ✅ | Upload stores heatmap as `{scan_id}_gradcam.jpg` in Storage; metadata `gradcam_url`; download restores `gradCAMPath` |
 
 #### Plant Knowledge
 | Feature | Status | Notes |
@@ -110,6 +113,8 @@ The application serves communities—particularly in rural areas with limited co
 | Clear offline data | ✅ | Wipes device scan history |
 | Persistent user preferences | ✅ | `SharedPreferences` |
 | English / Filipino localization | ✅ | |
+| System Diagnostics | ✅ | Renamed from Offline Demo; 2×2 stat cards, connection banner |
+| De-jargonified AI labels | ✅ | e.g. "Show Prediction Confidence", "Show AI Reasoning Heatmap" in Settings |
 
 #### Admin Portal (all platforms)
 | Feature | Status | Notes |
@@ -122,6 +127,41 @@ The application serves communities—particularly in rural areas with limited co
 | User Management | ✅ | Deactivate, delete; card layout (no DataTable overflow) |
 | Factory Reset | ✅ | Re-seeds 42 plants, safety, habitat, conditions to Supabase |
 | 2D Silhouette admin seed | ✅ | `catalog_plant_anatomy` insert templates |
+| Instant local sync | ✅ | After catalog/condition/plant save, admin triggers local SQLite sync so browse/detail see changes without app restart |
+| Condition list plant count | ✅ | Admin "X plants" matches browse (same two-step logic: explicit mappings then keyword fallback) |
+
+---
+
+### 2.5 UI/UX Redesign (March 2026)
+
+The following reflects the CHANGELOG UI/UX redesign (design system and screen-by-screen updates).
+
+**Design system:** `AppTheme` in `lib/core/theme/app_theme.dart`; Indigo→Emerald pivot; botanical primary (`#16A34A`), dark surfaces (Forest Black, slate-green), semantic colors (safe/warning/error).
+
+**Navigation:** 4 tabs (Home, Browse, History, Settings) + center camera FAB; DOH Approved Plants accessed via Home carousel "See All" (no DOH tab in bottom nav).
+
+**Key screen changes:**
+
+| Screen | Changes |
+|--------|---------|
+| Splash | Solid background (`surfaceColor`/`darkScaffold`), linear progress bar, eco icon |
+| Onboarding | De-jargonified copy, single botanical palette, Skip top-right, FilledButton |
+| Home | BottomAppBar, center FAB, stats ribbon, Recent Scans horizontal scroll, DOH Spotlight carousel |
+| Browse | SearchBar (Material 3), SegmentedButton All/DOH, "Search by Medical Condition" banner |
+| Scan | Edge-to-edge camera, corner-bracket reticle, glassmorphic controls, tips bottom sheet |
+| Plant Result | Insights + AI Vision tabs; glassmorphic hero, Save/Share over image; no nested Heatmap/Summary sub-tabs |
+| Plant Detail | SliverAppBar hero, Quick Facts card, taxonomy 2×2 grid, medicinal cards, safety tab |
+| History | TabBar in SliverAppBar, device cards (thumbnail + confidence pill), select mode, swipe export/delete, batch Sync/Download, heatmap from cloud |
+| Settings | Grouped cards (Account, App Preferences, Scanning & AI, Support, Developer Options) |
+| DOH | Compact disclaimer banner, grid cards with glassmorphic DOH badge |
+| Help | Disclaimer banner, best-practices carousel, FAQ accordion |
+| Auth/OTP | Botanical header widget, pinput 6-box OTP, password requirements micro-pills |
+| Condition Search | Directory grid; tap opens ConditionResultsScreen |
+| Habitat Map | Edge-to-edge map, floating back/zoom, DraggableScrollableSheet info panel |
+| Preparation Guide / Focus Mode | Warnings at top, checklist, contextual timers, FAB for Focus Mode |
+| System Diagnostics | Renamed from Offline Demo; 2×2 stat cards, connection banner, Force Sync / Wipe Cache |
+
+**Save/export:** Save to device/cloud and export from **Plant Result screen** only (and History device card export to gallery). Batch sync/download in History select mode; Select all / Deselect all.
 
 ---
 
@@ -494,6 +534,7 @@ AS $$ SELECT EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ad
 | Path pattern | Operation | Allowed to |
 |-------------|-----------|-----------|
 | `{user_id}/*` | INSERT / SELECT / DELETE | Authenticated owner |
+| `{user_id}/{scan_id}_gradcam.jpg` | INSERT / SELECT / DELETE | Authenticated owner (heatmap image; URL in scan metadata `gradcam_url`) |
 | `plant-catalog/*` | INSERT / SELECT / DELETE | Admins |
 | `*` (SELECT) | SELECT | Admins |
 
@@ -755,8 +796,10 @@ flowchart TD
    OPT-IN (signed in, tap Save icon → "Save to cloud"):
      HerbariumService.uploadScan(scanResult, imageFile)
        a. Upload image to Supabase Storage herbarium-images/{user_id}/{scan_id}.jpg
-       b. Upsert row to scans table (onConflict: 'id' → update existing)
-       c. Set _savedToCloud = true, update History Cloud tab
+       b. If heatmap exists, upload to {user_id}/{scan_id}_gradcam.jpg; store URL in metadata['gradcam_url']
+       c. Upsert row to scans table (onConflict: 'id' → update existing)
+       d. Set _savedToCloud = true, update History Cloud tab
+   DOWNLOAD (Cloud → Device): Reads metadata['gradcam_url'], downloads heatmap, saves locally, sets ScanResult.gradCAMPath
 ```
 
 ### Label Format Reconciliation
@@ -867,6 +910,10 @@ flutter analyze
 | `flutter_markdown` | ^0.6.18 | XAI explanation rendering |
 | `cached_network_image` | ^3.4.1 | Supabase Storage plant images |
 | `http` | ^1.2.2 | Railway API calls |
+| `pinput` | ^5.0.0 | 6-box OTP input (signup/reset code screens) |
+| `gal` | ^2.3.0 | Export to gallery / camera roll |
+| `share_plus` | ^10.0.0 | Native OS share |
+| `flutter_local_notifications` | ^18.0.0 | Preparation timer notifications |
 
 #### Phase 2 Model Extraction (for updating TFLite assets)
 
@@ -908,6 +955,10 @@ flutter clean && flutter pub get && flutter run
 | HerbaScan custom model | ✅ Deprecated | MobileNetV2-only for online/offline consistency |
 | RLS recursion on profiles | ✅ Fixed | `is_admin()` SECURITY DEFINER function applied |
 | Delete-user 401 (JWKS) | ✅ Fixed | `verify_jwt = false` in `config.toml` + JWKS internal |
+
+**SnackBar:** Uses floating behavior (`SnackBarBehavior.floating`) so status messages do not displace the camera FAB or bottom nav.
+
+**Testing plans:** The `tests/` folder at repo root contains structured test plans: Unit, Integration, System, Acceptance, Performance, Usability, Compatibility, Security. See `TESTING_GUIDE.md` and `tests/*.md` for coverage.
 
 ---
 

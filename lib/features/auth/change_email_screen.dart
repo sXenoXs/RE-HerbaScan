@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:herbascan/core/providers/auth_provider.dart';
+import 'package:herbascan/core/theme/app_theme.dart';
 
 class ChangeEmailScreen extends StatefulWidget {
   const ChangeEmailScreen({super.key});
@@ -37,7 +38,7 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Email updated. If your project requires confirmation, check your new inbox.',
+              'Email updated. Check your new inbox to confirm the change.',
             ),
           ),
         );
@@ -46,8 +47,7 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage =
-              e.toString().replaceFirst('AuthException: ', '');
+          _errorMessage = e.toString().replaceFirst('AuthException: ', '');
           _isLoading = false;
         });
       }
@@ -57,58 +57,92 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final currentEmail =
-        context.watch<AuthProvider>().user?.email ?? '';
+    final currentEmail = context.watch<AuthProvider>().user?.email ?? '';
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Change email')),
+      appBar: AppBar(title: const Text('Email Address')),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 24),
                 Text(
-                  'Update your email address',
+                  'Email Address',
                   style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(
-                  'Current: $currentEmail',
+                  'Update the email address linked to your account.',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: AppTheme.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 32),
-                if (_errorMessage != null) ...[
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.errorContainer,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      _errorMessage!,
-                      style: TextStyle(
-                          color: theme.colorScheme.onErrorContainer),
-                    ),
+                const SizedBox(height: 20),
+
+                // Current email — read-only display
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceColor,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE5E7EB)),
                   ),
-                  const SizedBox(height: 16),
-                ],
+                  child: Row(
+                    children: [
+                      const Icon(Icons.lock_outline,
+                          size: 18, color: AppTheme.textTertiary),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          currentEmail,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+
+                // Server error — collapses to zero when empty, no layout shift
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeInOut,
+                  child: _errorMessage != null
+                      ? Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: AppTheme.errorBgLight,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            _errorMessage!,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: AppTheme.errorDeep,
+                            ),
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+
+                // New email — no prefixIcon
                 TextFormField(
                   controller: _newEmailController,
                   keyboardType: TextInputType.emailAddress,
                   autocorrect: false,
                   decoration: const InputDecoration(
-                    labelText: 'New email',
+                    labelText: 'New email address',
                     hintText: 'you@example.com',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email_outlined),
                   ),
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) {
@@ -123,16 +157,29 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
                     return null;
                   },
                 ),
+                const SizedBox(height: 12),
+
+                Text(
+                  "We'll send a confirmation link to your new address. "
+                  "Changes take effect once verified.",
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
                 const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: _isLoading ? null : _submit,
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Update email'),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: _isLoading ? null : _submit,
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Update Email'),
+                  ),
                 ),
               ],
             ),

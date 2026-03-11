@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/features/admin/admin_condition_search_screen.dart';
 import 'package:herbascan/features/admin/admin_dashboard_screen.dart';
 import 'package:herbascan/features/admin/admin_plant_metadata_screen.dart';
@@ -23,6 +24,29 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
   static const int _conditionSearchIndex = 2;
   static const int _userManagementIndex = 3;
 
+  static const _destinations = [
+    (
+      icon: Icons.photo_library_outlined,
+      selectedIcon: Icons.photo_library,
+      label: 'Image Review',
+    ),
+    (
+      icon: Icons.eco_outlined,
+      selectedIcon: Icons.eco,
+      label: 'Plant Catalog',
+    ),
+    (
+      icon: Icons.local_hospital_outlined,
+      selectedIcon: Icons.local_hospital,
+      label: 'Health Conditions',
+    ),
+    (
+      icon: Icons.people_outline,
+      selectedIcon: Icons.people,
+      label: 'User Directory',
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
@@ -33,68 +57,7 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
       return Scaffold(
         body: Row(
           children: [
-            Container(
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerLow,
-                border: Border(
-                  right: BorderSide(
-                    color: theme.colorScheme.outlineVariant.withOpacity(0.5),
-                    width: 1,
-                  ),
-                ),
-              ),
-              child: NavigationRail(
-                extended: width >= 900,
-                selectedIndex: _selectedIndex,
-                onDestinationSelected: (index) =>
-                    setState(() => _selectedIndex = index),
-                labelType: NavigationRailLabelType.all,
-                leading: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 24, 12, 16),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.admin_panel_settings_rounded,
-                        size: 32,
-                        color: theme.colorScheme.primary,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Admin',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                trailing: const SizedBox(height: 24),
-                destinations: const [
-                  NavigationRailDestination(
-                    icon: Icon(Icons.photo_library_outlined),
-                    selectedIcon: Icon(Icons.photo_library),
-                    label: Text('Image Review'),
-                  ),
-                  NavigationRailDestination(
-                    icon: Icon(Icons.eco_outlined),
-                    selectedIcon: Icon(Icons.eco),
-                    label: Text('Plant Metadata'),
-                  ),
-                  NavigationRailDestination(
-                    icon: Icon(Icons.local_hospital_outlined),
-                    selectedIcon: Icon(Icons.local_hospital),
-                    label: Text('Condition Search'),
-                  ),
-                  NavigationRailDestination(
-                    icon: Icon(Icons.people_outline),
-                    selectedIcon: Icon(Icons.people),
-                    label: Text('User Management'),
-                  ),
-                ],
-              ),
-            ),
+            _buildNavigationRail(theme, width),
             const VerticalDivider(thickness: 1, width: 1),
             Expanded(
               child: _buildModuleContent(),
@@ -104,11 +67,11 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
       );
     }
 
-    // Narrow/mobile: hamburger (top left) opens drawer; use system back to return to Settings
+    // Narrow/mobile: hamburger drawer
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        title: const Text('Admin'),
+        title: const Text('Admin Console'),
         leading: IconButton(
           icon: const Icon(Icons.menu),
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
@@ -120,130 +83,253 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
     );
   }
 
-  Widget _buildAdminDrawer(BuildContext context) {
-    final theme = Theme.of(context);
-    // Darker shades of primary so white text (Admin, Review & manage, selected items) is clearly visible
-    final primaryDark = Color.lerp(theme.colorScheme.primary, Colors.black, 0.25)!;
-    final primaryDarkEnd = Color.lerp(theme.colorScheme.primary, Colors.black, 0.12)!;
-    return Drawer(
+  Widget _buildNavigationRail(ThemeData theme, double width) {
+    final isExtended = width >= 900;
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.darkSurface,
+        border: Border(
+          right: BorderSide(
+            color: Colors.white.withValues(alpha: 0.08),
+            width: 1,
+          ),
+        ),
+      ),
       child: Column(
         children: [
-          DrawerHeader(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [primaryDark, primaryDarkEnd],
-              ),
+          // Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 32, 16, 24),
+            child: isExtended
+                ? Row(
+                    children: [
+                      const Icon(Icons.security_rounded,
+                          color: Colors.white, size: 32),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Admin Console',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700)),
+                          Text('Elevated Privileges Active',
+                              style: TextStyle(
+                                  color: AppTheme.warningAmber,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500)),
+                        ],
+                      ),
+                    ],
+                  )
+                : Column(
+                    children: [
+                      const Icon(Icons.security_rounded,
+                          color: Colors.white, size: 32),
+                      const SizedBox(height: 4),
+                      Text('Admin',
+                          style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.8),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500)),
+                    ],
+                  ),
+          ),
+          Expanded(
+            child: Column(
+              children: _destinations.asMap().entries.map((entry) {
+                final i = entry.key;
+                final dest = entry.value;
+                final isSelected = _selectedIndex == i;
+                return _buildRailItem(
+                  icon: dest.icon,
+                  selectedIcon: dest.selectedIcon,
+                  label: dest.label,
+                  isSelected: isSelected,
+                  isExtended: isExtended,
+                  onTap: () => setState(() => _selectedIndex = i),
+                );
+              }).toList(),
             ),
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-            child: SafeArea(
-              child: Align(
-                alignment: Alignment.bottomLeft,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      Icons.admin_panel_settings_rounded,
-                      size: 40,
-                      color: theme.colorScheme.onPrimary,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Admin',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Review & manage',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onPrimary.withOpacity(0.9),
-                      ),
-                    ),
-                  ],
-                ),
+          ),
+          // Escape hatch footer
+          const Divider(color: Colors.white12, height: 1),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: isExtended
+                ? TextButton.icon(
+                    icon: const Icon(Icons.exit_to_app,
+                        color: AppTheme.errorLight, size: 20),
+                    label: const Text('Exit Admin Console',
+                        style: TextStyle(
+                            color: AppTheme.errorLight, fontSize: 13)),
+                    onPressed: () =>
+                        Navigator.of(context).popUntil((r) => r.isFirst),
+                  )
+                : IconButton(
+                    icon: const Icon(Icons.exit_to_app,
+                        color: AppTheme.errorLight, size: 22),
+                    tooltip: 'Exit Admin Console',
+                    onPressed: () =>
+                        Navigator.of(context).popUntil((r) => r.isFirst),
+                  ),
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRailItem({
+    required IconData icon,
+    required IconData selectedIcon,
+    required String label,
+    required bool isSelected,
+    required bool isExtended,
+    required VoidCallback onTap,
+  }) {
+    final bg = isSelected
+        ? AppTheme.botanicalPrimary.withValues(alpha: 0.15)
+        : Colors.transparent;
+    final fg = isSelected ? AppTheme.botanicalPrimaryL : Colors.white60;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      child: Material(
+        color: bg,
+        borderRadius: BorderRadius.circular(30),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(30),
+          child: Padding(
+            padding: isExtended
+                ? const EdgeInsets.symmetric(horizontal: 16, vertical: 12)
+                : const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            child: isExtended
+                ? Row(
+                    children: [
+                      Icon(isSelected ? selectedIcon : icon, color: fg, size: 22),
+                      const SizedBox(width: 12),
+                      Text(label,
+                          style: TextStyle(
+                              color: fg,
+                              fontSize: 14,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w400)),
+                    ],
+                  )
+                : Icon(isSelected ? selectedIcon : icon, color: fg, size: 22),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAdminDrawer(BuildContext context) {
+    return Drawer(
+      backgroundColor: AppTheme.darkSurface,
+      child: Column(
+        children: [
+          // Dark premium header
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.security_rounded,
+                      color: Colors.white, size: 32),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Admin Console',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Elevated Privileges Active',
+                    style: TextStyle(
+                        color: AppTheme.warningAmber,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500),
+                  ),
+                ],
               ),
             ),
           ),
+          const Divider(color: Colors.white12, height: 1),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-              children: [
-                _buildDrawerTile(
+              children: _destinations.asMap().entries.map((entry) {
+                final i = entry.key;
+                final dest = entry.value;
+                return _buildDrawerTile(
                   context,
-                  theme,
-                  icon: Icons.photo_library_outlined,
-                  selectedIcon: Icons.photo_library,
-                  label: 'Image Review',
-                  index: _imageReviewIndex,
-                ),
-                _buildDrawerTile(
-                  context,
-                  theme,
-                  icon: Icons.eco_outlined,
-                  selectedIcon: Icons.eco,
-                  label: 'Plant Metadata',
-                  index: _plantMetadataIndex,
-                ),
-                _buildDrawerTile(
-                  context,
-                  theme,
-                  icon: Icons.local_hospital_outlined,
-                  selectedIcon: Icons.local_hospital,
-                  label: 'Condition Search',
-                  index: _conditionSearchIndex,
-                ),
-                _buildDrawerTile(
-                  context,
-                  theme,
-                  icon: Icons.people_outline,
-                  selectedIcon: Icons.people,
-                  label: 'User Management',
-                  index: _userManagementIndex,
-                ),
-              ],
+                  icon: dest.icon,
+                  selectedIcon: dest.selectedIcon,
+                  label: dest.label,
+                  index: i,
+                );
+              }).toList(),
             ),
           ),
+          // Escape hatch footer
+          const Divider(color: Colors.white12, height: 1),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+            child: TextButton.icon(
+              icon: const Icon(Icons.exit_to_app,
+                  color: AppTheme.errorLight, size: 20),
+              label: const Text('Exit Admin Console',
+                  style: TextStyle(
+                      color: AppTheme.errorLight, fontSize: 14)),
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.of(context).popUntil((r) => r.isFirst);
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
         ],
       ),
     );
   }
 
   Widget _buildDrawerTile(
-    BuildContext context,
-    ThemeData theme, {
+    BuildContext context, {
     required IconData icon,
     required IconData selectedIcon,
     required String label,
     required int index,
   }) {
     final isSelected = _selectedIndex == index;
-    // Darker shade of primary so white text stays clearly visible (no blending)
-    final selectedBg = Color.lerp(theme.colorScheme.primary, Colors.black, 0.2)!;
-    final selectedFg = theme.colorScheme.onPrimary;
+    final bg = isSelected
+        ? AppTheme.botanicalPrimary.withValues(alpha: 0.15)
+        : Colors.transparent;
+    final fg = isSelected ? AppTheme.botanicalPrimaryL : Colors.white60;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Material(
-        color: isSelected ? selectedBg : Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
+        color: bg,
+        borderRadius: BorderRadius.circular(30),
         child: ListTile(
-          leading: Icon(
-            isSelected ? selectedIcon : icon,
-            color: isSelected ? selectedFg : theme.colorScheme.onSurfaceVariant,
-            size: 24,
-          ),
+          leading: Icon(isSelected ? selectedIcon : icon, color: fg, size: 22),
           title: Text(
             label,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              color: isSelected ? selectedFg : theme.colorScheme.onSurface,
+            style: TextStyle(
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+              color: fg,
+              fontSize: 14,
             ),
           ),
           selected: isSelected,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
           onTap: () {
             setState(() => _selectedIndex = index);
             Navigator.pop(context);
@@ -268,3 +354,4 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
     }
   }
 }
+

@@ -20,6 +20,7 @@ class HerbariumService {
   bool get isAvailable => isSupabaseConfigured && _client.auth.currentUser != null;
 
   /// Upload image to Storage and insert scan row. Returns scan id or null on failure.
+  /// Also uploads the heatmap (gradCAM) image if present, storing its URL in metadata.
   Future<String?> uploadScan(ScanResult result, String imagePath) async {
     if (!isAvailable) {
       if (kDebugMode) debugPrint('[HerbariumService] uploadScan: not available (Supabase or not signed in)');
@@ -54,6 +55,31 @@ class HerbariumService {
       return null;
     }
 
+    // Upload heatmap image if it exists locally, store its public URL in metadata
+    final updatedMetadata = Map<String, dynamic>.from(result.metadata);
+    final gradCAMPath = result.gradCAMPath;
+    if (gradCAMPath != null && gradCAMPath.isNotEmpty) {
+      try {
+        final gradcamFile = File(gradCAMPath);
+        if (await gradcamFile.exists()) {
+          final gradcamStoragePath = '$userId/${scanId}_gradcam.jpg';
+          await _client.storage.from(_bucket).upload(
+                gradcamStoragePath,
+                gradcamFile,
+                fileOptions: const FileOptions(upsert: true),
+              );
+          final gradcamUrl = _client.storage
+              .from(_bucket)
+              .getPublicUrl(gradcamStoragePath);
+          updatedMetadata['gradcam_url'] = gradcamUrl;
+          if (kDebugMode) debugPrint('[HerbariumService] uploadScan: heatmap uploaded ok');
+        }
+      } catch (e) {
+        // Heatmap upload is best-effort — don't fail the whole upload
+        if (kDebugMode) debugPrint('[HerbariumService] uploadScan: heatmap upload skipped: $e');
+      }
+    }
+
     // Prefer catalog id; when plant not resolved (e.g. from history), use top prediction so cloud shows name not "Unknown plant"
     final plantId = result.plant?.id ??
         result.topPrediction?.plantId ??
@@ -69,7 +95,7 @@ class HerbariumService {
         'image_url': imageUrl,
         'confidence_score': result.confidenceScore,
         'predictions': result.predictions.map((p) => p.toJson()).toList(),
-        'metadata': result.metadata,
+        'metadata': updatedMetadata,
         'status': 'pending',
       };
       await _client.from('scans').upsert(row, onConflict: 'id');
@@ -109,12 +135,15 @@ class HerbariumService {
     }
   }
 
-  /// Delete a scan row (and optionally storage object). Returns true on success.
+  /// Delete a scan row (and storage objects). Returns true on success.
   Future<bool> deleteScan(String scanId) async {
     if (!isAvailable) return false;
     final userId = _client.auth.currentUser!.id;
     try {
-      await _client.storage.from(_bucket).remove(['$userId/$scanId.jpg']);
+      await _client.storage.from(_bucket).remove([
+        '$userId/$scanId.jpg',
+        '$userId/${scanId}_gradcam.jpg',
+      ]);
     } catch (_) {}
     try {
       await _client.from('scans').delete().eq('id', scanId).eq('user_id', userId);
@@ -155,7 +184,10 @@ class HerbariumService {
     if (!isAvailable) return false;
     if (scan.userId != null) {
       try {
-        await _client.storage.from(_bucket).remove(['${scan.userId}/${scan.id}.jpg']);
+        await _client.storage.from(_bucket).remove([
+          '${scan.userId}/${scan.id}.jpg',
+          '${scan.userId}/${scan.id}_gradcam.jpg',
+        ]);
       } catch (_) {}
     }
     try {
@@ -167,6 +199,7 @@ class HerbariumService {
   }
 
   /// Download a cloud scan image to local storage and build a ScanResult for device history.
+  /// Also downloads the heatmap image if a gradcam_url is stored in metadata.
   /// Returns the ScanResult on success, null on failure. Caller should call PlantProvider.addScanResult(result).
   Future<ScanResult?> downloadToDevice(CloudScan scan) async {
     if (scan.imageUrl == null || scan.imageUrl!.isEmpty) {
@@ -185,8 +218,29 @@ class HerbariumService {
       final file = File(filePath);
       await file.writeAsBytes(response.bodyBytes);
 
+      // Download heatmap image if a URL was stored during upload
+      String? gradCAMPath;
+      final metadata = scan.metadata ?? {};
+      final gradcamUrl = metadata['gradcam_url'] as String?;
+      if (gradcamUrl != null && gradcamUrl.isNotEmpty) {
+        try {
+          final gradcamResponse = await http.get(Uri.parse(gradcamUrl));
+          if (gradcamResponse.statusCode == 200) {
+            final gradcamFilePath = '$localDir/${scan.id}_gradcam.jpg';
+            await File(gradcamFilePath).writeAsBytes(gradcamResponse.bodyBytes);
+            gradCAMPath = gradcamFilePath;
+            if (kDebugMode) debugPrint('[HerbariumService] downloadToDevice: heatmap saved $gradcamFilePath');
+          } else {
+            if (kDebugMode) debugPrint('[HerbariumService] downloadToDevice: heatmap HTTP ${gradcamResponse.statusCode}');
+          }
+        } catch (e) {
+          // Heatmap download is best-effort — don't fail the whole download
+          if (kDebugMode) debugPrint('[HerbariumService] downloadToDevice: heatmap download skipped: $e');
+        }
+      }
+
       final predictions = <Prediction>[];
-      final rawPreds = scan.predictions ?? scan.metadata?['predictions'] as List<dynamic>?;
+      final rawPreds = scan.predictions ?? metadata['predictions'] as List<dynamic>?;
       if (rawPreds != null) {
         for (final p in rawPreds) {
           if (p is Map<String, dynamic>) {
@@ -213,8 +267,8 @@ class HerbariumService {
         predictions: predictions,
         imagePath: filePath,
         scanDate: scan.scanDate,
-        gradCAMPath: null,
-        metadata: scan.metadata ?? {},
+        gradCAMPath: gradCAMPath,
+        metadata: metadata,
         isOfflineScan: false,
       );
       if (kDebugMode) debugPrint('[HerbariumService] downloadToDevice: saved $filePath');
