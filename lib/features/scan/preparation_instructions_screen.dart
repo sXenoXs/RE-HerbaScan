@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/models/plant.dart';
 import 'package:herbascan/core/services/preparation_notification_service.dart';
+import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/core/utils/preparation_step_parser.dart';
 import 'package:herbascan/features/scan/preparation_focus_mode_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -101,7 +102,8 @@ class _PreparationInstructionsScreenState
     };
     if (_activeTimerStepIndex != null && !_timerPaused && _timer != null) {
       map['timerEndEpochMs'] =
-          DateTime.now().add(Duration(seconds: _timerRemainingSeconds))
+          DateTime.now()
+              .add(Duration(seconds: _timerRemainingSeconds))
               .millisecondsSinceEpoch;
     }
     await prefs.setString(key, jsonEncode(map));
@@ -129,8 +131,7 @@ class _PreparationInstructionsScreenState
     }
   }
 
-  String _stepId(int stepIndex) =>
-      '${widget.preparationMethod.id}_$stepIndex';
+  String _stepId(int stepIndex) => '${widget.preparationMethod.id}_$stepIndex';
 
   int? _getTimerSecondsForStep(int index) {
     final stepDetails = widget.preparationMethod.stepDetails;
@@ -143,7 +144,6 @@ class _PreparationInstructionsScreenState
     return (sec != null && sec > 0) ? sec : null;
   }
 
-  /// Timer duration for this step: from stepDetails first, else parsed from instruction text.
   int? _getEffectiveTimerSeconds(int index) {
     final fromDetails = _getTimerSecondsForStep(index);
     if (fromDetails != null) return fromDetails;
@@ -155,8 +155,7 @@ class _PreparationInstructionsScreenState
     final plant = widget.plant;
     final method = widget.preparationMethod;
     final now = DateTime.now();
-    final startDate =
-        DateTime(now.year, now.month, now.day, 8, 0); // 8 AM today
+    final startDate = DateTime(now.year, now.month, now.day, 8, 0);
     final endDate = startDate.add(const Duration(hours: 1));
 
     int durationDays = 7;
@@ -166,10 +165,8 @@ class _PreparationInstructionsScreenState
       frequencyHours = method.schedule!.frequencyHours;
     }
 
-    // Title: include plant and preparation so calendar event is identifiable
     final title = '${plant.commonName}: ${method.title}';
 
-    // Description: full dosage, frequency, duration so user doesn't need to switch back to the app
     final description = StringBuffer();
     description.writeln('DOSAGE: ${method.dosage}');
     description.writeln('');
@@ -181,7 +178,6 @@ class _PreparationInstructionsScreenState
       description.writeln('Note: ${method.warnings.first}');
     }
 
-    Frequency frequency = Frequency.daily;
     int interval = 1;
     if (frequencyHours >= 24) {
       interval = frequencyHours ~/ 24;
@@ -189,7 +185,7 @@ class _PreparationInstructionsScreenState
     }
 
     final recurrence = Recurrence(
-      frequency: frequency,
+      frequency: Frequency.daily,
       interval: interval,
       endDate: startDate.add(Duration(days: durationDays)),
     );
@@ -241,7 +237,10 @@ class _PreparationInstructionsScreenState
       _timerRemainingSeconds = durationSeconds;
       _timerPaused = false;
     });
-    PreparationNotificationService().scheduleTimer(_stepId(stepIndex), durationSeconds);
+    PreparationNotificationService().scheduleTimer(
+      _stepId(stepIndex),
+      durationSeconds,
+    );
     _saveState();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
@@ -270,7 +269,9 @@ class _PreparationInstructionsScreenState
     if (_activeTimerStepIndex == null) return;
     _timer?.cancel();
     _timer = null;
-    PreparationNotificationService().cancelTimer(_stepId(_activeTimerStepIndex!));
+    PreparationNotificationService().cancelTimer(
+      _stepId(_activeTimerStepIndex!),
+    );
     setState(() => _timerPaused = true);
     _saveState();
   }
@@ -278,7 +279,10 @@ class _PreparationInstructionsScreenState
   void _resumeTimer() {
     if (_activeTimerStepIndex == null || _timerRemainingSeconds <= 0) return;
     setState(() => _timerPaused = false);
-    PreparationNotificationService().scheduleTimer(_stepId(_activeTimerStepIndex!), _timerRemainingSeconds);
+    PreparationNotificationService().scheduleTimer(
+      _stepId(_activeTimerStepIndex!),
+      _timerRemainingSeconds,
+    );
     _saveState();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
@@ -307,7 +311,9 @@ class _PreparationInstructionsScreenState
     _timer?.cancel();
     _timer = null;
     if (_activeTimerStepIndex != null) {
-      PreparationNotificationService().cancelTimer(_stepId(_activeTimerStepIndex!));
+      PreparationNotificationService().cancelTimer(
+        _stepId(_activeTimerStepIndex!),
+      );
     }
     setState(() {
       _activeTimerStepIndex = null;
@@ -317,11 +323,24 @@ class _PreparationInstructionsScreenState
     _saveState();
   }
 
+  void _toggleTimer(int stepIndex, int timerSec) {
+    if (_activeTimerStepIndex == stepIndex) {
+      if (_timerPaused) {
+        _resumeTimer();
+      } else {
+        _pauseTimer();
+      }
+    } else {
+      _startTimer(stepIndex, timerSec);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final plant = widget.plant;
     final preparationMethod = widget.preparationMethod;
+    final hasWarnings = preparationMethod.warnings.isNotEmpty;
+    final hasPlantWarnings = widget.plant.safetyWarnings.isNotEmpty;
 
     return Scaffold(
       appBar: AppBar(
@@ -334,108 +353,188 @@ class _PreparationInstructionsScreenState
             onPressed: () async {
               final confirm = await showDialog<bool>(
                 context: context,
-                builder: (ctx) => AlertDialog(
-                  title: const Text('Reset Progress?'),
-                  content: const Text(
-                    'This will clear all completed steps and stop any running timer.',
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('Cancel'),
+                builder:
+                    (ctx) => AlertDialog(
+                      title: const Text('Reset Progress?'),
+                      content: const Text(
+                        'This will clear all completed steps and stop any running timer.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: const Text('Reset'),
+                        ),
+                      ],
                     ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, true),
-                      child: const Text('Reset'),
-                    ),
-                  ],
-                ),
               );
               if (confirm == true) await _resetProgress();
             },
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder:
+                  (context) => PreparationFocusModeScreen(
+                    plant: widget.plant,
+                    preparationMethod: widget.preparationMethod,
+                  ),
+            ),
+          );
+        },
+        backgroundColor: AppTheme.botanicalPrimary,
+        foregroundColor: Colors.white,
+        tooltip: 'Focus Mode',
+        child: const Icon(Icons.fullscreen, size: 28),
+      ),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ── Important Warnings (moved to top) ──────────────────────────
+            if (hasWarnings)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                decoration: const BoxDecoration(
+                  color: AppTheme.errorBgLight,
+                  border: Border(
+                    left: BorderSide(color: AppTheme.errorDeep, width: 4),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.warning_amber_rounded,
+                          size: 18,
+                          color: AppTheme.errorDeep,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Important Warnings',
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: AppTheme.errorDeep,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ...preparationMethod.warnings.map(
+                      (warning) => Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text(
+                          warning,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppTheme.errorDark,
+                            height: 1.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            // ── General Safety Warnings ────────────────────────────────────
+            if (hasPlantWarnings)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                decoration: const BoxDecoration(
+                  color: AppTheme.warningBgLight,
+                  border: Border(
+                    left: BorderSide(color: AppTheme.warningAmber, width: 4),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.info_outline,
+                          size: 18,
+                          color: AppTheme.warningDark,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'General Safety Information',
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: AppTheme.warningDark,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ...widget.plant.safetyWarnings.map(
+                      (warning) => Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text(
+                          warning,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppTheme.warningDark,
+                            height: 1.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Title (H1) – confirms user opened the right recipe
+                  // ── Title + Preparation Type Badge ─────────────────────────
                   Text(
                     preparationMethod.title,
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-
                   const SizedBox(height: 8),
-
-                  // Preparation Type Badge
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF38A169)
-                          .withOpacity(0.15), // Light green background
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: const Color(0xFF38A169).withOpacity(0.4),
-                        width: 1.5,
-                      ),
+                      color: AppTheme.botanicalPrimary.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(100),
                     ),
                     child: Text(
                       preparationMethod.preparationType.toUpperCase(),
                       style: theme.textTheme.labelSmall?.copyWith(
-                        color: const Color(0xFF38A169), // Dark green text
+                        color: AppTheme.botanicalPrimaryD,
                         fontWeight: FontWeight.bold,
-                        fontSize: 12,
                         letterSpacing: 0.8,
                       ),
                     ),
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
 
-                  // Steps Section (interactive checklist)
-                  _buildSectionHeader(
-                    context,
-                    'Preparation Steps',
-                    theme,
-                  ),
-                  const SizedBox(height: 4),
+                  // ── Preparation Steps ──────────────────────────────────────
                   Text(
-                    'Tap each step to mark it done.',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontStyle: FontStyle.italic,
+                    'Steps',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (context) => PreparationFocusModeScreen(
-                            plant: widget.plant,
-                            preparationMethod: widget.preparationMethod,
-                          ),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.fullscreen),
-                    label: Text(
-                        AppLocalizations.of(context).startPreparationFocusMode),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 12),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
 
                   ...List.generate(
                     preparationMethod.stepInstructions.length,
@@ -456,199 +555,108 @@ class _PreparationInstructionsScreenState
                         stepIndex: index,
                         timerSeconds: timerSec,
                         isTimerActive: _activeTimerStepIndex == index,
-                        timerRemainingSeconds: _activeTimerStepIndex == index
-                            ? _timerRemainingSeconds
-                            : 0,
-                        isTimerPaused: _activeTimerStepIndex == index && _timerPaused,
-                        onStartTimer: timerSec != null
-                            ? () => _startTimer(index, timerSec)
-                            : null,
-                        onPauseTimer: _activeTimerStepIndex == index ? _pauseTimer : null,
-                        onResumeTimer: _activeTimerStepIndex == index ? _resumeTimer : null,
-                        onResetTimer: _activeTimerStepIndex == index ? _resetTimer : null,
+                        timerRemainingSeconds:
+                            _activeTimerStepIndex == index
+                                ? _timerRemainingSeconds
+                                : 0,
+                        isTimerPaused:
+                            _activeTimerStepIndex == index && _timerPaused,
+                        onToggleTimer:
+                            timerSec != null
+                                ? () => _toggleTimer(index, timerSec)
+                                : null,
+                        onLongPressTimer:
+                            _activeTimerStepIndex == index
+                                ? _resetTimer
+                                : null,
                       );
                     },
                   ),
 
                   const SizedBox(height: 24),
 
-                  // Unified Regimen card (Dosage, Frequency, Duration + Calendar button)
+                  // ── Regimen Card ───────────────────────────────────────────
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surfaceContainerLow,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: theme.colorScheme.outline.withOpacity(0.2),
+                        color: AppTheme.botanicalPrimary.withOpacity(0.3),
+                        width: 1.5,
                       ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Text(
+                          'Regimen',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.botanicalPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
                         ListTile(
                           contentPadding: EdgeInsets.zero,
-                          leading: Icon(
+                          dense: true,
+                          leading: const Icon(
                             Icons.medication_outlined,
-                            color: theme.colorScheme.primary,
+                            color: AppTheme.botanicalPrimary,
                           ),
-                          title: Text('Dosage'),
+                          title: const Text('Dosage'),
                           subtitle: Text(preparationMethod.dosage),
                         ),
                         ListTile(
                           contentPadding: EdgeInsets.zero,
-                          leading: Icon(
+                          dense: true,
+                          leading: const Icon(
                             Icons.schedule_outlined,
-                            color: theme.colorScheme.primary,
+                            color: AppTheme.botanicalPrimary,
                           ),
-                          title: Text('Frequency'),
+                          title: const Text('Frequency'),
                           subtitle: Text(preparationMethod.frequency),
                         ),
                         ListTile(
                           contentPadding: EdgeInsets.zero,
-                          leading: Icon(
+                          dense: true,
+                          leading: const Icon(
                             Icons.calendar_today_outlined,
-                            color: theme.colorScheme.primary,
+                            color: AppTheme.botanicalPrimary,
                           ),
-                          title: Text('Duration'),
+                          title: const Text('Duration'),
                           subtitle: Text(preparationMethod.duration),
                         ),
-                        const Divider(height: 24),
+                        const Divider(height: 20),
                         SizedBox(
                           width: double.infinity,
                           child: FilledButton.icon(
                             onPressed: () => _addScheduleToCalendar(context),
                             icon: const Icon(Icons.calendar_today, size: 20),
-                            label: Text(AppLocalizations.of(context)
-                                .addScheduleToCalendar),
+                            label: Text(
+                              AppLocalizations.of(context).addScheduleToCalendar,
+                            ),
                             style: FilledButton.styleFrom(
+                              backgroundColor: AppTheme.botanicalPrimary,
+                              foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 20, vertical: 14),
+                                horizontal: 20,
+                                vertical: 14,
+                              ),
                             ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 24),
 
-                  // Warnings Section
-                  if (preparationMethod.warnings.isNotEmpty) ...[
-                    _buildSectionHeader(
-                      context,
-                      '⚠️ Important Warnings',
-                      theme,
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF6B2D2D),
-                        border: Border.all(
-                          color: theme.colorScheme.error.withOpacity(0.6),
-                          width: 1,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: preparationMethod.warnings.map((warning) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Icon(
-                                  Icons.warning_amber_rounded,
-                                  size: 20,
-                                  color: Colors.white,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    warning,
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: Colors.white,
-                                      height: 1.4,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-
-                  // General Safety Warnings
-                  if (plant.safetyWarnings.isNotEmpty) ...[
-                    _buildSectionHeader(
-                      context,
-                      '🛡️ General Safety Information',
-                      theme,
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerHighest
-                            .withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: theme.colorScheme.outline.withOpacity(0.3),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: plant.safetyWarnings.map((warning) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Icon(
-                                  Icons.info_outline,
-                                  size: 18,
-                                  color: theme.colorScheme.primary,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    warning,
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                      height: 1.4,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
+                  // Bottom padding so FAB doesn't overlap last content
+                  const SizedBox(height: 88),
                 ],
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(
-    BuildContext context,
-    String title,
-    ThemeData theme,
-  ) {
-    return Text(
-      title,
-      style: theme.textTheme.titleMedium?.copyWith(
-        fontWeight: FontWeight.bold,
-        color: theme.colorScheme.primary,
       ),
     );
   }
@@ -677,50 +685,76 @@ class _PreparationInstructionsScreenState
     bool isTimerActive = false,
     int timerRemainingSeconds = 0,
     bool isTimerPaused = false,
-    VoidCallback? onStartTimer,
-    VoidCallback? onPauseTimer,
-    VoidCallback? onResumeTimer,
-    VoidCallback? onResetTimer,
+    VoidCallback? onToggleTimer,
+    VoidCallback? onLongPressTimer,
   }) {
+    final timerColor =
+        isTimerActive
+            ? (isTimerPaused ? AppTheme.warningAmber : AppTheme.botanicalPrimary)
+            : AppTheme.botanicalPrimary;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Material(
-            color: isCompleted
-                ? theme.colorScheme.surfaceContainerLow.withOpacity(0.5)
-                : theme.colorScheme.surfaceContainerLow.withOpacity(0.3),
+            color:
+                isCompleted
+                    ? theme.colorScheme.primaryContainer.withOpacity(0.35)
+                    : theme.colorScheme.surfaceContainerLow.withOpacity(0.5),
             borderRadius: BorderRadius.circular(12),
             child: InkWell(
               onTap: onTap,
               borderRadius: BorderRadius.circular(12),
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: isCompleted
-                            ? const Color(0xFF48BB78)
-                            : theme.colorScheme.primary,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: isCompleted
-                            ? const Icon(Icons.check,
-                                color: Colors.white, size: 20)
-                            : Text(
-                                stepNumber.toString(),
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: theme.colorScheme.onPrimary,
-                                  fontWeight: FontWeight.bold,
+                    // Checkbox-style circle (tap = toggle)
+                    GestureDetector(
+                      onTap: onTap,
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        child:
+                            isCompleted
+                                ? Container(
+                                  key: const ValueKey('checked'),
+                                  width: 32,
+                                  height: 32,
+                                  decoration: const BoxDecoration(
+                                    color: AppTheme.botanicalPrimary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.check,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                                )
+                                : Container(
+                                  key: const ValueKey('unchecked'),
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.primary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      stepNumber.toString(),
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(
+                                            color: theme.colorScheme.onPrimary,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                    ),
+                                  ),
                                 ),
-                              ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -730,82 +764,74 @@ class _PreparationInstructionsScreenState
                         child: Text(
                           step,
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            color: isCompleted
-                                ? theme.colorScheme.onSurface.withOpacity(0.5)
-                                : theme.colorScheme.onSurface,
+                            color:
+                                isCompleted
+                                    ? theme.colorScheme.onSurfaceVariant
+                                    : theme.colorScheme.onSurface,
                             height: 1.5,
-                            decoration: isCompleted
-                                ? TextDecoration.lineThrough
-                                : TextDecoration.none,
+                            decoration:
+                                isCompleted
+                                    ? TextDecoration.lineThrough
+                                    : TextDecoration.none,
+                            decorationColor:
+                                isCompleted
+                                    ? theme.colorScheme.onSurfaceVariant
+                                    : null,
                           ),
                         ),
                       ),
                     ),
+                    // Timer pill (if step has a timer)
+                    if (timerSeconds != null && timerSeconds > 0) ...[
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: onToggleTimer,
+                        onLongPress: onLongPressTimer,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 250),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: timerColor.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(100),
+                            border: Border.all(
+                              color: timerColor.withOpacity(0.4),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isTimerActive
+                                    ? (isTimerPaused
+                                        ? Icons.play_arrow_rounded
+                                        : Icons.pause_rounded)
+                                    : Icons.timer_outlined,
+                                size: 14,
+                                color: timerColor,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                isTimerActive
+                                    ? _formatDuration(timerRemainingSeconds)
+                                    : _formatDuration(timerSeconds),
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: timerColor,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
             ),
           ),
-          if (timerSeconds != null && timerSeconds > 0) ...[
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.only(left: 44),
-              child: isTimerActive
-                  ? Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.timer,
-                              size: 20,
-                              color: theme.colorScheme.primary,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '${_formatDuration(timerRemainingSeconds)} remaining',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: theme.colorScheme.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (isTimerPaused)
-                          TextButton.icon(
-                            onPressed: onResumeTimer,
-                            icon: const Icon(Icons.play_arrow, size: 18),
-                            label: const Text('Resume'),
-                          )
-                        else
-                          TextButton.icon(
-                            onPressed: onPauseTimer,
-                            icon: const Icon(Icons.pause, size: 18),
-                            label: const Text('Pause'),
-                          ),
-                        if (onResetTimer != null)
-                          TextButton.icon(
-                            onPressed: onResetTimer,
-                            icon: const Icon(Icons.refresh, size: 18),
-                            label: const Text('Reset'),
-                          ),
-                      ],
-                    )
-                  : ElevatedButton.icon(
-                      onPressed: onStartTimer,
-                      icon: const Icon(Icons.timer_outlined, size: 18),
-                      label:
-                          Text('Start ${_formatDuration(timerSeconds)} timer'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.colorScheme.primary,
-                        foregroundColor: theme.colorScheme.onPrimary,
-                      ),
-                    ),
-            ),
-          ],
         ],
       ),
     );

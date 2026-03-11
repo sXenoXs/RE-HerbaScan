@@ -3,24 +3,53 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:herbascan/core/services/admin_user_service.dart';
+import 'package:herbascan/core/theme/app_theme.dart';
 
-/// User Management: list users (email, join date, scan count), Deactivate and Delete only. No password/email editing.
+/// User Management: list users (email, join date, scan count), Suspend, Reactivate, Delete only.
 class AdminUserManagementScreen extends StatefulWidget {
   const AdminUserManagementScreen({super.key});
 
   @override
-  State<AdminUserManagementScreen> createState() => _AdminUserManagementScreenState();
+  State<AdminUserManagementScreen> createState() =>
+      _AdminUserManagementScreenState();
 }
 
-class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
+class _AdminUserManagementScreenState
+    extends State<AdminUserManagementScreen> {
   List<AdminProfileRow> _profiles = [];
+  List<AdminProfileRow> _filtered = [];
   bool _loading = true;
   String? _error;
+  // Prevents concurrent suspend/reactivate/delete operations from overlapping
+  bool _actionInProgress = false;
+
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _load();
+    _searchController.addListener(_applyFilter);
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_applyFilter);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _applyFilter() {
+    final q = _searchController.text.trim().toLowerCase();
+    setState(() {
+      if (q.isEmpty) {
+        _filtered = List.from(_profiles);
+      } else {
+        _filtered = _profiles
+            .where((p) => p.email.toLowerCase().contains(q))
+            .toList();
+      }
+    });
   }
 
   Future<void> _load() async {
@@ -33,8 +62,10 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
       if (mounted) {
         setState(() {
           _profiles = list;
+          _filtered = List.from(list);
           _loading = false;
         });
+        _applyFilter();
       }
     } catch (e) {
       if (mounted) {
@@ -47,49 +78,100 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
   }
 
   Future<void> _setActive(AdminProfileRow row, bool active) async {
-    final ok = await AdminUserService().setActive(row.id, active);
-    if (ok && mounted) _load();
+    if (_actionInProgress) return;
+    _actionInProgress = true;
+    try {
+      final ok = await AdminUserService().setActive(row.id, active);
+      if (ok && mounted) await _load();
+    } finally {
+      if (mounted) setState(() => _actionInProgress = false);
+    }
   }
 
   Future<void> _deleteUser(AdminProfileRow row) async {
-    final theme = Theme.of(context);
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete user?'),
-        content: Text(
-          'This will permanently delete ${row.email} and all their cloud scans. It cannot be undone.',
+    if (_actionInProgress) return;
+
+    // Capture theme values synchronously before any await
+    final errorColor = Theme.of(context).colorScheme.error;
+    final confirmController = TextEditingController();
+
+    bool? confirm;
+    try {
+      confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => StatefulBuilder(
+          builder: (ctx, setDialogState) => AlertDialog(
+            title: const Text('Delete user data?'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'This will permanently delete ${row.email} and all their cloud scans. It cannot be undone.',
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Type DELETE to confirm:',
+                  style: TextStyle(
+                      color: errorColor, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: confirmController,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: 'DELETE',
+                    border: const OutlineInputBorder(),
+                    errorBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: errorColor)),
+                  ),
+                  onChanged: (_) => setDialogState(() {}),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: confirmController.text == 'DELETE'
+                    ? () => Navigator.pop(ctx, true)
+                    : null,
+                style: FilledButton.styleFrom(backgroundColor: errorColor),
+                child: const Text('Delete User Data'),
+              ),
+            ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text('Delete', style: TextStyle(color: theme.colorScheme.error)),
-          ),
-        ],
-      ),
-    );
-    if (confirm == true) {
-      try {
-        await AdminUserService().deleteUser(row.id);
-        if (mounted) _load();
-      } catch (e, stack) {
-        if (kDebugMode) {
-          debugPrint('[AdminUserManagement][_deleteUser] Delete failed for ${row.email} (${row.id}): $e');
-          if (e is FunctionException) {
-            debugPrint('[AdminUserManagement][_deleteUser] FunctionException status: ${e.status}, details: ${e.details}');
-          }
-          debugPrint('[AdminUserManagement][_deleteUser] stack: $stack');
+      );
+    } finally {
+      confirmController.dispose();
+    }
+
+    if (confirm != true || !mounted) return;
+
+    _actionInProgress = true;
+    try {
+      await AdminUserService().deleteUser(row.id);
+      if (mounted) await _load();
+    } catch (e, stack) {
+      if (kDebugMode) {
+        debugPrint(
+            '[AdminUserManagement][_deleteUser] Delete failed for ${row.email} (${row.id}): $e');
+        if (e is FunctionException) {
+          debugPrint(
+              '[AdminUserManagement][_deleteUser] FunctionException status: ${e.status}, details: ${e.details}');
         }
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Delete failed: $e')),
-          );
-        }
+        debugPrint('[AdminUserManagement][_deleteUser] stack: $stack');
       }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Delete failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _actionInProgress = false);
     }
   }
 
@@ -116,34 +198,19 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
         ),
       );
     }
-    if (_profiles.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.people_outline, size: 64, color: theme.colorScheme.outline),
-            const SizedBox(height: 16),
-            Text(
-              'No users',
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // Header row
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
+          padding: const EdgeInsets.fromLTRB(16, 16, 8, 0),
           child: Row(
             children: [
               Text(
-                'User Management',
-                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                'User Directory',
+                style: theme.textTheme.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
               const Spacer(),
               IconButton(
@@ -154,134 +221,169 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
             ],
           ),
         ),
-        Expanded(
-          child: ListView.separated(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-            itemCount: _profiles.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final row = _profiles[index];
-              return _UserCard(
-                theme: theme,
-                row: row,
-                dateFormat: dateFormat,
-                onSetActive: _setActive,
-                onDelete: _deleteUser,
-              );
-            },
+        // Search bar
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Search by email…',
+              prefixIcon: const Icon(Icons.search_rounded, size: 20),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      onPressed: () => _searchController.clear(),
+                    )
+                  : null,
+              filled: true,
+              fillColor: theme.colorScheme.surfaceContainerHighest
+                  .withValues(alpha: 0.4),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
           ),
         ),
+        if (_filtered.isEmpty)
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.people_outline,
+                      size: 64, color: theme.colorScheme.outline),
+                  const SizedBox(height: 16),
+                  Text(
+                    _searchController.text.isNotEmpty
+                        ? 'No users match your search.'
+                        : 'No users found.',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+              itemCount: _filtered.length,
+              separatorBuilder: (_, __) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                final row = _filtered[index];
+                return _buildUserRow(context, theme, row, dateFormat);
+              },
+            ),
+          ),
       ],
     );
   }
-}
 
-/// One user as a card: no horizontal scroll, works on all screen sizes.
-class _UserCard extends StatelessWidget {
-  const _UserCard({
-    required this.theme,
-    required this.row,
-    required this.dateFormat,
-    required this.onSetActive,
-    required this.onDelete,
-  });
-
-  final ThemeData theme;
-  final AdminProfileRow row;
-  final DateFormat dateFormat;
-  final void Function(AdminProfileRow row, bool active) onSetActive;
-  final void Function(AdminProfileRow row) onDelete;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildUserRow(BuildContext context, ThemeData theme,
+      AdminProfileRow row, DateFormat dateFormat) {
+    final isAdmin = row.role == 'admin';
     final isActive = row.isActive;
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              row.email.isEmpty ? '(no email)' : row.email,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 2,
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 12,
-              runSpacing: 6,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                Chip(
-                  label: Text(row.role),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-                  visualDensity: VisualDensity.compact,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                Text(
-                  row.createdAt != null
-                      ? dateFormat.format(row.createdAt!)
-                      : '—',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                Text(
-                  '${row.scanCount} scan${row.scanCount == 1 ? '' : 's'}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: isActive
-                        ? Colors.green.shade700
-                        : theme.colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    isActive ? 'Active' : 'Deactivated',
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: isActive
-                          ? Colors.white
-                          : theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                if (isActive)
-                  TextButton(
-                    onPressed: () => onSetActive(row, false),
-                    child: const Text('Deactivate'),
-                  )
-                else
-                  TextButton(
-                    onPressed: () => onSetActive(row, true),
-                    child: const Text('Activate'),
-                  ),
-                const SizedBox(width: 4),
-                TextButton(
-                  onPressed: () => onDelete(row),
-                  child: Text(
-                    'Delete',
-                    style: TextStyle(color: theme.colorScheme.error),
-                  ),
-                ),
-              ],
-            ),
-          ],
+    final initials = row.email.isNotEmpty
+        ? row.email[0].toUpperCase()
+        : '?';
+
+    return ListTile(
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      leading: CircleAvatar(
+        backgroundColor: isAdmin
+            ? AppTheme.darkSurface
+            : theme.colorScheme.surfaceContainerHighest,
+        foregroundColor:
+            isAdmin ? Colors.white : theme.colorScheme.onSurfaceVariant,
+        child: Text(initials,
+            style: const TextStyle(fontWeight: FontWeight.w600)),
+      ),
+      title: Text(
+        row.email.isEmpty ? '(no email)' : row.email,
+        style: theme.textTheme.bodyLarge
+            ?.copyWith(fontWeight: FontWeight.w600),
+        maxLines: 2,
+        overflow: TextOverflow.visible,
+        softWrap: true,
+      ),
+      subtitle: Text(
+        [
+          row.createdAt != null
+              ? 'Joined ${dateFormat.format(row.createdAt!)}'
+              : null,
+          '${row.scanCount} Scan${row.scanCount == 1 ? '' : 's'}',
+        ].whereType<String>().join(' • '),
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
         ),
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Status dot
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isActive ? AppTheme.safeGreen : AppTheme.errorColor,
+            ),
+          ),
+          const SizedBox(width: 8),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert_rounded),
+            onSelected: (action) {
+              switch (action) {
+                case 'suspend':
+                  _setActive(row, false);
+                case 'reactivate':
+                  _setActive(row, true);
+                case 'delete':
+                  _deleteUser(row);
+              }
+            },
+            itemBuilder: (ctx) => [
+              if (isActive)
+                const PopupMenuItem(
+                  value: 'suspend',
+                  child: Row(children: [
+                    Icon(Icons.block_outlined),
+                    SizedBox(width: 12),
+                    Text('Suspend Account'),
+                  ]),
+                )
+              else
+                const PopupMenuItem(
+                  value: 'reactivate',
+                  child: Row(children: [
+                    Icon(Icons.check_circle_outline,
+                        color: AppTheme.safeGreen),
+                    SizedBox(width: 12),
+                    Text('Reactivate Account'),
+                  ]),
+                ),
+              PopupMenuItem(
+                value: 'delete',
+                child: Row(children: [
+                  Icon(Icons.person_remove_outlined,
+                      color: theme.colorScheme.error),
+                  const SizedBox(width: 12),
+                  Text('Delete User Data',
+                      style:
+                          TextStyle(color: theme.colorScheme.error)),
+                ]),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 }
+

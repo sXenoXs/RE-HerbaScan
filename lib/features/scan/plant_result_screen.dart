@@ -11,6 +11,8 @@ import 'package:herbascan/core/models/scan_result.dart';
 import 'package:herbascan/core/services/herbarium_service.dart';
 import 'package:herbascan/core/services/adaptive_gradcam_service.dart';
 import 'package:herbascan/core/services/habitat_service.dart';
+import 'package:herbascan/core/theme/app_theme.dart';
+import 'package:herbascan/core/widgets/contraindication_engine_widget.dart';
 import 'package:herbascan/features/scan/habitat_map_screen.dart';
 import 'package:herbascan/features/scan/plant_detail_screen.dart';
 import 'package:uuid/uuid.dart';
@@ -19,49 +21,43 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:gal/gal.dart';
 import 'dart:io';
-import 'dart:convert';
 
 class PlantResultScreen extends StatefulWidget {
   final String imagePath;
   final List<Map<String, dynamic>> predictions;
-  final String? gradCAMPath; // Legacy: file path (deprecated)
-  final String? summaryGradCAMPath; // Legacy: file path (deprecated)
-  final Uint8List? gradcamImageBytes; // New: image bytes
+  final String? gradCAMPath;
+  final String? summaryGradCAMPath;
+  final Uint8List? gradcamImageBytes;
   final String? method; // 'grad-cam' or 'cam'
-  final bool? fallbackUsed; // True if offline was fallback
-  final bool isFromHistory; // True if opened from history (don't auto-save)
-  /// When opening from history, pass the ScanResult so "Save to cloud" can use it.
+  final bool? fallbackUsed;
+  final bool isFromHistory;
   final ScanResult? scanResultFromHistory;
 
   const PlantResultScreen({
     super.key,
     required this.imagePath,
     required this.predictions,
-    this.gradCAMPath, // Legacy support
-    this.summaryGradCAMPath, // Legacy support
-    this.gradcamImageBytes, // New format
+    this.gradCAMPath,
+    this.summaryGradCAMPath,
+    this.gradcamImageBytes,
     this.method,
     this.fallbackUsed,
-    this.isFromHistory = false, // Default to false for new scans
+    this.isFromHistory = false,
     this.scanResultFromHistory,
   });
 
-  /// Factory constructor to create PlantResultScreen from ScanResult
-  /// Used when viewing scan results from history
   factory PlantResultScreen.fromScanResult(ScanResult scanResult) {
-    // Convert Prediction objects to Map format
     final predictions = scanResult.predictions.map((pred) {
       return {
         'label': pred.plantName,
         'plantName': pred.plantName,
         'scientificName': pred.scientificName,
         'confidence': pred.confidence,
-        'index': 0, // Not stored in Prediction, use 0
-        'isDOHApproved': false, // Will be determined from plant if available
+        'index': 0,
+        'isDOHApproved': false,
       };
     }).toList();
 
-    // Try to load GradCAM image from file path if it exists
     Uint8List? gradcamImageBytes;
     if (scanResult.gradCAMPath != null) {
       try {
@@ -70,11 +66,10 @@ class PlantResultScreen extends StatefulWidget {
           gradcamImageBytes = file.readAsBytesSync();
         }
       } catch (e) {
-        print('⚠️ Error loading GradCAM image from path: $e');
+        debugPrint('⚠️ Error loading GradCAM image from path: $e');
       }
     }
 
-    // Get method and fallback info from metadata
     final method = scanResult.metadata['method'] as String?;
     final fallbackUsed = scanResult.metadata['fallbackUsed'] as bool? ?? false;
 
@@ -86,8 +81,8 @@ class PlantResultScreen extends StatefulWidget {
       gradcamImageBytes: gradcamImageBytes,
       method: method,
       fallbackUsed: fallbackUsed,
-      isFromHistory: true, // Mark as from history to disable auto-save
-      scanResultFromHistory: scanResult, // So "Save to cloud" can upload without re-saving to device
+      isFromHistory: true,
+      scanResultFromHistory: scanResult,
     );
   }
 
@@ -108,7 +103,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
   bool? _regeneratedFallbackUsed;
   bool _isRegenerating = false;
 
-  // Settings from SharedPreferences (default all true)
+  // Settings from SharedPreferences
   bool _showConfidence = true;
   bool _showGradcam = true;
   bool _showTop3 = true;
@@ -120,7 +115,6 @@ class _PlantResultScreenState extends State<PlantResultScreen>
   void initState() {
     super.initState();
 
-    // If opened from history, mark as already saved and keep ScanResult for "Save to cloud"
     if (widget.isFromHistory) {
       _isSaved = true;
       if (widget.scanResultFromHistory != null) {
@@ -128,101 +122,29 @@ class _PlantResultScreenState extends State<PlantResultScreen>
       }
     }
 
-    // Initialize TabController with defaults first (will be updated after settings load)
-    _initializeTabController();
-
-    // Load settings from SharedPreferences and update TabController if needed
+    _tabController = TabController(length: 2, vsync: this);
     _loadSettings();
 
-    // Automatically save scan result when screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Only auto-save if not from history
       if (!widget.isFromHistory) {
         _saveResultsAutomatically();
       }
     });
   }
 
-  /// Load settings from SharedPreferences
   Future<void> _loadSettings() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final showConfidence = prefs.getBool('show_confidence') ?? true;
-      final showGradcam = prefs.getBool('show_gradcam') ?? true;
-      final showTop3 = prefs.getBool('show_top3') ?? true;
-
-      // Check if GradCAM setting changed (before updating state)
-      final gradcamChanged = _showGradcam != showGradcam;
-
-      // Only update if values changed
-      if (mounted &&
-          (_showConfidence != showConfidence ||
-              _showGradcam != showGradcam ||
-              _showTop3 != showTop3)) {
+      if (mounted) {
         setState(() {
-          _showConfidence = showConfidence;
-          _showGradcam = showGradcam;
-          _showTop3 = showTop3;
+          _showConfidence = prefs.getBool('show_confidence') ?? true;
+          _showGradcam = prefs.getBool('show_gradcam') ?? true;
+          _showTop3 = prefs.getBool('show_top3') ?? true;
         });
-
-        // Reinitialize TabController if GradCAM setting changed
-        if (gradcamChanged) {
-          _tabController.dispose();
-          _initializeTabController();
-        }
       }
     } catch (e) {
-      print('⚠️ Error loading settings: $e');
+      debugPrint('⚠️ Error loading settings: $e');
     }
-  }
-
-  /// Initialize TabController based on settings and heatmap availability
-  void _initializeTabController() {
-    // CRITICAL FIX: Always show AI Explanation tabs if:
-    // 1. _showGradcam is true (user wants to see GradCAM), AND
-    // 2. (Fallback was used OR Method is set OR Heatmap is available)
-    // This ensures tabs show even when heatmap generation fails
-    final hasHeatmap =
-        widget.gradcamImageBytes != null || widget.gradCAMPath != null;
-    final hasValidMethod = widget.method != null &&
-        widget.method != 'classification_only' &&
-        widget.method != '';
-    final hasFallback = widget.fallbackUsed == true;
-
-    // PRIORITY LOGIC:
-    // 1. If _showGradcam is false, NEVER show tabs (user disabled GradCAM)
-    // 2. If _showGradcam is true, show tabs if fallback was used OR method is valid OR heatmap exists
-    final showAIExplanation =
-        _showGradcam && (hasFallback || hasValidMethod || hasHeatmap);
-
-    // Debug logging BEFORE TabController initialization
-    print('🔍 [PlantResultScreen] _initializeTabController:');
-    print('   ════════════════════════════════════════════════════════');
-    print('   _showGradcam: $_showGradcam');
-    print('   method: "${widget.method}"');
-    print('   fallbackUsed: ${widget.fallbackUsed}');
-    print('   hasHeatmap: $hasHeatmap');
-    print('   hasValidMethod: $hasValidMethod');
-    print('   hasFallback: $hasFallback');
-    print('   ────────────────────────────────────────────────────────');
-    print('   showAIExplanation: $showAIExplanation');
-    print('   TabController length will be: ${showAIExplanation ? 2 : 1}');
-    print('   ════════════════════════════════════════════════════════');
-
-    // CRITICAL: Initialize TabController with correct length
-    // If showAIExplanation is true, length must be 2 (Details + AI Explanation)
-    // If false, length is 1 (Details only)
-    _tabController = TabController(
-      length: showAIExplanation ? 2 : 1,
-      vsync: this,
-    );
-
-    // Debug logging AFTER TabController initialization
-    print('🔍 [PlantResultScreen] TabController Created:');
-    print('   TabController.length: ${_tabController.length}');
-    print('   TabController.index: ${_tabController.index}');
-    print(
-        '   Result: ${_tabController.length == 2 ? "✅ 2 tabs (Details + AI Explanation)" : "❌ 1 tab (Details only)"}');
   }
 
   @override
@@ -231,10 +153,23 @@ class _PlantResultScreenState extends State<PlantResultScreen>
     super.dispose();
   }
 
+  // ── Resolve matched plant from provider ──────────────────────────────────
+  Plant? _resolveMatchedPlant(String plantName) {
+    try {
+      final plantProvider = Provider.of<PlantProvider>(context, listen: false);
+      final normalized = plantName.trim().toLowerCase();
+      for (final p in plantProvider.plants) {
+        if (p.commonName.trim().toLowerCase() == normalized ||
+            p.scientificName.trim().toLowerCase() == normalized) {
+          return p;
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     if (widget.predictions.isEmpty) {
       return _buildErrorScreen();
     }
@@ -242,129 +177,536 @@ class _PlantResultScreenState extends State<PlantResultScreen>
     final topPrediction = widget.predictions.first;
     final plantName = topPrediction['plantName'] ?? 'Unknown Plant';
     final confidence = (topPrediction['confidence'] ?? 0.0).toDouble();
+    final scientificName = (topPrediction['scientificName'] as String?)
+            ?.trim()
+            .isNotEmpty ==
+        true
+        ? topPrediction['scientificName'] as String
+        : plantName;
 
-    // CRITICAL: Use TabController length and _showGradcam setting to determine if tabs should show
-    final tabCount = _tabController.length;
-    final shouldShowTabs = tabCount == 2 && _showGradcam;
+    final hasHeatmap =
+        widget.gradcamImageBytes != null || widget.gradCAMPath != null;
+    final hasValidMethod = widget.method != null &&
+        widget.method != 'classification_only' &&
+        widget.method != '';
+    final hasFallback = widget.fallbackUsed == true;
+    final showAIVision =
+        _showGradcam && (hasFallback || hasValidMethod || hasHeatmap);
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       body: NestedScrollView(
         headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
           return [
-            // SliverAppBar with collapsible header
+            // Edge-to-edge hero SliverAppBar
             SliverAppBar(
-              expandedHeight: 420.0, // Increased to prevent overflow
+              expandedHeight: 300,
               floating: false,
-              pinned: true, // Always visible at top
+              pinned: true,
               snap: false,
               elevation: 0,
-              backgroundColor: theme.scaffoldBackgroundColor,
-              flexibleSpace: FlexibleSpaceBar(
-                // Do NOT use title property - plant name is in the card
-                background: _buildExpandedHeader(theme, plantName, confidence),
-              ),
-              // Title always shows "Scan Results"
-              centerTitle: true,
-              title: Text(
-                AppLocalizations.of(context).scanResults,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onSurface,
-                ),
+              // Solid background when collapsed so tab content doesn't bleed through
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              foregroundColor: Theme.of(context).colorScheme.onSurface,
+              leading: _buildGlassmorphicButton(
+                icon: Icons.arrow_back_ios_rounded,
+                onTap: () => Navigator.of(context).pop(),
               ),
               actions: [
-                IconButton(
-                  onPressed: _shareResults,
-                  icon: const Icon(Icons.share),
-                  tooltip: 'Share Results',
+                _buildGlassmorphicButton(
+                  icon: Icons.share_rounded,
+                  onTap: _shareResults,
                 ),
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.save),
-                  tooltip: 'Save',
-                  onSelected: (value) async {
-                    if (value == 'save_device') {
-                      await _saveToDeviceOnly();
-                    } else if (value == 'save_cloud') {
-                      await _saveToCloudOnly();
-                    } else if (value == 'save_camera_roll') {
-                      await _saveToCameraRoll();
-                    }
-                  },
-                  itemBuilder: (context) {
-                    final auth = Provider.of<AuthProvider>(context, listen: false);
-                    return [
-                      const PopupMenuItem<String>(
-                        value: 'save_device',
-                        child: Row(
-                          children: [
-                            Icon(Icons.phone_android),
-                            SizedBox(width: 12),
-                            Text('Save to device'),
-                          ],
-                        ),
-                      ),
-                      if (auth.isLoggedIn)
-                        const PopupMenuItem<String>(
-                          value: 'save_cloud',
-                          child: Row(
-                            children: [
-                              Icon(Icons.cloud_upload),
-                              SizedBox(width: 12),
-                              Text('Save to cloud'),
-                            ],
-                          ),
-                        ),
-                      const PopupMenuItem<String>(
-                        value: 'save_camera_roll',
-                        child: Row(
-                          children: [
-                            Icon(Icons.photo_library_outlined),
-                            SizedBox(width: 12),
-                            Text('Save to Camera Roll'),
-                          ],
-                        ),
-                      ),
-                    ];
-                  },
+                const SizedBox(width: 8),
+                _buildGlassmorphicButton(
+                  icon: _isSaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                  onTap: () => _showSaveOptions(context),
                 ),
+                const SizedBox(width: 12),
               ],
-            ),
-            // Pinned TabBar - only show if _showGradcam is true
-            if (shouldShowTabs && _showGradcam)
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: _SliverTabBarDelegate(
-                  TabBar(
-                    controller: _tabController,
-                    tabs: const [
-                      Tab(
-                        icon: Icon(Icons.info),
-                        text: 'Details',
-                      ),
-                      Tab(
-                        icon: Icon(Icons.visibility),
-                        text: 'AI Explanation',
-                      ),
-                    ],
-                  ),
-                  theme.scaffoldBackgroundColor,
-                ),
+              flexibleSpace: FlexibleSpaceBar(
+                background: _buildHeroBackground(
+                    context, plantName, confidence),
               ),
+            ),
+            // Pinned TabBar
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _SliverTabBarDelegate(
+                TabBar(
+                  controller: _tabController,
+                  labelColor: AppTheme.botanicalPrimary,
+                  unselectedLabelColor: Colors.grey,
+                  indicatorColor: AppTheme.botanicalPrimary,
+                  indicatorWeight: 2,
+                  tabs: const [
+                    Tab(text: 'Insights'),
+                    Tab(text: 'AI Vision'),
+                  ],
+                ),
+                Theme.of(context).scaffoldBackgroundColor,
+              ),
+            ),
           ];
         },
-        body: (shouldShowTabs && _showGradcam)
-            ? TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildDetailsTab(theme, topPrediction),
-                  _buildGradCAMTab(theme, plantName, confidence),
-                ],
-              )
-            : _buildDetailsTab(theme, topPrediction),
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+            _buildInsightsTab(
+                context, topPrediction, plantName, scientificName, confidence),
+            _buildAIVisionTab(
+                context, plantName, scientificName, confidence, showAIVision),
+          ],
+        ),
       ),
     );
   }
 
+  // ── Hero background (edge-to-edge scan image) ────────────────────────────
+  Widget _buildHeroBackground(
+      BuildContext context, String plantName, double confidence) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // Scan image fills FlexibleSpaceBar edge-to-edge
+        GestureDetector(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) =>
+                    FullScreenImageView(imagePath: widget.imagePath),
+              ),
+            );
+          },
+          child: Hero(
+            tag: 'scan_image_${widget.imagePath.hashCode}',
+            child: Image.file(
+              File(widget.imagePath),
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                color: AppTheme.darkSurface,
+                child: const Center(
+                  child: Icon(Icons.eco_rounded,
+                      size: 64, color: AppTheme.botanicalPrimaryL),
+                ),
+              ),
+            ),
+          ),
+        ),
+        // Bottom gradient overlay
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                colors: [Colors.black54, Colors.transparent],
+                stops: [0.0, 0.6],
+              ),
+            ),
+          ),
+        ),
+        // Glassmorphic confidence badge — bottom-left
+        Positioned(
+          left: 16,
+          bottom: 16,
+          child: _buildConfidenceBadge(confidence),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildConfidenceBadge(double confidence) {
+    final pct = (confidence.clamp(0.0, 1.0) * 100).toStringAsFixed(0);
+    final color = _getConfidenceColor(confidence);
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(100),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.4),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: color,
+              ),
+            ),
+            const SizedBox(width: 8),
+            if (_showConfidence)
+              Text(
+                '$pct% Match',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: -0.2,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGlassmorphicButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    // Always use dark semi-transparent pill so it's readable over both the
+    // hero image (expanded) and the solid scaffold background (collapsed).
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        height: 40,
+        margin: const EdgeInsets.only(top: 4),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.35),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: Colors.white, size: 20),
+      ),
+    );
+  }
+
+  // ── Tab 1: Insights ───────────────────────────────────────────────────────
+  Widget _buildInsightsTab(
+    BuildContext context,
+    Map<String, dynamic> topPrediction,
+    String plantName,
+    String scientificName,
+    double confidence,
+  ) {
+    final theme = Theme.of(context);
+    final resolvedPlant = _resolveMatchedPlant(plantName);
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Plant name + scientific name
+          Text(
+            plantName,
+            style: theme.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              letterSpacing: -0.3,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            scientificName,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              fontStyle: FontStyle.italic,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Contraindication Engine immediately below names
+          ContraindicationEngineWidget(
+            plant: resolvedPlant,
+            commonName: plantName,
+          ),
+          const SizedBox(height: 16),
+
+          // 2 side-by-side hero cards
+          Row(
+            children: [
+              Expanded(
+                child: _buildHeroActionCard(
+                  context,
+                  icon: Icons.eco_rounded,
+                  label: 'Open Plant Profile',
+                  color: AppTheme.botanicalPrimary,
+                  onTap: resolvedPlant != null
+                      ? () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => PlantDetailScreen(
+                                plant: resolvedPlant,
+                              ),
+                            ),
+                          );
+                        }
+                      : null,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FutureBuilder<bool>(
+                  future: resolvedPlant != null
+                      ? HabitatService().hasHabitatData(resolvedPlant.id)
+                      : Future.value(false),
+                  builder: (context, snapshot) {
+                    final hasHabitat = snapshot.data == true;
+                    return _buildHeroActionCard(
+                      context,
+                      icon: Icons.map_rounded,
+                      label: 'View Habitat Map',
+                      color: Colors.teal,
+                      onTap: hasHabitat && resolvedPlant != null
+                          ? () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => HabitatMapScreen(
+                                      plant: resolvedPlant),
+                                ),
+                              );
+                            }
+                          : null,
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+
+          // Alternative matches (if confidence < 90% and top3 enabled)
+          if (_showTop3 && widget.predictions.length > 1) ...[
+            const SizedBox(height: 24),
+            _buildAlternativeMatches(theme),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeroActionCard(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required Color color,
+    VoidCallback? onTap,
+  }) {
+    final theme = Theme.of(context);
+    final isDisabled = onTap == null;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDisabled
+                ? theme.colorScheme.surfaceContainerHighest
+                : color.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDisabled
+                  ? theme.colorScheme.outline.withOpacity(0.1)
+                  : color.withOpacity(0.2),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: isDisabled
+                      ? theme.colorScheme.onSurface.withOpacity(0.08)
+                      : color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  icon,
+                  color: isDisabled
+                      ? theme.colorScheme.onSurface.withOpacity(0.4)
+                      : color,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: isDisabled
+                      ? theme.colorScheme.onSurface.withOpacity(0.4)
+                      : theme.colorScheme.onSurface,
+                ),
+                maxLines: 2,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAlternativeMatches(ThemeData theme) {
+    final alternatives = widget.predictions.skip(1).toList();
+    if (alternatives.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Alternative Matches',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...alternatives.take(2).map((pred) {
+          final name = pred['plantName'] ?? pred['label'] ?? 'Unknown';
+          final conf = (pred['confidence'] ?? 0.0).toDouble();
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.eco_outlined,
+                    size: 18,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (_showConfidence)
+                        Text(
+                          '${(conf * 100).toStringAsFixed(1)}% match',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                SizedBox(
+                  width: 60,
+                  height: 6,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(3),
+                    child: LinearProgressIndicator(
+                      value: conf.clamp(0.0, 1.0),
+                      backgroundColor:
+                          theme.colorScheme.surfaceContainerHighest,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        _getConfidenceColor(conf),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  // ── Tab 2: AI Vision ──────────────────────────────────────────────────────
+  Widget _buildAIVisionTab(
+    BuildContext context,
+    String plantName,
+    String scientificName,
+    double confidence,
+    bool showAIVision,
+  ) {
+    final theme = Theme.of(context);
+    final resolvedPlant = _resolveMatchedPlant(plantName);
+
+    if (!showAIVision) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.visibility_off_rounded,
+                size: 56,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'AI Heatmap Disabled',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Enable "Show AI Reasoning Heatmap" in Settings to see the AI Vision tab.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      child: GradCAMVisualization(
+        gradCAMPath: widget.gradCAMPath,
+        summaryGradCAMPath: widget.summaryGradCAMPath,
+        gradcamImageBytes:
+            _regeneratedGradcamImageBytes ?? widget.gradcamImageBytes,
+        originalImagePath: widget.imagePath,
+        plantName: plantName,
+        scientificName: scientificName,
+        confidence: confidence,
+        predictions: widget.predictions,
+        plant: resolvedPlant,
+        method: _regeneratedMethod ?? widget.method,
+        fallbackUsed: _regeneratedFallbackUsed ?? widget.fallbackUsed,
+        onRefresh: _regenerateGradCAM,
+        onHeatmapTap: (bool showOverlay, double opacity,
+            Function(bool) onOverlayChanged,
+            Function(double) onOpacityChanged) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => FullScreenHeatmapRoute(
+                originalImagePath: widget.imagePath,
+                gradcamImageBytes:
+                    _regeneratedGradcamImageBytes ?? widget.gradcamImageBytes,
+                gradCAMPath: widget.gradCAMPath,
+                initialShowOverlay: showOverlay,
+                initialOpacity: opacity,
+                onOverlayChanged: onOverlayChanged,
+                onOpacityChanged: onOpacityChanged,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ── Error screen ──────────────────────────────────────────────────────────
   Widget _buildErrorScreen() {
     return Scaffold(
       appBar: AppBar(
@@ -374,11 +716,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Colors.grey.shade400,
-            ),
+            Icon(Icons.error_outline, size: 64, color: Colors.grey.shade400),
             const SizedBox(height: 16),
             Text(
               'No predictions available',
@@ -403,753 +741,96 @@ class _PlantResultScreenState extends State<PlantResultScreen>
     );
   }
 
-  Widget _buildExpandedHeader(
-      ThemeData theme, String plantName, double confidence) {
-    // Main container acting as canvas
-    return Container(
-      color: theme.scaffoldBackgroundColor, // Use theme background color
-      child: SafeArea(
-        bottom: false,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Main card with plant details - centered
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface, // Use theme surface color
-                borderRadius:
-                    BorderRadius.circular(20), // Changed from 16 to 20
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-                border: Border.all(
-                  color: theme.colorScheme.outline
-                      .withOpacity(0.2), // Use theme outline color
-                  width: 1,
-                ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Plant image - will fade out as user scrolls
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => FullScreenImageView(
-                            imagePath: widget.imagePath,
-                          ),
-                        ),
-                      );
-                    },
-                    child: Hero(
-                      tag: 'plant_image_hero',
-                      child: Container(
-                        height: 120,
-                        width: 120,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                              color: theme.primaryColor.withOpacity(0.3)),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.file(
-                            File(widget.imagePath),
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color:
-                                    theme.colorScheme.surfaceContainerHighest,
-                                child: Icon(
-                                  Icons.local_florist,
-                                  size: 48,
-                                  color: theme.primaryColor,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Plant name
-                  Text(
-                    plantName,
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  // Confidence score and method badge - will fade out as user scrolls
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      // Confidence badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color:
-                              _getConfidenceColor(confidence).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: _getConfidenceColor(confidence)
-                                .withOpacity(0.3),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.analytics,
-                              size: 14,
-                              color: _getConfidenceColor(confidence),
-                            ),
-                            const SizedBox(width: 6),
-                            Visibility(
-                              visible: _showConfidence,
-                              child: Text(
-                                '${(confidence.clamp(0.0, 1.0) * 100).toStringAsFixed(1)}%',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: _getConfidenceColor(confidence),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Method badge - only show if method is set
-                      if (widget.method != null) _buildMethodBadge(theme),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+  // ── Save options ──────────────────────────────────────────────────────────
+  void _showSaveOptions(BuildContext context) {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-    );
-  }
-
-  Widget _buildDetailsTab(ThemeData theme, Map<String, dynamic> topPrediction) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Top predictions
-          _buildPredictionsCard(theme),
-
-          const SizedBox(height: 16),
-
-          // Plant information
-          _buildPlantInfoCard(theme, topPrediction),
-
-          const SizedBox(height: 16),
-
-          // Scan metadata
-          _buildMetadataCard(theme),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGradCAMTab(
-      ThemeData theme, String plantName, double confidence) {
-    // Get scientific name and predictions from top prediction.
-    // Fallback to plantName so Summary tab can load explanation when backend omits scientificName.
-    final topPrediction = widget.predictions.isNotEmpty
-        ? widget.predictions.first
-        : <String, dynamic>{};
-    final scientificName =
-        (topPrediction['scientificName'] as String?)?.trim().isNotEmpty == true
-            ? (topPrediction['scientificName'] as String)
-            : plantName;
-
-    // Resolve plant for Contraindication Engine (safety cards)
-    Plant? resolvedPlant;
-    try {
-      final plantProvider = Provider.of<PlantProvider>(context, listen: false);
-      final normalized = plantName.trim().toLowerCase();
-      for (final p in plantProvider.plants) {
-        if (p.commonName.trim().toLowerCase() == normalized ||
-            p.scientificName.trim().toLowerCase() == normalized) {
-          resolvedPlant = p;
-          break;
-        }
-      }
-    } catch (_) {}
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          // GradCAM visualization
-          GradCAMVisualization(
-            gradCAMPath: widget.gradCAMPath, // Legacy support
-            summaryGradCAMPath: widget.summaryGradCAMPath, // Legacy support
-            // Use regenerated data if available, otherwise use original
-            gradcamImageBytes:
-                _regeneratedGradcamImageBytes ?? widget.gradcamImageBytes,
-            originalImagePath: widget.imagePath,
-            plantName: plantName,
-            scientificName: scientificName,
-            confidence: confidence,
-            predictions: widget.predictions,
-            plant: resolvedPlant,
-            // Use regenerated method if available, otherwise use original
-            method: _regeneratedMethod ?? widget.method,
-            fallbackUsed: _regeneratedFallbackUsed ?? widget.fallbackUsed,
-            onRefresh: _regenerateGradCAM,
-            onHeatmapTap: (bool showOverlay,
-                double opacity,
-                Function(bool) onOverlayChanged,
-                Function(double) onOpacityChanged) {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => FullScreenHeatmapRoute(
-                    originalImagePath: widget.imagePath,
-                    gradcamImageBytes: _regeneratedGradcamImageBytes ??
-                        widget.gradcamImageBytes,
-                    gradCAMPath: widget.gradCAMPath,
-                    initialShowOverlay: showOverlay,
-                    initialOpacity: opacity,
-                    onOverlayChanged: onOverlayChanged,
-                    onOpacityChanged: onOpacityChanged,
-                  ),
-                ),
-              );
-            },
-          ),
-
-          const SizedBox(height: 16),
-
-          // Optional: Where it grows (Static Habitat Heatmap) – above GradCAM info for visibility
-          if (resolvedPlant != null) ...[
-            _WhereItGrowsTile(
-              plant: resolvedPlant,
-              theme: theme,
-            ),
-            const SizedBox(height: 16),
-            _ExplorePlantPartsTile(
-              plant: resolvedPlant,
-              theme: theme,
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          // GradCAM info
-          _buildGradCAMInfoCard(theme),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPredictionsCard(ThemeData theme) {
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.colorScheme.outline.withOpacity(0.2),
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.analytics,
-                  color: theme.colorScheme.onSurface,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Top Predictions',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Higher % = more likely this plant matches your photo.',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.6),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Tooltip(
-                  message:
-                      'This percentage shows how sure the app is that the photo matches this plant. Higher is better.',
-                  child: Padding(
-                    padding: const EdgeInsets.all(4),
-                    child: Icon(
-                      Icons.help_outline,
-                      size: 20,
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            // Logic C: Top-3 Results - use displayCount based on _showTop3 setting
-            Builder(
-              builder: (context) {
-                // Create displayCount variable
-                final displayCount = _showTop3 ? widget.predictions.length : 1;
-
-                return Column(
-                  children: widget.predictions
-                      .asMap()
-                      .entries
-                      .take(displayCount)
-                      .map((entry) {
-                    final index = entry.key;
-                    final prediction = entry.value;
-                    final confidence =
-                        (prediction['confidence'] ?? 0.0).toDouble();
-                    final plantName = prediction['plantName'] ?? 'Unknown';
-
-                    final isDark = theme.brightness == Brightness.dark;
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? theme.colorScheme.surfaceContainerHighest
-                                  : theme.primaryColor.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Center(
-                              child: Text(
-                                '${index + 1}',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: isDark
-                                      ? theme.colorScheme.onSurface
-                                      : theme.primaryColor,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  plantName,
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                Visibility(
-                                  visible: _showConfidence,
-                                  child: Text(
-                                    '${(confidence * 100).toStringAsFixed(1)}% match',
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.onSurface
-                                          .withOpacity(0.6),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            width: 60,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.surfaceContainerHighest,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: FractionallySizedBox(
-                              alignment: Alignment.centerLeft,
-                              widthFactor: confidence.clamp(0.0, 1.0),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: _getConfidenceColor(confidence),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPlantInfoCard(ThemeData theme, Map<String, dynamic> prediction) {
-    final plantName =
-        prediction['plantName'] ?? prediction['label'] ?? 'Unknown';
-    final confidence = (prediction['confidence'] ?? 0.0).toDouble();
-
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.colorScheme.outline.withOpacity(0.2),
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.info,
-                  color: theme.colorScheme.onSurface,
-                ),
-                const SizedBox(width: 8),
                 Text(
-                  'Plant Information',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
+                  'Save Scan',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.phone_android_rounded),
+                  title: const Text('Save to device'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _saveToDeviceOnly();
+                  },
+                ),
+                if (auth.isLoggedIn)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.cloud_upload_rounded),
+                    title: const Text('Save to cloud'),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _saveToCloudOnly();
+                    },
                   ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.photo_library_outlined),
+                  title: const Text('Save to Camera Roll'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _saveToCameraRoll();
+                  },
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            FutureBuilder<String>(
-              future: _resolveScientificName(plantName),
-              builder: (context, snapshot) {
-                final scientificName = snapshot.data ?? plantName;
-                return _buildInfoRow('Scientific Name', scientificName);
-              },
-            ),
-            _buildInfoRow('Match', '${(confidence * 100).toStringAsFixed(1)}%'),
-            _buildInfoRow(
-                'Prediction Index', '${prediction['index'] ?? 'N/A'}'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Resolves scientific name from plant_explanations.json based on common name
-  /// Falls back to common name if not found
-  Future<String> _resolveScientificName(String commonName) async {
-    try {
-      // First, check if scientific name is already provided in prediction
-      final topPrediction = widget.predictions.isNotEmpty
-          ? widget.predictions.first
-          : <String, dynamic>{};
-      final existingScientificName = topPrediction['scientificName'] as String?;
-
-      if (existingScientificName != null &&
-          existingScientificName.isNotEmpty &&
-          existingScientificName != 'Unknown') {
-        return existingScientificName;
-      }
-
-      // Load plant_explanations.json
-      final jsonString =
-          await rootBundle.loadString('assets/data/plant_explanations.json');
-      final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
-
-      // Normalize common name for lookup (case-insensitive, trim)
-      final normalizedCommonName = commonName.trim();
-
-      // Try exact match first
-      var plantData = jsonData[normalizedCommonName];
-
-      // Try case-insensitive match if exact match fails
-      if (plantData == null) {
-        final matchingKey = jsonData.keys.firstWhere(
-          (key) =>
-              key.trim().toLowerCase() == normalizedCommonName.toLowerCase(),
-          orElse: () => '',
+          ),
         );
-        if (matchingKey.isNotEmpty) {
-          plantData = jsonData[matchingKey];
-        }
-      }
-
-      // Extract scientific name from identification text
-      if (plantData != null) {
-        final plantMap = plantData as Map<String, dynamic>;
-        final identification = plantMap['identification'] as String?;
-
-        if (identification != null && identification.isNotEmpty) {
-          // Pattern: "The model identified this as [Common Name] ([Scientific Name])"
-          // Extract text in parentheses after the common name
-          final regex = RegExp(r'\(([^)]+)\)');
-          final match = regex.firstMatch(identification);
-
-          if (match != null && match.groupCount >= 1) {
-            final scientificName = match.group(1)?.trim();
-            if (scientificName != null && scientificName.isNotEmpty) {
-              return scientificName;
-            }
-          }
-        }
-      }
-
-      // Fallback: return common name if scientific name cannot be found
-      return commonName;
-    } catch (e) {
-      print('⚠️ Error resolving scientific name for "$commonName": $e');
-      // Fallback: return common name on error
-      return commonName;
-    }
-  }
-
-  Widget _buildMetadataCard(ThemeData theme) {
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.colorScheme.outline.withOpacity(0.2),
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.settings,
-                  color: theme.colorScheme.onSurface,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Scan Information',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _buildInfoRow('Scan Time', DateTime.now().toString().split('.')[0]),
-            _buildInfoRow('Image Path', widget.imagePath.split('/').last),
-            _buildInfoRow(
-                // Show "CAM Available" for offline CAM, "Score-CAM Available" for online Score-CAM
-                widget.method == 'cam'
-                    ? 'CAM Available'
-                    : 'Score-CAM Available',
-                (widget.gradcamImageBytes != null || widget.gradCAMPath != null)
-                    ? 'Yes'
-                    : 'No'),
-            if (widget.method != null)
-              _buildInfoRow(
-                  'Method',
-                  widget.method == 'grad-cam'
-                      ? 'Online (Score-CAM)'
-                      : 'Offline (CAM)'),
-            if (widget.fallbackUsed == true)
-              _buildInfoRow('Fallback Used', 'Yes'),
-          ],
-        ),
-      ),
+      },
     );
   }
 
-  Widget _buildGradCAMInfoCard(ThemeData theme) {
-    // Determine if using CAM (offline) or GradCAM (online)
-    final isCAM = widget.method == 'cam';
-    final title = isCAM ? 'About Offline CAM' : 'About Score-CAM';
-
-    // Description text based on method
-    final description = isCAM
-        ? 'CAM (Class Activation Mapping) shows which parts of the image the AI model focused on when making its prediction. This offline method uses feature maps to highlight important regions without requiring gradient computation.'
-        : 'Score-CAM (Score-weighted Class Activation Mapping) shows which parts of the image the AI model focused on when making its prediction. This helps explain why the model made its decision.';
-
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.colorScheme.outline.withOpacity(0.2),
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.help_outline,
-                  color: theme.colorScheme.onSurface,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              description,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.87),
-              ),
-            ),
-            const SizedBox(height: 16),
-            // Visual legend with colored squares
-            Row(
-              children: [
-                _buildColorLegendItem(Colors.red, 'High'),
-                const SizedBox(width: 16),
-                _buildColorLegendItem(Colors.green, 'Medium'),
-                const SizedBox(width: 16),
-                _buildColorLegendItem(Colors.blue, 'Low'),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildColorLegendItem(Color color, String label) {
-    final theme = Theme.of(context);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: theme.colorScheme.onSurface.withOpacity(0.87),
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              '$label:',
-              style: TextStyle(
-                fontWeight: FontWeight.w500,
-                color: theme.colorScheme.onSurface.withOpacity(0.9),
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(
-                color: theme.colorScheme.onSurface.withOpacity(0.87),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
+  // ── Helpers ───────────────────────────────────────────────────────────────
   Color _getConfidenceColor(double confidence) {
-    if (confidence >= 0.8) return Colors.green;
-    if (confidence >= 0.5) return Colors.orange;
-    return Colors.red;
+    if (confidence >= 0.8) return AppTheme.safeGreen;
+    if (confidence >= 0.5) return AppTheme.warningAmber;
+    return AppTheme.errorColor;
   }
 
   Future<void> _regenerateGradCAM() async {
-    if (_isRegenerating) {
-      // Already regenerating, ignore
-      return;
-    }
-
-    setState(() {
-      _isRegenerating = true;
-    });
+    if (_isRegenerating) return;
+    setState(() => _isRegenerating = true);
 
     try {
-      // Show loading indicator (spinner and text must contrast with SnackBar: dark mode SnackBar often has light bg)
       if (!mounted) return;
-      final theme = Theme.of(context);
-      final isDark = theme.brightness == Brightness.dark;
-      final contentColor = isDark ? Colors.black87 : Colors.white;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
             children: [
-              SizedBox(
+              const SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(contentColor),
-                ),
+                    strokeWidth: 2,
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(Colors.white)),
               ),
               const SizedBox(width: 16),
-              Expanded(
+              const Expanded(
                 child: Text(
-                  'Regenerating heatmap & explanation',
+                  'Regenerating heatmap…',
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
-                  style: TextStyle(color: contentColor),
                 ),
               ),
             ],
@@ -1158,57 +839,46 @@ class _PlantResultScreenState extends State<PlantResultScreen>
         ),
       );
 
-      // Read image bytes
       final imageFile = File(widget.imagePath);
-      if (!await imageFile.exists()) {
-        throw Exception('Image file not found');
-      }
+      if (!await imageFile.exists()) throw Exception('Image file not found');
       final imageBytes = await imageFile.readAsBytes();
 
-      // Regenerate using AdaptiveGradCAMService
       final result = await _adaptiveGradCAMService.identifyPlant(
         imagePath: widget.imagePath,
         imageBytes: imageBytes,
       );
 
-      if (result == null) {
-        throw Exception('Failed to regenerate GradCAM');
-      }
+      if (result == null) throw Exception('Failed to regenerate GradCAM');
 
-      // Update state with regenerated data
       if (mounted) {
         setState(() {
-          _regeneratedGradcamImageBytes = result['gradcam_image'] as Uint8List?;
+          _regeneratedGradcamImageBytes =
+              result['gradcam_image'] as Uint8List?;
           _regeneratedMethod = result['method'] as String?;
-          _regeneratedFallbackUsed = result['fallback_used'] as bool? ?? false;
+          _regeneratedFallbackUsed =
+              result['fallback_used'] as bool? ?? false;
           _isRegenerating = false;
-          // Widget will rebuild automatically when state changes
         });
 
-        // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               _regeneratedMethod == 'grad-cam'
-                  ? 'Score-CAM regenerated successfully!'
-                  : 'CAM regenerated successfully!',
+                  ? 'Score-CAM regenerated!'
+                  : 'CAM regenerated!',
             ),
-            backgroundColor: Colors.green,
+            backgroundColor: AppTheme.safeGreen,
             duration: const Duration(seconds: 2),
           ),
         );
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _isRegenerating = false;
-        });
-
-        // Show error message
+        setState(() => _isRegenerating = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to regenerate: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            content: Text('Failed to regenerate: $e'),
+            backgroundColor: AppTheme.errorColor,
             duration: const Duration(seconds: 3),
           ),
         );
@@ -1226,26 +896,24 @@ class _PlantResultScreenState extends State<PlantResultScreen>
         'I identified $plantName using HerbaScan! It\'s a $confidence% match. '
         'Identified using AI-powered plant recognition.';
     try {
-      if (widget.imagePath.isNotEmpty && File(widget.imagePath).existsSync()) {
-        await Share.shareXFiles(
-          [XFile(widget.imagePath)],
-          text: textPayload,
-        );
+      if (widget.imagePath.isNotEmpty &&
+          File(widget.imagePath).existsSync()) {
+        await Share.shareXFiles([XFile(widget.imagePath)], text: textPayload);
       } else {
         await Share.share(textPayload);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Share failed: $e')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Share failed: $e')));
       }
     }
   }
 
   Future<void> _saveToCameraRoll() async {
     try {
-      if (widget.imagePath.isNotEmpty && File(widget.imagePath).existsSync()) {
+      if (widget.imagePath.isNotEmpty &&
+          File(widget.imagePath).existsSync()) {
         await Gal.putImage(widget.imagePath);
       } else if (widget.gradcamImageBytes != null &&
           widget.gradcamImageBytes!.isNotEmpty) {
@@ -1293,7 +961,6 @@ class _PlantResultScreenState extends State<PlantResultScreen>
       final plantProvider = Provider.of<PlantProvider>(context, listen: false);
       final topPrediction = widget.predictions.first;
 
-      // Convert predictions to Prediction objects
       final predictions = widget.predictions.map((pred) {
         return Prediction(
           plantId: pred['label'] ?? '',
@@ -1304,25 +971,18 @@ class _PlantResultScreenState extends State<PlantResultScreen>
         );
       }).toList();
 
-      // Get plant data from provider based on the predicted plant name
-      // CRITICAL FIX: Use plantName and scientificName from prediction for better matching
       final predictedPlantName =
           topPrediction['plantName'] ?? topPrediction['label'] ?? '';
       final predictedScientificName = topPrediction['scientificName'] ?? '';
-
-      // Normalize strings for comparison (trim, lowercase)
       final normalizedPredictedName = predictedPlantName.trim().toLowerCase();
       final normalizedPredictedScientific =
           predictedScientificName.trim().toLowerCase();
 
-      // Try to find matching plant in database
-      // Check against commonName, scientificName, and englishName
       final plant = plantProvider.plants.where((p) {
         final normalizedCommon = p.commonName.trim().toLowerCase();
         final normalizedScientific = p.scientificName.trim().toLowerCase();
         final normalizedEnglish = p.englishName.trim().toLowerCase();
 
-        // Match against predicted plant name
         if (normalizedPredictedName.isNotEmpty) {
           if (normalizedCommon == normalizedPredictedName ||
               normalizedScientific == normalizedPredictedName ||
@@ -1330,8 +990,6 @@ class _PlantResultScreenState extends State<PlantResultScreen>
             return true;
           }
         }
-
-        // Match against predicted scientific name
         if (normalizedPredictedScientific.isNotEmpty) {
           if (normalizedCommon == normalizedPredictedScientific ||
               normalizedScientific == normalizedPredictedScientific ||
@@ -1339,24 +997,9 @@ class _PlantResultScreenState extends State<PlantResultScreen>
             return true;
           }
         }
-
         return false;
       }).firstOrNull;
 
-      // Debug logging
-      if (plant == null) {
-        print('⚠️ [PlantResultScreen] Plant not found in database:');
-        print('   Predicted plant name: "$predictedPlantName"');
-        print('   Predicted scientific name: "$predictedScientificName"');
-        print(
-            '   Available plants: ${plantProvider.plants.map((p) => p.commonName).join(", ")}');
-      } else {
-        print(
-            '✅ [PlantResultScreen] Plant matched: ${plant.commonName} (${plant.scientificName})');
-      }
-
-      // Save GradCAM image bytes to file if we have bytes but no path
-      // This is needed for online GradCAM which returns bytes directly
       String? savedGradCAMPath = widget.gradCAMPath;
       if (widget.gradcamImageBytes != null && savedGradCAMPath == null) {
         try {
@@ -1365,19 +1008,16 @@ class _PlantResultScreenState extends State<PlantResultScreen>
           if (!await gradcamDir.exists()) {
             await gradcamDir.create(recursive: true);
           }
-
           final timestamp = DateTime.now().millisecondsSinceEpoch;
-          final gradcamFile = File('${gradcamDir.path}/gradcam_$timestamp.png');
+          final gradcamFile =
+              File('${gradcamDir.path}/gradcam_$timestamp.png');
           await gradcamFile.writeAsBytes(widget.gradcamImageBytes!);
           savedGradCAMPath = gradcamFile.path;
-
-          print('💾 Saved GradCAM image to: $savedGradCAMPath');
         } catch (e) {
-          print('⚠️ Error saving GradCAM image: $e');
+          debugPrint('⚠️ Error saving GradCAM image: $e');
         }
       }
 
-      // Create scan result
       final scanResult = ScanResult(
         id: const Uuid().v4(),
         plant: plant,
@@ -1394,24 +1034,21 @@ class _PlantResultScreenState extends State<PlantResultScreen>
           'method': widget.method ?? 'unknown',
           'fallbackUsed': widget.fallbackUsed ?? false,
         },
-        isOfflineScan: widget.method == 'cam' || widget.fallbackUsed == true,
+        isOfflineScan:
+            widget.method == 'cam' || widget.fallbackUsed == true,
       );
 
-      // Save to database (device only; Cloud is opt-in via Save button when logged in)
       await plantProvider.addScanResult(scanResult);
 
       setState(() {
         _isSaved = true;
         _savedScanResult = scanResult;
       });
-
-      print('✅ Scan result saved to device');
     } catch (e) {
-      print('❌ Error saving scan result: $e');
+      debugPrint('❌ Error saving scan result: $e');
     }
   }
 
-  /// Save only to device history (from save dropdown).
   Future<void> _saveToDeviceOnly() async {
     if (!_isSaved) {
       await _saveResultsAutomatically();
@@ -1420,13 +1057,13 @@ class _PlantResultScreenState extends State<PlantResultScreen>
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(_isSaved ? 'Scan already saved to history' : 'Scan saved to device history'),
-        backgroundColor: Colors.green,
+        content: Text(
+            _isSaved ? 'Scan already saved to history' : 'Scan saved to device history'),
+        backgroundColor: AppTheme.safeGreen,
       ),
     );
   }
 
-  /// Save to cloud / Personal Herbarium (from save dropdown). Saves to device first if needed.
   Future<void> _saveToCloudOnly() async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     if (!auth.isLoggedIn) {
@@ -1464,7 +1101,6 @@ class _PlantResultScreenState extends State<PlantResultScreen>
       }
       return;
     }
-    // Check image file exists (often missing when opened from history after app/data clear)
     if (widget.imagePath.isEmpty || !await File(widget.imagePath).exists()) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1477,7 +1113,8 @@ class _PlantResultScreenState extends State<PlantResultScreen>
       return;
     }
     try {
-      final scanId = await HerbariumService().uploadScan(_savedScanResult!, widget.imagePath);
+      final scanId = await HerbariumService()
+          .uploadScan(_savedScanResult!, widget.imagePath);
       if (!mounted) return;
       if (scanId != null) {
         setState(() => _savedToCloud = true);
@@ -1490,7 +1127,8 @@ class _PlantResultScreenState extends State<PlantResultScreen>
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Could not save to cloud. Check connection or try again.'),
+            content:
+                Text('Could not save to cloud. Check connection or try again.'),
             backgroundColor: Colors.orange,
           ),
         );
@@ -1506,65 +1144,9 @@ class _PlantResultScreenState extends State<PlantResultScreen>
       }
     }
   }
-
-  Widget _buildMethodBadge(ThemeData theme) {
-    if (widget.method == null) return const SizedBox.shrink();
-
-    final isOnline = widget.method == 'grad-cam';
-    final isFallback = widget.fallbackUsed == true;
-
-    Color badgeColor;
-    IconData badgeIcon;
-    String badgeText;
-
-    if (isOnline && !isFallback) {
-      badgeColor = Colors.green;
-      badgeIcon = Icons.cloud;
-      badgeText = 'Online';
-    } else if (isFallback) {
-      badgeColor = Colors.orange;
-      badgeIcon = Icons.sync_problem;
-      badgeText = 'Fallback'; // Short text to prevent overflow
-    } else {
-      badgeColor = Colors.blue;
-      badgeIcon = Icons.offline_bolt;
-      badgeText = 'Offline';
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: badgeColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: badgeColor.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            badgeIcon,
-            size: 16,
-            color: badgeColor,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            badgeText,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: badgeColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
-// Custom delegate for pinned TabBar
+// ── Sliver delegate for pinned TabBar ─────────────────────────────────────
 class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
   final TabBar tabBar;
   final Color backgroundColor;
@@ -1593,14 +1175,11 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
   }
 }
 
-// Full-screen image viewer with zoom and pan capabilities
+// ── Full-screen image viewer ──────────────────────────────────────────────
 class FullScreenImageView extends StatelessWidget {
   final String imagePath;
 
-  const FullScreenImageView({
-    super.key,
-    required this.imagePath,
-  });
+  const FullScreenImageView({super.key, required this.imagePath});
 
   @override
   Widget build(BuildContext context) {
@@ -1609,13 +1188,12 @@ class FullScreenImageView extends StatelessWidget {
       body: SafeArea(
         child: Stack(
           children: [
-            // Full-screen image with zoom and pan
             Center(
               child: InteractiveViewer(
                 minScale: 0.5,
                 maxScale: 4.0,
                 child: Hero(
-                  tag: 'plant_image_hero',
+                  tag: 'scan_image_fullscreen',
                   child: Image.file(
                     File(imagePath),
                     fit: BoxFit.contain,
@@ -1624,18 +1202,13 @@ class FullScreenImageView extends StatelessWidget {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
-                              Icons.error_outline,
-                              size: 64,
-                              color: Colors.white,
-                            ),
+                            const Icon(Icons.error_outline,
+                                size: 64, color: Colors.white),
                             const SizedBox(height: 16),
-                            Text(
+                            const Text(
                               'Image not found',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                              ),
+                              style:
+                                  TextStyle(color: Colors.white, fontSize: 16),
                             ),
                           ],
                         ),
@@ -1645,18 +1218,13 @@ class FullScreenImageView extends StatelessWidget {
                 ),
               ),
             ),
-            // Close button in top-right corner
             Positioned(
               top: 8,
               right: 8,
               child: SafeArea(
                 child: IconButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(
-                    Icons.close,
-                    color: Colors.white,
-                    size: 32,
-                  ),
+                  icon: const Icon(Icons.close, color: Colors.white, size: 32),
                   style: IconButton.styleFrom(
                     backgroundColor: Colors.black.withOpacity(0.5),
                     shape: const CircleBorder(),
@@ -1671,7 +1239,7 @@ class FullScreenImageView extends StatelessWidget {
   }
 }
 
-// Full-screen heatmap viewer with zoom, pan, and live controls
+// ── Full-screen heatmap viewer ────────────────────────────────────────────
 class FullScreenHeatmapRoute extends StatefulWidget {
   final String originalImagePath;
   final Uint8List? gradcamImageBytes;
@@ -1693,7 +1261,8 @@ class FullScreenHeatmapRoute extends StatefulWidget {
   });
 
   @override
-  State<FullScreenHeatmapRoute> createState() => _FullScreenHeatmapRouteState();
+  State<FullScreenHeatmapRoute> createState() =>
+      _FullScreenHeatmapRouteState();
 }
 
 class _FullScreenHeatmapRouteState extends State<FullScreenHeatmapRoute> {
@@ -1716,7 +1285,6 @@ class _FullScreenHeatmapRouteState extends State<FullScreenHeatmapRoute> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Layer 1: The Zoomable Image (Bottom of Stack)
           Center(
             child: InteractiveViewer(
               minScale: 0.5,
@@ -1724,22 +1292,17 @@ class _FullScreenHeatmapRouteState extends State<FullScreenHeatmapRoute> {
               child: _showOverlay
                   ? LayoutBuilder(
                       builder: (context, constraints) {
-                        // Use a single image widget to ensure both images are constrained to same size
                         return Stack(
                           alignment: Alignment.center,
                           fit: StackFit.expand,
                           children: [
-                            // Original image - base layer
                             Image.file(
                               File(widget.originalImagePath),
                               fit: BoxFit.contain,
                               alignment: Alignment.center,
-                              errorBuilder: (context, error, stackTrace) {
-                                return _buildErrorWidget(
-                                    'Original image not found');
-                              },
+                              errorBuilder: (_, __, ___) =>
+                                  _buildErrorWidget('Original image not found'),
                             ),
-                            // Heatmap overlay - constrained to match original image exactly
                             Positioned.fill(
                               child: Opacity(
                                 opacity: _opacity,
@@ -1748,22 +1311,16 @@ class _FullScreenHeatmapRouteState extends State<FullScreenHeatmapRoute> {
                                         widget.gradcamImageBytes!,
                                         fit: BoxFit.contain,
                                         alignment: Alignment.center,
-                                        errorBuilder:
-                                            (context, error, stackTrace) {
-                                          return _buildErrorWidget(
-                                              'Failed to decode heatmap image');
-                                        },
+                                        errorBuilder: (_, __, ___) =>
+                                            const SizedBox.shrink(),
                                       )
                                     : hasFilePath
                                         ? Image.file(
                                             File(widget.gradCAMPath!),
                                             fit: BoxFit.contain,
                                             alignment: Alignment.center,
-                                            errorBuilder:
-                                                (context, error, stackTrace) {
-                                              return _buildErrorWidget(
-                                                  'Heatmap not found');
-                                            },
+                                            errorBuilder: (_, __, ___) =>
+                                                const SizedBox.shrink(),
                                           )
                                         : const SizedBox.shrink(),
                               ),
@@ -1776,26 +1333,20 @@ class _FullScreenHeatmapRouteState extends State<FullScreenHeatmapRoute> {
                       File(widget.originalImagePath),
                       fit: BoxFit.contain,
                       alignment: Alignment.center,
-                      errorBuilder: (context, error, stackTrace) {
-                        return _buildErrorWidget('Original image not found');
-                      },
+                      errorBuilder: (_, __, ___) =>
+                          _buildErrorWidget('Original image not found'),
                     ),
             ),
           ),
-
-          // Layer 2: The UI Overlays (Top of Stack)
-          // Close Button
+          // Close button
           Positioned(
             top: 8,
             left: 8,
             child: SafeArea(
               child: IconButton(
                 onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(
-                  Icons.close,
-                  color: Colors.white,
-                  size: 32,
-                ),
+                icon:
+                    const Icon(Icons.close, color: Colors.white, size: 32),
                 style: IconButton.styleFrom(
                   backgroundColor: Colors.black.withOpacity(0.5),
                   shape: const CircleBorder(),
@@ -1803,8 +1354,7 @@ class _FullScreenHeatmapRouteState extends State<FullScreenHeatmapRoute> {
               ),
             ),
           ),
-
-          // Floating Controls Card
+          // Floating controls card
           Positioned(
             bottom: 0,
             left: 0,
@@ -1820,7 +1370,6 @@ class _FullScreenHeatmapRouteState extends State<FullScreenHeatmapRoute> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Show Heatmap Overlay Switch
                     SwitchListTile(
                       title: const Text(
                         'Show Heatmap Overlay',
@@ -1828,25 +1377,16 @@ class _FullScreenHeatmapRouteState extends State<FullScreenHeatmapRoute> {
                       ),
                       value: _showOverlay,
                       onChanged: (value) {
-                        setState(() {
-                          _showOverlay = value;
-                        });
-                        // Update parent state
+                        setState(() => _showOverlay = value);
                         widget.onOverlayChanged(value);
                       },
-                      activeThumbColor: Theme.of(context).primaryColor,
+                      activeColor: AppTheme.botanicalPrimary,
                     ),
-
                     const SizedBox(height: 8),
-
-                    // Heatmap Opacity Slider
                     Row(
                       children: [
-                        const Icon(
-                          Icons.opacity,
-                          color: Colors.white,
-                          size: 20,
-                        ),
+                        const Icon(Icons.opacity,
+                            color: Colors.white, size: 20),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Slider(
@@ -1856,22 +1396,17 @@ class _FullScreenHeatmapRouteState extends State<FullScreenHeatmapRoute> {
                             divisions: 20,
                             label: '${(_opacity * 100).round()}%',
                             onChanged: (value) {
-                              setState(() {
-                                _opacity = value;
-                              });
-                              // Update parent state
+                              setState(() => _opacity = value);
                               widget.onOpacityChanged(value);
                             },
-                            activeColor: Theme.of(context).primaryColor,
+                            activeColor: AppTheme.botanicalPrimary,
                           ),
                         ),
                         const SizedBox(width: 8),
                         Text(
                           '${(_opacity * 100).round()}%',
                           style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                          ),
+                              color: Colors.white, fontSize: 14),
                         ),
                       ],
                     ),
@@ -1892,194 +1427,16 @@ class _FullScreenHeatmapRouteState extends State<FullScreenHeatmapRoute> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Colors.white,
-            ),
+            const Icon(Icons.error_outline, size: 64, color: Colors.white),
             const SizedBox(height: 16),
             Text(
               message,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-              ),
+              style: const TextStyle(color: Colors.white, fontSize: 16),
               textAlign: TextAlign.center,
             ),
           ],
         ),
       ),
-    );
-  }
-}
-
-/// Optional "Where it grows" tile for the scan result screen (Static Habitat Heatmap).
-/// Only visible when the resolved plant has habitat data in assets.
-class _WhereItGrowsTile extends StatelessWidget {
-  const _WhereItGrowsTile({
-    required this.plant,
-    required this.theme,
-  });
-
-  final Plant plant;
-  final ThemeData theme;
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<bool>(
-      future: HabitatService().hasHabitatData(plant.id),
-      builder: (context, snapshot) {
-        if (snapshot.data != true) return const SizedBox.shrink();
-        final l10n = AppLocalizations.of(context);
-        return Container(
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: theme.colorScheme.outline.withOpacity(0.2),
-            ),
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (context) => HabitatMapScreen(plant: plant),
-                  ),
-                );
-              },
-              borderRadius: BorderRadius.circular(16),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.map_outlined,
-                      color: theme.colorScheme.primary,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            l10n.whereItGrows,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: theme.colorScheme.onSurface,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            l10n.viewHabitatMap,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Icon(
-                      Icons.chevron_right,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-/// Optional "Explore plant parts" tile (2D Interactive Silhouette). Visible when plant has anatomy data.
-class _ExplorePlantPartsTile extends StatelessWidget {
-  const _ExplorePlantPartsTile({
-    required this.plant,
-    required this.theme,
-  });
-
-  final Plant plant;
-  final ThemeData theme;
-
-  @override
-  Widget build(BuildContext context) {
-    final plantProvider = context.read<PlantProvider>();
-    return FutureBuilder<bool>(
-      future: plantProvider.hasAnatomyData(plant.id),
-      builder: (context, snapshot) {
-        if (snapshot.data != true) return const SizedBox.shrink();
-        final l10n = AppLocalizations.of(context);
-        return Container(
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: theme.colorScheme.outline.withOpacity(0.2),
-            ),
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (context) => PlantDetailScreen(
-                      plant: plant,
-                      initialTabIndex: 2,
-                    ),
-                  ),
-                );
-              },
-              borderRadius: BorderRadius.circular(16),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.eco_outlined,
-                      color: theme.colorScheme.primary,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            l10n.explorePlantParts,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: theme.colorScheme.onSurface,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            l10n.viewDetails,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Icon(
-                      Icons.chevron_right,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
     );
   }
 }

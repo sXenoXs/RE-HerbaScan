@@ -1,8 +1,8 @@
 # HerbaScan Backend API
 
 **Last Updated**: March 2026  
-**Backend Version**: 0.9.0  
-**Flutter App Version**: v0.9.0
+**Backend Version**: 0.9.3  
+**Flutter App Version**: v0.9.3
 
 **Model Standardization**: MobileNetV2 Only (Phase 34) - HerbaScan custom model deprecated  
 **AI Explanation Standardization**: Phase 35 Complete - Structured format with 42 plants
@@ -28,7 +28,7 @@ Build/start come from `backend/railway.json` (Dockerfile + start command). No se
 
 ## 📋 Setup Instructions
 
-> **Note**: This backend is part of the HerbaScan Hybrid XAI Explanation System. The Flutter app (v0.9.0) uses this backend for online GradCAM computation, while offline explanations use pre-written structured JSON data (42 plants with taxonomy, ecology, medicinal_preparation, and safety_consideration) and offline CAM heatmaps.
+> **Note**: This backend is part of the HerbaScan Hybrid XAI Explanation System. The Flutter app (v0.9.3) uses this backend for online GradCAM computation, while offline explanations use pre-written structured JSON data (42 plants with taxonomy, ecology, medicinal_preparation, and safety_consideration) and offline CAM heatmaps.
 
 ### 1. Place Model Files
 
@@ -774,11 +774,7 @@ git push
 
    Railway automatically provides `$PORT`, but you can set a default.
 
-   **Optional – require Supabase login for /identify:** To enforce JWT verification so only signed-in users can call `POST /identify`, add:
-   ```
-   SUPABASE_JWT_SECRET=<your-supabase-jwt-secret>
-   ```
-   Get the JWT secret from Supabase Dashboard → Project Settings → API → JWT Secret. When set, the backend requires `Authorization: Bearer <token>` (Supabase access token); when not set, unauthenticated requests are allowed. See `supabase/README.md` → "Step 3: Railway – Enable JWT verification" for full steps.
+   **Optional – require Supabase login for /identify:** To enforce JWT verification so only signed-in users can call `POST /identify`, add `SUPABASE_JWT_SECRET`. **Recommendation:** Leave `SUPABASE_JWT_SECRET` unset so `/identify` works for anonymous and signed-in users; see [supabase/README.md](../supabase/README.md) Step 3. When set, the backend requires `Authorization: Bearer <token>` (Supabase access token); when not set, unauthenticated requests are allowed.
 
 5. **Add Model Files:**
 
@@ -792,7 +788,6 @@ git push
    git lfs track "*.h5"  # If still using .h5 format
    git add .gitattributes
    git add models/MobileNetV2_model.keras
-   git add models/herbascan_model.keras
    git commit -m "Add model files via Git LFS"
    git push
    ```
@@ -804,7 +799,6 @@ git push
      ```bash
      railway volumes create
      railway volumes upload models/MobileNetV2_model.keras
-     railway volumes upload models/herbascan_model.keras
      railway volumes upload models/labels.json
      ```
    - Update `MODEL_PATH` and `LABELS_PATH` in code to point to volume
@@ -869,7 +863,7 @@ Or use Postman (see Testing section below).
 
 Once deployed, update your Flutter app with the Railway URL:
 
-> **Note**: The Flutter app (v0.9.0) includes a Hybrid XAI Explanation System that uses this backend for online GradCAM heatmaps. The app automatically falls back to offline CAM and offline structured JSON explanations (42 plants with standardized format: taxonomy, ecology, medicinal_preparation, safety_consideration) when internet is unavailable. See the main `README.md` for details on the XAI system.
+> **Note**: The Flutter app (v0.9.3) includes a Hybrid XAI Explanation System that uses this backend for online GradCAM heatmaps. The app automatically falls back to offline CAM and offline structured JSON explanations (42 plants with standardized format: taxonomy, ecology, medicinal_preparation, safety_consideration) when internet is unavailable. See the main `README.md` for details on the XAI system.
 
 ```dart
 // lib/core/services/online_gradcam_service.dart
@@ -967,7 +961,7 @@ PORT=8000
 HOST=0.0.0.0
 ```
 
-**Note:** The backend uses only MobileNetV2 model (HerbaScan deprecated). Environment variables are optional - defaults are set in `main.py`.
+**Note:** The backend uses only MobileNetV2 model (HerbaScan deprecated). Environment variables are optional - defaults are set in `main.py`. **Recommendation:** Leave `SUPABASE_JWT_SECRET` unset so `/identify` works for anonymous and signed-in users; see [supabase/README.md](../supabase/README.md) Step 3.
 
 ## 🧪 Testing with Postman
 
@@ -1028,6 +1022,7 @@ curl -X POST https://YOUR-RAILWAY-URL.railway.app/identify -F "file=@image.jpg"
 - **Model file not found:** Use Git LFS (<100MB) or Railway volumes (>100MB)
 - **Out of memory:** Railway free tier 512MB limit - upgrade or optimize model
 - **File upload errors:** Use curl for Railway, Postman works for local; verify file format (.jpg, .png, etc.)
+- **401 when scanning:** If the app gets "Invalid or expired token" when calling `/identify`, remove `SUPABASE_JWT_SECRET` from Railway Variables so unauthenticated requests are allowed. See [supabase/README.md](../supabase/README.md) Step 3.
 
 #### Model Not Loading in Railway
 
@@ -1061,7 +1056,7 @@ curl -X POST https://YOUR-RAILWAY-URL.railway.app/identify -F "file=@image.jpg"
   - Upload to cloud storage (S3, GCS) and download on startup
   - Include in Docker image if < 100MB
 - **Model Standardization (Phase 34):** Backend uses only `MobileNetV2_model.keras`. HerbaScan custom model is deprecated for prediction consistency between offline CAM and online GradCAM.
-- **AI Explanation Standardization (Phase 35):** Flutter app (v0.9.0) now uses standardized structured format for all 42 plants with identical data depth (taxonomy, ecology, medicinal_preparation, safety_consideration) for both online (Gemini API) and offline (JSON) explanations.
+- **AI Explanation Standardization (Phase 35):** Flutter app (v0.9.3) now uses standardized structured format for all 42 plants with identical data depth (taxonomy, ecology, medicinal_preparation, safety_consideration) for both online (Gemini API) and offline (JSON) explanations.
 
 ### TensorFlow Compatibility
 

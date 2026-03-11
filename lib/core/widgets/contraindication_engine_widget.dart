@@ -160,19 +160,31 @@ class _ContraindicationEngineWidgetState
 
   Widget _buildOrangeCard(BuildContext context, String title, String body) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final bgColor = isDark
+        ? Colors.orange.withOpacity(0.15)
+        : Colors.orange.shade50;
+    final borderColor = isDark
+        ? Colors.orange.withOpacity(0.4)
+        : Colors.orange.shade300;
+    final titleColor = isDark ? Colors.orange.shade200 : Colors.orange.shade900;
+    final bodyColor = isDark
+        ? Colors.orange.shade100
+        : Colors.orange.shade900.withOpacity(0.85);
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.orange.shade50,
-          border: Border.all(color: Colors.orange.shade300),
+          color: bgColor,
+          border: Border.all(color: borderColor),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.orange.shade800, size: 22),
+            Icon(Icons.warning_amber_rounded, color: titleColor, size: 22),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
@@ -182,14 +194,14 @@ class _ContraindicationEngineWidgetState
                     title,
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Colors.orange.shade900,
+                      color: titleColor,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     body,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface,
+                      color: bodyColor,
                       height: 1.4,
                     ),
                   ),
@@ -251,13 +263,25 @@ class _ContraindicationEngineWidgetState
   Widget _buildYellowSection(
       BuildContext context, String title, List<String> items) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final bgColor = isDark
+        ? Colors.amber.withOpacity(0.15)
+        : Colors.amber.shade50;
+    final borderColor = isDark
+        ? Colors.amber.withOpacity(0.4)
+        : Colors.amber.shade300;
+    final titleColor = isDark ? Colors.amber.shade200 : Colors.amber.shade900;
+    final bodyColor = isDark
+        ? Colors.amber.shade100
+        : Colors.amber.shade900.withOpacity(0.85);
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.amber.shade50,
-          border: Border.all(color: Colors.amber.shade300),
+          color: bgColor,
+          border: Border.all(color: borderColor),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
@@ -267,7 +291,7 @@ class _ContraindicationEngineWidgetState
               title,
               style: theme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: Colors.amber.shade900,
+                color: titleColor,
               ),
             ),
             const SizedBox(height: 8),
@@ -276,12 +300,12 @@ class _ContraindicationEngineWidgetState
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('• ', style: TextStyle(color: Colors.amber.shade900)),
+                      Text('• ', style: TextStyle(color: titleColor)),
                       Expanded(
                         child: Text(
                           e,
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface,
+                            color: bodyColor,
                             height: 1.4,
                           ),
                         ),
@@ -297,25 +321,35 @@ class _ContraindicationEngineWidgetState
 
   Widget _buildGreenCard(BuildContext context, String text) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final bgColor = isDark
+        ? Colors.green.withOpacity(0.15)
+        : Colors.green.shade50;
+    final borderColor = isDark
+        ? Colors.green.withOpacity(0.4)
+        : Colors.green.shade300;
+    final iconColor = isDark ? Colors.green.shade300 : Colors.green.shade700;
+    final textColor = isDark ? Colors.green.shade100 : Colors.green.shade900;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.green.shade50,
-          border: Border.all(color: Colors.green.shade300),
+          color: bgColor,
+          border: Border.all(color: borderColor),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(Icons.check_circle_outline, color: Colors.green.shade700, size: 22),
+            Icon(Icons.check_circle_outline, color: iconColor, size: 22),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
                 text,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: Colors.green.shade900,
+                  color: textColor,
                   fontWeight: FontWeight.w500,
                 ),
               ),

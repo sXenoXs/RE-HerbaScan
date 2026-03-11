@@ -10,7 +10,7 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 
 ## 🚀 Current Development Status
 
-**Version**: v0.9.0  
+**Version**: v0.9.3  
 **Last Updated**: March 2026
 **Project Phase**: Phase 35 Complete (AI Explanation Content Standardization & Complete Plant Database Migration)  
 **Overall Progress**: 90% Complete - **PRODUCTION READY** 
@@ -22,7 +22,7 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **State Management**: ✅ Provider pattern with 6 core providers (App, Plant, Camera, Language, Offline, Auth)
 - **Database Schema**: ✅ SQLite database with proper relationships
 - **Multi-language Support**: ✅ English/Filipino localization system
-- **Navigation**: ✅ Bottom navigation with 5 main sections
+- **Navigation**: ✅ Bottom navigation: 4 tabs (Home, Browse, History, Settings) with center camera FAB; DOH Approved Plants via Home carousel "See All"
 - **Settings**: ✅ Comprehensive app configuration
 - **Plant Database**: ✅ **42 medicinal plants with comprehensive data** (10 DOH-approved + 32 additional)
 - **XAI Explanation Database**: ✅ **NEW** Complete offline explanations for all 42 plants stored in JSON (~150KB)
@@ -57,7 +57,7 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **Preparation Instructions**: ✅ **NEW** Step-by-step herbal medicine preparation guide
 - **Critical Bug Fixes**: ✅ All GradCAM-related bugs resolved
 - **Browse Screen**: ✅ Full plant browsing with search, filter (All/DOH/Condition), grid/list views
-- **DOH Approved Plants Screen**: ✅ Dedicated screen for 9 DOH plants with official branding
+- **DOH Approved Plants Screen**: ✅ Dedicated screen for 10 DOH-approved plants with official branding
 - **Scan History Screen**: ✅ Complete history management with sort, delete, statistics
 - **Condition-based Search**: ✅ Browse by 15 medical conditions
 - **Poor Image Quality Screen**: ✅ Error handling with scanning tips
@@ -101,7 +101,7 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **Tap to Expand Plant Image**: ✅ **NEW** Implemented tap to expand feature - tap plant image to view in full-screen with Hero animation, pinch-to-zoom (0.5x-4.0x), and pan gestures
 - **Full Screen Reading Mode**: ✅ **NEW** Implemented full-screen reading mode for Summary tab - distraction-free view with larger text and regenerate capability
 - **AI Explanation Tab Simplification**: ✅ **NEW** Removed 'Original' sub-tab from AI Explanation section - simplified navigation to only Heatmap and Summary tabs
-- **Version Update**: ✅ **NEW** Updated all version references to v0.9.0 across the application (splash, settings, app info, feedback, docs)
+- **Version Update**: ✅ **NEW** Updated all version references to v0.9.3 across the application (splash, settings, app info, feedback, docs)
 
 ### 🔄 In Progress (Phase 6: Offline CAM Fix)
 
@@ -111,7 +111,7 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **Beta Testing**: User testing with TESTING_GUIDE.md
 - **Data Collection**: Gathering user feedback and metrics
 
-### ✅ Recently Fixed (v0.9.0)
+### ✅ Recently Fixed (v0.9.3)
 
 - **Online GradCAM Prediction Mapping**: Fixed "Unknown" plant names in online GradCAM predictions
 - **Backend Response Field Mapping**: Corrected mapping from backend 'class' and 'class_index' to Flutter format
@@ -236,7 +236,7 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 
 #### Browse Screen
 - [x] **Search Functionality**: Real-time search by name, scientific name, local name, or condition
-- [x] **Filter Chips**: All Plants (13), DOH Approved (9), By Condition (15 categories)
+- [x] **Filter Chips**: All Plants (42), DOH Approved (10), By Condition (15+ categories)
 - [x] **Dual View Modes**: Grid view (2 columns) and List view with toggle
 - [x] **Plant Count**: Dynamic count indicator
 - [x] **Empty States**: Meaningful messages when no results
@@ -355,7 +355,7 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - [x] **Onboarding**: 4-page feature introduction
 - [x] **Home Dashboard**: Main hub with quick actions and statistics
 - [x] **Settings Screen**: Comprehensive app configuration
-- [x] **Navigation**: Bottom navigation with 5 sections
+- [x] **Navigation**: Bottom navigation with 4 tabs (Home, Browse, History, Settings) and center camera FAB; DOH via Home carousel
 
 #### Database Schema
 
@@ -497,7 +497,7 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - [x] Added markdown text formatting
 - [x] Implemented usability assessment with clear status indicators
 - [x] Added refresh functionality for regenerating explanations
-- [x] **Content Standardization** (v0.9.0): Standardized structure with four sections (Taxonomy, Ecology, Medicinal Uses, Safety) - identical format for online and offline
+- [x] **Content Standardization** (v0.9.3): Standardized structure with four sections (Taxonomy, Ecology, Medicinal Uses, Safety) - identical format for online and offline
 
 ### Phase 10: Beta Testing & Deployment (🔄 In Progress)
 
@@ -520,7 +520,7 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 ### Architecture
 
 - **Framework**: Flutter 3.9.2+
-- **State Management**: Provider pattern with 5 providers
+- **State Management**: Provider pattern with 6 providers (App, Auth, Plant, Camera, Language, Offline)
 - **Database**: SQLite with proper relationships
 - **AI/ML**: TensorFlow Lite with offline processing, GradCAM visualization, and hybrid XAI explanations
 - **Offline Processing**: Add a offline functionality for rural areas
@@ -579,18 +579,22 @@ flutter_markdown: ^0.6.18
 herbascan/
 ├── lib/                   ✅ (50+ files)
 │   ├── core/              ✅
+│   │   ├── config/        ✅ (Supabase URL/anon key, auth redirect)
+│   │   ├── constants/     ✅ (e.g. condition icons)
 │   │   ├── models/        ✅ (Plant, ScanResult, UserFeedback)
 │   │   ├── providers/     ✅ (6 providers: App, Auth, Plant, Camera, Language, Offline)
 │   │   ├── services/      ✅ (Database, Plant, Offline, GradCAM, XAI Explanation,
 │   │   │                     Auth, Herbarium, CatalogSync, Config, Performance, 
 │   │   │                     Analytics, Error Logger, Feedback, etc.)
-│   │   ├── widgets/       ✅ (Offline indicators, GradCAM visualization)
-│   │   ├── theme/         ✅ (Material Design 3)
+│   │   ├── widgets/       ✅ (Offline indicators, GradCAM visualization, botanical auth header)
+│   │   ├── routing/       ✅ (GoRouter – app_router.dart: /, /login, /home, /onboarding, /admin)
+│   │   ├── theme/         ✅ (Material Design 3, app_theme.dart – botanical green / Emerald)
 │   │   ├── localization/  ✅ (i18n - English/Filipino)
 │   │   └── utils/         ✅ (Page transitions, animations)
 │   └── features/          ✅ (15+ screens: Home, Scan, Browse, History, DOH,
 │                              Settings, Feedback, Dashboard, Help, etc.)
 ├── assets/                ✅ (models, images, data/plant_explanations.json, animations, icons, fonts)
+├── tests/                 ✅ (Testing plans: Unit, Integration, System, Acceptance, Performance, Usability, Compatibility, Security – see TESTING_GUIDE.md and tests/*.md)
 └── Configuration          ✅ (pubspec.yaml, analysis_options.yaml)
 ```
 
@@ -603,8 +607,9 @@ herbascan/
 - **Visual Design**: 70% matches prototype
 - **Main Gaps**: Visual polish (gradients, animations, glassmorphism) rather than functionality
 
-### Design System from Prototype
-- **Colors**: Primary (#6366f1), Success (#22c55e), Warning (#f59e0b), Error (#ef4444)
+### Design System
+- **Theme**: `lib/core/theme/app_theme.dart` – botanical green (Emerald #16A34A), Soft Sage surface, dark Forest Black/slate-green; Indigo→Emerald pivot per CHANGELOG.
+- **Prototype reference**: Primary (#6366f1 in prototype; app uses Emerald), Success (#22c55e), Warning (#f59e0b), Error (#ef4444)
 - **Typography**: Inter font family (already implemented)
 - **Spacing**: Consistent 4px base unit system
 - **Shadows**: Multi-layer shadow system
@@ -637,7 +642,7 @@ herbascan/
 
 ## 📊 Progress Metrics
 
-- **Version**: v0.9.0
+- **Version**: v0.9.3
 - **Code Files Created**: 50+ files
 - **Lines of Code**: 10,000+ lines
 - **Features Implemented**: 45+ core features
@@ -645,7 +650,7 @@ herbascan/
 - **Providers**: 6 state management providers (App, Auth, Plant, Camera, Language, Offline)
 - **Services**: Database, Plant, Offline, GradCAM, XAI Explanation, Auth, Herbarium, CatalogSync, Config, Performance, Analytics, Error Logger, Feedback, and others
 - **Models**: 3 data models (Plant, ScanResult, UserFeedback)
-- **Database Tables**: 4 tables with relationships
+- **Database Tables**: SQLite with 9 tables—plants, medicinal_uses, preparation_methods, scan_history, catalog_conditions, catalog_condition_plants, safety_profiles, plant_habitats, catalog_plant_anatomy (catalog tables synced from Supabase when online)
 - **Plant Database**: 42 medicinal plants (10 DOH-approved + 32 additional)
 - **Languages Supported**: 2 (English, Filipino)
 - **Documentation Files**: 20+ comprehensive documentation files
@@ -716,19 +721,23 @@ HerbaScan is designed to work seamlessly in rural areas without internet connect
 
 ## 🔧 Development Notes
 
-### Recent Changes (Version v0.9.0 – March 2026)
+### Recent Changes (Version v0.9.3 – March 2026)
 
-For the full list of changes, see **CHANGELOG.md** (authoritative source). Summary:
+**CHANGELOG.md** is the authoritative change log; this README is kept in sync with it. Summary:
 
-- **Scan History**: Swipe between Device & Cloud tabs; pull-to-refresh on Cloud; select mode with batch sync (Device → Cloud, Cloud → Device); Select all / Deselect all; save/export from Plant Result screen only.
-- **Auth & Account**: Signup 6-digit confirmation flow; stronger password rules; change password with live requirements; delete account (Settings → Account); account deactivation by admin (sign-out with message); friendly auth error messages; 6-digit OTP password reset and auth deep links.
-- **Preparation Guide**: Preparation Guide (renamed from Instructions); interactive checklist and contextual timers; timer notifications and persistence (SharedPreferences, flutter_local_notifications); Focus Mode with timer and mark-done; calendar add-to-device with pre-fill.
+- **UI/UX Redesign**: Design system (Emerald botanical green, app_theme.dart); Splash (solid background, linear loader); Onboarding (de-jargonified); Home (BottomAppBar, center FAB, DOH carousel); Browse (SearchBar, SegmentedButton, condition banner); Scan (edge-to-edge, reticle, tips sheet); Plant Result (Insights + AI Vision tabs, glassmorphic hero); Plant Detail (SliverAppBar hero, Quick Facts); History (TabBar, device cards, select mode, swipe export/delete, batch sync/download); Settings (grouped cards, Account block); DOH and Help redesigns; Auth/OTP (botanical header, pinput 6-box); Condition Search (directory + ConditionResultsScreen); Habitat Map; Preparation Guide and Focus Mode; System Diagnostics (renamed from Offline Demo); admin polish (instant local sync, condition count sync, user management crash fix).
+- **Heatmap in cloud**: Upload stores heatmap as `{scan_id}_gradcam.jpg` in Storage; metadata `gradcam_url`; download restores `gradCAMPath`.
+- **Scan History**: Swipe between Device & Cloud tabs; pull-to-refresh on Cloud; select mode with batch sync (Device → Cloud, Cloud → Device); Select all / Deselect all; save/export from Plant Result screen only (and History device card export to gallery).
+- **Auth & Account**: Signup 6-digit confirmation; duplicate email handling; stronger password rules; change password with live requirements; delete account (Settings → Account); account deactivation by admin (sign-out with message); friendly auth error messages; 6-digit OTP password reset and auth deep links.
+- **Preparation Guide**: Renamed from Instructions; interactive checklist and contextual timers; timer notifications and persistence (SharedPreferences, flutter_local_notifications); Focus Mode; calendar add-to-device with pre-fill.
 - **Safety & XAI**: Contraindication Engine (safety_profiles.json); no live LLM – explanations from cache/offline/fallback only; Summary tab fixes and taxonomy formatting.
-- **Admin**: Cloud-first catalog sync from Supabase; Admin Plant Metadata (tabbed editor: Identity, Ecology, Medicinal, Preparations, Safety); Condition Search management (add/edit/delete conditions, map plants); Factory Reset; 2D interactive plant anatomy (catalog_plant_anatomy); Image Review and User Management; admin works on Windows and mobile; RLS via `is_admin()` to avoid recursion.
+- **Admin**: Cloud-first catalog sync; instant local sync after catalog/condition/plant save; condition list plant count 1:1 with browse; Plant Metadata (5-tab editor); Condition Search management; Factory Reset; 2D plant anatomy; Image Review and User Management; admin on Windows and mobile; RLS via `is_admin()`.
 - **Labels & models**: App uses `assets/models/class_indices.json` (name→index); offline CAM uses `mobilenetv2_multi_output.tflite`. No `labels.txt`.
-- **Settings & Offline**: Offline toggle and management tiles clarified; Offline Storage Info refreshes before showing dialog.
+- **Settings & Offline**: De-jargonified AI labels (e.g. "Show Prediction Confidence", "Show AI Reasoning Heatmap"); Offline Storage Info refreshes before dialog; System Diagnostics (renamed from Offline Demo).
+- **SnackBar**: Floating behavior so camera FAB is not displaced.
 - **Backend**: Railway `/identify` allows unauthenticated requests when `SUPABASE_JWT_SECRET` unset; see supabase/README.md and backend/README.md.
-- **Version**: All app version references set to v0.9.0 (splash, settings, app info, feedback, docs).
+- **Testing plans**: `tests/` folder (Unit, Integration, System, Acceptance, Performance, Usability, Compatibility, Security); see TESTING_GUIDE.md and tests/*.md.
+- **Version**: All app version references set to v0.9.3.
 
 ### Known Issues
 
@@ -758,7 +767,7 @@ For the full list of changes, see **CHANGELOG.md** (authoritative source). Summa
 
 - 🌿 **AI-Powered Plant Recognition**: Uses MobileNet V2 + Random Forest for accurate plant identification
 - 📱 **Offline Processing**: Works without internet connection
-- 🏥 **DOH Integration**: Access to 9 clinically validated herbal medicines + 4 additional plants
+- 🏥 **DOH Integration**: Access to 10 DOH-approved herbal medicines + 32 additional medicinal plants (42 total)
 - 🔍 **Explainable AI**: GradCAM visualization shows how the AI identifies plants with interactive heatmaps
 - 🌐 **Multi-language Support**: English and Filipino language options
 - 📊 **Confidence Scoring**: Shows prediction confidence levels

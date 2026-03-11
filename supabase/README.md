@@ -263,7 +263,7 @@ Ensure the bucket name in your policy is `herbarium-images` (the UI may add `buc
 - If you see **403 "new row violates row-level security policy"** when saving to cloud, the bucket exists but storage RLS policies are missing. Run the migration **`supabase/migrations/20260302000000_storage_herbarium_policies.sql`** in Dashboard → SQL Editor (or run `npx supabase db push`). It creates INSERT, SELECT, UPDATE, and DELETE policies so authenticated users can upload to their own folder (`user_id/scan_id.jpg`). Create the bucket first (Step 2 above) if it does not exist.
 
 **Step 4 – Save**
-- Create each policy and save (or run the migration above). After that, the app can upload to `herbarium-images/{user_id}/{scan_id}.jpg` and RLS will enforce access.
+- Create each policy and save (or run the migration above). After that, the app can upload to `herbarium-images/{user_id}/{scan_id}.jpg` and RLS will enforce access. Scan uploads can also store the heatmap image as `{user_id}/{scan_id}_gradcam.jpg`; the app saves the public URL in the scan row’s metadata (`gradcam_url`) so the heatmap is preserved when syncing Device ↔ Cloud.
 
 ---
 
@@ -318,11 +318,11 @@ The repo includes `supabase/config.toml` with `verify_jwt = false` for `delete-u
 
 The function lives in `supabase/functions/delete-user/index.ts`. (1) **Self-delete:** with no body, it deletes the authenticated user. (2) **Admin delete:** with body `{ "user_id": "<uuid>" }`, it verifies the caller is admin (via `profiles.role`), then deletes that user. The Flutter app deletes the user’s storage objects (herbarium-images) before invoking the function for admin delete.
 
-**If the function is not deployed:** Tapping **Delete account** will show a 404 error; the app now shows a message that includes the deploy command (`npx supabase functions deploy delete-user`). Deploy as above to enable account deletion.
+**If the function is not deployed:** Tapping **Delete account** would previously show a raw 404. The app now shows a clear message that the function is not deployed and includes the deploy command: `npx supabase functions deploy delete-user`. Deploy as above to enable account deletion.
 
 **Storage:** For self-delete, Supabase may block deletion until storage is removed. For admin delete, the app removes the user’s folder in `herbarium-images` before calling the function.
 
-**401 Invalid JWT when deleting (self or admin):** (1) Ensure `supabase/config.toml` exists with `[functions.delete-user]` and `verify_jwt = false` so the gateway does not validate the JWT; the function validates it internally via JWKS. (2) Deploy to the **same project** as the app: `npx supabase link --project-ref YOUR_PROJECT_REF`, then `npx supabase functions deploy delete-user`. If you still see 401 after deploying, redeploy so the config is applied (the function verifies the token with the project’s JWKS endpoint).
+**401 Invalid JWT when deleting (self or admin):** The gateway can reject the request before it reaches the function. (1) Ensure `supabase/config.toml` has `[functions.delete-user]` with **`verify_jwt = false`** so the gateway does not validate the JWT; the function validates it internally via the JWKS endpoint (Supabase asymmetric signing). (2) Deploy to the **same project** as the app: `npx supabase link --project-ref YOUR_PROJECT_REF`, then `npx supabase functions deploy delete-user`. If you still see 401, redeploy so the config is applied; the function verifies the token with the project’s JWKS endpoint.
 
 ---
 

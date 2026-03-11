@@ -4,27 +4,56 @@ import 'package:herbascan/core/models/plant_metadata_override.dart';
 import 'package:herbascan/core/services/catalog_plant_admin_service.dart';
 import 'package:herbascan/core/services/plant_data_service.dart';
 import 'package:herbascan/core/services/plant_metadata_service.dart';
+import 'package:herbascan/core/theme/app_theme.dart';
+import 'package:herbascan/core/widgets/plant_image.dart';
 import 'package:herbascan/features/admin/admin_plant_catalog_editor_screen.dart';
 
-/// Plant Metadata Editor: list of fixed plants, edit description/safety/preparation only. No add/delete plant.
+/// Plant Catalog: list of fixed plants with search, edit, factory reset via overflow menu.
 class AdminPlantMetadataScreen extends StatefulWidget {
   const AdminPlantMetadataScreen({super.key});
 
   @override
-  State<AdminPlantMetadataScreen> createState() => _AdminPlantMetadataScreenState();
+  State<AdminPlantMetadataScreen> createState() =>
+      _AdminPlantMetadataScreenState();
 }
 
 class _AdminPlantMetadataScreenState extends State<AdminPlantMetadataScreen> {
   List<Plant> _plants = [];
+  List<Plant> _filtered = [];
   Map<String, PlantMetadataOverride> _overrides = {};
   bool _loading = true;
   bool _resetting = false;
   String? _error;
 
+  final TextEditingController _searchController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
     _load();
+    _searchController.addListener(_applyFilter);
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_applyFilter);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _applyFilter() {
+    final q = _searchController.text.trim().toLowerCase();
+    setState(() {
+      if (q.isEmpty) {
+        _filtered = List.from(_plants);
+      } else {
+        _filtered = _plants
+            .where((p) =>
+                p.commonName.toLowerCase().contains(q) ||
+                p.scientificName.toLowerCase().contains(q))
+            .toList();
+      }
+    });
   }
 
   Future<void> _load() async {
@@ -38,9 +67,11 @@ class _AdminPlantMetadataScreenState extends State<AdminPlantMetadataScreen> {
       if (mounted) {
         setState(() {
           _plants = plants;
+          _filtered = List.from(plants);
           _overrides = overrides;
           _loading = false;
         });
+        _applyFilter();
       }
     } catch (e) {
       if (mounted) {
@@ -67,36 +98,78 @@ class _AdminPlantMetadataScreenState extends State<AdminPlantMetadataScreen> {
   }
 
   Future<void> _factoryReset() async {
+    final theme = Theme.of(context);
+    final confirmController = TextEditingController();
+
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Factory Reset catalog?'),
-        content: const Text(
-          'Restore the entire Supabase catalog to bundled defaults. '
-          'This will overwrite all 42 plants, safety, habitat, and conditions. '
-          'Uploaded plant images in Storage will be removed.\n\n'
-          'After reset, sync the app (pull-to-refresh or restart) to load the new data.',
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Factory Reset Database?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Restore the entire Supabase catalog to bundled defaults. '
+                'This will overwrite all 42 plants, safety, habitat, and conditions. '
+                'Uploaded plant images in Storage will be removed.',
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Type RESET to confirm:',
+                style: TextStyle(
+                    color: theme.colorScheme.error,
+                    fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: confirmController,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: 'RESET',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (_) => setDialogState(() {}),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel')),
+            FilledButton(
+              onPressed: confirmController.text == 'RESET'
+                  ? () => Navigator.pop(ctx, true)
+                  : null,
+              style: FilledButton.styleFrom(
+                  backgroundColor: theme.colorScheme.error),
+              child: const Text('Factory Reset'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Reset all')),
-        ],
       ),
     );
+
+    confirmController.dispose();
     if (confirm != true || !mounted) return;
+
     setState(() => _resetting = true);
-    final ok = await CatalogPlantAdminService().factoryResetCatalog(clearPlantCatalogStorage: true);
+    final ok = await CatalogPlantAdminService()
+        .factoryResetCatalog(clearPlantCatalogStorage: true);
     if (mounted) {
       setState(() => _resetting = false);
       if (ok) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Catalog reset to defaults. Sync the app (e.g. restart) to load new data.'),
-          ),
+              content: Text(
+                  'Catalog reset to defaults. Sync the app to load new data.')),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Factory reset failed. Check connection and try again.')),
+          const SnackBar(
+              content: Text(
+                  'Factory reset failed. Check connection and try again.')),
         );
       }
     }
@@ -124,208 +197,122 @@ class _AdminPlantMetadataScreenState extends State<AdminPlantMetadataScreen> {
         ),
       );
     }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // Header row
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 16, 8, 0),
           child: Row(
             children: [
-              Expanded(
-                child: Text(
-                  'Plant Metadata (${_plants.length} plants)',
-                  style: theme.textTheme.titleLarge,
-                  overflow: TextOverflow.ellipsis,
-                ),
+              Text(
+                'Plant Catalog',
+                style: theme.textTheme.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
-              TextButton.icon(
-                onPressed: _resetting ? null : _factoryReset,
-                icon: _resetting
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.restart_alt, size: 20),
-                label: const Text('Factory Reset'),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: _resetting ? null : _load,
+                tooltip: 'Refresh',
               ),
-              IconButton(icon: const Icon(Icons.refresh), onPressed: _resetting ? null : _load),
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert_rounded),
+                onSelected: (action) {
+                  if (action == 'factory_reset') _factoryReset();
+                },
+                itemBuilder: (ctx) => [
+                  PopupMenuItem(
+                    value: 'factory_reset',
+                    child: Row(children: [
+                      Icon(Icons.restart_alt, color: theme.colorScheme.error),
+                      const SizedBox(width: 12),
+                      Text('⚠️ Factory Reset Database',
+                          style: TextStyle(color: theme.colorScheme.error)),
+                    ]),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: _plants.length,
-            itemBuilder: (context, index) {
-              final plant = _plants[index];
-              final hasOverride = _overrides.containsKey(plant.id);
-              return ListTile(
-                title: Text(plant.commonName),
-                subtitle: Text(plant.scientificName),
-                trailing: hasOverride ? const Icon(Icons.edit, color: Colors.green) : const Icon(Icons.edit_outlined),
-                onTap: () => _openEditor(plant),
-              );
-            },
+        // Search bar
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Search ${_plants.length} plants by name',
+              prefixIcon: const Icon(Icons.search_rounded, size: 20),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      onPressed: () => _searchController.clear(),
+                    )
+                  : null,
+              filled: true,
+              fillColor: theme.colorScheme.surfaceContainerHighest
+                  .withValues(alpha: 0.4),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
           ),
         ),
+        if (_resetting)
+          const LinearProgressIndicator(
+              valueColor: AlwaysStoppedAnimation(AppTheme.botanicalPrimary)),
+        if (_filtered.isEmpty)
+          Expanded(
+            child: Center(
+              child: Text(
+                'No plants match your search.',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
+            ),
+          )
+        else
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _filtered.length,
+              separatorBuilder: (_, __) => const Divider(height: 1, indent: 68),
+              itemBuilder: (context, index) {
+                final plant = _filtered[index];
+                final hasOverride = _overrides.containsKey(plant.id);
+                return ListTile(
+                  contentPadding:
+                      const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+                  leading: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: PlantImage(plant: plant, fit: BoxFit.cover),
+                    ),
+                  ),
+                  title: Text(plant.commonName,
+                      style: const TextStyle(fontWeight: FontWeight.w500)),
+                  subtitle: Text(plant.scientificName,
+                      style: const TextStyle(
+                          fontStyle: FontStyle.italic, fontSize: 12)),
+                  trailing: hasOverride
+                      ? const Icon(Icons.edit_rounded,
+                          color: AppTheme.botanicalPrimary, size: 18)
+                      : Icon(Icons.edit_outlined,
+                          color: Colors.grey.shade400, size: 18),
+                  onTap: () => _openEditor(plant),
+                );
+              },
+            ),
+          ),
       ],
-    );
-  }
-}
-
-class _PlantMetadataEditorPage extends StatefulWidget {
-  const _PlantMetadataEditorPage({
-    required this.plant,
-    required this.initialOverride,
-    required this.onSaved,
-  });
-
-  final Plant plant;
-  final PlantMetadataOverride? initialOverride;
-  final VoidCallback onSaved;
-
-  @override
-  State<_PlantMetadataEditorPage> createState() => _PlantMetadataEditorPageState();
-}
-
-class _PlantMetadataEditorPageState extends State<_PlantMetadataEditorPage> {
-  late final TextEditingController _descriptionController;
-  late final TextEditingController _safetyController;
-  late final TextEditingController _preparationController;
-  bool _saving = false;
-
-  @override
-  void initState() {
-    super.initState();
-    final o = widget.initialOverride;
-    _descriptionController = TextEditingController(text: o?.description ?? widget.plant.morphology);
-    _safetyController = TextEditingController(text: o?.safetyWarnings ?? widget.plant.safetyWarnings.join('\n'));
-    _preparationController = TextEditingController(
-      text: o?.preparationStepsJson ?? _preparationToJson(widget.plant.preparationMethods),
-    );
-  }
-
-  String _preparationToJson(List<PreparationMethod> methods) {
-    try {
-      final list = methods.map((m) => {
-        'title': m.title,
-        'condition': m.condition,
-        'steps': m.stepInstructions,
-        'dosage': m.dosage,
-        'frequency': m.frequency,
-        'duration': m.duration,
-      }).toList();
-      return list.toString();
-    } catch (_) {
-      return '';
-    }
-  }
-
-  @override
-  void dispose() {
-    _descriptionController.dispose();
-    _safetyController.dispose();
-    _preparationController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _save() async {
-    setState(() => _saving = true);
-    final ok = await PlantMetadataService().save(
-      plantId: widget.plant.id,
-      description: _descriptionController.text.trim(),
-      safetyWarnings: _safetyController.text.trim(),
-      preparationStepsJson: _preparationController.text.trim().isEmpty ? null : _preparationController.text.trim(),
-    );
-    setState(() => _saving = false);
-    if (ok && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved')));
-      widget.onSaved();
-    }
-  }
-
-  Future<void> _factoryReset() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Factory Reset?'),
-        content: const Text('Restore default data for this plant. Your edits will be removed.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Reset')),
-        ],
-      ),
-    );
-    if (confirm != true) return;
-    setState(() => _saving = true);
-    final ok = await PlantMetadataService().factoryReset(widget.plant.id);
-    setState(() => _saving = false);
-    if (ok && mounted) {
-      _descriptionController.text = widget.plant.morphology;
-      _safetyController.text = widget.plant.safetyWarnings.join('\n');
-      _preparationController.text = _preparationToJson(widget.plant.preparationMethods);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Reset to default')));
-      widget.onSaved();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.plant.commonName),
-        actions: [
-          TextButton(
-            onPressed: _saving ? null : _factoryReset,
-            child: const Text('Factory Reset'),
-          ),
-          const SizedBox(width: 8),
-          FilledButton(
-            onPressed: _saving ? null : _save,
-            child: _saving ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Save'),
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  hintText: 'Morphology / general description',
-                  alignLabelWithHint: true,
-                ),
-                maxLines: 6,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _safetyController,
-                decoration: const InputDecoration(
-                  labelText: 'Safety Warnings',
-                  hintText: 'One per line or paragraph',
-                  alignLabelWithHint: true,
-                ),
-                maxLines: 4,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _preparationController,
-                decoration: const InputDecoration(
-                  labelText: 'Preparation Steps (JSON or text)',
-                  hintText: 'Preparation method details',
-                  alignLabelWithHint: true,
-                ),
-                maxLines: 8,
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

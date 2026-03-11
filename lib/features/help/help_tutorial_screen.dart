@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/services/usage_analytics.dart';
+import 'package:herbascan/core/theme/app_theme.dart';
 
 class HelpTutorialScreen extends StatefulWidget {
   const HelpTutorialScreen({super.key});
@@ -12,368 +13,382 @@ class HelpTutorialScreen extends StatefulWidget {
 class _HelpTutorialScreenState extends State<HelpTutorialScreen> {
   final UsageAnalytics _analytics = UsageAnalytics();
 
+  static const List<_TipData> _tips = [
+    _TipData(
+      icon: Icons.wb_sunny_rounded,
+      title: 'Bright\nLighting',
+      subtitle: 'Natural daylight works best. Avoid direct sunlight.',
+    ),
+    _TipData(
+      icon: Icons.filter_center_focus_rounded,
+      title: 'Steady\nHands',
+      subtitle: 'Hold device stable. Use both hands or rest on a surface.',
+    ),
+    _TipData(
+      icon: Icons.eco_rounded,
+      title: 'Clean\nLeaf',
+      subtitle: 'Choose a healthy, mature leaf without damage.',
+    ),
+    _TipData(
+      icon: Icons.center_focus_strong_rounded,
+      title: 'Single\nLeaf',
+      subtitle: 'Frame one leaf in the center without overlap.',
+    ),
+    _TipData(
+      icon: Icons.crop_free_rounded,
+      title: 'Fill\nFrame',
+      subtitle: 'Fill most of the frame with the leaf for better AI results.',
+    ),
+    _TipData(
+      icon: Icons.image_rounded,
+      title: 'Plain\nBackground',
+      subtitle: 'Use white paper or plain cloth as background.',
+    ),
+  ];
+
+  static const List<_IssueData> _issues = [
+    _IssueData(
+      title: 'Poor Image Quality',
+      content:
+          'If you see a "Poor Image Quality" message, retake the photo with better lighting and a steady hand. Make sure the lens is clean.',
+    ),
+    _IssueData(
+      title: 'No Match Found',
+      content:
+          'If no match is found, try photographing a different leaf or manually browse the plant database. Ensure the leaf is clearly visible.',
+    ),
+    _IssueData(
+      title: 'Low Confidence Score',
+      content:
+          'Scores below 80% may be less reliable. Compare with plant details in the catalog to verify the identification before use.',
+    ),
+  ];
+
+  static const List<_FeatureData> _features = [
+    _FeatureData(
+      icon: Icons.search_rounded,
+      title: 'Browse Plants',
+      subtitle:
+          'Explore our database of medicinal plants with detailed information.',
+    ),
+    _FeatureData(
+      icon: Icons.verified_rounded,
+      title: 'DOH Approved',
+      subtitle:
+          'View Philippine Department of Health approved medicinal plants.',
+    ),
+    _FeatureData(
+      icon: Icons.medical_services_rounded,
+      title: 'Condition Search',
+      subtitle: 'Search plants by medical condition to find natural remedies.',
+    ),
+    _FeatureData(
+      icon: Icons.history_rounded,
+      title: 'Scan History',
+      subtitle: 'Access your past scans with confidence scores and timestamps.',
+    ),
+    _FeatureData(
+      icon: Icons.visibility_rounded,
+      title: 'AI Reasoning Heatmap',
+      subtitle: 'See which leaf areas the AI focused on for identification.',
+    ),
+  ];
+
   @override
   void initState() {
     super.initState();
-    // Track help screen view
     _analytics.trackHelpViewed();
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final appLocalizations = AppLocalizations.of(context);
+    final loc = AppLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(appLocalizations.helpAndTutorial),
+        title: Text(loc.helpAndTutorial),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    theme.colorScheme.primary,
-                    theme.colorScheme.secondary,
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    Icons.help_outline,
-                    size: 48,
-                    color: Colors.white,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    appLocalizations.helpAndTutorial,
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Learn how to get the best results from HerbaScan',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: Colors.white.withOpacity(0.9),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            _MedicalDisclaimerBanner(disclaimerText: loc.medicalDisclaimer),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 28),
 
-            // Best Practices Section
-            _buildSectionTitle(
-                appLocalizations.bestPractices, Icons.stars, theme),
-            const SizedBox(height: 12),
-            _buildPracticeCard(
-              '1. ${appLocalizations.useBrightLight}',
-              'Natural daylight works best. Avoid direct sunlight which can cause glare and shadows.',
-              Icons.wb_sunny,
-              theme.colorScheme.primary,
-              theme,
-            ),
-            _buildPracticeCard(
-              '2. ${appLocalizations.holdSteady}',
-              'Keep your device stable to prevent blurry images. Use both hands or rest on a surface.',
-              Icons.pan_tool,
-              theme.colorScheme.secondary,
-              theme,
-            ),
-            _buildPracticeCard(
-              '3. ${appLocalizations.cleanLeaf}',
-              'Choose a healthy, mature leaf without damage or disease for best results.',
-              Icons.eco,
-              Colors.green,
-              theme,
-            ),
-            _buildPracticeCard(
-              '4. ${appLocalizations.singleLeafFocus}',
-              'Frame a single leaf in the center. Avoid including multiple leaves or background elements.',
-              Icons.center_focus_strong,
-              Colors.orange,
-              theme,
-            ),
-            _buildPracticeCard(
-              '5. ${appLocalizations.fillFrame}',
-              'Fill most of the frame with the leaf for better AI recognition.',
-              Icons.crop_free,
-              Colors.purple,
-              theme,
-            ),
-            _buildPracticeCard(
-              '6. ${appLocalizations.plainBackground}',
-              'Use a plain, contrasting background (white paper or cloth works well).',
-              Icons.image,
-              Colors.teal,
-              theme,
-            ),
-
-            const SizedBox(height: 24),
-
-            // Common Issues Section
-            _buildSectionTitle(
-                'Common Issues', Icons.report_problem_outlined, theme),
-            const SizedBox(height: 12),
-            _buildIssueCard(
-              'Poor Image Quality',
-              'If you see a "Poor Image Quality" message, retake the photo with better lighting and a steady hand.',
-              Icons.image_not_supported,
-              theme.colorScheme.error,
-              theme,
-            ),
-            _buildIssueCard(
-              'No Match Found',
-              'If no match is found, try a different leaf or manually browse the plant database.',
-              Icons.search_off,
-              Colors.orange,
-              theme,
-            ),
-            _buildIssueCard(
-              'Low Confidence Score',
-              'Scores below 80% may be less reliable. Compare with plant details to verify.',
-              Icons.trending_down,
-              Colors.amber,
-              theme,
-            ),
-
-            const SizedBox(height: 24),
-
-            // Features Section
-            _buildSectionTitle('App Features', Icons.featured_play_list, theme),
-            const SizedBox(height: 12),
-            _buildFeatureCard(
-              'Browse Plants',
-              'Explore our database of 13 medicinal plants with detailed information.',
-              Icons.search,
-              theme,
-            ),
-            _buildFeatureCard(
-              'DOH Approved',
-              'View the 9 Philippine Department of Health approved medicinal plants.',
-              Icons.verified,
-              theme,
-            ),
-            _buildFeatureCard(
-              'Condition Search',
-              'Search plants by medical condition to find natural remedies.',
-              Icons.medical_services,
-              theme,
-            ),
-            _buildFeatureCard(
-              'Scan History',
-              'Access your past scans with confidence scores and timestamps.',
-              Icons.history,
-              theme,
-            ),
-            _buildFeatureCard(
-              'Score-CAM Visualization',
-              'See which parts of the leaf the AI focused on for identification.',
-              Icons.visibility,
-              theme,
-            ),
-
-            const SizedBox(height: 24),
-
-            // Safety Disclaimer
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.errorContainer.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: theme.colorScheme.error.withOpacity(0.3),
+            // Best Practices — horizontal carousel
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                loc.bestPractices,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Inter',
                 ),
               ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    Icons.warning_amber_rounded,
-                    color: theme.colorScheme.error,
-                    size: 24,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Medical Disclaimer',
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.error,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          appLocalizations.medicalDisclaimer,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface.withOpacity(0.7),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 140,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: _tips.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 12),
+                itemBuilder: (context, index) =>
+                    _TipCard(tip: _tips[index], theme: theme),
               ),
             ),
+
+            const SizedBox(height: 32),
+
+            // Common Issues — FAQ accordion
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'Common Issues',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Inter',
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            ..._issues.map(
+              (issue) => _IssueExpansionTile(issue: issue, theme: theme),
+            ),
+
+            const SizedBox(height: 32),
+
+            // App Features — borderless ListTile
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'App Features',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Inter',
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            ..._features.map(
+              (feature) => _FeatureListTile(feature: feature, theme: theme),
+            ),
+
+            const SizedBox(height: 32),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildSectionTitle(String title, IconData icon, ThemeData theme) {
-    return Row(
+// ─── Data classes ────────────────────────────────────────────────────────────
+
+class _TipData {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  const _TipData({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+}
+
+class _IssueData {
+  final String title;
+  final String content;
+
+  const _IssueData({required this.title, required this.content});
+}
+
+class _FeatureData {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  const _FeatureData({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+}
+
+// ─── Sub-widgets ─────────────────────────────────────────────────────────────
+
+class _MedicalDisclaimerBanner extends StatelessWidget {
+  final String disclaimerText;
+
+  const _MedicalDisclaimerBanner({required this.disclaimerText});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      color: AppTheme.warningBgLight,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.medical_services_rounded,
+            color: AppTheme.warningAmber,
+            size: 20,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Medical Disclaimer',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.warningAmber,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  disclaimerText,
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 12,
+                    color: AppTheme.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TipCard extends StatelessWidget {
+  final _TipData tip;
+  final ThemeData theme;
+
+  const _TipCard({required this.tip, required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 140,
+      height: 140,
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color ?? AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F000000),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppTheme.botanicalPrimary.withOpacity(0.10),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              tip.icon,
+              color: AppTheme.botanicalPrimary,
+              size: 26,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            tip.title,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              fontFamily: 'Inter',
+              height: 1.2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _IssueExpansionTile extends StatelessWidget {
+  final _IssueData issue;
+  final ThemeData theme;
+
+  const _IssueExpansionTile({required this.issue, required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
+    return ExpansionTile(
+      tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+      childrenPadding:
+          const EdgeInsets.only(left: 16, right: 16, bottom: 14, top: 0),
+      title: Text(
+        issue.title,
+        style: theme.textTheme.bodyLarge?.copyWith(
+          fontWeight: FontWeight.w600,
+          fontFamily: 'Inter',
+        ),
+      ),
       children: [
-        Icon(icon, color: theme.colorScheme.primary),
-        const SizedBox(width: 12),
-        Text(
-          title,
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.primary,
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            issue.content,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: AppTheme.textSecondary,
+              height: 1.5,
+            ),
           ),
         ),
       ],
     );
   }
+}
 
-  Widget _buildPracticeCard(String title, String description, IconData icon,
-      Color color, ThemeData theme) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: theme.colorScheme.outline.withOpacity(0.2),
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: color, size: 24),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    description,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+class _FeatureListTile extends StatelessWidget {
+  final _FeatureData feature;
+  final ThemeData theme;
 
-  Widget _buildIssueCard(String title, String description, IconData icon,
-      Color color, ThemeData theme) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: color.withOpacity(0.3)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    description,
-                    style: theme.textTheme.bodySmall,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  const _FeatureListTile({required this.feature, required this.theme});
 
-  Widget _buildFeatureCard(
-      String title, String description, IconData icon, ThemeData theme) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: theme.colorScheme.outline.withOpacity(0.2),
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      leading: Icon(
+        feature.icon,
+        color: AppTheme.botanicalPrimary,
+        size: 26,
+      ),
+      title: Text(
+        feature.title,
+        style: theme.textTheme.bodyLarge?.copyWith(
+          fontWeight: FontWeight.w600,
+          fontFamily: 'Inter',
         ),
       ),
-      child: ListTile(
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primary,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, color: Colors.white, size: 24),
-        ),
-        title: Text(
-          title,
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        subtitle: Text(
-          description,
-          style: theme.textTheme.bodySmall,
+      subtitle: Text(
+        feature.subtitle,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: AppTheme.textSecondary,
         ),
       ),
     );

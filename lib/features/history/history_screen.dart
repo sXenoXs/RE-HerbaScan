@@ -9,13 +9,13 @@ import 'package:herbascan/core/providers/offline_provider.dart';
 import 'package:herbascan/core/models/scan_result.dart';
 import 'package:herbascan/core/models/cloud_scan.dart';
 import 'package:herbascan/core/services/herbarium_service.dart';
+import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:gal/gal.dart';
 import 'package:herbascan/features/auth/login_screen.dart';
 import 'package:herbascan/features/scan/plant_result_screen.dart';
 import 'package:herbascan/features/scan/scan_screen.dart';
 import 'package:herbascan/core/services/usage_analytics.dart';
 import 'dart:io';
-import 'dart:convert';
 import 'package:intl/intl.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -25,11 +25,11 @@ class HistoryScreen extends StatefulWidget {
   State<HistoryScreen> createState() => _HistoryScreenState();
 }
 
-class _HistoryScreenState extends State<HistoryScreen> {
+class _HistoryScreenState extends State<HistoryScreen>
+    with SingleTickerProviderStateMixin {
   final UsageAnalytics _analytics = UsageAnalytics();
-  final PageController _historyPageController = PageController(initialPage: 0);
+  late final TabController _tabController;
   String _sortBy = 'recent'; // recent, oldest, confidence
-  Map<String, dynamic>? _plantDataCache;
   int _historyTabIndex = 0; // 0 = Device, 1 = Cloud
   List<CloudScan> _cloudScans = [];
   bool _cloudLoading = false;
@@ -42,12 +42,35 @@ class _HistoryScreenState extends State<HistoryScreen> {
   void initState() {
     super.initState();
     _analytics.trackHistoryViewed();
-    _loadPlantDataCache();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(_onTabChanged);
+
+    // Eagerly load local scan history from SQLite as soon as the widget mounts,
+    // independent of the full PlantProvider initialization chain (which waits
+    // for Supabase catalog sync before calling loadScanHistory).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<PlantProvider>().loadScanHistory();
+      }
+    });
+  }
+
+  void _onTabChanged() {
+    // Guard: only react to settled tab changes, not mid-animation events
+    if (_tabController.indexIsChanging) return;
+    final idx = _tabController.index;
+    if (idx == _historyTabIndex) return; // no actual change
+    setState(() => _historyTabIndex = idx);
+    if (idx == 1) {
+      final auth = context.read<AuthProvider>();
+      if (auth.isLoggedIn) _loadCloudScans();
+    }
   }
 
   @override
   void dispose() {
-    _historyPageController.dispose();
+    _tabController.removeListener(_onTabChanged);
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -70,84 +93,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
         _cloudScans = list;
         _cloudLoading = false;
       });
-    }
-  }
-
-  /// Load plant_explanations.json into memory cache
-  Future<void> _loadPlantDataCache() async {
-    try {
-      final jsonString =
-          await rootBundle.loadString('assets/data/plant_explanations.json');
-      final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
-      if (mounted) {
-        setState(() {
-          _plantDataCache = jsonData;
-        });
-      }
-    } catch (e) {
-      print('⚠️ Error loading plant_explanations.json: $e');
-      // Set empty map on error to prevent null checks
-      if (mounted) {
-        setState(() {
-          _plantDataCache = {};
-        });
-      }
-    }
-  }
-
-  /// Resolves scientific name from plant_explanations.json based on common name
-  /// Falls back to common name or "Species not listed" if not found
-  String _resolveScientificName(String commonName) {
-    // If cache not loaded yet, return fallback
-    if (_plantDataCache == null || _plantDataCache!.isEmpty) {
-      return commonName; // Return common name as fallback
-    }
-
-    try {
-      // Normalize common name for lookup (case-insensitive, trim)
-      final normalizedCommonName = commonName.trim();
-
-      // Try exact match first
-      var plantData = _plantDataCache![normalizedCommonName];
-
-      // Try case-insensitive match if exact match fails
-      if (plantData == null) {
-        final matchingKey = _plantDataCache!.keys.firstWhere(
-          (key) =>
-              key.trim().toLowerCase() == normalizedCommonName.toLowerCase(),
-          orElse: () => '',
-        );
-        if (matchingKey.isNotEmpty) {
-          plantData = _plantDataCache![matchingKey];
-        }
-      }
-
-      // Extract scientific name from identification text
-      if (plantData != null) {
-        final plantMap = plantData as Map<String, dynamic>;
-        final identification = plantMap['identification'] as String?;
-
-        if (identification != null && identification.isNotEmpty) {
-          // Pattern: "The model identified this as [Common Name] ([Scientific Name])"
-          // Extract text in parentheses after the common name
-          final regex = RegExp(r'\(([^)]+)\)');
-          final match = regex.firstMatch(identification);
-
-          if (match != null && match.groupCount >= 1) {
-            final scientificName = match.group(1)?.trim();
-            if (scientificName != null && scientificName.isNotEmpty) {
-              return scientificName;
-            }
-          }
-        }
-      }
-
-      // Fallback: return common name if scientific name cannot be found
-      return commonName;
-    } catch (e) {
-      print('⚠️ Error resolving scientific name for "$commonName": $e');
-      // Fallback: return common name on error
-      return commonName;
     }
   }
 
@@ -207,47 +152,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
   }
 
-  void _showDeleteConfirmation(BuildContext context, ScanResult scan) {
-    final appLocalizations = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: Text(appLocalizations.confirmDelete),
-          content: Text(appLocalizations.deleteConfirmation),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-              },
-              child: Text(appLocalizations.cancel),
-            ),
-            TextButton(
-              onPressed: () {
-                final plantProvider =
-                    Provider.of<PlantProvider>(context, listen: false);
-                plantProvider.deleteScanResult(scan.id);
-                Navigator.of(dialogContext).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text('Scan deleted'),
-                    backgroundColor: theme.colorScheme.error,
-                  ),
-                );
-              },
-              child: Text(
-                appLocalizations.delete,
-                style: TextStyle(color: theme.colorScheme.error),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   void _showDeleteAllConfirmation(BuildContext context) {
     final appLocalizations = AppLocalizations.of(context);
     final theme = Theme.of(context);
@@ -299,241 +203,196 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final offlineProvider = Provider.of<OfflineProvider>(context);
     final sortedScans = _sortScans(plantProvider.scanHistory);
 
+    final avgConfidence = sortedScans.isEmpty
+        ? 0.0
+        : sortedScans.map((s) => s.confidenceScore).reduce((a, b) => a + b) /
+            sortedScans.length;
+
+    final hasSelection =
+        _selectedDeviceIds.isNotEmpty || _selectedCloudIds.isNotEmpty;
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_selectMode
-            ? '${_historyTabIndex == 0 ? _selectedDeviceIds.length : _selectedCloudIds.length} selected'
-            : appLocalizations.scanHistory),
-        leading: _selectMode
-            ? IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () {
-                  setState(() {
-                    _selectMode = false;
-                    _selectedDeviceIds.clear();
-                    _selectedCloudIds.clear();
-                  });
-                },
-                tooltip: 'Cancel',
-              )
-            : null,
-        actions: [
-          if (_selectMode && _historyTabIndex == 0) ...[
-            TextButton.icon(
-              onPressed: sortedScans.isEmpty
-                  ? null
-                  : () {
-                      setState(() {
-                        final allSelected =
-                            _selectedDeviceIds.length == sortedScans.length;
-                        if (allSelected) {
-                          _selectedDeviceIds.clear();
-                        } else {
-                          _selectedDeviceIds
-                              .addAll(sortedScans.map((s) => s.id));
-                        }
-                      });
-                    },
-              icon: Icon(
-                _selectedDeviceIds.length == sortedScans.length &&
-                        sortedScans.isNotEmpty
-                    ? Icons.deselect
-                    : Icons.select_all,
-              ),
-              label: Text(
-                _selectedDeviceIds.length == sortedScans.length &&
-                        sortedScans.isNotEmpty
-                    ? 'Deselect all'
-                    : 'Select all',
-              ),
-            ),
-          ],
-          if (_selectMode && _historyTabIndex == 1) ...[
-            TextButton.icon(
-              onPressed: _cloudScans.isEmpty
-                  ? null
-                  : () {
-                      setState(() {
-                        final allSelected =
-                            _selectedCloudIds.length == _cloudScans.length;
-                        if (allSelected) {
-                          _selectedCloudIds.clear();
-                        } else {
-                          _selectedCloudIds
-                              .addAll(_cloudScans.map((c) => c.id));
-                        }
-                      });
-                    },
-              icon: Icon(
-                _selectedCloudIds.length == _cloudScans.length &&
-                        _cloudScans.isNotEmpty
-                    ? Icons.deselect
-                    : Icons.select_all,
-              ),
-              label: Text(
-                _selectedCloudIds.length == _cloudScans.length &&
-                        _cloudScans.isNotEmpty
-                    ? 'Deselect all'
-                    : 'Select all',
-              ),
-            ),
-          ],
-          if (!_selectMode && _historyTabIndex == 0 && sortedScans.isNotEmpty)
-            TextButton.icon(
-              onPressed: () => setState(() => _selectMode = true),
-              icon: const Icon(Icons.checklist_rtl),
-              label: const Text('Select'),
-            ),
-          if (_historyTabIndex == 0 && sortedScans.isNotEmpty && !_selectMode)
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.sort),
-              onSelected: (value) {
-                setState(() {
-                  _sortBy = value;
-                });
-              },
-              itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: 'recent',
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.access_time,
-                        color: _sortBy == 'recent'
-                            ? theme.colorScheme.primary
-                            : null,
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Most Recent',
-                        style: TextStyle(
-                          fontWeight:
-                              _sortBy == 'recent' ? FontWeight.bold : null,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'oldest',
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.history,
-                        color: _sortBy == 'oldest'
-                            ? theme.colorScheme.primary
-                            : null,
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Oldest First',
-                        style: TextStyle(
-                          fontWeight:
-                              _sortBy == 'oldest' ? FontWeight.bold : null,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'confidence',
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.trending_up,
-                        color: _sortBy == 'confidence'
-                            ? theme.colorScheme.primary
-                            : null,
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Highest Confidence',
-                        style: TextStyle(
-                          fontWeight:
-                              _sortBy == 'confidence' ? FontWeight.bold : null,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          if (_historyTabIndex == 0 && sortedScans.isNotEmpty && !_selectMode)
-            IconButton(
-              icon: const Icon(Icons.delete_sweep),
-              onPressed: () => _showDeleteAllConfirmation(context),
-              tooltip: appLocalizations.deleteAll,
-            ),
-          if (!_selectMode && _historyTabIndex == 1 && _cloudScans.isNotEmpty)
-            TextButton.icon(
-              onPressed: () => setState(() => _selectMode = true),
-              icon: const Icon(Icons.checklist_rtl),
-              label: const Text('Select'),
-            ),
-        ],
-      ),
-      body: Column(
+      body: Stack(
         children: [
-          // Device / Cloud tabs
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: SegmentedButton<int>(
-                    style: ButtonStyle(
-                      backgroundColor: WidgetStateProperty.resolveWith(
-                          (Set<WidgetState> states) {
-                        if (states.contains(WidgetState.selected)) {
-                          return const Color(
-                              0xFF7BC9AD); // darker shade of #dffcea for contrast with white text
-                        }
-                        return null;
-                      }),
-                      foregroundColor: WidgetStateProperty.resolveWith(
-                          (Set<WidgetState> states) {
-                        if (states.contains(WidgetState.selected)) {
-                          return Colors.white;
-                        }
-                        return null;
-                      }),
+          NestedScrollView(
+            headerSliverBuilder: (context, innerBoxIsScrolled) => [
+              SliverAppBar(
+                pinned: true,
+                floating: false,
+                title: Text(_selectMode
+                    ? '${_historyTabIndex == 0 ? _selectedDeviceIds.length : _selectedCloudIds.length} selected'
+                    : appLocalizations.scanHistory),
+                leading: _selectMode
+                    ? IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () {
+                          setState(() {
+                            _selectMode = false;
+                            _selectedDeviceIds.clear();
+                            _selectedCloudIds.clear();
+                          });
+                        },
+                        tooltip: 'Cancel',
+                      )
+                    : null,
+                actions: [
+                  if (_selectMode && _historyTabIndex == 0)
+                    TextButton(
+                      onPressed: sortedScans.isEmpty
+                          ? null
+                          : () {
+                              setState(() {
+                                final allSelected = _selectedDeviceIds.length ==
+                                    sortedScans.length;
+                                if (allSelected) {
+                                  _selectedDeviceIds.clear();
+                                } else {
+                                  _selectedDeviceIds
+                                      .addAll(sortedScans.map((s) => s.id));
+                                }
+                              });
+                            },
+                      child: Text(
+                        _selectedDeviceIds.length == sortedScans.length &&
+                                sortedScans.isNotEmpty
+                            ? 'Deselect all'
+                            : 'Select all',
+                      ),
                     ),
-                    segments: const [
-                      ButtonSegment(
-                          value: 0,
-                          label: Text('Device'),
-                          icon: Icon(Icons.phone_android)),
-                      ButtonSegment(
-                          value: 1,
-                          label: Text('Cloud'),
-                          icon: Icon(Icons.cloud)),
-                    ],
-                    selected: {_historyTabIndex},
-                    onSelectionChanged: (Set<int> s) {
-                      final v = s.first;
-                      setState(() => _historyTabIndex = v);
-                      _historyPageController.animateToPage(
-                        v,
-                        duration: const Duration(milliseconds: 250),
-                        curve: Curves.easeInOut,
-                      );
-                      if (v == 1 && authProvider.isLoggedIn) _loadCloudScans();
-                    },
+                  if (_selectMode && _historyTabIndex == 1)
+                    TextButton(
+                      onPressed: _cloudScans.isEmpty
+                          ? null
+                          : () {
+                              setState(() {
+                                final allSelected = _selectedCloudIds.length ==
+                                    _cloudScans.length;
+                                if (allSelected) {
+                                  _selectedCloudIds.clear();
+                                } else {
+                                  _selectedCloudIds
+                                      .addAll(_cloudScans.map((c) => c.id));
+                                }
+                              });
+                            },
+                      child: Text(
+                        _selectedCloudIds.length == _cloudScans.length &&
+                                _cloudScans.isNotEmpty
+                            ? 'Deselect all'
+                            : 'Select all',
+                      ),
+                    ),
+                  if (!_selectMode &&
+                      _historyTabIndex == 0 &&
+                      sortedScans.isNotEmpty)
+                    IconButton(
+                      icon: const Icon(Icons.checklist_rtl),
+                      onPressed: () => setState(() => _selectMode = true),
+                      tooltip: 'Select',
+                    ),
+                  if (_historyTabIndex == 0 &&
+                      sortedScans.isNotEmpty &&
+                      !_selectMode)
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.sort),
+                      onSelected: (value) => setState(() => _sortBy = value),
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'recent',
+                          child: Row(
+                            children: [
+                              Icon(Icons.access_time,
+                                  color: _sortBy == 'recent'
+                                      ? theme.colorScheme.primary
+                                      : null),
+                              const SizedBox(width: 12),
+                              Text('Most Recent',
+                                  style: TextStyle(
+                                      fontWeight: _sortBy == 'recent'
+                                          ? FontWeight.bold
+                                          : null)),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'oldest',
+                          child: Row(
+                            children: [
+                              Icon(Icons.history,
+                                  color: _sortBy == 'oldest'
+                                      ? theme.colorScheme.primary
+                                      : null),
+                              const SizedBox(width: 12),
+                              Text('Oldest First',
+                                  style: TextStyle(
+                                      fontWeight: _sortBy == 'oldest'
+                                          ? FontWeight.bold
+                                          : null)),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'confidence',
+                          child: Row(
+                            children: [
+                              Icon(Icons.trending_up,
+                                  color: _sortBy == 'confidence'
+                                      ? theme.colorScheme.primary
+                                      : null),
+                              const SizedBox(width: 12),
+                              Text('Highest Confidence',
+                                  style: TextStyle(
+                                      fontWeight: _sortBy == 'confidence'
+                                          ? FontWeight.bold
+                                          : null)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  if (_historyTabIndex == 0 &&
+                      sortedScans.isNotEmpty &&
+                      !_selectMode)
+                    IconButton(
+                      icon: const Icon(Icons.delete_sweep),
+                      onPressed: () => _showDeleteAllConfirmation(context),
+                      tooltip: appLocalizations.deleteAll,
+                    ),
+                  if (!_selectMode &&
+                      _historyTabIndex == 1 &&
+                      _cloudScans.isNotEmpty)
+                    IconButton(
+                      icon: const Icon(Icons.checklist_rtl),
+                      onPressed: () => setState(() => _selectMode = true),
+                      tooltip: 'Select',
+                    ),
+                ],
+                bottom: TabBar(
+                  controller: _tabController,
+                  tabs: const [
+                    Tab(icon: Icon(Icons.phone_android), text: 'Device'),
+                    Tab(icon: Icon(Icons.cloud), text: 'Cloud'),
+                  ],
+                ),
+              ),
+              // Single-line stats below TabBar (device tab only, non-empty)
+              if (_historyTabIndex == 0 && sortedScans.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
+                    child: Text(
+                      '${sortedScans.length} Scans saved • ${(avgConfidence * 100).toStringAsFixed(1)}% Avg Match',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.55),
+                      ),
+                    ),
                   ),
                 ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Stack(
+            ],
+            body: Stack(
               children: [
-                PageView(
-                  controller: _historyPageController,
-                  onPageChanged: (int index) {
-                    setState(() => _historyTabIndex = index);
-                    if (index == 1 && authProvider.isLoggedIn)
-                      _loadCloudScans();
-                  },
+                TabBarView(
+                  controller: _tabController,
                   children: [
                     _buildDeviceHistory(context, theme, appLocalizations,
                         plantProvider, sortedScans),
@@ -544,49 +403,56 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 if (_batchOperationInProgress)
                   Container(
                     color: Colors.black26,
-                    child: const Center(
-                      child: CircularProgressIndicator(),
-                    ),
+                    child: const Center(child: CircularProgressIndicator()),
                   ),
               ],
             ),
           ),
-          if (_selectMode &&
-              (_selectedDeviceIds.isNotEmpty || _selectedCloudIds.isNotEmpty))
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-              ),
-              child: SafeArea(
-                child: Row(
-                  children: [
-                    if (_historyTabIndex == 0)
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: _batchOperationInProgress
-                              ? null
-                              : () => _batchSyncSelectedToCloud(
-                                  context, plantProvider, sortedScans),
-                          icon: const Icon(Icons.cloud_upload),
-                          label: const Text('Sync Selected to Cloud'),
-                        ),
-                      )
-                    else
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: _batchOperationInProgress
-                              ? null
-                              : () => _batchDownloadSelectedToDevice(
-                                  context, plantProvider),
-                          icon: const Icon(Icons.download),
-                          label: const Text('Download Selected to Device'),
-                        ),
-                      ),
-                  ],
+          // AnimatedSlide batch FAB — sits above the BottomAppBar (60px) + camera FAB (56px) + margin
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 60 + 14 + 12 + MediaQuery.of(context).padding.bottom,
+            child: AnimatedSlide(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              offset: (_selectMode && hasSelection)
+                  ? Offset.zero
+                  : const Offset(0, 2.5),
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 200),
+                opacity: (_selectMode && hasSelection) ? 1.0 : 0.0,
+                child: FilledButton.icon(
+                  onPressed: (_selectMode &&
+                          hasSelection &&
+                          !_batchOperationInProgress)
+                      ? () {
+                          if (_historyTabIndex == 0) {
+                            _batchSyncSelectedToCloud(
+                                context, plantProvider, sortedScans);
+                          } else {
+                            _batchDownloadSelectedToDevice(
+                                context, plantProvider);
+                          }
+                        }
+                      : null,
+                  icon: Icon(_historyTabIndex == 0
+                      ? Icons.cloud_upload
+                      : Icons.download),
+                  label: Text(_historyTabIndex == 0
+                      ? 'Sync Selected'
+                      : 'Download Selected'),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(52),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                    elevation: 4,
+                    shadowColor: Colors.black38,
+                  ),
                 ),
               ),
             ),
+          ),
         ],
       ),
     );
@@ -680,36 +546,99 @@ class _HistoryScreenState extends State<HistoryScreen> {
     if (sortedScans.isEmpty) {
       return _buildEmptyState(context, theme, appLocalizations);
     }
-    return Column(
-      children: [
-        _buildStatsHeader(context, theme, sortedScans),
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: sortedScans.length,
-            itemBuilder: (context, index) {
-              final scan = sortedScans[index];
-              final isSelected = _selectedDeviceIds.contains(scan.id);
-              return _buildScanCard(
-                context,
-                theme,
-                scan,
-                isSelectMode: _selectMode,
-                isSelected: isSelected,
-                onToggleSelect: () {
-                  setState(() {
-                    if (isSelected) {
-                      _selectedDeviceIds.remove(scan.id);
-                    } else {
-                      _selectedDeviceIds.add(scan.id);
-                    }
-                  });
-                },
+    return ListView.builder(
+      padding: EdgeInsets.fromLTRB(
+          16, 8, 16, 60 + 56 + 60 + MediaQuery.of(context).padding.bottom),
+      itemCount: sortedScans.length,
+      itemBuilder: (context, index) {
+        final scan = sortedScans[index];
+        final isSelected = _selectedDeviceIds.contains(scan.id);
+        return Dismissible(
+          key: ValueKey(scan.id),
+          background: _buildDismissBackground(
+            alignment: Alignment.centerLeft,
+            color: AppTheme.botanicalPrimary,
+            icon: Icons.download_rounded,
+          ),
+          secondaryBackground: _buildDismissBackground(
+            alignment: Alignment.centerRight,
+            color: AppTheme.errorDeep,
+            icon: Icons.delete_rounded,
+          ),
+          confirmDismiss: (direction) async {
+            if (direction == DismissDirection.startToEnd) {
+              // Export to gallery — don't actually dismiss the item
+              await _exportScanToGallery(context, scan);
+              return false;
+            } else {
+              // Delete — confirm first
+              final ok = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: Text(appLocalizations.confirmDelete),
+                  content: Text(appLocalizations.deleteConfirmation),
+                  actions: [
+                    TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: Text(appLocalizations.cancel)),
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: Text(appLocalizations.delete,
+                          style: TextStyle(color: theme.colorScheme.error)),
+                    ),
+                  ],
+                ),
               );
+              return ok ?? false;
+            }
+          },
+          onDismissed: (direction) {
+            if (direction == DismissDirection.endToStart) {
+              plantProvider.deleteScanResult(scan.id);
+              _selectedDeviceIds.remove(scan.id);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Scan deleted'),
+                  backgroundColor: theme.colorScheme.error,
+                ),
+              );
+            }
+          },
+          child: _buildScanCard(
+            context,
+            theme,
+            scan,
+            isSelectMode: _selectMode,
+            isSelected: isSelected,
+            onToggleSelect: () {
+              setState(() {
+                if (isSelected) {
+                  _selectedDeviceIds.remove(scan.id);
+                } else {
+                  _selectedDeviceIds.add(scan.id);
+                }
+              });
             },
           ),
-        ),
-      ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDismissBackground({
+    required AlignmentGeometry alignment,
+    required Color color,
+    required IconData icon,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      alignment: alignment,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Icon(icon, color: Colors.white, size: 28),
     );
   }
 
@@ -1067,78 +996,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _buildStatsHeader(
-      BuildContext context, ThemeData theme, List<ScanResult> scans) {
-    final avgConfidence = scans.isEmpty
-        ? 0.0
-        : scans.map((s) => s.confidenceScore).reduce((a, b) => a + b) /
-            scans.length;
-
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            theme.colorScheme.primary,
-            theme.colorScheme.secondary,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildStatItem(
-            theme,
-            '${scans.length}',
-            'Total Scans',
-            Icons.eco,
-          ),
-          Container(
-            width: 1,
-            height: 40,
-            color: Colors.white.withOpacity(0.3),
-          ),
-          _buildStatItem(
-            theme,
-            '${(avgConfidence * 100).toStringAsFixed(1)}%',
-            'Avg Confidence',
-            Icons.analytics,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatItem(
-      ThemeData theme, String value, String label, IconData icon) {
-    return Column(
-      children: [
-        Icon(
-          icon,
-          color: Colors.white,
-          size: 28,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: Colors.white.withOpacity(0.9),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildScanCard(
     BuildContext context,
     ThemeData theme,
@@ -1147,20 +1004,21 @@ class _HistoryScreenState extends State<HistoryScreen> {
     bool isSelected = false,
     VoidCallback? onToggleSelect,
   }) {
-    final appLocalizations = AppLocalizations.of(context);
     final dateFormat = DateFormat('MMM dd, yyyy • HH:mm');
+    final methodIcon = _getMethodIcon(scan);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isSelectMode && isSelected
-              ? theme.colorScheme.primary
-              : theme.colorScheme.outline.withOpacity(0.2),
-          width: isSelectMode && isSelected ? 2 : 1,
-        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: InkWell(
         onTap: () async {
@@ -1179,42 +1037,69 @@ class _HistoryScreenState extends State<HistoryScreen> {
         child: Padding(
           padding: const EdgeInsets.all(12.0),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              if (isSelectMode)
-                Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: Checkbox(
-                    value: isSelected,
-                    onChanged: (_) => onToggleSelect?.call(),
-                  ),
+              // Thumbnail with overlaid checkbox in select mode — no row resize
+              SizedBox(
+                width: 60,
+                height: 60,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: SizedBox(
+                        width: 60,
+                        height: 60,
+                        child: scan.imagePath.isNotEmpty
+                            ? Image.file(
+                                File(scan.imagePath),
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    _buildPlaceholderImage(theme),
+                              )
+                            : _buildPlaceholderImage(theme),
+                      ),
+                    ),
+                    if (isSelectMode)
+                      Positioned(
+                        top: -6,
+                        left: -6,
+                        child: Container(
+                          width: 22,
+                          height: 22,
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppTheme.botanicalPrimary
+                                : theme.colorScheme.surface,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: AppTheme.botanicalPrimary,
+                              width: 2,
+                            ),
+                          ),
+                          child: isSelected
+                              ? const Icon(Icons.check,
+                                  color: Colors.white, size: 13)
+                              : null,
+                        ),
+                      ),
+                    // Confidence badge anchored top-right of thumbnail
+                    Positioned(
+                      top: -4,
+                      right: -4,
+                      child: _buildConfidencePill(scan.confidenceScore),
+                    ),
+                  ],
                 ),
-              // Plant Image
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: scan.imagePath.isNotEmpty
-                    ? Image.file(
-                        File(scan.imagePath),
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return _buildPlaceholderImage(theme);
-                        },
-                      )
-                    : _buildPlaceholderImage(theme),
               ),
-              const SizedBox(width: 16),
-              // Scan Info – use Expanded so title/date can shrink and avoid overflow in select mode
+              const SizedBox(width: 14),
+              // Info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Title row: plant name gets remaining space; method label can scale down to avoid overflow
                     Row(
                       children: [
                         Expanded(
@@ -1224,81 +1109,33 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                 'Unknown Plant',
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
+                              fontSize: 16,
                             ),
                             overflow: TextOverflow.ellipsis,
                             maxLines: 1,
                           ),
                         ),
-                        if (_getMethodLabel(scan) != null) ...[
+                        if (methodIcon != null) ...[
                           const SizedBox(width: 6),
-                          Flexible(
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.centerLeft,
-                              child: _buildMethodLabel(theme, _getMethodLabel(scan)!),
-                            ),
-                          ),
+                          methodIcon,
                         ],
                       ],
                     ),
                     const SizedBox(height: 4),
-                    Builder(
-                      builder: (context) {
-                        final existingScientificName =
-                            scan.plant?.scientificName ??
-                                scan.topPrediction?.scientificName;
-
-                        if (existingScientificName != null &&
-                            existingScientificName.isNotEmpty &&
-                            existingScientificName != 'Unknown') {
-                          return Text(
-                            existingScientificName,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              fontStyle: FontStyle.italic,
-                              color:
-                                  theme.colorScheme.onSurface.withOpacity(0.6),
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          );
-                        }
-
-                        final plantName = scan.plant?.commonName ??
-                            scan.topPrediction?.plantName ??
-                            'Unknown Plant';
-                        final resolvedScientificName =
-                            _resolveScientificName(plantName);
-                        final displayName =
-                            (resolvedScientificName == plantName ||
-                                    resolvedScientificName.isEmpty)
-                                ? 'Species not listed'
-                                : resolvedScientificName;
-
-                        return Text(
-                          displayName,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontStyle: FontStyle.italic,
-                            color: theme.colorScheme.onSurface.withOpacity(0.6),
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 8),
                     Row(
                       children: [
                         Icon(
                           Icons.access_time,
-                          size: 14,
-                          color: theme.colorScheme.onSurface.withOpacity(0.5),
+                          size: 13,
+                          color: theme.colorScheme.onSurface.withOpacity(0.45),
                         ),
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
                             dateFormat.format(scan.scanDate),
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withOpacity(0.5),
+                              color:
+                                  theme.colorScheme.onSurface.withOpacity(0.5),
                             ),
                             overflow: TextOverflow.ellipsis,
                             maxLines: 1,
@@ -1306,35 +1143,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildConfidenceBadge(
-                              theme, appLocalizations, scan.confidenceScore),
-                        ),
-                      ],
-                    ),
                   ],
                 ),
-              ),
-              // Export to Camera Roll
-              IconButton(
-                icon: Icon(
-                  Icons.photo_library_outlined,
-                  color: theme.colorScheme.primary,
-                ),
-                onPressed: () => _exportScanToGallery(context, scan),
-                tooltip: 'Save to Camera Roll',
-              ),
-              // Delete (trash) only – save is in Plant Result screen
-              IconButton(
-                icon: Icon(
-                  Icons.delete_outline,
-                  color: theme.colorScheme.error,
-                ),
-                onPressed: () => _showDeleteConfirmation(context, scan),
-                tooltip: appLocalizations.delete,
               ),
             ],
           ),
@@ -1343,52 +1153,31 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _buildConfidenceBadge(
-      ThemeData theme, AppLocalizations appLocalizations, double confidence) {
-    final percentage = (confidence * 100).toStringAsFixed(1);
+  Widget _buildConfidencePill(double confidence) {
+    final percentage = (confidence * 100).toStringAsFixed(0);
     final Color badgeColor;
-
     if (confidence >= 0.8) {
-      badgeColor = const Color(0xFF48BB78); // Green
+      badgeColor = AppTheme.safeGreen;
     } else if (confidence >= 0.6) {
-      badgeColor = Colors.orange;
+      badgeColor = AppTheme.warningAmber;
     } else {
-      badgeColor = Colors.red;
+      badgeColor = AppTheme.errorDeep;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
       decoration: BoxDecoration(
-        color: badgeColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: badgeColor,
-          width: 1,
-        ),
+        color: badgeColor,
+        borderRadius: BorderRadius.circular(100),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.verified,
-            size: 14,
-            color: badgeColor,
-          ),
-          const SizedBox(width: 4),
-          Flexible(
-            child: Text(
-              '$percentage%',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: badgeColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 11,
-              ),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-            ),
-          ),
-        ],
+      child: Text(
+        '$percentage%',
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          fontSize: 9,
+          fontFamily: 'Inter',
+        ),
       ),
     );
   }
@@ -1403,61 +1192,28 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  /// Get method label from scan result metadata
-  /// Returns: "CAM", "GradCAM", "Fallback", or "Online"
-  String? _getMethodLabel(ScanResult scan) {
+  /// Returns an icon-only widget indicating scan method, or null if unknown.
+  Widget? _getMethodIcon(ScanResult scan) {
     final method = scan.metadata['method'] as String?;
     final fallbackUsed = scan.metadata['fallbackUsed'] as bool? ?? false;
 
-    // If fallback was used, show "Fallback"
-    if (fallbackUsed == true) {
-      return 'Fallback';
-    }
+    final bool isOffline =
+        fallbackUsed || method == 'cam' || scan.isOfflineScan;
+    final bool isOnline = method == 'grad-cam';
 
-    // Otherwise, show based on method
-    if (method == 'cam') {
-      return 'CAM';
-    } else if (method == 'grad-cam') {
-      return 'Score-CAM';
+    if (isOnline) {
+      return const Tooltip(
+        message: 'Score-CAM (Cloud)',
+        child: Icon(Icons.cloud_done_outlined,
+            size: 16, color: AppTheme.botanicalPrimary),
+      );
+    } else if (isOffline) {
+      return Tooltip(
+        message: fallbackUsed ? 'Fallback (Offline)' : 'CAM (Offline)',
+        child:
+            Icon(Icons.memory_outlined, size: 16, color: AppTheme.warningAmber),
+      );
     }
-
-    // Fallback: use isOfflineScan to determine
-    if (scan.isOfflineScan) {
-      return 'CAM';
-    }
-
-    // If no method info, return null (don't show label)
     return null;
-  }
-
-  /// Build method label widget
-  Widget _buildMethodLabel(ThemeData theme, String label) {
-    // Determine color based on label
-    Color labelColor;
-    if (label == 'CAM' || label == 'Fallback') {
-      labelColor = Colors.orange; // Orange for offline/fallback
-    } else {
-      labelColor = Colors.green; // Green for online/Score-CAM
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: labelColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(
-          color: labelColor.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Text(
-        '($label)',
-        style: theme.textTheme.bodySmall?.copyWith(
-          color: labelColor,
-          fontWeight: FontWeight.w600,
-          fontSize: 10,
-        ),
-      ),
-    );
   }
 }

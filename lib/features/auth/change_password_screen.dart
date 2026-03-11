@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:herbascan/core/providers/auth_provider.dart';
+import 'package:herbascan/core/theme/app_theme.dart';
+import 'package:herbascan/core/widgets/password_requirements_widget.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -23,104 +25,26 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   void _onNewPasswordChanged() => setState(() {});
   void _onConfirmPasswordChanged() => setState(() {});
 
-  bool _hasMinLength(String? value) =>
-      (value?.length ?? 0) >= _minPasswordLength;
-  bool _hasUppercase(String? value) =>
-      value != null && value.contains(RegExp(r'[A-Z]'));
-  bool _hasLowercase(String? value) =>
-      value != null && value.contains(RegExp(r'[a-z]'));
-  bool _hasDigit(String? value) =>
-      value != null && value.contains(RegExp(r'[0-9]'));
-  bool _hasSpecial(String? value) =>
-      value != null &&
-      value.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\;/]'));
-
-  Widget _buildPasswordRequirements(ThemeData theme) {
-    final value = _newPasswordController.text;
-    final requirements = <({String label, bool met})>[
-      (label: 'At least 8 characters', met: _hasMinLength(value)),
-      (label: 'One capital letter', met: _hasUppercase(value)),
-      (label: 'One lowercase letter', met: _hasLowercase(value)),
-      (label: 'One number', met: _hasDigit(value)),
-      (label: 'One special character (!@#\$%^&* etc.)', met: _hasSpecial(value)),
-    ];
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: requirements
-            .map(
-              (r) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Icon(
-                      r.met ? Icons.check_circle : Icons.circle_outlined,
-                      size: 20,
-                      color: r.met
-                          ? theme.colorScheme.primary
-                          : theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        r.label,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: r.met
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.onSurfaceVariant,
-                          fontWeight: r.met ? FontWeight.w600 : null,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-            .toList(),
-      ),
-    );
-  }
-
-  Widget _buildConfirmPasswordStatus(ThemeData theme) {
-    final password = _newPasswordController.text;
+  bool _passwordsMatch() {
+    final pw = _newPasswordController.text;
     final confirm = _confirmPasswordController.text;
-    if (confirm.isEmpty) return const SizedBox.shrink();
-    final match = password.isNotEmpty && password == confirm;
-    return Padding(
-      padding: const EdgeInsets.only(top: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Icon(
-            match ? Icons.check_circle : Icons.cancel_outlined,
-            size: 20,
-            color: match
-                ? theme.colorScheme.primary
-                : theme.colorScheme.error.withOpacity(0.9),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            match ? 'Passwords match' : 'Passwords do not match',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: match
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.error,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
+    return pw.isNotEmpty && pw == confirm;
   }
 
   static String? _validatePassword(String? value) {
     if (value == null || value.isEmpty) return 'Enter a new password';
-    if (value.length < _minPasswordLength) return 'Use at least $_minPasswordLength characters';
-    if (!value.contains(RegExp(r'[A-Z]'))) return 'Include at least one capital letter';
-    if (!value.contains(RegExp(r'[a-z]'))) return 'Include at least one lowercase letter';
-    if (!value.contains(RegExp(r'[0-9]'))) return 'Include at least one number';
+    if (value.length < _minPasswordLength) {
+      return 'Use at least $_minPasswordLength characters';
+    }
+    if (!value.contains(RegExp(r'[A-Z]'))) {
+      return 'Include at least one capital letter';
+    }
+    if (!value.contains(RegExp(r'[a-z]'))) {
+      return 'Include at least one lowercase letter';
+    }
+    if (!value.contains(RegExp(r'[0-9]'))) {
+      return 'Include at least one number';
+    }
     if (!value.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\;/]'))) {
       return 'Include at least one special character (!@#\$%^&* etc.)';
     }
@@ -164,8 +88,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage =
-              e.toString().replaceFirst('AuthException: ', '');
+          _errorMessage = e.toString().replaceFirst('AuthException: ', '');
           _isLoading = false;
         });
       }
@@ -175,86 +98,137 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final confirmText = _confirmPasswordController.text;
+    final confirmNotEmpty = confirmText.isNotEmpty;
+    final matches = _passwordsMatch();
+
+    // Confirm field border color based on match state
+    OutlineInputBorder confirmBorder(Color color, {double width = 1}) =>
+        OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: color, width: width),
+        );
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Change password')),
+      appBar: AppBar(title: const Text('Create New Password')),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 24),
                 Text(
-                  'Choose a new password',
+                  'Create New Password',
                   style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(
-                  'You will stay signed in.',
+                  "You'll remain signed in on this device.",
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: AppTheme.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 24),
-                if (_errorMessage != null) ...[
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.errorContainer,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      _errorMessage!,
-                      style: TextStyle(
-                          color: theme.colorScheme.onErrorContainer),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
+                const SizedBox(height: 28),
+
+                // Server error — collapses to zero when empty, no layout shift
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeInOut,
+                  child: _errorMessage != null
+                      ? Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: AppTheme.errorBgLight,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            _errorMessage!,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: AppTheme.errorDeep,
+                            ),
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+
+                // New password field — suffix only
                 TextFormField(
                   controller: _newPasswordController,
                   obscureText: _obscureNew,
                   decoration: InputDecoration(
                     labelText: 'New password',
-                    border: const OutlineInputBorder(),
-                    prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscureNew
-                            ? Icons.visibility_off
-                            : Icons.visibility,
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
                       ),
-                      onPressed: () {
-                        setState(() => _obscureNew = !_obscureNew);
-                      },
+                      onPressed: () =>
+                          setState(() => _obscureNew = !_obscureNew),
                     ),
                   ),
                   validator: _validatePassword,
                 ),
-                _buildPasswordRequirements(theme),
+
+                // 2-column micro-pill requirements
+                PasswordRequirementsWidget(
+                  password: _newPasswordController.text,
+                ),
                 const SizedBox(height: 16),
+
+                // Confirm password — border changes based on match
                 TextFormField(
                   controller: _confirmPasswordController,
                   obscureText: _obscureConfirm,
                   decoration: InputDecoration(
-                    labelText: 'Confirm new password',
-                    border: const OutlineInputBorder(),
-                    prefixIcon: const Icon(Icons.lock_outline),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscureConfirm
-                            ? Icons.visibility_off
-                            : Icons.visibility,
-                      ),
-                      onPressed: () {
-                        setState(
-                            () => _obscureConfirm = !_obscureConfirm);
-                      },
-                    ),
+                    labelText: 'Confirm Password',
+                    enabledBorder: confirmNotEmpty
+                        ? confirmBorder(
+                            matches
+                                ? AppTheme.successColor
+                                : AppTheme.errorColor,
+                          )
+                        : null,
+                    focusedBorder: confirmNotEmpty
+                        ? confirmBorder(
+                            matches
+                                ? AppTheme.successColor
+                                : AppTheme.errorColor,
+                            width: 2,
+                          )
+                        : null,
+                    errorText: (confirmNotEmpty && !matches)
+                        ? 'Passwords do not match'
+                        : null,
+                    suffixIcon: confirmNotEmpty
+                        ? (matches
+                            ? const Icon(Icons.check_circle_rounded,
+                                color: AppTheme.successColor)
+                            : IconButton(
+                                icon: Icon(
+                                  _obscureConfirm
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                ),
+                                onPressed: () => setState(
+                                    () => _obscureConfirm = !_obscureConfirm),
+                              ))
+                        : IconButton(
+                            icon: Icon(
+                              _obscureConfirm
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
+                            ),
+                            onPressed: () => setState(
+                                () => _obscureConfirm = !_obscureConfirm),
+                          ),
                   ),
                   validator: (v) {
                     if (v == null || v.isEmpty) {
@@ -266,17 +240,20 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     return null;
                   },
                 ),
-                _buildConfirmPasswordStatus(theme),
                 const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: _isLoading ? null : _submit,
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Update password'),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: _isLoading ? null : _submit,
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Update Password'),
+                  ),
                 ),
               ],
             ),

@@ -1,13 +1,16 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/models/plant.dart';
 import 'package:herbascan/core/services/preparation_notification_service.dart';
+import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/core/utils/preparation_step_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Full-screen, one-step-per-page wizard with timer and mark-done.
+/// Full-screen, one-step-per-page wizard with timer, mark-done, and
+/// a completion overlay animation.
 class PreparationFocusModeScreen extends StatefulWidget {
   final Plant plant;
   final PreparationMethod preparationMethod;
@@ -24,7 +27,8 @@ class PreparationFocusModeScreen extends StatefulWidget {
 }
 
 class _PreparationFocusModeScreenState
-    extends State<PreparationFocusModeScreen> {
+    extends State<PreparationFocusModeScreen>
+    with TickerProviderStateMixin {
   late PageController _pageController;
   late List<bool> _stepCompleted;
   int _currentPage = 0;
@@ -33,6 +37,11 @@ class _PreparationFocusModeScreenState
   bool _timerPaused = false;
   Timer? _timer;
 
+  // Completion overlay state
+  bool _showCompletion = false;
+  late AnimationController _completionAnimController;
+  late Animation<double> _completionScaleAnim;
+
   static String _prefsKey(PreparationMethod method) =>
       'prep_state_${method.id}';
 
@@ -40,8 +49,18 @@ class _PreparationFocusModeScreenState
   void initState() {
     super.initState();
     _pageController = PageController();
-    _stepCompleted =
-        List.filled(widget.preparationMethod.stepInstructions.length, false);
+    _stepCompleted = List.filled(
+      widget.preparationMethod.stepInstructions.length,
+      false,
+    );
+    _completionAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _completionScaleAnim = CurvedAnimation(
+      parent: _completionAnimController,
+      curve: Curves.elasticOut,
+    );
     _loadState();
   }
 
@@ -49,6 +68,7 @@ class _PreparationFocusModeScreenState
   void dispose() {
     _timer?.cancel();
     _pageController.dispose();
+    _completionAnimController.dispose();
     super.dispose();
   }
 
@@ -67,7 +87,10 @@ class _PreparationFocusModeScreenState
       final activeIndex = map['activeTimerStepIndex'] as int?;
       final remaining = map['timerRemainingSeconds'] as int? ?? 0;
       final paused = map['timerPaused'] as bool? ?? false;
-      if (activeIndex != null && activeIndex >= 0 && activeIndex < stepCount && remaining > 0) {
+      if (activeIndex != null &&
+          activeIndex >= 0 &&
+          activeIndex < stepCount &&
+          remaining > 0) {
         setState(() {
           _activeTimerStepIndex = activeIndex;
           _timerRemainingSeconds = remaining;
@@ -96,8 +119,7 @@ class _PreparationFocusModeScreenState
     await prefs.setString(key, jsonEncode(map));
   }
 
-  String _stepId(int index) =>
-      '${widget.preparationMethod.id}_$index';
+  String _stepId(int index) => '${widget.preparationMethod.id}_$index';
 
   int? _getTimerSecondsForStep(int index) {
     final method = widget.preparationMethod;
@@ -119,7 +141,10 @@ class _PreparationFocusModeScreenState
       _timerRemainingSeconds = durationSeconds;
       _timerPaused = false;
     });
-    PreparationNotificationService().scheduleTimer(_stepId(_currentPage), durationSeconds);
+    PreparationNotificationService().scheduleTimer(
+      _stepId(_currentPage),
+      durationSeconds,
+    );
     _saveState();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
@@ -129,10 +154,10 @@ class _PreparationFocusModeScreenState
         if (_timerRemainingSeconds! <= 0) {
           _timer?.cancel();
           _timer = null;
-          _timerRemainingSeconds = null;
-          _timerPaused = false;
           final s = _activeTimerStepIndex ?? _currentPage;
           PreparationNotificationService().cancelTimer(_stepId(s));
+          _timerRemainingSeconds = null;
+          _timerPaused = false;
           _activeTimerStepIndex = null;
         }
       });
@@ -148,6 +173,19 @@ class _PreparationFocusModeScreenState
     });
   }
 
+  void _toggleTimer(int timerSeconds) {
+    if (_activeTimerStepIndex == _currentPage &&
+        _timerRemainingSeconds != null) {
+      if (_timerPaused) {
+        _resumeTimer();
+      } else {
+        _pauseTimer();
+      }
+    } else {
+      _startTimer(timerSeconds);
+    }
+  }
+
   void _pauseTimer() {
     _timer?.cancel();
     _timer = null;
@@ -161,7 +199,10 @@ class _PreparationFocusModeScreenState
     if (_timerRemainingSeconds == null || _timerRemainingSeconds! <= 0) return;
     final step = _activeTimerStepIndex ?? _currentPage;
     setState(() => _timerPaused = false);
-    PreparationNotificationService().scheduleTimer(_stepId(step), _timerRemainingSeconds!);
+    PreparationNotificationService().scheduleTimer(
+      _stepId(step),
+      _timerRemainingSeconds!,
+    );
     _saveState();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
@@ -170,10 +211,10 @@ class _PreparationFocusModeScreenState
         if (_timerRemainingSeconds! <= 0) {
           _timer?.cancel();
           _timer = null;
-          _timerRemainingSeconds = null;
-          _timerPaused = false;
           final s = _activeTimerStepIndex ?? _currentPage;
           PreparationNotificationService().cancelTimer(_stepId(s));
+          _timerRemainingSeconds = null;
+          _timerPaused = false;
           _activeTimerStepIndex = null;
         }
       });
@@ -202,12 +243,20 @@ class _PreparationFocusModeScreenState
     _saveState();
   }
 
-  void _goToNextStep() {
-    if (_currentPage < widget.preparationMethod.stepInstructions.length - 1) {
+  void _completeAndContinue(int index, int totalSteps) {
+    HapticFeedback.mediumImpact();
+    setState(() => _stepCompleted[index] = true);
+    _saveState();
+
+    if (index < totalSteps - 1) {
       _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 350),
         curve: Curves.easeInOut,
       );
+    } else {
+      // Last step — show completion overlay
+      setState(() => _showCompletion = true);
+      _completionAnimController.forward(from: 0);
     }
   }
 
@@ -215,308 +264,363 @@ class _PreparationFocusModeScreenState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final steps = widget.preparationMethod.stepInstructions;
+
     if (steps.isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Focus Mode')),
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ),
         body: const Center(child: Text('No steps available')),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-            '${widget.plant.commonName} – ${widget.preparationMethod.title}'),
+        elevation: 0,
+        automaticallyImplyLeading: false,
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        // Segmented progress bar replaces "Step X of Y" chip
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(4),
+          child: _buildProgressBar(steps.length, theme),
+        ),
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
-            child: PageView.builder(
-              controller: _pageController,
-              onPageChanged: (index) {
-                setState(() => _currentPage = index);
-                _saveState();
-              },
-              itemCount: steps.length,
-              itemBuilder: (context, index) {
-                final instruction = steps[index];
-                final timerSeconds = _getTimerSecondsForStep(index);
-                final isCompleted = _stepCompleted[index];
-                final isCurrentStep = index == _currentPage;
-                final isTimerStep = (_activeTimerStepIndex ?? _currentPage) == index;
-                final showTimerRunning =
-                    isTimerStep && _timerRemainingSeconds != null;
+          PageView.builder(
+            controller: _pageController,
+            onPageChanged: (index) {
+              setState(() => _currentPage = index);
+              _saveState();
+            },
+            itemCount: steps.length,
+            itemBuilder: (context, index) {
+              return _buildStepPage(context, index, steps, theme);
+            },
+          ),
+          // Completion overlay
+          if (_showCompletion) _buildCompletionOverlay(theme),
+        ],
+      ),
+    );
+  }
 
-                return Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primary,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          'Step ${index + 1} of ${steps.length}',
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            color: theme.colorScheme.onPrimary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 28),
-                      Expanded(
-                        child: Center(
-                          child: SingleChildScrollView(
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 480),
-                              child: Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 24,
-                                  vertical: 28,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: theme
-                                      .colorScheme.surfaceContainerHighest
-                                      .withOpacity(0.4),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: theme.colorScheme.outline
-                                        .withOpacity(0.2),
-                                  ),
-                                ),
-                                child: Column(
-                                  children: [
-                                    if (isCompleted)
-                                      Padding(
-                                        padding:
-                                            const EdgeInsets.only(bottom: 12),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              Icons.check_circle,
-                                              color: Colors.green.shade700,
-                                              size: 28,
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              'Step done',
-                                              style: theme.textTheme.titleSmall
-                                                  ?.copyWith(
-                                                color: Colors.green.shade700,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    Text(
-                                      instruction,
-                                      style:
-                                          theme.textTheme.titleLarge?.copyWith(
-                                        fontWeight: FontWeight.w500,
-                                        height: 1.6,
-                                        fontSize: 22,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      if (isCurrentStep &&
-                          timerSeconds != null &&
-                          timerSeconds > 0) ...[
-                        const SizedBox(height: 16),
-                        if (showTimerRunning)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 24, vertical: 16),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.primaryContainer
-                                  .withOpacity(0.6),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.timer,
-                                      size: 32,
-                                      color: theme.colorScheme.primary,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Text(
-                                      PreparationStepParser.formatMinutesSeconds(
-                                          _timerRemainingSeconds!),
-                                      style:
-                                          theme.textTheme.headlineSmall?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        fontFeatures: [
-                                          const FontFeature.tabularFigures()
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  alignment: WrapAlignment.center,
-                                  children: [
-                                    if (_timerPaused)
-                                      FilledButton.icon(
-                                        onPressed: _resumeTimer,
-                                        icon: const Icon(Icons.play_arrow, size: 18),
-                                        label: const Text('Resume'),
-                                        style: FilledButton.styleFrom(
-                                          backgroundColor: theme.colorScheme.primary,
-                                          foregroundColor: theme.colorScheme.onPrimary,
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 16, vertical: 10),
-                                        ),
-                                      )
-                                    else
-                                      FilledButton.icon(
-                                        onPressed: _pauseTimer,
-                                        icon: const Icon(Icons.pause, size: 18),
-                                        label: const Text('Pause'),
-                                        style: FilledButton.styleFrom(
-                                          backgroundColor: theme.colorScheme.primary,
-                                          foregroundColor: theme.colorScheme.onPrimary,
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 16, vertical: 10),
-                                        ),
-                                      ),
-                                    OutlinedButton.icon(
-                                      onPressed: _resetTimer,
-                                      icon: const Icon(Icons.refresh, size: 18),
-                                      label: const Text('Reset'),
-                                      style: OutlinedButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 16, vertical: 10),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          )
-                        else
-                          FilledButton.icon(
-                            onPressed: () => _startTimer(timerSeconds),
-                            icon: const Icon(Icons.timer_outlined, size: 20),
-                            label: Text(
-                              'Start ${_formatDuration(timerSeconds)} timer',
-                            ),
-                            style: FilledButton.styleFrom(
-                              backgroundColor: theme.colorScheme.primary,
-                              foregroundColor: theme.colorScheme.onPrimary,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 24, vertical: 14),
-                            ),
-                          ),
-                        const SizedBox(height: 16),
-                      ],
-                      if (isCurrentStep) ...[
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            FilledButton.icon(
-                              onPressed: () {
-                                setState(() {
-                                  _stepCompleted[index] =
-                                      !_stepCompleted[index];
-                                });
-                                _saveState();
-                              },
-                              icon: Icon(
-                                isCompleted
-                                    ? Icons.check_circle
-                                    : Icons.check_circle_outline,
-                                size: 20,
-                              ),
-                              label: Text(
-                                  isCompleted ? 'Mark undone' : 'Mark done'),
-                              style: FilledButton.styleFrom(
-                                backgroundColor: Colors.green.shade700,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 20, vertical: 14),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            if (index < steps.length - 1)
-                              FilledButton.icon(
-                                onPressed: _goToNextStep,
-                                icon: const Icon(Icons.arrow_forward, size: 20),
-                                label: const Text('Next step'),
-                                style: FilledButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 20, vertical: 14),
-                                ),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      if (!isCurrentStep && index < steps.length - 1)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.swipe_right_alt,
-                                size: 20,
-                                color: theme.colorScheme.primary,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Swipe for next step',
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: theme.colorScheme.primary,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      else if (index == steps.length - 1)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Text(
-                            'You’re done. Close to return.',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      const SizedBox(height: 16),
-                    ],
-                  ),
-                );
-              },
+  Widget _buildProgressBar(int totalSteps, ThemeData theme) {
+    return Row(
+      children: List.generate(totalSteps, (i) {
+        final isCompleted = _stepCompleted[i];
+        final isCurrent = i == _currentPage;
+        return Expanded(
+          child: Container(
+            height: 4,
+            margin: EdgeInsets.only(right: i < totalSteps - 1 ? 2 : 0),
+            decoration: BoxDecoration(
+              color:
+                  isCompleted
+                      ? AppTheme.botanicalPrimary
+                      : isCurrent
+                      ? AppTheme.botanicalPrimaryL
+                      : theme.colorScheme.outlineVariant.withOpacity(0.4),
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildStepPage(
+    BuildContext context,
+    int index,
+    List<String> steps,
+    ThemeData theme,
+  ) {
+    final instruction = steps[index];
+    final timerSeconds = _getTimerSecondsForStep(index);
+    final isCompleted = _stepCompleted[index];
+    final isCurrentStep = index == _currentPage;
+    final isTimerStep = (_activeTimerStepIndex ?? _currentPage) == index;
+    final timerRemaining =
+        isTimerStep && _timerRemainingSeconds != null
+            ? _timerRemainingSeconds!
+            : 0;
+    final showTimerRunning =
+        isTimerStep &&
+        _timerRemainingSeconds != null &&
+        _timerRemainingSeconds! > 0;
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── Giant muted step number ────────────────────────────────────
+            Text(
+              (index + 1).toString().padLeft(2, '0'),
+              style: theme.textTheme.displayLarge?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.10),
+                fontWeight: FontWeight.w900,
+                height: 1,
+              ),
+              textAlign: TextAlign.left,
+            ),
+
+            // ── Step instruction ───────────────────────────────────────────
+            Expanded(
+              child: Center(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isCompleted) ...[
+                        const Icon(
+                          Icons.check_circle_rounded,
+                          color: AppTheme.botanicalPrimary,
+                          size: 32,
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      Text(
+                        instruction,
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          height: 1.4,
+                          color:
+                              isCompleted
+                                  ? theme.colorScheme.onSurfaceVariant
+                                  : theme.colorScheme.onSurface,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // ── Timer (circular progress + tap to toggle) ──────────────────
+            if (isCurrentStep && timerSeconds != null && timerSeconds > 0) ...[
+              const SizedBox(height: 16),
+              Center(
+                child: GestureDetector(
+                  onTap: () => _toggleTimer(timerSeconds),
+                  onLongPress: showTimerRunning ? _resetTimer : null,
+                  child: _buildCircularTimer(
+                    context,
+                    timerSeconds,
+                    timerRemaining,
+                    showTimerRunning,
+                    theme,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Center(
+                child: Text(
+                  showTimerRunning
+                      ? (_timerPaused
+                          ? 'Tap to resume • Long press to reset'
+                          : 'Tap to pause • Long press to reset')
+                      : 'Tap to start timer',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 24),
+
+            // ── Complete & Continue button ──────────────────────────────────
+            if (isCurrentStep)
+              SizedBox(
+                height: 52,
+                child: FilledButton(
+                  onPressed:
+                      isCompleted
+                          ? null
+                          : () =>
+                              _completeAndContinue(index, steps.length),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppTheme.botanicalPrimary,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: AppTheme.botanicalPrimary
+                        .withOpacity(0.3),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    isCompleted
+                        ? (index < steps.length - 1
+                            ? 'Step Done ✓'
+                            : 'All Done ✓')
+                        : (index < steps.length - 1
+                            ? 'Complete & Continue'
+                            : 'Complete Preparation'),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCircularTimer(
+    BuildContext context,
+    int totalSeconds,
+    int remainingSeconds,
+    bool isRunning,
+    ThemeData theme,
+  ) {
+    final progress =
+        totalSeconds > 0 ? remainingSeconds / totalSeconds : 0.0;
+    final isTimerPausedForCurrentStep =
+        _activeTimerStepIndex == _currentPage && _timerPaused;
+
+    return SizedBox(
+      width: 120,
+      height: 120,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          SizedBox(
+            width: 120,
+            height: 120,
+            child: CircularProgressIndicator(
+              value: isRunning ? progress : 0,
+              strokeWidth: 6,
+              backgroundColor: AppTheme.botanicalPrimary.withOpacity(0.12),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                isTimerPausedForCurrentStep
+                    ? AppTheme.warningAmber
+                    : AppTheme.botanicalPrimary,
+              ),
+            ),
+          ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isRunning) ...[
+                Text(
+                  PreparationStepParser.formatMinutesSeconds(remainingSeconds),
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontFeatures: [const FontFeature.tabularFigures()],
+                    color:
+                        isTimerPausedForCurrentStep
+                            ? AppTheme.warningAmber
+                            : AppTheme.botanicalPrimary,
+                  ),
+                ),
+                Icon(
+                  isTimerPausedForCurrentStep
+                      ? Icons.play_arrow_rounded
+                      : Icons.pause_rounded,
+                  size: 20,
+                  color:
+                      isTimerPausedForCurrentStep
+                          ? AppTheme.warningAmber
+                          : AppTheme.botanicalPrimary,
+                ),
+              ] else ...[
+                Icon(
+                  Icons.timer_outlined,
+                  size: 28,
+                  color: AppTheme.botanicalPrimary,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _formatDuration(totalSeconds),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: AppTheme.botanicalPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ],
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCompletionOverlay(ThemeData theme) {
+    return GestureDetector(
+      onTap: () {}, // absorb taps
+      child: Container(
+        color: theme.scaffoldBackgroundColor.withOpacity(0.97),
+        child: SafeArea(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ScaleTransition(
+                scale: _completionScaleAnim,
+                child: const Icon(
+                  Icons.check_circle_rounded,
+                  color: AppTheme.botanicalPrimary,
+                  size: 80,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Preparation Complete!',
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.botanicalPrimary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'You\'ve completed all the preparation steps.',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 40),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: FilledButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppTheme.botanicalPrimary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Return to Guide',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

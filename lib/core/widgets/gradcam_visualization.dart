@@ -7,8 +7,7 @@ import 'package:herbascan/core/services/xai_explanation_service.dart';
 import 'package:herbascan/core/providers/offline_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:herbascan/core/widgets/summary_fullscreen_view.dart';
-import 'package:herbascan/core/widgets/contraindication_engine_widget.dart';
+import 'package:herbascan/core/theme/app_theme.dart';
 
 class GradCAMVisualization extends StatefulWidget {
   final String? gradCAMPath; // Legacy: file path (deprecated)
@@ -16,23 +15,22 @@ class GradCAMVisualization extends StatefulWidget {
   final Uint8List? gradcamImageBytes; // New: image bytes
   final String originalImagePath;
   final String plantName;
-  final String? scientificName; // Scientific name for explanation lookup
+  final String? scientificName;
   final double confidence;
-  final List<Map<String, dynamic>>?
-      predictions; // Top predictions for explanation
+  final List<Map<String, dynamic>>? predictions;
   final String? method; // 'grad-cam' or 'cam'
-  final bool? fallbackUsed; // True if offline was fallback
+  final bool? fallbackUsed;
   final VoidCallback? onRefresh;
   final Function(bool showOverlay, double opacity,
           Function(bool) onOverlayChanged, Function(double) onOpacityChanged)?
-      onHeatmapTap; // Callback for full-screen heatmap
-  final Plant? plant; // For Contraindication Engine (safety cards)
+      onHeatmapTap;
+  final Plant? plant;
 
   const GradCAMVisualization({
     super.key,
-    this.gradCAMPath, // Legacy support
-    this.summaryGradCAMPath, // Legacy support
-    this.gradcamImageBytes, // New format
+    this.gradCAMPath,
+    this.summaryGradCAMPath,
+    this.gradcamImageBytes,
     required this.originalImagePath,
     required this.plantName,
     this.scientificName,
@@ -41,7 +39,7 @@ class GradCAMVisualization extends StatefulWidget {
     this.method,
     this.fallbackUsed,
     this.onRefresh,
-    this.onHeatmapTap, // Callback for full-screen heatmap
+    this.onHeatmapTap,
     this.plant,
   });
 
@@ -51,40 +49,26 @@ class GradCAMVisualization extends StatefulWidget {
 
 class _GradCAMVisualizationState extends State<GradCAMVisualization>
     with TickerProviderStateMixin {
-  late TabController _tabController;
   bool _showHeatmap = true;
   double _opacity = 0.6;
-  int _currentTabIndex = 0; // Track current tab index
 
   // Explanation state
   final XAIExplanationService _explanationService = XAIExplanationService();
   String? _explanationText;
   bool _isLoadingExplanation = false;
   String? _explanationError;
-  String?
-      _explanationSource; // Track source: "cache", "offline", "fallback"
-  bool _shouldForceOnline = false; // Track if we should force online mode
+  String? _explanationSource;
+  bool _shouldForceOnline = false;
+  bool _isReadMoreExpanded = false;
+
+  static const int _collapsedMaxLines = 4;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    // Listen to tab changes to track current tab index
-    // CRITICAL: This listener ensures setState() is called when tab changes
-    // Without this, the visibility condition won't re-evaluate when user swipes between tabs
-    _tabController.addListener(() {
-      if (mounted && _tabController.index != _currentTabIndex) {
-        setState(() {
-          _currentTabIndex = _tabController.index;
-        });
-      }
-    });
-    // Only load explanation on initial build, not on rebuilds
-    // Rebuilds will be handled by didUpdateWidget or explicit refresh calls
-    // Load cached explanation first (don't auto-trigger online calls)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        _loadExplanation(forceOnline: false); // Load from cache only
+        _loadExplanation(forceOnline: false);
       }
     });
   }
@@ -92,7 +76,6 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
   @override
   void didUpdateWidget(GradCAMVisualization oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Reload explanation if key data changed OR if heatmap was regenerated
     final heatmapChanged =
         oldWidget.gradcamImageBytes != widget.gradcamImageBytes ||
             oldWidget.gradCAMPath != widget.gradCAMPath;
@@ -101,21 +84,15 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
         oldWidget.plantName != widget.plantName ||
         oldWidget.confidence != widget.confidence ||
         heatmapChanged) {
-      // If heatmap changed, reload explanation to use new heatmap
-      // Use forceOnline if it was set by refresh button (user explicitly requested)
       if (heatmapChanged && _shouldForceOnline) {
         _loadExplanation(forceOnline: true);
-        _shouldForceOnline = false; // Reset after use
+        _shouldForceOnline = false;
       } else {
-        // Otherwise, just reload from cache (don't auto-trigger online calls)
         _loadExplanation(forceOnline: false);
       }
     }
   }
 
-  /// Load explanation (offline or online).
-  /// Uses [widget.plantName] as fallback when [widget.scientificName] is null
-  /// so offline/JSON lookup still runs (backend often sends label as both).
   Future<void> _loadExplanation({bool forceOnline = false}) async {
     final effectiveScientificName =
         widget.scientificName?.trim().isEmpty == true
@@ -139,7 +116,6 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
           Provider.of<OfflineProvider>(context, listen: false);
       final isOnline = offlineProvider.isOnline;
 
-      // Load images as bytes
       Uint8List? originalImageBytes;
       Uint8List? heatmapImageBytes;
 
@@ -149,10 +125,9 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
           originalImageBytes = await originalFile.readAsBytes();
         }
       } catch (e) {
-        print('⚠️ Error loading original image: $e');
+        debugPrint('⚠️ Error loading original image: $e');
       }
 
-      // Get heatmap bytes (prefer bytes over file path)
       heatmapImageBytes = widget.gradcamImageBytes;
       if (heatmapImageBytes == null && widget.gradCAMPath != null) {
         try {
@@ -161,20 +136,15 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
             heatmapImageBytes = await heatmapFile.readAsBytes();
           }
         } catch (e) {
-          print('⚠️ Error loading heatmap image: $e');
+          debugPrint('⚠️ Error loading heatmap image: $e');
         }
       }
 
-      // CRITICAL FIX: If using online GradCAM (method == 'grad-cam' and not fallback),
-      // we should try to get online explanation if available, not just use cache
-      // This ensures the source badge shows "Online" when using online GradCAM
       final shouldTryOnline = forceOnline ||
           (widget.method == 'grad-cam' &&
               !(widget.fallbackUsed == true) &&
               isOnline);
 
-      // Only pass isOnline if we should try online (forceOnline OR using online GradCAM)
-      // Otherwise, let the service check cache first without triggering online calls
       final explanation = await _explanationService.generateExplanation(
         plantName: widget.plantName,
         scientificName: effectiveScientificName,
@@ -185,19 +155,16 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
         heatmapImagePath: widget.gradCAMPath,
         heatmapImageBytes: heatmapImageBytes,
         isOnline: shouldTryOnline ? isOnline : false,
-        forceOnline:
-            shouldTryOnline, // Try online if using GradCAM or user requested refresh
+        forceOnline: shouldTryOnline,
       );
 
       if (mounted) {
         setState(() {
           _explanationText = explanation;
-          // If method is 'grad-cam' (online), show "Online" regardless of cache source
           final serviceSource = _explanationService.getLastExplanationSource();
           if (widget.method == 'grad-cam' && !(widget.fallbackUsed == true)) {
             _explanationSource = 'online';
           } else {
-            // Use the actual source from service (offline, cache, fallback)
             _explanationSource = serviceSource;
           }
           _isLoadingExplanation = false;
@@ -217,898 +184,213 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
     }
   }
 
-  /// Handle refresh button - regenerate both heatmap and explanation
-  Future<void> _handleRefresh() async {
-    // Show loading state
-    setState(() {
-      _isLoadingExplanation = true;
-      _explanationError = null;
-      _explanationText = null;
-      _shouldForceOnline = true; // Mark that we want to force online mode
-    });
-
-    // First, regenerate the heatmap (if callback provided)
-    // This will trigger _regenerateGradCAM in parent, which updates the widget
-    // with new gradcamImageBytes, causing didUpdateWidget to be called
-    if (widget.onRefresh != null) {
-      widget.onRefresh!(); // This will trigger _regenerateGradCAM in parent
-    }
-
-    // Also immediately reload explanation with force online
-    // This ensures explanation is regenerated even if heatmap doesn't change
-    await _loadExplanation(forceOnline: true);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final hasHeatmap =
         widget.gradcamImageBytes != null || widget.gradCAMPath != null;
 
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Method banner
+        _buildMethodBanner(theme),
+        const SizedBox(height: 16),
+
+        // Heatmap image
+        _buildHeatmapContainer(theme, hasHeatmap),
+        const SizedBox(height: 16),
+
+        // Opacity slider only (slider 0 = off, replaces separate toggle)
+        if (hasHeatmap) ...[
+          _buildOpacitySlider(theme),
+          const SizedBox(height: 16),
+
+          // Color legend: horizontal gradient bar
+          _buildColorLegend(theme),
+          const SizedBox(height: 16),
+        ],
+
+        // AI explanation with inline Read More / Show Less
+        _buildExplanationSection(theme),
+      ],
+    );
+  }
+
+  Widget _buildMethodBanner(ThemeData theme) {
+    if (widget.method == null) return const SizedBox.shrink();
+
+    final isOnline = widget.method == 'grad-cam' && widget.fallbackUsed != true;
+    final isFallback = widget.fallbackUsed == true;
+
+    final Color bannerColor;
+    final String bannerText;
+    final IconData bannerIcon;
+
+    if (isOnline) {
+      bannerColor = AppTheme.safeGreen;
+      bannerText = 'Cloud Score-CAM';
+      bannerIcon = Icons.cloud_done_rounded;
+    } else if (isFallback) {
+      bannerColor = AppTheme.warningAmber;
+      bannerText = 'Offline CAM (Fallback)';
+      bannerIcon = Icons.sync_problem_rounded;
+    } else {
+      bannerColor = AppTheme.warningAmber;
+      bannerText = 'Offline CAM';
+      bannerIcon = Icons.offline_bolt_rounded;
+    }
+
     return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.colorScheme.outline.withOpacity(0.2),
-        ),
+        color: bannerColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: bannerColor.withOpacity(0.3)),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        // CRITICAL FIX: Use SingleChildScrollView to prevent overflow
-        // Especially important when heatmap is missing and error widget is shown
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min, // Use min to prevent overflow
-            children: [
-              // Header
-              Row(
-                children: [
-                  Icon(
-                    Icons.visibility,
-                    color: theme.colorScheme.onSurface,
-                    size: 24,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Explainable AI - ${widget.method == 'grad-cam' ? 'Score-CAM' : 'CAM'}',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.onSurface,
-                          ),
-                        ),
-                        if (widget.method != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: _buildMethodBadge(theme),
-                          ),
-                      ],
-                    ),
-                  ),
-                  if (widget.onRefresh != null)
-                    IconButton(
-                      onPressed: _isLoadingExplanation ? null : _handleRefresh,
-                      icon: _isLoadingExplanation
-                          ? SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  theme.colorScheme.onSurface,
-                                ),
-                              ),
-                            )
-                          : Icon(
-                              Icons.refresh,
-                              color: theme.colorScheme.onSurface,
-                            ),
-                      tooltip: _isLoadingExplanation
-                          ? 'Regenerating...'
-                          : 'Regenerate explanation and heatmap',
-                      color: theme.colorScheme.onSurface,
-                    ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-
-              // Plant info
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: theme.colorScheme.outline.withOpacity(0.2),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.local_florist,
-                      color: theme.colorScheme.onSurface,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.plantName,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.onSurface,
-                            ),
-                          ),
-                          Text(
-                            'Confidence: ${(widget.confidence.clamp(0.0, 1.0) * 100).toStringAsFixed(1)}%',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color:
-                                  theme.colorScheme.onSurface.withOpacity(0.87),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Tab bar
-              TabBar(
-                controller: _tabController,
-                tabs: const [
-                  Tab(
-                    icon: Icon(Icons.thermostat),
-                    text: 'Heatmap',
-                  ),
-                  Tab(
-                    icon: Icon(Icons.analytics),
-                    text: 'Summary',
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-
-              // Tab content - use SizedBox with explicit height
-              // CRITICAL: TabBarView requires explicit height, use smaller when heatmap missing
-              SizedBox(
-                height: hasHeatmap
-                    ? 280
-                    : 220, // Reduced further to prevent overflow
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildHeatmapImage(),
-                    _buildSummaryImage(),
-                  ],
-                ),
-              ),
-
-              // Only show spacing if controls/legend will be shown
-              // Show controls and legend only when Heatmap tab (index 0) is active
-              if (hasHeatmap && _currentTabIndex == 0)
-                const SizedBox(height: 16),
-
-              // Controls - only show if heatmap is available AND Heatmap tab is active
-              if (hasHeatmap && _currentTabIndex == 0) _buildControls(),
-
-              // Legend removed - now integrated into "About GradCAM/CAM" card in plant_result_screen.dart
-            ],
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(bannerIcon, size: 16, color: bannerColor),
+          const SizedBox(width: 8),
+          Text(
+            bannerText,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: bannerColor,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildHeatmapImage() {
-    // Check if we have image bytes (new format)
-    final hasImageBytes = widget.gradcamImageBytes != null;
-    // Check if we have file path (legacy format)
-    final hasFilePath = widget.gradCAMPath != null;
-
-    // Debug logging
-    print('🔍 [GradCAMVisualization] _buildHeatmapImage:');
-    print('   method: ${widget.method}');
-    print('   hasImageBytes: $hasImageBytes');
-    print('   hasFilePath: $hasFilePath');
-    if (hasImageBytes) {
-      print('   imageBytes size: ${widget.gradcamImageBytes!.length} bytes');
-    }
-
-    if (!hasImageBytes && !hasFilePath) {
-      final methodName = widget.method == 'cam' ? 'CAM' : 'Score-CAM';
-      print('   ⚠️ WARNING: No heatmap available for $methodName');
-      // CRITICAL FIX: Use LayoutBuilder to respect parent constraints
-      // TabBarView provides fixed constraints (220px), we must fit exactly
-      return LayoutBuilder(
-        builder: (context, constraints) {
-          final padding = 8.0; // Minimal padding
-
-          // Fixed sizes that fit within 220px: icon(28) + spacing(4) + title(32) + spacing(4) + desc(40) + spacing(4) + image(70) + padding(16) = ~198px
-          final iconSize = 28.0;
-          final titleFontSize = 11.0;
-          final descFontSize = 9.0;
-          final spacing = 4.0;
-          final imageMaxHeight = 70.0; // Fixed size to prevent overflow
-
-          final theme = Theme.of(context);
-          return Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: theme.colorScheme.outline.withOpacity(0.2),
-              ),
-              color: theme.colorScheme.surfaceContainerHighest,
-            ),
-            // CRITICAL: Use SizedBox.expand to fill TabBarView constraints exactly
-            // Then use Center to center the content
-            child: SizedBox.expand(
-              child: Padding(
-                padding: EdgeInsets.all(padding),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min, // Critical: use min
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Icon - fixed size
-                    SizedBox(
-                      height: iconSize,
-                      child: Icon(
-                        Icons.warning_amber_rounded,
-                        size: iconSize,
-                        color: Colors.orange.shade300,
-                      ),
-                    ),
-                    SizedBox(height: spacing),
-                    // Title - fixed height
-                    SizedBox(
-                      height: 32, // Enough for 2 lines
-                      child: Text(
-                        '$methodName Heatmap Not Available',
-                        style: TextStyle(
-                          fontSize: titleFontSize,
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    SizedBox(height: spacing),
-                    // Description - fixed height
-                    SizedBox(
-                      height: 40, // Enough for 3 lines of 9px font
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: Text(
-                          widget.method == 'cam'
-                              ? 'Offline CAM heatmap generation failed. This may be due to model initialization issues or image processing errors.'
-                              : 'Score-CAM heatmap generation failed. Please check your internet connection or try again.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: descFontSize,
-                            color:
-                                theme.colorScheme.onSurface.withOpacity(0.87),
-                          ),
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: spacing),
-                    // Image - fixed size
-                    SizedBox(
-                      height: imageMaxHeight,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: theme.colorScheme.outline.withOpacity(0.2),
-                          ),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.file(
-                            File(widget.originalImagePath),
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Center(
-                                child: Icon(
-                                  Icons.image_not_supported,
-                                  size: 24,
-                                  color: theme.colorScheme.onSurface
-                                      .withOpacity(0.6),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      );
-    }
+  Widget _buildHeatmapContainer(ThemeData theme, bool hasHeatmap) {
+    final height = hasHeatmap ? 280.0 : 180.0;
 
     return GestureDetector(
-      onTap: () {
-        // Only open full-screen if heatmap is available and callback is provided
-        if ((hasImageBytes || hasFilePath) && widget.onHeatmapTap != null) {
-          widget.onHeatmapTap!(
-            _showHeatmap,
-            _opacity,
-            (bool val) {
-              setState(() {
-                _showHeatmap = val;
-              });
-            },
-            (double val) {
-              setState(() {
-                _opacity = val;
-              });
-            },
-          );
-        }
-      },
+      onTap: hasHeatmap && widget.onHeatmapTap != null
+          ? () {
+              widget.onHeatmapTap!(
+                _showHeatmap,
+                _opacity,
+                (bool val) => setState(() => _showHeatmap = val),
+                (double val) => setState(() => _opacity = val),
+              );
+            }
+          : null,
       child: Container(
+        height: height,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-          ),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: _showHeatmap
+          borderRadius: BorderRadius.circular(12),
+          child: hasHeatmap
               ? Stack(
+                  fit: StackFit.expand,
                   children: [
-                    // Original image
                     Image.file(
                       File(widget.originalImagePath),
                       fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: double.infinity,
-                      errorBuilder: (context, error, stackTrace) {
-                        return _buildErrorWidget('Original image not found');
-                      },
+                      errorBuilder: (_, __, ___) =>
+                          _buildImageErrorPlaceholder(theme),
                     ),
-                    // Heatmap overlay
-                    Opacity(
-                      opacity: _opacity,
-                      child: hasImageBytes
-                          ? Image.memory(
-                              widget.gradcamImageBytes!,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              height: double.infinity,
-                              errorBuilder: (context, error, stackTrace) {
-                                final methodName = widget.method == 'cam'
-                                    ? 'CAM'
-                                    : 'Score-CAM';
-                                return _buildErrorWidget(
-                                    'Failed to decode $methodName heatmap image');
-                              },
-                            )
-                          : Image.file(
-                              File(widget.gradCAMPath!),
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              height: double.infinity,
-                              errorBuilder: (context, error, stackTrace) {
-                                final methodName = widget.method == 'cam'
-                                    ? 'CAM'
-                                    : 'Score-CAM';
-                                return _buildErrorWidget(
-                                    '$methodName heatmap not found');
-                              },
+                    if (_showHeatmap && _opacity > 0)
+                      Opacity(
+                        opacity: _opacity,
+                        child: widget.gradcamImageBytes != null
+                            ? Image.memory(
+                                widget.gradcamImageBytes!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) =>
+                                    const SizedBox.shrink(),
+                              )
+                            : Image.file(
+                                File(widget.gradCAMPath!),
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) =>
+                                    const SizedBox.shrink(),
+                              ),
+                      ),
+                    // Tap to expand hint
+                    Positioned(
+                      bottom: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.fullscreen_rounded,
+                                color: Colors.white, size: 14),
+                            SizedBox(width: 4),
+                            Text(
+                              'Expand',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 )
-              : Image.file(
-                  File(widget.originalImagePath),
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: double.infinity,
-                  errorBuilder: (context, error, stackTrace) {
-                    return _buildErrorWidget('Original image not found');
-                  },
-                ),
+              : _buildNoHeatmapPlaceholder(theme),
         ),
       ),
     );
   }
 
-  Widget _buildSummaryImage() {
-    // Safety cards (Contraindication Engine) + AI explanation
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          ContraindicationEngineWidget(
-            plant: widget.plant,
-            commonName: widget.plantName,
-          ),
-          const SizedBox(height: 12),
-          _buildSummaryExplanation(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSummaryExplanation() {
-    final theme = Theme.of(context);
-
-    if (_isLoadingExplanation) {
-      return Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: theme.colorScheme.outline.withOpacity(0.2),
-          ),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const CircularProgressIndicator(),
-              const SizedBox(height: 16),
-              Text(
-                'Generating explanation...',
-                style: TextStyle(
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
-                  fontSize: 14,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    if (_explanationError != null) {
-      return Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: theme.colorScheme.outline.withOpacity(0.2),
-          ),
-        ),
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.error_outline,
-                  size: 48,
-                  color: theme.colorScheme.onSurface.withOpacity(0.4),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _explanationError!,
-                  style: TextStyle(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
-                    fontSize: 14,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  onPressed: () => _loadExplanation(),
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Retry'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    if (_explanationText == null || _explanationText!.isEmpty) {
-      return Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: theme.colorScheme.outline.withOpacity(0.2),
-          ),
-        ),
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.info_outline,
-                  size: 48,
-                  color: theme.colorScheme.onSurface.withOpacity(0.4),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Explanation not available',
-                  style: TextStyle(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
-                    fontSize: 14,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  onPressed: () => _loadExplanation(forceOnline: true),
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Retry'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    // Show explanation text.
-    // Column must use mainAxisSize.min and no Expanded: this widget is inside
-    // SingleChildScrollView, so height is unbounded and flex is invalid.
+  Widget _buildNoHeatmapPlaceholder(ThemeData theme) {
+    final methodName = widget.method == 'cam' ? 'CAM' : 'Score-CAM';
     return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: theme.colorScheme.outline.withOpacity(0.2),
-        ),
-        color: theme.colorScheme.surface,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Header Row - AI Explanation title, Status Badge, and Fullscreen Icon
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.psychology,
-                  color: theme.colorScheme.onSurface,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'AI Explanation',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                // Source badge (Online/Fallback/Offline/Cached) and Fullscreen Icon
-                if (_explanationSource != null)
-                  Flexible(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: _explanationSource == 'online'
-                                ? Colors.green.withOpacity(0.1)
-                                : _explanationSource == 'cache'
-                                    ? Colors.orange.withOpacity(0.1)
-                                    : _explanationSource == 'fallback'
-                                        ? Colors.orange.withOpacity(0.1)
-                                        : Colors.blue.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: _explanationSource == 'online'
-                                  ? Colors.green.withOpacity(0.3)
-                                  : _explanationSource == 'cache'
-                                      ? Colors.orange.withOpacity(0.3)
-                                      : _explanationSource == 'fallback'
-                                          ? Colors.orange.withOpacity(0.3)
-                                          : Colors.blue.withOpacity(0.3),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                _explanationSource == 'online'
-                                    ? Icons.auto_awesome
-                                    : _explanationSource == 'cache'
-                                        ? Icons.cached
-                                        : _explanationSource == 'fallback'
-                                            ? Icons.info_outline
-                                            : Icons.storage,
-                                size: 12,
-                                color: _explanationSource == 'online'
-                                    ? Colors.green
-                                    : _explanationSource == 'cache'
-                                        ? Colors.orange
-                                        : _explanationSource == 'fallback'
-                                            ? Colors.orange
-                                            : Colors.blue,
-                              ),
-                              const SizedBox(width: 4),
-                              Flexible(
-                                child: Text(
-                                  _explanationSource == 'online'
-                                      ? 'Online'
-                                      : _explanationSource == 'cache'
-                                          ? 'Cached'
-                                          : _explanationSource == 'fallback'
-                                              ? 'Fallback'
-                                              : 'Offline',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                    color: _explanationSource == 'online'
-                                        ? Colors.green
-                                        : _explanationSource == 'cache'
-                                            ? Colors.orange
-                                            : _explanationSource == 'fallback'
-                                                ? Colors.orange
-                                                : Colors.blue,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        // Fullscreen Icon
-                        if (_explanationText != null &&
-                            _explanationText!.isNotEmpty)
-                          Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(20),
-                              onTap: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (context) => SummaryFullScreenView(
-                                      explanationText: _explanationText!,
-                                      onRegenerate: _handleRefresh,
-                                    ),
-                                  ),
-                                );
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color:
-                                      theme.colorScheme.surfaceContainerHighest,
-                                  borderRadius: BorderRadius.circular(20),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.1),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Icon(
-                                  Icons.fullscreen,
-                                  size: 18,
-                                  color: theme.colorScheme.onSurface,
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          // Content area: no Expanded (parent is in scroll view). Outer scroll scrolls everything.
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                MarkdownBody(
-                    data: _explanationText!,
-                    styleSheet: MarkdownStyleSheet(
-                      // Headings with reduced spacing
-                      h1: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
-                        fontSize: 22,
-                        height: 1.3,
-                      ),
-                      h1Padding: const EdgeInsets.only(bottom: 4, top: 8),
-                      h2: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
-                        fontSize: 20,
-                        height: 1.3,
-                      ),
-                      h2Padding: const EdgeInsets.only(bottom: 4, top: 8),
-                      h3: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
-                        fontSize: 18,
-                        height: 1.3,
-                      ),
-                      h3Padding: const EdgeInsets.only(bottom: 4, top: 8),
-                      // Body text with reduced spacing
-                      p: theme.textTheme.bodyMedium?.copyWith(
-                        height: 1.7,
-                        color: theme.colorScheme.onSurface.withOpacity(0.87),
-                        fontSize: 14,
-                      ),
-                      pPadding: const EdgeInsets.only(bottom: 8, top: 2),
-                      // Bold text (for section headers like **Plant Identification Summary**)
-                      strong: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
-                        fontSize: 16,
-                        height: 1.4,
-                      ),
-                      // Italic text
-                      em: theme.textTheme.bodyMedium?.copyWith(
-                        fontStyle: FontStyle.italic,
-                        color: theme.colorScheme.onSurface.withOpacity(0.7),
-                      ),
-                      // Lists
-                      listBullet: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.primaryColor,
-                        fontSize: 16,
-                      ),
-                      // List items
-                      listIndent: 24.0,
-                      listBulletPadding: const EdgeInsets.only(right: 8),
-                      // Block quotes
-                      blockquote: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.7),
-                        fontStyle: FontStyle.italic,
-                        backgroundColor: theme
-                            .colorScheme.surfaceContainerHighest
-                            .withOpacity(0.3),
-                      ),
-                      blockquotePadding: const EdgeInsets.all(12),
-                      blockquoteDecoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerHighest
-                            .withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border(
-                          left: BorderSide(
-                            color: theme.primaryColor,
-                            width: 4,
-                          ),
-                        ),
-                      ),
-                      // Code blocks
-                      code: theme.textTheme.bodySmall?.copyWith(
-                        backgroundColor:
-                            theme.colorScheme.surfaceContainerHighest,
-                        fontFamily: 'monospace',
-                        color: theme.colorScheme.onSurface,
-                      ),
-                      codeblockPadding: const EdgeInsets.all(12),
-                      codeblockDecoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      // Horizontal rule
-                      horizontalRuleDecoration: BoxDecoration(
-                        border: Border(
-                          top: BorderSide(
-                            color: theme.dividerColor,
-                            width: 1,
-                          ),
-                        ),
-                      ),
-                      // Links
-                      a: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.primaryColor,
-                        decoration: TextDecoration.underline,
-                      ),
-                      // Table
-                      tableHead: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
-                        backgroundColor: theme
-                            .colorScheme.surfaceContainerHighest
-                            .withOpacity(0.5),
-                      ),
-                      tableBody: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.87),
-                      ),
-                      tableBorder: TableBorder.all(
-                        color: theme.dividerColor,
-                        width: 1,
-                      ),
-                      tableHeadAlign: TextAlign.center,
-                      tableCellsPadding: const EdgeInsets.all(8),
-                      // Spacing between blocks (reduced)
-                      blockSpacing: 12.0,
-                      textScaleFactor: 1.0,
-                    ),
-                ),
-                // "Ask AI Assistant" button when online - at the bottom of content
-                const SizedBox(height: 16),
-                Consumer<OfflineProvider>(
-                  builder: (context, offlineProvider, _) {
-                    if (offlineProvider.isOnline) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: ElevatedButton.icon(
-                          onPressed: () =>
-                              _loadExplanation(forceOnline: true),
-                          icon: const Icon(Icons.auto_awesome),
-                          label: const Text('Ask AI Assistant (Regenerate)'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: theme.primaryColor,
-                            foregroundColor: Colors.white,
-                          ),
-                        ),
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildErrorWidget(String message) {
-    final theme = Theme.of(context);
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: theme.colorScheme.outline.withOpacity(0.2),
-        ),
-      ),
+      color: theme.colorScheme.surfaceContainerHighest,
       child: Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.error_outline,
-              size: 48,
-              color: theme.colorScheme.onSurface.withOpacity(0.6),
+              Icons.warning_amber_rounded,
+              size: 40,
+              color: AppTheme.warningAmber,
             ),
             const SizedBox(height: 8),
             Text(
-              message,
-              style: TextStyle(
-                color: theme.colorScheme.onSurface.withOpacity(0.87),
-                fontSize: 14,
+              '$methodName Heatmap Not Available',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
               ),
               textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 4),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                widget.method == 'cam'
+                    ? 'Offline CAM heatmap generation failed.'
+                    : 'Score-CAM heatmap generation failed. Check your connection.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+              ),
             ),
           ],
         ),
@@ -1116,138 +398,311 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
     );
   }
 
-  Widget _buildControls() {
-    // CRITICAL FIX: Only show controls if heatmap is available
-    // Don't show toggle when heatmap is missing (causes confusion)
-    final hasHeatmap =
-        widget.gradcamImageBytes != null || widget.gradCAMPath != null;
-
-    if (!hasHeatmap) {
-      // Don't show controls when heatmap is not available
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      children: [
-        // Show heatmap toggle - only when heatmap is available
-        Row(
-          children: [
-            Icon(
-              Icons.visibility,
-              size: 20,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'Show Heatmap Overlay',
-              style: TextStyle(
-                fontSize: 14,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-            const Spacer(),
-            Switch(
-              value: _showHeatmap,
-              onChanged: (value) {
-                setState(() {
-                  _showHeatmap = value;
-                });
-              },
-            ),
-          ],
+  Widget _buildImageErrorPlaceholder(ThemeData theme) {
+    return Container(
+      color: theme.colorScheme.surfaceContainerHighest,
+      child: Center(
+        child: Icon(
+          Icons.broken_image_outlined,
+          size: 48,
+          color: theme.colorScheme.onSurfaceVariant,
         ),
+      ),
+    );
+  }
 
-        const SizedBox(height: 12),
-
-        // Opacity slider
+  Widget _buildOpacitySlider(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         Row(
           children: [
             Icon(
-              Icons.opacity,
-              size: 20,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+              Icons.layers_rounded,
+              size: 16,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
             const SizedBox(width: 8),
             Text(
               'Heatmap Opacity',
-              style: TextStyle(
-                fontSize: 14,
-                color: Theme.of(context).colorScheme.onSurface,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             const Spacer(),
             Text(
               '${(_opacity * 100).round()}%',
-              style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ],
         ),
-
-        Slider(
-          value: _opacity,
-          min: 0.0,
-          max: 1.0,
-          divisions: 20,
-          onChanged: (value) {
-            setState(() {
-              _opacity = value;
-            });
-          },
+        SliderTheme(
+          data: SliderThemeData(
+            trackHeight: 3,
+            thumbShape:
+                const RoundSliderThumbShape(enabledThumbRadius: 7),
+            overlayShape:
+                const RoundSliderOverlayShape(overlayRadius: 14),
+            activeTrackColor: AppTheme.botanicalPrimary,
+            inactiveTrackColor:
+                AppTheme.botanicalPrimary.withOpacity(0.2),
+            thumbColor: AppTheme.botanicalPrimary,
+            overlayColor: AppTheme.botanicalPrimary.withOpacity(0.12),
+          ),
+          child: Slider(
+            value: _opacity,
+            min: 0.0,
+            max: 1.0,
+            divisions: 20,
+            onChanged: (value) {
+              setState(() {
+                _opacity = value;
+                _showHeatmap = value > 0;
+              });
+            },
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildMethodBadge(ThemeData theme) {
-    if (widget.method == null) return const SizedBox.shrink();
+  Widget _buildColorLegend(ThemeData theme) {
+    return Row(
+      children: [
+        Text(
+          'Low',
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Container(
+            height: 8,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(4),
+              gradient: const LinearGradient(
+                colors: [Colors.blue, Colors.green, Colors.red],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          'High',
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
 
-    final isOnline = widget.method == 'grad-cam';
-    final isFallback = widget.fallbackUsed == true;
+  Widget _buildExplanationSection(ThemeData theme) {
+    if (_isLoadingExplanation) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                    AppTheme.botanicalPrimary),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Generating explanation…',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
-    Color badgeColor;
-    IconData badgeIcon;
-    String badgeText;
+    if (_explanationError != null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          children: [
+            Text(
+              _explanationError!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: () => _loadExplanation(),
+              icon: const Icon(Icons.refresh_rounded, size: 16),
+              label: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
 
-    if (isOnline && !isFallback) {
-      badgeColor = Colors.green;
-      badgeIcon = Icons.cloud;
-      badgeText = 'Online (Score-CAM)';
-    } else if (isFallback) {
-      badgeColor = Colors.orange;
-      badgeIcon = Icons.sync_problem;
-      badgeText = 'Offline (Fallback)';
-    } else {
-      badgeColor = Colors.blue;
-      badgeIcon = Icons.offline_bolt;
-      badgeText = 'Offline (CAM)';
+    if (_explanationText == null || _explanationText!.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.info_outline_rounded,
+              size: 16,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Explanation not available.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header row with source badge
+        Row(
+          children: [
+            Icon(
+              Icons.psychology_rounded,
+              size: 18,
+              color: AppTheme.botanicalPrimary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'AI Explanation',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const Spacer(),
+            if (_explanationSource != null)
+              _buildSourceBadge(theme, _explanationSource!),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // Inline Read More / Show Less with AnimatedSize
+        AnimatedSize(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOutCubic,
+          child: _isReadMoreExpanded
+              ? MarkdownBody(
+                  data: _explanationText!,
+                  styleSheet: _buildMarkdownStyle(theme),
+                )
+              : _buildCollapsedText(theme),
+        ),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: () {
+            setState(() {
+              _isReadMoreExpanded = !_isReadMoreExpanded;
+            });
+          },
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _isReadMoreExpanded ? 'Show Less' : 'Read More',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: AppTheme.botanicalPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(
+                _isReadMoreExpanded
+                    ? Icons.expand_less_rounded
+                    : Icons.expand_more_rounded,
+                size: 16,
+                color: AppTheme.botanicalPrimary,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCollapsedText(ThemeData theme) {
+    // Strip markdown for the collapsed preview using replaceAllMapped so the
+    // captured group content is preserved (replaceAll with r'$1' is a literal
+    // string in Dart, not a backreference, which caused "$1" to appear).
+    final plainText = _explanationText!
+        .replaceAll(RegExp(r'#{1,6}\s'), '')
+        .replaceAllMapped(RegExp(r'\*\*([^*]+)\*\*'), (m) => m.group(1) ?? '')
+        .replaceAllMapped(RegExp(r'\*([^*]+)\*'), (m) => m.group(1) ?? '')
+        .replaceAllMapped(RegExp(r'`([^`]+)`'), (m) => m.group(1) ?? '');
+
+    return Text(
+      plainText,
+      maxLines: _collapsedMaxLines,
+      overflow: TextOverflow.fade,
+      style: theme.textTheme.bodyMedium?.copyWith(
+        height: 1.6,
+        color: theme.colorScheme.onSurface.withOpacity(0.87),
+      ),
+    );
+  }
+
+  Widget _buildSourceBadge(ThemeData theme, String source) {
+    final Color badgeColor;
+    final IconData badgeIcon;
+    final String badgeLabel;
+
+    switch (source) {
+      case 'online':
+        badgeColor = AppTheme.safeGreen;
+        badgeIcon = Icons.auto_awesome_rounded;
+        badgeLabel = 'Online';
+      case 'cache':
+        badgeColor = AppTheme.warningAmber;
+        badgeIcon = Icons.cached_rounded;
+        badgeLabel = 'Cached';
+      case 'fallback':
+        badgeColor = AppTheme.warningAmber;
+        badgeIcon = Icons.info_outline_rounded;
+        badgeLabel = 'Fallback';
+      default:
+        badgeColor = Colors.blue;
+        badgeIcon = Icons.storage_rounded;
+        badgeLabel = 'Offline';
     }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: badgeColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: badgeColor.withOpacity(0.3),
-          width: 1,
-        ),
+        borderRadius: BorderRadius.circular(100),
+        border: Border.all(color: badgeColor.withOpacity(0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            badgeIcon,
-            size: 14,
-            color: badgeColor,
-          ),
+          Icon(badgeIcon, size: 11, color: badgeColor),
           const SizedBox(width: 4),
           Text(
-            badgeText,
+            badgeLabel,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: FontWeight.w600,
               color: badgeColor,
             ),
@@ -1256,6 +711,102 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
       ),
     );
   }
+
+  MarkdownStyleSheet _buildMarkdownStyle(ThemeData theme) {
+    return MarkdownStyleSheet(
+      h1: theme.textTheme.headlineSmall?.copyWith(
+        fontWeight: FontWeight.bold,
+        color: theme.colorScheme.onSurface,
+        fontSize: 22,
+        height: 1.3,
+      ),
+      h1Padding: const EdgeInsets.only(bottom: 4, top: 8),
+      h2: theme.textTheme.titleLarge?.copyWith(
+        fontWeight: FontWeight.bold,
+        color: theme.colorScheme.onSurface,
+        fontSize: 20,
+        height: 1.3,
+      ),
+      h2Padding: const EdgeInsets.only(bottom: 4, top: 8),
+      h3: theme.textTheme.titleMedium?.copyWith(
+        fontWeight: FontWeight.bold,
+        color: theme.colorScheme.onSurface,
+        fontSize: 18,
+        height: 1.3,
+      ),
+      h3Padding: const EdgeInsets.only(bottom: 4, top: 8),
+      p: theme.textTheme.bodyMedium?.copyWith(
+        height: 1.7,
+        color: theme.colorScheme.onSurface.withOpacity(0.87),
+        fontSize: 14,
+      ),
+      pPadding: const EdgeInsets.only(bottom: 8, top: 2),
+      strong: theme.textTheme.bodyMedium?.copyWith(
+        fontWeight: FontWeight.bold,
+        color: theme.colorScheme.onSurface,
+        fontSize: 16,
+        height: 1.4,
+      ),
+      em: theme.textTheme.bodyMedium?.copyWith(
+        fontStyle: FontStyle.italic,
+        color: theme.colorScheme.onSurface.withOpacity(0.7),
+      ),
+      listBullet: theme.textTheme.bodyMedium?.copyWith(
+        color: AppTheme.botanicalPrimary,
+        fontSize: 16,
+      ),
+      listIndent: 24.0,
+      listBulletPadding: const EdgeInsets.only(right: 8),
+      blockquote: theme.textTheme.bodyMedium?.copyWith(
+        color: theme.colorScheme.onSurface.withOpacity(0.7),
+        fontStyle: FontStyle.italic,
+        backgroundColor:
+            theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+      ),
+      blockquotePadding: const EdgeInsets.all(12),
+      blockquoteDecoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(4),
+        border: Border(
+          left: BorderSide(color: AppTheme.botanicalPrimary, width: 4),
+        ),
+      ),
+      code: theme.textTheme.bodySmall?.copyWith(
+        backgroundColor: theme.colorScheme.surfaceContainerHighest,
+        fontFamily: 'monospace',
+        color: theme.colorScheme.onSurface,
+      ),
+      codeblockPadding: const EdgeInsets.all(12),
+      codeblockDecoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      horizontalRuleDecoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: theme.dividerColor, width: 1),
+        ),
+      ),
+      a: theme.textTheme.bodyMedium?.copyWith(
+        color: AppTheme.botanicalPrimary,
+        decoration: TextDecoration.underline,
+      ),
+      tableHead: theme.textTheme.bodyMedium?.copyWith(
+        fontWeight: FontWeight.bold,
+        color: theme.colorScheme.onSurface,
+        backgroundColor:
+            theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+      ),
+      tableBody: theme.textTheme.bodyMedium?.copyWith(
+        color: theme.colorScheme.onSurface.withOpacity(0.87),
+      ),
+      tableBorder: TableBorder.all(color: theme.dividerColor, width: 1),
+      tableHeadAlign: TextAlign.center,
+      tableCellsPadding: const EdgeInsets.all(8),
+      blockSpacing: 12.0,
+      textScaleFactor: 1.0,
+    );
+  }
+
 }
 
 /// Simple GradCAM preview widget for quick display
@@ -1303,17 +854,10 @@ class GradCAMPreview extends StatelessWidget {
                   ),
                   const Spacer(),
                   if (gradCAMPath != null)
-                    Icon(
-                      Icons.check_circle,
-                      color: Colors.green,
-                      size: 16,
-                    )
+                    const Icon(Icons.check_circle, color: Colors.green, size: 16)
                   else
-                    Icon(
-                      Icons.error_outline,
-                      color: Colors.orange,
-                      size: 16,
-                    ),
+                    const Icon(Icons.error_outline,
+                        color: Colors.orange, size: 16),
                 ],
               ),
               const SizedBox(height: 8),

@@ -111,9 +111,20 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Sign up with email and password.
+  /// Throws an [AuthException] with a user-friendly message if the email is
+  /// already registered (Supabase returns an empty identities list silently).
   Future<void> signUp({required String email, required String password}) async {
     _debugAuth('signUp: starting for $email');
-    await _auth.signUp(email: email, password: password);
+    final response = await _auth.signUp(email: email, password: password);
+    // Supabase silently "succeeds" for duplicate emails but returns an empty
+    // identities list — detect this and surface it as an error.
+    if (response.user != null &&
+        (response.user!.identities == null ||
+            response.user!.identities!.isEmpty)) {
+      throw const AuthException(
+        'This email is already registered. Try signing in instead.',
+      );
+    }
     _user = _auth.currentUser;
     _debugAuth('signUp: after signUp _user=${_user?.id}');
     await _loadRole();
