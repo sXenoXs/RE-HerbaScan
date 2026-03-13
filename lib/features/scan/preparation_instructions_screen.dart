@@ -397,6 +397,52 @@ class _PreparationInstructionsScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ROADMAP B 4.1: Medical disclaimer at top (theme-aware for dark mode readability)
+            Builder(
+              builder: (context) {
+                final isDark = theme.brightness == Brightness.dark;
+                final disclaimerBg = isDark
+                    ? AppTheme.warningAmber.withValues(alpha: 0.2)
+                    : AppTheme.warningBgLight;
+                final disclaimerTextColor = isDark
+                    ? theme.colorScheme.onSurface
+                    : AppTheme.textPrimary;
+                return Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                  decoration: BoxDecoration(
+                    color: disclaimerBg,
+                    border: Border(
+                      left: BorderSide(
+                        color: AppTheme.warningAmber.withValues(alpha: 0.8),
+                        width: 4,
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(
+                        Icons.medical_services_rounded,
+                        color: AppTheme.warningAmber,
+                        size: 22,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'HerbaScan is an educational tool. Always consult a licensed physician before using any herbal remedy.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: disclaimerTextColor,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 16),
             // ── Important Warnings (moved to top) ──────────────────────────
             if (hasWarnings)
               Container(

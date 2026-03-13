@@ -7,12 +7,15 @@ import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/providers/plant_provider.dart';
 import 'package:herbascan/core/providers/auth_provider.dart';
 import 'package:herbascan/core/models/plant.dart';
+import 'package:herbascan/core/models/safety_profile.dart';
 import 'package:herbascan/core/models/scan_result.dart';
 import 'package:herbascan/core/services/herbarium_service.dart';
 import 'package:herbascan/core/services/adaptive_gradcam_service.dart';
 import 'package:herbascan/core/services/habitat_service.dart';
+import 'package:herbascan/core/services/safety_profile_service.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/core/widgets/contraindication_engine_widget.dart';
+import 'package:herbascan/features/help/help_tutorial_screen.dart';
 import 'package:herbascan/features/scan/habitat_map_screen.dart';
 import 'package:herbascan/features/scan/plant_detail_screen.dart';
 import 'package:uuid/uuid.dart';
@@ -386,95 +389,317 @@ class _PlantResultScreenState extends State<PlantResultScreen>
   ) {
     final theme = Theme.of(context);
     final resolvedPlant = _resolveMatchedPlant(plantName);
+    final isLowConfidence = confidence < kLowConfidenceThreshold;
+
+    final safetyFuture = resolvedPlant != null
+        ? SafetyProfileService().getSafetyProfile(resolvedPlant)
+        : Future<SafetyProfile?>.value(null);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      child: FutureBuilder<SafetyProfile?>(
+        future: safetyFuture,
+        builder: (context, snapshot) {
+          final profile = snapshot.data;
+          final hasActiveContraindications = profile != null &&
+              (profile.drugInteractions.isNotEmpty ||
+                  profile.strictContraindications.isNotEmpty ||
+                  profile.pregnancyWarning);
+          // ROADMAP B 3.3: When high-risk, safety first (CE below name, before scientific name)
+          final showSafetyFirst = hasActiveContraindications && !isLowConfidence;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Plant name row + DOH badge (ROADMAP B 2.2)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Text(
+                      plantName,
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                  ),
+                  _buildDOHBadge(context, resolvedPlant?.isDOHApproved ?? false),
+                ],
+              ),
+              if (showSafetyFirst) ...[
+                const SizedBox(height: 16),
+                ContraindicationEngineWidget(
+                  plant: resolvedPlant,
+                  commonName: plantName,
+                  confidence: confidence,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  scientificName,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    fontStyle: FontStyle.italic,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ] else ...[
+                const SizedBox(height: 4),
+                Text(
+                  scientificName,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    fontStyle: FontStyle.italic,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ContraindicationEngineWidget(
+                  plant: resolvedPlant,
+                  commonName: plantName,
+                  confidence: confidence,
+                ),
+              ],
+              const SizedBox(height: 16),
+              if (isLowConfidence)
+                _buildUncertainMatchCard(context)
+              else
+                _buildActionCards(context, resolvedPlant),
+              if (_showTop3 && widget.predictions.length > 1) ...[
+                const SizedBox(height: 24),
+                _buildAlternativeMatches(theme),
+              ],
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  /// ROADMAP B 1.3: Shown when confidence < threshold; links to Help OOD section.
+  Widget _buildUncertainMatchCard(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.errorContainer.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.error.withValues(alpha: 0.4),
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Plant name + scientific name
-          Text(
-            plantName,
-            style: theme.textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              letterSpacing: -0.3,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            scientificName,
-            style: theme.textTheme.bodyLarge?.copyWith(
-              fontStyle: FontStyle.italic,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Contraindication Engine immediately below names
-          ContraindicationEngineWidget(
-            plant: resolvedPlant,
-            commonName: plantName,
-          ),
-          const SizedBox(height: 16),
-
-          // 2 side-by-side hero cards
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: _buildHeroActionCard(
-                  context,
-                  icon: Icons.eco_rounded,
-                  label: 'Open Plant Profile',
-                  color: AppTheme.botanicalPrimary,
-                  onTap: resolvedPlant != null
-                      ? () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => PlantDetailScreen(
-                                plant: resolvedPlant,
-                              ),
-                            ),
-                          );
-                        }
-                      : null,
-                ),
+              Icon(
+                Icons.search_off_rounded,
+                color: theme.colorScheme.error,
+                size: 24,
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: FutureBuilder<bool>(
-                  future: resolvedPlant != null
-                      ? HabitatService().hasHabitatData(resolvedPlant.id)
-                      : Future.value(false),
-                  builder: (context, snapshot) {
-                    final hasHabitat = snapshot.data == true;
-                    return _buildHeroActionCard(
-                      context,
-                      icon: Icons.map_rounded,
-                      label: 'View Habitat Map',
-                      color: Colors.teal,
-                      onTap: hasHabitat && resolvedPlant != null
-                          ? () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      HabitatMapScreen(plant: resolvedPlant),
-                                ),
-                              );
-                            }
-                          : null,
-                    );
-                  },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.plantNotRecognized,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onErrorContainer,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      l10n.uncertainMatchBody,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onErrorContainer,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-
-          // Alternative matches (if confidence < 90% and top3 enabled)
-          if (_showTop3 && widget.predictions.length > 1) ...[
-            const SizedBox(height: 24),
-            _buildAlternativeMatches(theme),
-          ],
+          const SizedBox(height: 12),
+          TextButton.icon(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const HelpTutorialScreen(
+                    scrollToSection: 'ood_explanation',
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.help_outline_rounded, size: 18),
+            label: Text(l10n.whyCantAppIdentify),
+          ),
         ],
+      ),
+    );
+  }
+
+  /// ROADMAP B 1.2: Open Plant Profile + View Habitat Map; gated when low confidence.
+  Widget _buildActionCards(BuildContext context, Plant? resolvedPlant) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildHeroActionCard(
+            context,
+            icon: Icons.eco_rounded,
+            label: 'Open Plant Profile',
+            color: AppTheme.botanicalPrimary,
+            onTap: resolvedPlant != null
+                ? () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => PlantDetailScreen(
+                          plant: resolvedPlant,
+                        ),
+                      ),
+                    );
+                  }
+                : null,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: FutureBuilder<bool>(
+            future: resolvedPlant != null
+                ? HabitatService().hasHabitatData(resolvedPlant.id)
+                : Future.value(false),
+            builder: (context, snapshot) {
+              final hasHabitat = snapshot.data == true;
+              return _buildHeroActionCard(
+                context,
+                icon: Icons.map_rounded,
+                label: 'View Habitat Map',
+                color: Colors.teal,
+                onTap: hasHabitat && resolvedPlant != null
+                    ? () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                HabitatMapScreen(plant: resolvedPlant),
+                          ),
+                        );
+                      }
+                    : null,
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// ROADMAP B 2.2: DOH Verified (green) or Scientifically Documented (amber); tappable → info sheet.
+  Widget _buildDOHBadge(BuildContext context, bool isDOHApproved) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final bgColor = isDOHApproved
+        ? (isDark ? AppTheme.safeGreen.withValues(alpha: 0.25) : AppTheme.safeBgLight)
+        : (isDark ? AppTheme.warningAmber.withValues(alpha: 0.2) : AppTheme.warningBgLight);
+    final fgColor = isDOHApproved ? AppTheme.safeGreen : AppTheme.warningAmber;
+    final label = isDOHApproved ? 'DOH Verified' : 'Scientifically Documented';
+    final icon = isDOHApproved ? Icons.verified_rounded : Icons.science_rounded;
+
+    return GestureDetector(
+      onTap: () => _showDOHInfoSheet(context, isDOHApproved),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(color: fgColor.withValues(alpha: 0.5)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: fgColor),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: fgColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// ROADMAP B 2.3: Bottom sheet explaining DOH vs Scientifically Documented.
+  void _showDOHInfoSheet(BuildContext context, bool isDOHApproved) {
+    final theme = Theme.of(context);
+    final title = isDOHApproved ? 'DOH Verified Plant' : 'Scientifically Documented Plant';
+    final body = isDOHApproved
+        ? 'This plant is officially endorsed by the Philippine Department of Health under Administrative Order No. 12, series of 1997, and is included in the list of clinically validated herbal medicines (Republic Act No. 8423 — TAMA).'
+        : 'This plant is not on the DOH approved list but is included in HerbaScan based on peer-reviewed literature and PITAHC (Philippine Institute of Traditional and Alternative Health Care) references.';
+    const footer =
+        'Source: Dept. of Health Admin. Order No. 12, s. 1997 · Republic Act No. 8423 (TAMA, 1997) · PITAHC';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+        decoration: BoxDecoration(
+          color: theme.scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Icon(
+              isDOHApproved ? Icons.verified_rounded : Icons.science_rounded,
+              size: 40,
+              color: isDOHApproved ? AppTheme.safeGreen : AppTheme.warningAmber,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              body,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              footer,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -565,48 +790,58 @@ class _PlantResultScreenState extends State<PlantResultScreen>
             fontWeight: FontWeight.bold,
           ),
         ),
+        const SizedBox(height: 4),
+        Text(
+          'If the top result seems wrong, these are the next possibilities.',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
         const SizedBox(height: 12),
         ...alternatives.take(2).map((pred) {
           final name = pred['plantName'] ?? pred['label'] ?? 'Unknown';
           final conf = (pred['confidence'] ?? 0.0).toDouble();
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(8),
+          return Opacity(
+            opacity: 0.85,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.eco_outlined,
+                      size: 18,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
-                  child: Icon(
-                    Icons.eco_outlined,
-                    size: 18,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        name,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      if (_showConfidence)
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          '${(conf * 100).toStringAsFixed(1)}% match',
+                          name,
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                    ],
+                        if (_showConfidence)
+                          Text(
+                            '${(conf * 100).toStringAsFixed(1)}% match',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontSize: 12,
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
-                ),
                 SizedBox(
                   width: 60,
                   height: 6,
@@ -624,6 +859,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                 ),
               ],
             ),
+          ),
           );
         }),
       ],
@@ -868,7 +1104,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
           SnackBar(
             content: Text(
               _regeneratedMethod == 'grad-cam'
-                  ? 'Score-CAM regenerated!'
+                  ? 'AI heatmap regenerated!'
                   : 'CAM regenerated!',
             ),
             backgroundColor: AppTheme.safeGreen,

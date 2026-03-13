@@ -4,7 +4,10 @@ import 'package:herbascan/core/services/usage_analytics.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 
 class HelpTutorialScreen extends StatefulWidget {
-  const HelpTutorialScreen({super.key});
+  /// When set to 'ood_explanation', scrolls to and expands the OOD FAQ tile (ROADMAP B 1.3).
+  final String? scrollToSection;
+
+  const HelpTutorialScreen({super.key, this.scrollToSection});
 
   @override
   State<HelpTutorialScreen> createState() => _HelpTutorialScreenState();
@@ -12,6 +15,7 @@ class HelpTutorialScreen extends StatefulWidget {
 
 class _HelpTutorialScreenState extends State<HelpTutorialScreen> {
   final UsageAnalytics _analytics = UsageAnalytics();
+  final GlobalKey _oodSectionKey = GlobalKey();
 
   static const List<_TipData> _tips = [
     _TipData(
@@ -98,6 +102,22 @@ class _HelpTutorialScreenState extends State<HelpTutorialScreen> {
   void initState() {
     super.initState();
     _analytics.trackHelpViewed();
+    if (widget.scrollToSection == 'ood_explanation') {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToOODSection());
+    }
+  }
+
+  void _scrollToOODSection() {
+    if (!mounted) return;
+    final context = _oodSectionKey.currentContext;
+    if (context != null) {
+      Scrollable.ensureVisible(
+        context,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+        alignment: 0.2,
+      );
+    }
   }
 
   @override
@@ -157,6 +177,12 @@ class _HelpTutorialScreenState extends State<HelpTutorialScreen> {
             const SizedBox(height: 12),
             ..._issues.map(
               (issue) => _IssueExpansionTile(issue: issue, theme: theme),
+            ),
+            // ROADMAP B 1.3: OOD explanation — why app said it cannot identify
+            _OODExplanationTile(
+              key: _oodSectionKey,
+              theme: theme,
+              initiallyExpanded: widget.scrollToSection == 'ood_explanation',
             ),
 
             const SizedBox(height: 32),
@@ -352,6 +378,57 @@ class _IssueExpansionTile extends StatelessWidget {
           alignment: Alignment.centerLeft,
           child: Text(
             issue.content,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: AppTheme.textSecondary,
+              height: 1.5,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// ROADMAP B 1.3: Why the app said it cannot identify the plant (low confidence / OOD).
+class _OODExplanationTile extends StatelessWidget {
+  final ThemeData theme;
+  final bool initiallyExpanded;
+
+  const _OODExplanationTile({
+    super.key,
+    required this.theme,
+    this.initiallyExpanded = false,
+  });
+
+  static const String _title =
+      'Why did the app say it cannot identify my plant?';
+  static const String _body =
+      'HerbaScan identifies only the 42 Philippine medicinal plants in its database. '
+      'When the identification confidence is too low (below 60%), the app does not show '
+      'safety information or preparation guides for your safety—using the wrong plant can be harmful.\n\n'
+      'Tips: use a clear, single leaf; avoid shadows and blur; ensure the plant is one of the '
+      '42 supported species. You can browse the plant list in the app to see which plants are supported.';
+
+  @override
+  Widget build(BuildContext context) {
+    return ExpansionTile(
+      key: const Key('ood_explanation'),
+      initiallyExpanded: initiallyExpanded,
+      tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+      childrenPadding:
+          const EdgeInsets.only(left: 16, right: 16, bottom: 14, top: 0),
+      title: Text(
+        _title,
+        style: theme.textTheme.bodyLarge?.copyWith(
+          fontWeight: FontWeight.w600,
+          fontFamily: 'Inter',
+        ),
+      ),
+      children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            _body,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: AppTheme.textSecondary,
               height: 1.5,

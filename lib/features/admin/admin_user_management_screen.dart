@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/services/admin_user_service.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 
@@ -88,6 +89,66 @@ class _AdminUserManagementScreenState
     }
   }
 
+  Future<void> _setRole(AdminProfileRow row, String role) async {
+    if (_actionInProgress) return;
+    final isMakingAdmin = role == 'admin';
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+    if (!isMakingAdmin && currentUserId == row.id) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('You cannot remove your own admin role.')),
+        );
+      }
+      return;
+    }
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(isMakingAdmin ? 'Make admin?' : 'Remove admin?'),
+        content: Text(
+          isMakingAdmin
+              ? '${row.email} will be able to access the admin dashboard and manage users and catalog.'
+              : '${row.email} will no longer have admin access.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(isMakingAdmin ? 'Make admin' : 'Remove admin'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+    _actionInProgress = true;
+    try {
+      final ok = await AdminUserService().setRole(row.id, role);
+      if (!mounted) return;
+      if (ok) {
+        await _load();
+        if (mounted) {
+          final l10n = AppLocalizations.of(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                isMakingAdmin ? l10n.userNowAdmin : l10n.adminRemoved,
+              ),
+            ),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to update role.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _actionInProgress = false);
+    }
+  }
+
   Future<void> _deleteUser(AdminProfileRow row) async {
     if (_actionInProgress) return;
 
@@ -95,59 +156,64 @@ class _AdminUserManagementScreenState
     final errorColor = Theme.of(context).colorScheme.error;
     final confirmController = TextEditingController();
 
-    bool? confirm;
-    try {
-      confirm = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => StatefulBuilder(
-          builder: (ctx, setDialogState) => AlertDialog(
-            title: const Text('Delete user data?'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'This will permanently delete ${row.email} and all their cloud scans. It cannot be undone.',
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Type DELETE to confirm:',
-                  style: TextStyle(
-                      color: errorColor, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: confirmController,
-                  autofocus: true,
-                  decoration: InputDecoration(
-                    hintText: 'DELETE',
-                    border: const OutlineInputBorder(),
-                    errorBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: errorColor)),
-                  ),
-                  onChanged: (_) => setDialogState(() {}),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Cancel'),
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Delete user data?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'This will permanently delete ${row.email} and all their cloud scans. It cannot be undone.',
               ),
-              FilledButton(
-                onPressed: confirmController.text == 'DELETE'
-                    ? () => Navigator.pop(ctx, true)
-                    : null,
-                style: FilledButton.styleFrom(backgroundColor: errorColor),
-                child: const Text('Delete User Data'),
+              const SizedBox(height: 16),
+              Text(
+                'Type DELETE to confirm:',
+                style: TextStyle(
+                    color: errorColor, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: confirmController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'DELETE',
+                  border: const OutlineInputBorder(),
+                  errorBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: errorColor)),
+                ),
+                onChanged: (_) {
+                  if (ctx.mounted) setDialogState(() {});
+                },
               ),
             ],
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: confirmController.text.trim().toUpperCase() == 'DELETE'
+                  ? () => Navigator.pop(ctx, true)
+                  : null,
+              style: FilledButton.styleFrom(backgroundColor: errorColor),
+              child: const Text('Delete User Data'),
+            ),
+          ],
         ),
-      );
-    } finally {
-      confirmController.dispose();
-    }
+      ),
+    );
+
+    // Defer disposal by two frames so the dialog route is fully torn down before we dispose.
+    // Fixes _dependents.isEmpty when tapping Cancel or Confirm (TextField still dependent in single-frame defer).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        confirmController.dispose();
+      });
+    });
 
     if (confirm != true || !mounted) return;
 
@@ -344,42 +410,68 @@ class _AdminUserManagementScreenState
                   _setActive(row, false);
                 case 'reactivate':
                   _setActive(row, true);
+                case 'make_admin':
+                  _setRole(row, 'admin');
+                case 'remove_admin':
+                  _setRole(row, 'user');
                 case 'delete':
                   _deleteUser(row);
               }
             },
-            itemBuilder: (ctx) => [
-              if (isActive)
-                const PopupMenuItem(
-                  value: 'suspend',
+            itemBuilder: (ctx) {
+              final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+              final isCurrentUser = currentUserId == row.id;
+              return [
+                if (isActive)
+                  const PopupMenuItem(
+                    value: 'suspend',
+                    child: Row(children: [
+                      Icon(Icons.block_outlined),
+                      SizedBox(width: 12),
+                      Text('Suspend Account'),
+                    ]),
+                  )
+                else
+                  const PopupMenuItem(
+                    value: 'reactivate',
+                    child: Row(children: [
+                      Icon(Icons.check_circle_outline,
+                          color: AppTheme.safeGreen),
+                      SizedBox(width: 12),
+                      Text('Reactivate Account'),
+                    ]),
+                  ),
+                if (!isAdmin)
+                  PopupMenuItem(
+                    value: 'make_admin',
+                    child: Row(children: [
+                      const Icon(Icons.admin_panel_settings_outlined),
+                      const SizedBox(width: 12),
+                      Text(AppLocalizations.of(context).makeAdmin),
+                    ]),
+                  ),
+                if (isAdmin && !isCurrentUser)
+                  PopupMenuItem(
+                    value: 'remove_admin',
+                    child: Row(children: [
+                      const Icon(Icons.admin_panel_settings_rounded),
+                      const SizedBox(width: 12),
+                      Text(AppLocalizations.of(context).removeAdmin),
+                    ]),
+                  ),
+                PopupMenuItem(
+                  value: 'delete',
                   child: Row(children: [
-                    Icon(Icons.block_outlined),
-                    SizedBox(width: 12),
-                    Text('Suspend Account'),
-                  ]),
-                )
-              else
-                const PopupMenuItem(
-                  value: 'reactivate',
-                  child: Row(children: [
-                    Icon(Icons.check_circle_outline,
-                        color: AppTheme.safeGreen),
-                    SizedBox(width: 12),
-                    Text('Reactivate Account'),
+                    Icon(Icons.person_remove_outlined,
+                        color: theme.colorScheme.error),
+                    const SizedBox(width: 12),
+                    Text('Delete User Data',
+                        style:
+                            TextStyle(color: theme.colorScheme.error)),
                   ]),
                 ),
-              PopupMenuItem(
-                value: 'delete',
-                child: Row(children: [
-                  Icon(Icons.person_remove_outlined,
-                      color: theme.colorScheme.error),
-                  const SizedBox(width: 12),
-                  Text('Delete User Data',
-                      style:
-                          TextStyle(color: theme.colorScheme.error)),
-                ]),
-              ),
-            ],
+              ];
+            },
           ),
         ],
       ),

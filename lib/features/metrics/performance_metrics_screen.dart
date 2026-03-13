@@ -155,7 +155,7 @@ class PerformanceMetricsScreen extends StatelessWidget {
                   _buildInfoRow(
                       'Validation Source', 'Test set (20% of dataset)', theme),
                   _buildInfoRow(
-                      'Score-CAM', 'Enabled for explainability', theme),
+                      'AI Reasoning Heatmap', 'Enabled for explainability', theme),
                 ],
               ),
             ),

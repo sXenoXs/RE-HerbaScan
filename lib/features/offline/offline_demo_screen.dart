@@ -139,8 +139,8 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
         ),
         _buildStatCard(
           context,
-          value: aiReady ? 'MobileNetV2' : 'Not Loaded',
-          subtitle: aiReady ? 'TFLite Engine Ready' : 'AI model unavailable',
+          value: aiReady ? 'AI model' : 'Not Loaded',
+          subtitle: aiReady ? 'Offline AI ready' : 'AI model unavailable',
           icon: Icons.memory_rounded,
           iconColor: aiReady ? AppTheme.botanicalPrimary : AppTheme.errorDeep,
           bgColor: aiReady ? AppTheme.safeBgLight : AppTheme.errorBgLight,

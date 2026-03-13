@@ -9,7 +9,6 @@ import 'package:herbascan/core/models/scan_result.dart';
 import 'package:herbascan/core/models/cloud_scan.dart';
 import 'package:herbascan/core/services/herbarium_service.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
-import 'package:gal/gal.dart';
 import 'package:herbascan/features/auth/login_screen.dart';
 import 'package:herbascan/features/scan/plant_result_screen.dart';
 import 'package:herbascan/features/scan/scan_screen.dart';
@@ -29,6 +28,7 @@ class _HistoryScreenState extends State<HistoryScreen>
   final UsageAnalytics _analytics = UsageAnalytics();
   late final TabController _tabController;
   String _sortBy = 'recent'; // recent, oldest, confidence
+  String _cloudSortBy = 'recent'; // recent, oldest, confidence
   int _historyTabIndex = 0; // 0 = Device, 1 = Cloud
   List<CloudScan> _cloudScans = [];
   bool _cloudLoading = false;
@@ -113,42 +113,24 @@ class _HistoryScreenState extends State<HistoryScreen>
     return sorted;
   }
 
-  Future<void> _exportScanToGallery(
-      BuildContext context, ScanResult scan) async {
-    if (scan.imagePath.isEmpty || !File(scan.imagePath).existsSync()) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Image file not found')),
-        );
-      }
-      return;
+  List<CloudScan> _sortCloudScans(List<CloudScan> scans) {
+    final list = List<CloudScan>.from(scans);
+    switch (_cloudSortBy) {
+      case 'recent':
+        list.sort((a, b) => b.scanDate.compareTo(a.scanDate));
+        break;
+      case 'oldest':
+        list.sort((a, b) => a.scanDate.compareTo(b.scanDate));
+        break;
+      case 'confidence':
+        list.sort((a, b) {
+          final ca = _cloudScanConfidence(a) ?? 0.0;
+          final cb = _cloudScanConfidence(b) ?? 0.0;
+          return cb.compareTo(ca);
+        });
+        break;
     }
-    try {
-      await Gal.putImage(scan.imagePath);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Saved to Camera Roll')),
-        );
-      }
-    } on GalException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              e.type == GalExceptionType.accessDenied
-                  ? 'Permission denied to save to gallery'
-                  : 'Could not save to gallery: ${e.platformException.message ?? e.toString()}',
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not save to gallery: $e')),
-        );
-      }
-    }
+    return list;
   }
 
   void _showDeleteAllConfirmation(BuildContext context) {
@@ -181,6 +163,58 @@ class _HistoryScreenState extends State<HistoryScreen>
                     backgroundColor: theme.colorScheme.error,
                   ),
                 );
+              },
+              child: Text(
+                appLocalizations.deleteAll,
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showDeleteAllCloudConfirmation(BuildContext context) {
+    final appLocalizations = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Text(appLocalizations.deleteAll),
+          content: const Text(
+              'Are you sure you want to delete all scans from the cloud?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(appLocalizations.cancel),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(dialogContext).pop();
+                final toDelete = List<CloudScan>.from(_cloudScans);
+                setState(() {
+                  _selectMode = false;
+                  _selectedCloudIds.clear();
+                  _batchOperationInProgress = true;
+                });
+                int deleted = 0;
+                for (final cloud in toDelete) {
+                  if (!mounted) break;
+                  final ok = await HerbariumService().deleteScan(cloud.id);
+                  if (ok) deleted++;
+                }
+                if (mounted) {
+                  setState(() => _batchOperationInProgress = false);
+                  _loadCloudScans();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('$deleted cloud scan(s) deleted'),
+                      backgroundColor: theme.colorScheme.error,
+                    ),
+                  );
+                }
               },
               child: Text(
                 appLocalizations.deleteAll,
@@ -235,7 +269,7 @@ class _HistoryScreenState extends State<HistoryScreen>
                       )
                     : null,
                 actions: [
-                  if (_selectMode && _historyTabIndex == 0)
+                  if (_selectMode && _historyTabIndex == 0) ...[
                     TextButton(
                       onPressed: sortedScans.isEmpty
                           ? null
@@ -258,7 +292,14 @@ class _HistoryScreenState extends State<HistoryScreen>
                             : 'Select all',
                       ),
                     ),
-                  if (_selectMode && _historyTabIndex == 1)
+                    if (sortedScans.isNotEmpty)
+                      IconButton(
+                        icon: const Icon(Icons.delete_sweep),
+                        onPressed: () => _showDeleteAllConfirmation(context),
+                        tooltip: appLocalizations.deleteAll,
+                      ),
+                  ],
+                  if (_selectMode && _historyTabIndex == 1) ...[
                     TextButton(
                       onPressed: _cloudScans.isEmpty
                           ? null
@@ -281,14 +322,14 @@ class _HistoryScreenState extends State<HistoryScreen>
                             : 'Select all',
                       ),
                     ),
-                  if (!_selectMode &&
-                      _historyTabIndex == 0 &&
-                      sortedScans.isNotEmpty)
-                    IconButton(
-                      icon: const Icon(Icons.checklist_rtl),
-                      onPressed: () => setState(() => _selectMode = true),
-                      tooltip: 'Select',
-                    ),
+                    if (_cloudScans.isNotEmpty)
+                      IconButton(
+                        icon: const Icon(Icons.delete_sweep),
+                        onPressed: () =>
+                            _showDeleteAllCloudConfirmation(context),
+                        tooltip: appLocalizations.deleteAll,
+                      ),
+                  ],
                   if (_historyTabIndex == 0 &&
                       sortedScans.isNotEmpty &&
                       !_selectMode)
@@ -349,22 +390,82 @@ class _HistoryScreenState extends State<HistoryScreen>
                         ),
                       ],
                     ),
-                  if (_historyTabIndex == 0 &&
-                      sortedScans.isNotEmpty &&
-                      !_selectMode)
-                    IconButton(
-                      icon: const Icon(Icons.delete_sweep),
-                      onPressed: () => _showDeleteAllConfirmation(context),
-                      tooltip: appLocalizations.deleteAll,
-                    ),
                   if (!_selectMode &&
-                      _historyTabIndex == 1 &&
-                      _cloudScans.isNotEmpty)
+                      _historyTabIndex == 0 &&
+                      sortedScans.isNotEmpty)
                     IconButton(
                       icon: const Icon(Icons.checklist_rtl),
                       onPressed: () => setState(() => _selectMode = true),
                       tooltip: 'Select',
                     ),
+                  if (!_selectMode &&
+                      _historyTabIndex == 1 &&
+                      _cloudScans.isNotEmpty) ...[
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.sort),
+                      tooltip: 'Sort',
+                      onSelected: (value) =>
+                          setState(() => _cloudSortBy = value),
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'recent',
+                          child: Row(
+                            children: [
+                              Icon(Icons.access_time,
+                                  color: _cloudSortBy == 'recent'
+                                      ? theme.colorScheme.primary
+                                      : null),
+                              const SizedBox(width: 12),
+                              Text('Most Recent',
+                                  style: TextStyle(
+                                      fontWeight: _cloudSortBy == 'recent'
+                                          ? FontWeight.bold
+                                          : null)),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'oldest',
+                          child: Row(
+                            children: [
+                              Icon(Icons.history,
+                                  color: _cloudSortBy == 'oldest'
+                                      ? theme.colorScheme.primary
+                                      : null),
+                              const SizedBox(width: 12),
+                              Text('Oldest First',
+                                  style: TextStyle(
+                                      fontWeight: _cloudSortBy == 'oldest'
+                                          ? FontWeight.bold
+                                          : null)),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'confidence',
+                          child: Row(
+                            children: [
+                              Icon(Icons.trending_up,
+                                  color: _cloudSortBy == 'confidence'
+                                      ? theme.colorScheme.primary
+                                      : null),
+                              const SizedBox(width: 12),
+                              Text('Highest Confidence',
+                                  style: TextStyle(
+                                      fontWeight: _cloudSortBy == 'confidence'
+                                          ? FontWeight.bold
+                                          : null)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.checklist_rtl),
+                      onPressed: () => setState(() => _selectMode = true),
+                      tooltip: 'Select',
+                    ),
+                  ],
                 ],
                 bottom: TabBar(
                   controller: _tabController,
@@ -554,20 +655,67 @@ class _HistoryScreenState extends State<HistoryScreen>
         final isSelected = _selectedDeviceIds.contains(scan.id);
         return Dismissible(
           key: ValueKey(scan.id),
-          background: _buildDismissBackground(
-            alignment: Alignment.centerLeft,
+          background: _buildSwipeBackground(
             color: AppTheme.botanicalPrimary,
-            icon: Icons.download_rounded,
+            icon: Icons.cloud_upload_rounded,
+            alignment: Alignment.centerLeft,
+            label: appLocalizations.saveToCloud,
           ),
-          secondaryBackground: _buildDismissBackground(
-            alignment: Alignment.centerRight,
-            color: AppTheme.errorDeep,
+          secondaryBackground: _buildSwipeBackground(
+            color: theme.colorScheme.error,
             icon: Icons.delete_rounded,
+            alignment: Alignment.centerRight,
+            label: appLocalizations.delete,
           ),
           confirmDismiss: (direction) async {
             if (direction == DismissDirection.startToEnd) {
-              // Export to gallery — don't actually dismiss the item
-              await _exportScanToGallery(context, scan);
+              // Save to Cloud — don't dismiss the item
+              final auth = context.read<AuthProvider>();
+              final offline = context.read<OfflineProvider>();
+              if (!auth.isLoggedIn) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Sign in to save to cloud')),
+                  );
+                }
+                return false;
+              }
+              if (!offline.isOnline) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('No internet connection')),
+                  );
+                }
+                return false;
+              }
+              if (scan.imagePath.isEmpty ||
+                  !File(scan.imagePath).existsSync()) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Image file not found')),
+                  );
+                }
+                return false;
+              }
+              final id = await HerbariumService().uploadScan(
+                  scan, scan.imagePath);
+              if (mounted) {
+                if (id != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Saved to cloud')),
+                  );
+                  _loadCloudScans();
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Failed to save to cloud')),
+                  );
+                }
+              }
               return false;
             } else {
               // Delete — confirm first
@@ -624,10 +772,12 @@ class _HistoryScreenState extends State<HistoryScreen>
     );
   }
 
-  Widget _buildDismissBackground({
-    required AlignmentGeometry alignment,
+  /// Swipe action background with icon + label (matches Admin dashboard pattern).
+  Widget _buildSwipeBackground({
     required Color color,
     required IconData icon,
+    required AlignmentGeometry alignment,
+    required String label,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -636,8 +786,29 @@ class _HistoryScreenState extends State<HistoryScreen>
         borderRadius: BorderRadius.circular(16),
       ),
       alignment: alignment,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Icon(icon, color: Colors.white, size: 28),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (alignment == Alignment.centerLeft) ...[
+            Icon(icon, color: Colors.white, size: 24),
+            const SizedBox(width: 8),
+            Text(label,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14)),
+          ] else ...[
+            Text(label,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14)),
+            const SizedBox(width: 8),
+            Icon(icon, color: Colors.white, size: 24),
+          ],
+        ],
+      ),
     );
   }
 
@@ -697,29 +868,77 @@ class _HistoryScreenState extends State<HistoryScreen>
         child: _buildCloudEmptyState(theme),
       );
     }
+    final sortedCloudScans = _sortCloudScans(_cloudScans);
+    final appLocalizations = AppLocalizations.of(context);
     return RefreshIndicator(
       onRefresh: _loadCloudScans,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount: _cloudScans.length,
+        itemCount: sortedCloudScans.length,
         itemBuilder: (context, index) {
-          final cloud = _cloudScans[index];
+          final cloud = sortedCloudScans[index];
           final isSelected = _selectedCloudIds.contains(cloud.id);
-          return _buildCloudScanCard(
-            context,
-            theme,
-            cloud,
-            isSelectMode: _selectMode,
-            isSelected: isSelected,
-            onToggleSelect: () {
-              setState(() {
-                if (isSelected) {
-                  _selectedCloudIds.remove(cloud.id);
-                } else {
-                  _selectedCloudIds.add(cloud.id);
+          return Dismissible(
+            key: ValueKey(cloud.id),
+            background: _buildSwipeBackground(
+              color: AppTheme.botanicalPrimary,
+              icon: Icons.download_rounded,
+              alignment: Alignment.centerLeft,
+              label: appLocalizations.saveToDevice,
+            ),
+            secondaryBackground: _buildSwipeBackground(
+              color: theme.colorScheme.error,
+              icon: Icons.delete_rounded,
+              alignment: Alignment.centerRight,
+              label: appLocalizations.delete,
+            ),
+            confirmDismiss: (direction) async {
+              if (direction == DismissDirection.startToEnd) {
+                await _downloadCloudScanToDevice(context, cloud);
+                return false;
+              } else {
+                final ok = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Delete from cloud?'),
+                    actions: [
+                      TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: Text(appLocalizations.cancel)),
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: Text(appLocalizations.delete,
+                            style: TextStyle(
+                                color: theme.colorScheme.error)),
+                      ),
+                    ],
+                  ),
+                );
+                if (ok == true) {
+                  await HerbariumService().deleteScan(cloud.id);
+                  if (mounted) _loadCloudScans();
+                  return true;
                 }
-              });
+                return false;
+              }
             },
+            onDismissed: (_) {},
+            child: _buildCloudScanCard(
+              context,
+              theme,
+              cloud,
+              isSelectMode: _selectMode,
+              isSelected: isSelected,
+              onToggleSelect: () {
+                setState(() {
+                  if (isSelected) {
+                    _selectedCloudIds.remove(cloud.id);
+                  } else {
+                    _selectedCloudIds.add(cloud.id);
+                  }
+                });
+              },
+            ),
           );
         },
       ),
@@ -821,6 +1040,9 @@ class _HistoryScreenState extends State<HistoryScreen>
     return 'Unknown plant';
   }
 
+  /// Cloud tab card: same layout as Device tab (_buildScanCard) — 60×60 thumbnail,
+  /// confidence pill, plant name, date row, right-side cloud icon, soft shadow.
+  /// No trailing Download/Trash icons (swipe only).
   Widget _buildCloudScanCard(
     BuildContext context,
     ThemeData theme,
@@ -830,99 +1052,163 @@ class _HistoryScreenState extends State<HistoryScreen>
     VoidCallback? onToggleSelect,
   }) {
     final dateFormat = DateFormat('MMM dd, yyyy • HH:mm');
+    final confidence = _cloudScanConfidence(cloud);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isSelectMode && isSelected
-              ? theme.colorScheme.primary
-              : theme.colorScheme.outline.withOpacity(0.2),
-          width: isSelectMode && isSelected ? 2 : 1,
-        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(12),
-        leading: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isSelectMode)
-              Checkbox(
-                value: isSelected,
-                onChanged: (_) => onToggleSelect?.call(),
-              ),
-            if (isSelectMode) const SizedBox(width: 8),
-            cloud.imageUrl != null && cloud.imageUrl!.isNotEmpty
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      cloud.imageUrl!,
-                      width: 72,
-                      height: 72,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Icon(Icons.eco,
-                          size: 48, color: theme.colorScheme.outline),
+      child: InkWell(
+        onTap: isSelectMode && onToggleSelect != null ? onToggleSelect : null,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 60,
+                height: 60,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: SizedBox(
+                        width: 60,
+                        height: 60,
+                        child: cloud.imageUrl != null &&
+                                cloud.imageUrl!.isNotEmpty
+                            ? Image.network(
+                                cloud.imageUrl!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) =>
+                                    _buildPlaceholderImage(theme),
+                              )
+                            : _buildPlaceholderImage(theme),
+                      ),
                     ),
-                  )
-                : Icon(Icons.eco, size: 48, color: theme.colorScheme.outline),
-          ],
-        ),
-        title: Text(
-          _cloudScanDisplayName(cloud),
-          style: theme.textTheme.titleMedium
-              ?.copyWith(fontWeight: FontWeight.bold),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Text(
-          dateFormat.format(cloud.scanDate),
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    if (isSelectMode)
+                      Positioned(
+                        top: -6,
+                        left: -6,
+                        child: Container(
+                          width: 22,
+                          height: 22,
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppTheme.botanicalPrimary
+                                : theme.colorScheme.surface,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: AppTheme.botanicalPrimary,
+                              width: 2,
+                            ),
+                          ),
+                          child: isSelected
+                              ? const Icon(Icons.check,
+                                  color: Colors.white, size: 13)
+                              : null,
+                        ),
+                      ),
+                    Positioned(
+                      top: -4,
+                      right: -4,
+                      child: confidence != null
+                          ? _buildConfidencePill(confidence)
+                          : Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppTheme.botanicalPrimary,
+                                borderRadius: BorderRadius.circular(100),
+                              ),
+                              child: const Icon(Icons.cloud_done,
+                                  color: Colors.white, size: 14),
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _cloudScanDisplayName(cloud),
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        _getCloudMethodIcon(cloud) ??
+                            const Tooltip(
+                              message: 'Saved to cloud',
+                              child: Icon(Icons.cloud_done_outlined,
+                                  size: 16, color: AppTheme.botanicalPrimary),
+                            ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.access_time,
+                          size: 13,
+                          color: theme.colorScheme.onSurface
+                              .withOpacity(0.45),
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            dateFormat.format(cloud.scanDate),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface
+                                  .withOpacity(0.5),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
-        onTap: isSelectMode ? onToggleSelect : null,
-        trailing: isSelectMode
-            ? null
-            : Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.download),
-                    onPressed: () => _downloadCloudScanToDevice(context, cloud),
-                    tooltip: 'Download to device',
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline),
-                    onPressed: () async {
-                      final ok = await showDialog<bool>(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          title: const Text('Delete from cloud?'),
-                          actions: [
-                            TextButton(
-                                onPressed: () => Navigator.pop(ctx, false),
-                                child: const Text('Cancel')),
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx, true),
-                              child: Text('Delete',
-                                  style: TextStyle(
-                                      color: theme.colorScheme.error)),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (ok == true) {
-                        await HerbariumService().deleteScan(cloud.id);
-                        if (mounted) _loadCloudScans();
-                      }
-                    },
-                    tooltip: 'Delete',
-                  ),
-                ],
-              ),
       ),
     );
+  }
+
+  /// Confidence from CloudScan: direct score or first prediction's confidence.
+  double? _cloudScanConfidence(CloudScan cloud) {
+    if (cloud.confidenceScore != null) return cloud.confidenceScore;
+    final preds = cloud.predictions ?? cloud.metadata?['predictions'] as List<dynamic>?;
+    if (preds != null && preds.isNotEmpty) {
+      final first = preds.first as Map<String, dynamic>?;
+      final c = first?['confidence'];
+      if (c != null) return (c is num) ? c.toDouble() : double.tryParse(c.toString());
+    }
+    return null;
   }
 
   Future<void> _downloadCloudScanToDevice(
@@ -1191,6 +1477,31 @@ class _HistoryScreenState extends State<HistoryScreen>
     );
   }
 
+  /// Returns method icon for a cloud scan (online = green cloud, offline = yellow chip), or null to show generic "Saved to cloud".
+  Widget? _getCloudMethodIcon(CloudScan cloud) {
+    final meta = cloud.metadata ?? {};
+    final method = meta['method'] as String?;
+    final fallbackUsed = meta['fallbackUsed'] as bool? ?? false;
+
+    final bool isOffline = fallbackUsed || method == 'cam';
+    final bool isOnline = method == 'grad-cam';
+
+    if (isOnline) {
+      return const Tooltip(
+        message: 'AI Heatmap (Cloud)',
+        child: Icon(Icons.cloud_done_outlined,
+            size: 16, color: AppTheme.botanicalPrimary),
+      );
+    } else if (isOffline) {
+      return Tooltip(
+        message: fallbackUsed ? 'Fallback (Offline)' : 'CAM (Offline)',
+        child: Icon(Icons.memory_outlined,
+            size: 16, color: AppTheme.warningAmber),
+      );
+    }
+    return null;
+  }
+
   /// Returns an icon-only widget indicating scan method, or null if unknown.
   Widget? _getMethodIcon(ScanResult scan) {
     final method = scan.metadata['method'] as String?;
@@ -1202,7 +1513,7 @@ class _HistoryScreenState extends State<HistoryScreen>
 
     if (isOnline) {
       return const Tooltip(
-        message: 'Score-CAM (Cloud)',
+        message: 'AI Heatmap (Cloud)',
         child: Icon(Icons.cloud_done_outlined,
             size: 16, color: AppTheme.botanicalPrimary),
       );
