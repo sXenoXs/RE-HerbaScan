@@ -844,52 +844,60 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
   Widget _buildSafetyTab(ThemeData theme) {
     return CustomScrollView(
       slivers: [
-        SliverToBoxAdapter(
-          child: _buildMedicalDisclaimerBanner(theme),
-        ),
         SliverPadding(
           padding: const EdgeInsets.all(16),
           sliver: SliverList(
             delegate: SliverChildListDelegate([
               ContraindicationEngineWidget(plant: widget.plant),
               const SizedBox(height: 24),
+              // ROADMAP B 4.2: Data Sources section
+              ExpansionTile(
+                leading: const Icon(Icons.menu_book_rounded,
+                    color: AppTheme.botanicalPrimary),
+                title: Text(
+                  'Data Sources',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: const Text('Where this information comes from'),
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (widget.plant.isDOHApproved) ...[
+                          _DataSourceTile(
+                            icon: Icons.verified_rounded,
+                            title: 'Department of Health',
+                            subtitle:
+                                'Administrative Order No. 12, s. 1997 · Republic Act No. 8423 (TAMA, 1997)',
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                        _DataSourceTile(
+                          icon: Icons.science_rounded,
+                          title: 'PITAHC',
+                          subtitle:
+                              'Philippine Institute of Traditional and Alternative Health Care — Philippine Herbal Pharmacopeia 2022',
+                        ),
+                        const SizedBox(height: 12),
+                        _DataSourceTile(
+                          icon: Icons.psychology_rounded,
+                          title: 'AI Training Dataset',
+                          subtitle:
+                              'PhilMedic Dataset (Santos et al., 2024) · Roboflow Medicinal Plant Collections',
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ]),
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildMedicalDisclaimerBanner(ThemeData theme) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppTheme.warningBgLight,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppTheme.warningAmber.withOpacity(0.35),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.medical_services_rounded,
-              color: AppTheme.warningAmber, size: 20),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              'Always consult a licensed physician before using herbal remedies. '
-              'Information here is for educational purposes only.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: const Color(0xFF92400E),
-                height: 1.5,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -1048,5 +1056,51 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
   bool shouldRebuild(_SliverTabBarDelegate oldDelegate) {
     return tabBar != oldDelegate.tabBar ||
         backgroundColor != oldDelegate.backgroundColor;
+  }
+}
+
+/// ROADMAP B 4.2: One row in the Data Sources expansion (icon + title + subtitle).
+class _DataSourceTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  const _DataSourceTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 20, color: AppTheme.botanicalPrimary),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  height: 1.35,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }

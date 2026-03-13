@@ -104,6 +104,16 @@ class _EnterSignupCodeScreenState extends State<EnterSignupCodeScreen> {
 
   PinTheme _buildPinTheme(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    // Theme-aware fill: light mode = slight tint so boxes don't blend; dark mode = dark surface (no white)
+    final defaultColor = isDark
+        ? theme.colorScheme.surfaceContainerHighest
+        : theme.colorScheme.surfaceContainerLow;
+    // Subtle border so all 6 boxes are visible in light mode when empty
+    final defaultBorder = Border.all(
+      color: theme.colorScheme.outline.withValues(alpha: isDark ? 0.5 : 0.35),
+      width: 1,
+    );
     return PinTheme(
       width: 48,
       height: 56,
@@ -112,8 +122,9 @@ class _EnterSignupCodeScreenState extends State<EnterSignupCodeScreen> {
         color: theme.colorScheme.onSurface,
       ),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
+        color: defaultColor,
         borderRadius: BorderRadius.circular(12),
+        border: defaultBorder,
       ),
     );
   }

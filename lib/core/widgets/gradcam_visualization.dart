@@ -195,8 +195,18 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
       children: [
         // Method banner
         _buildMethodBanner(theme),
-        const SizedBox(height: 16),
-
+        const SizedBox(height: 12),
+        // ROADMAP B 3.2: Plain-language label above heatmap
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            'The highlighted areas show what the AI examined to identify this plant. Brighter areas were most important to the decision.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              height: 1.4,
+            ),
+          ),
+        ),
         // Heatmap image
         _buildHeatmapContainer(theme, hasHeatmap),
         const SizedBox(height: 16),
@@ -229,7 +239,7 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
 
     if (isOnline) {
       bannerColor = AppTheme.safeGreen;
-      bannerText = 'Cloud Score-CAM';
+      bannerText = 'Cloud AI Reasoning Heatmap';
       bannerIcon = Icons.cloud_done_rounded;
     } else if (isFallback) {
       bannerColor = AppTheme.warningAmber;
@@ -358,7 +368,7 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
   }
 
   Widget _buildNoHeatmapPlaceholder(ThemeData theme) {
-    final methodName = widget.method == 'cam' ? 'CAM' : 'Score-CAM';
+    final methodName = widget.method == 'cam' ? 'CAM' : 'AI Reasoning Heatmap';
     return Container(
       color: theme.colorScheme.surfaceContainerHighest,
       child: Center(
@@ -372,7 +382,7 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
             ),
             const SizedBox(height: 8),
             Text(
-              '$methodName Heatmap Not Available',
+              '$methodName Not Available',
               style: theme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -384,7 +394,7 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
               child: Text(
                 widget.method == 'cam'
                     ? 'Offline CAM heatmap generation failed.'
-                    : 'Score-CAM heatmap generation failed. Check your connection.',
+                    : 'AI heatmap generation failed. Check your connection.',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -916,7 +926,7 @@ class GradCAMPreview extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Score-CAM not available',
+                          'AI Reasoning Heatmap not available',
                           style: TextStyle(
                             color: Colors.grey.shade600,
                             fontSize: 12,

@@ -61,6 +61,17 @@ class AdminUserService {
     }
   }
 
+  /// Set role for a user (admin only). Typically 'admin' or 'user'. RLS allows admins to update any profile column.
+  Future<bool> setRole(String userId, String role) async {
+    if (!isAvailable) return false;
+    try {
+      await _client.from('profiles').update({'role': role, 'updated_at': DateTime.now().toIso8601String()}).eq('id', userId);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Delete user: remove their storage objects then call delete-user Edge Function. Admin only.
   Future<void> deleteUser(String userId) async {
     if (!isAvailable) throw Exception('Not available');

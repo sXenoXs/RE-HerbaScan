@@ -43,18 +43,26 @@ class SafetyDisclaimerWidget extends StatelessWidget {
   }
 }
 
+/// Confidence threshold below which safety info is suppressed (ROADMAP B).
+const double kLowConfidenceThreshold = 0.60;
+
 /// Deterministic Contraindication Engine: color-coded safety cards from
 /// structured SafetyProfile only (no LLM). Always shows disclaimer below.
+/// When [confidence] is non-null and < [kLowConfidenceThreshold], shows
+/// a suppressed state instead of profile (safety-first).
 class ContraindicationEngineWidget extends StatefulWidget {
   final Plant? plant;
   final String? plantId;
   final String? commonName;
+  /// When non-null and < kLowConfidenceThreshold, safety cards are suppressed.
+  final double? confidence;
 
   const ContraindicationEngineWidget({
     super.key,
     this.plant,
     this.plantId,
     this.commonName,
+    this.confidence,
   });
 
   @override
@@ -107,6 +115,19 @@ class _ContraindicationEngineWidgetState
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
 
+    // ROADMAP B 1.1: Suppress safety when confidence too low; still show long disclaimer
+    if (widget.confidence != null &&
+        widget.confidence! < kLowConfidenceThreshold) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildSuppressedState(context),
+          const SizedBox(height: 12),
+          SafetyDisclaimerWidget(),
+        ],
+      );
+    }
+
     if (_loading) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -155,6 +176,57 @@ class _ContraindicationEngineWidgetState
         const SizedBox(height: 12),
         SafetyDisclaimerWidget(),
       ],
+    );
+  }
+
+  /// ROADMAP B 1.1: Shown when confidence < kLowConfidenceThreshold.
+  Widget _buildSuppressedState(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.errorContainer.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.error.withValues(alpha: 0.5),
+          width: 1.5,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.warning_amber_rounded,
+            color: theme.colorScheme.error,
+            size: 24,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.safetyInformationUnavailable,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onErrorContainer,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  l10n.safetyInformationUnavailableBody,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onErrorContainer,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

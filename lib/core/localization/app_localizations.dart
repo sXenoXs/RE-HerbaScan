@@ -138,6 +138,16 @@ class AppLocalizations {
       _localizedValues[locale.languageCode]!['safetyDisclaimerEducational']!;
   String get noStructuredSafetyData =>
       _localizedValues[locale.languageCode]!['noStructuredSafetyData']!;
+  String get safetyInformationUnavailable =>
+      _localizedValues[locale.languageCode]!['safetyInformationUnavailable']!;
+  String get safetyInformationUnavailableBody =>
+      _localizedValues[locale.languageCode]!['safetyInformationUnavailableBody']!;
+  String get plantNotRecognized =>
+      _localizedValues[locale.languageCode]!['plantNotRecognized']!;
+  String get uncertainMatchBody =>
+      _localizedValues[locale.languageCode]!['uncertainMatchBody']!;
+  String get whyCantAppIdentify =>
+      _localizedValues[locale.languageCode]!['whyCantAppIdentify']!;
   String get avoidUseWith =>
       _localizedValues[locale.languageCode]!['avoidUseWith']!;
 
@@ -213,6 +223,20 @@ class AppLocalizations {
       _localizedValues[locale.languageCode]!['deleteConfirmation']!;
   String get confidence =>
       _localizedValues[locale.languageCode]!['confidence']!;
+  String get saveToCloud =>
+      _localizedValues[locale.languageCode]!['saveToCloud']!;
+  String get saveToDevice =>
+      _localizedValues[locale.languageCode]!['saveToDevice']!;
+
+  // Admin User Management
+  String get makeAdmin =>
+      _localizedValues[locale.languageCode]!['makeAdmin']!;
+  String get removeAdmin =>
+      _localizedValues[locale.languageCode]!['removeAdmin']!;
+  String get userNowAdmin =>
+      _localizedValues[locale.languageCode]!['userNowAdmin']!;
+  String get adminRemoved =>
+      _localizedValues[locale.languageCode]!['adminRemoved']!;
 
   // Condition Search
   String get browseByCondition =>
@@ -368,6 +392,13 @@ class AppLocalizations {
       'safetyDisclaimerEducational':
           'This app is for educational purposes only. It is not a replacement for professional medical advice. Always consult a healthcare professional before using herbal remedies, especially if you are pregnant, nursing, taking medications, or have existing medical conditions.',
       'noStructuredSafetyData': 'No structured safety data for this plant.',
+      'safetyInformationUnavailable': 'Safety Information Unavailable',
+      'safetyInformationUnavailableBody':
+          'Identification confidence is too low. Do not use this result for health decisions.',
+      'plantNotRecognized': 'Plant Not Recognized',
+      'uncertainMatchBody':
+          'For your safety, do not consume or use this plant based on this result.',
+      'whyCantAppIdentify': "Why can't the app identify this?",
       'avoidUseWith': 'Avoid use with',
       'viewHabitatMap': 'Habitat Map',
       'noHabitatData': 'No habitat data',
@@ -381,7 +412,7 @@ class AppLocalizations {
       'language': 'Language / Wika',
       'offlineMode': 'Offline Mode',
       'showConfidenceScores': 'Show Confidence Scores',
-      'showGradCAM': 'Score-CAM Visualization',
+      'showGradCAM': 'Show AI Reasoning Heatmap',
       'showTop3Results': 'Top-3 Results',
       'loading': 'Loading...',
       'error': 'Error',
@@ -408,6 +439,12 @@ class AppLocalizations {
       'confirmDelete': 'Confirm Delete',
       'deleteConfirmation': 'Are you sure you want to delete this scan?',
       'confidence': 'Confidence',
+      'saveToCloud': 'Save to Cloud',
+      'saveToDevice': 'Save to Device',
+      'makeAdmin': 'Make admin',
+      'removeAdmin': 'Remove admin',
+      'userNowAdmin': 'User is now an administrator.',
+      'adminRemoved': 'Admin role removed.',
       'browseByCondition': 'Browse by Condition',
       'selectCondition': 'Select a medical condition',
       'commonConditions': 'Common Conditions',
@@ -519,6 +556,13 @@ class AppLocalizations {
       'safetyDisclaimerEducational':
           'Ang app na ito ay para lamang sa edukasyonal na layunin. Hindi ito kapalit ng propesyonal na payo medikal. Laging kumonsulta sa propesyonal sa kalusugan bago gumamit ng halamang gamot, lalo na kung ikaw ay buntis, nagpapasuso, umiinom ng gamot, o may umiiral na kondisyong medikal.',
       'noStructuredSafetyData': 'Walang istrukturang data ng kaligtasan para sa halamang ito.',
+      'safetyInformationUnavailable': 'Hindi Available ang Impormasyon sa Kaligtasan',
+      'safetyInformationUnavailableBody':
+          'Masyadong mababa ang kumpiyansa ng pagkakakilala. Huwag gamitin ang resultang ito para sa mga desisyon sa kalusugan.',
+      'plantNotRecognized': 'Hindi Makilala ang Halaman',
+      'uncertainMatchBody':
+          'Para sa iyong kaligtasan, huwag gamitin o kainin ang halamang ito batay sa resultang ito.',
+      'whyCantAppIdentify': 'Bakit hindi makilala ng app ang halamang ito?',
       'avoidUseWith': 'Iwasan ang paggamit kasama ng',
       'viewHabitatMap': 'Mapa ng Tirahan',
       'noHabitatData': 'Walang data ng tirahan',
@@ -532,7 +576,7 @@ class AppLocalizations {
       'language': 'Wika / Language',
       'offlineMode': 'Offline Mode',
       'showConfidenceScores': 'Ipakita ang Confidence Scores',
-      'showGradCAM': 'Score-CAM Visualization',
+      'showGradCAM': 'Show AI Reasoning Heatmap',
       'showTop3Results': 'Top-3 na Resulta',
       'loading': 'Naglo-load...',
       'error': 'May Mali',
@@ -560,6 +604,12 @@ class AppLocalizations {
       'deleteConfirmation':
           'Sigurado ka bang gusto mong tanggalin ang scan na ito?',
       'confidence': 'Confidence',
+      'saveToCloud': 'I-save sa Cloud',
+      'saveToDevice': 'I-save sa Device',
+      'makeAdmin': 'Gawing admin',
+      'removeAdmin': 'Alisin ang admin',
+      'userNowAdmin': 'Ang user ay administrator na.',
+      'adminRemoved': 'Naalis na ang admin role.',
       'browseByCondition': 'Tingnan Ayon sa Kondisyon',
       'selectCondition': 'Pumili ng kondisyong medikal',
       'commonConditions': 'Mga Karaniwang Kondisyon',
