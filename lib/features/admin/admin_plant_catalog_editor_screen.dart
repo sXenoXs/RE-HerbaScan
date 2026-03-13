@@ -123,8 +123,9 @@ class _AdminPlantCatalogEditorScreenState
     // 1. Write to Supabase
     var ok = await _adminService.saveCatalogPlant(_plant,
         climateNotes: _climateNotes);
-    if (ok)
+    if (ok) {
       ok = await _adminService.saveCatalogSafety(_plant.id, safetyProfile);
+    }
     if (ok) ok = await _adminService.saveCatalogHabitat(_plant.id, habitat);
 
     // 2. Write to local SQLite immediately — no app restart needed
