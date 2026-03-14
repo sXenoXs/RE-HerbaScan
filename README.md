@@ -102,13 +102,18 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **Full Screen Reading Mode**: ✅ **NEW** Implemented full-screen reading mode for Summary tab - distraction-free view with larger text and regenerate capability
 - **AI Explanation Tab Simplification**: ✅ **NEW** Removed 'Original' sub-tab from AI Explanation section - simplified navigation to only Heatmap and Summary tabs
 - **Version Update**: ✅ **NEW** Updated all version references to v0.9.4 across the application (splash, settings, app info, feedback, docs)
+- **Toxic plant blacklist**: ✅ When the top prediction is Adelfa, Ipil-Ipil, or Tuba-Tuba, the app shows a dedicated toxic-plant warning screen (never as a recommended result); no auto-save of toxic scans. Source: `lib/core/constants/toxic_plant_blacklist.dart`.
+- **Strict-contraindication flagging**: ✅ New `needs_strict_contraindications` (catalog_safety / safety_profiles); prominent orange "Use with strict caution" card for plants such as Kamias, Kamoteng Kahoy, Kakawate. Admin Safety tab includes switch for this flag.
+- **Extended plant anatomy**: ✅ Default anatomy data extended to 39 non-toxic plants (10 DOH unchanged; 3 toxic excluded). Admin can seed anatomy from defaults; local sync after seed so Plant Detail shows anatomy without restart.
+- **Auto-save scans toggle**: ✅ Settings preference (key `auto_save_scans`); when OFF, new scans are not auto-saved to History until the user saves from Plant Result or History.
+- **Project structure**: The `tests/` folder (test plans) has been removed from the repository as of v0.9.4. User testing documentation: see `TESTING_GUIDE.md` if present.
 
 ### 🔄 In Progress (Phase 6: Offline CAM Fix)
 
 - **Offline CAM Inference Fix**: Fixed multiple output buffers shape mismatch error
 - **TFLite Multiple Outputs**: Corrected output buffer passing for multi-output models
 - **Testing**: Verifying offline CAM heatmap generation in offline mode
-- **Beta Testing**: User testing with TESTING_GUIDE.md
+- **Beta Testing**: User testing (see TESTING_GUIDE.md; `tests/` folder removed in v0.9.4)
 - **Data Collection**: Gathering user feedback and metrics
 
 ### ✅ Recently Fixed (v0.9.4)
@@ -116,6 +121,8 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **Online GradCAM Prediction Mapping**: Fixed "Unknown" plant names in online GradCAM predictions
 - **Backend Response Field Mapping**: Corrected mapping from backend 'class' and 'class_index' to Flutter format
 - **Label Format Parsing**: Added parsing to extract plant names from backend label format
+- **Toxic plant flow**: Dedicated warning screen when top prediction is Adelfa, Ipil-Ipil, or Tuba-Tuba; Alternative Matches filters out blacklisted plants
+- **Strict contraindication UX**: Prominent "Use with strict caution" card when `needs_strict_contraindications` is true
 
 ### ⏳ Pending (Future Updates)
 
@@ -506,7 +513,7 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 #### Current Status
 
 - [x] **Production Ready**: All core features implemented
-- [x] **Testing Framework**: Complete TESTING_GUIDE.md with 50+ test cases
+- [x] **Testing Framework**: TESTING_GUIDE.md (tests/ folder removed in v0.9.4)
 - [x] **Data Collection**: All systems operational for thesis research
 - [x] **Hybrid XAI System**: Complete offline/online explanation system
 - [ ] **Beta Testing**: User testing with real devices
@@ -594,7 +601,7 @@ herbascan/
 │   └── features/          ✅ (15+ screens: Home, Scan, Browse, History, DOH,
 │                              Settings, Feedback, Dashboard, Help, etc.)
 ├── assets/                ✅ (models, images, data/plant_explanations.json, animations, icons, fonts)
-├── tests/                 ✅ (Testing plans: Unit, Integration, System, Acceptance, Performance, Usability, Compatibility, Security – see TESTING_GUIDE.md and tests/*.md)
+├── (tests/ removed v0.9.4)  — Testing plans were in tests/; see TESTING_GUIDE.md for user testing
 └── Configuration          ✅ (pubspec.yaml, analysis_options.yaml)
 ```
 
@@ -620,7 +627,7 @@ herbascan/
 
 ### Immediate (Beta Testing Phase)
 
-1. **User Testing**: Distribute app to beta testers using TESTING_GUIDE.md
+1. **User Testing**: Distribute app to beta testers (TESTING_GUIDE.md; tests/ folder removed in v0.9.4)
 2. **Data Collection**: Gather user feedback, performance metrics, and usage analytics
 3. **Bug Fixes**: Address any issues found during testing
 4. **Performance Optimization**: Fine-tune based on collected metrics
@@ -740,7 +747,7 @@ HerbaScan is designed to work seamlessly in rural areas without internet connect
 - **Settings & Offline**: De-jargonified AI labels (e.g. "Show Prediction Confidence", "Show AI Reasoning Heatmap"); Offline Storage Info refreshes before dialog; System Diagnostics (renamed from Offline Demo).
 - **SnackBar**: Floating behavior so camera FAB is not displaced.
 - **Backend**: Railway `/identify` allows unauthenticated requests when `SUPABASE_JWT_SECRET` unset; see supabase/README.md and backend/README.md.
-- **Testing plans**: `tests/` folder (Unit, Integration, System, Acceptance, Performance, Usability, Compatibility, Security); see TESTING_GUIDE.md and tests/*.md.
+- **Testing plans**: `tests/` folder removed in v0.9.4; see TESTING_GUIDE.md for user testing.
 - **Version**: All app version references set to v0.9.4.
 
 ### Known Issues

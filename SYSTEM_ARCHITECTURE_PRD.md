@@ -55,7 +55,7 @@ The application serves communities—particularly in rural areas with limited co
 | **Plant Database**   | 42 medicinal plants, all migrated to structured 4-section format (Phase 35)       |
 | **Cloud Backend**    | FastAPI on Railway (`re-herbascan-production.up.railway.app`) — Grad-CAM provider |
 | **Auth & Cloud DB**  | Supabase (Auth, PostgreSQL, Storage, Edge Functions)                              |
-| **Local DB**         | SQLite v7 (8 tables), offline-first with Supabase sync                            |
+| **Local DB**         | SQLite v8 (8 tables), offline-first with Supabase sync                            |
 | **Admin Portal**     | Full Flutter AdminWebScreen on all platforms via GoRouter `/admin`                |
 
 
@@ -82,6 +82,7 @@ The application serves communities—particularly in rural areas with limited co
 | Scan history (Cloud tab)              | ✅      | Supabase `scans` table, swipe + pull-to-refresh                                                                      |
 | Cloud save (Personal Herbarium)       | ✅      | Opt-in when signed in, upsert on duplicate                                                                           |
 | Heatmap in cloud sync                 | ✅      | Upload stores heatmap as `{scan_id}_gradcam.jpg` in Storage; metadata `gradcam_url`; download restores `gradCAMPath` |
+| Toxic plant blacklist (app-layer)     | ✅      | When top prediction is Adelfa, Ipil-Ipil, or Tuba-Tuba, dedicated warning screen; no normal result or auto-save. Source: `toxic_plant_blacklist.dart`. |
 
 
 #### Plant Knowledge
@@ -95,7 +96,8 @@ The application serves communities—particularly in rural areas with limited co
 | Static habitat heatmap (OSM)            | ✅      | `flutter_map` + curated coordinates          |
 | Preparation guide (interactive)         | ✅      | Checklist, contextual timers, Focus Mode     |
 | Calendar add-to-device                  | ✅      | Android `ACTION_INSERT` intent               |
-| Contraindication Engine                 | ✅      | Deterministic — `safety_profiles.json`       |
+| Contraindication Engine                 | ✅      | Deterministic — `safety_profiles.json`; optional `needs_strict_contraindications` for prominent "Use with strict caution" card |
+| Extended plant anatomy (39 non-toxic)   | ✅      | `default_plant_anatomy.json`; seed from defaults via Admin; 3 toxic plants excluded (adelfa, ipil-ipil, tuba-tuba) |
 | Condition-based search (15+ conditions) | ✅      | DB-backed, admin-manageable                  |
 | Browse / search / grid / list view      | ✅      |                                              |
 | DOH Approved Plants screen              | ✅      |                                              |
@@ -255,6 +257,7 @@ Rendered in the app as `PlantExplanation` with `formattedExplanation` producing 
 | `known_side_effects`       | list | Yellow card      |
 | `drug_interactions`        | list | Orange card      |
 | `strict_contraindications` | list | Red card         |
+| `needs_strict_contraindications` | bool | When true, prominent orange "Use with strict caution" card shown at top (e.g. Kamias, Kamoteng Kahoy, Kakawate) |
 
 
 The `ContraindicationEngineWidget` renders these deterministically on the Plant Detail Safety tab and the PlantResult Summary tab with no network calls.
@@ -489,9 +492,12 @@ HerbariumService ──► Supabase Storage + scans table
   ],
   "gradcam_image":       "<base64-encoded PNG>",
   "method":              "grad-cam",
-  "processing_time_ms":  3456.78
+  "processing_time_ms":  3456.78,
+  "is_toxic":            true
 }
 ```
+
+**Optional field `is_toxic`:** When the top prediction class index is in `TOXIC_CLASS_INDICES` (0, 14, 39 — Adelfa, Ipil-Ipil, Tuba-Tuba), the backend may include `"is_toxic": true` in the response. The app-layer blacklist (`toxic_plant_blacklist.dart`) remains the primary authority; offline and older backends without this field remain safe.
 
 #### JWT Behaviour (`SUPABASE_JWT_SECRET` env var)
 
@@ -546,7 +552,7 @@ public.catalog_medicinal_uses
 public.catalog_preparation_methods
 public.catalog_safety    (plant_id, is_generally_safe, pregnancy_warning,
                           known_side_effects jsonb, drug_interactions jsonb,
-                          strict_contraindications jsonb)
+                          strict_contraindications jsonb, needs_strict_contraindications boolean DEFAULT false)
 public.catalog_habitat   (plant_id, known_coordinates jsonb, region_names jsonb,
                           climate_notes text)
 public.catalog_conditions        (id, name, icon_key, color_hex, is_default, sort_order)
@@ -619,7 +625,7 @@ RLS policies applied via `20260302000000_storage_herbarium_policies.sql`.
 
 ### 3.4 SQLite Local Layer
 
-**Version:** 7 · **Engine:** `sqflite` (mobile) / `sqflite_common_ffi` (desktop)
+**Version:** 8 · **Engine:** `sqflite` (mobile) / `sqflite_common_ffi` (desktop)
 
 #### Tables
 
@@ -632,7 +638,7 @@ RLS policies applied via `20260302000000_storage_herbarium_policies.sql`.
 | `scan_history`             | `id text`                  | Local scan results with GradCAM paths, predictions, metadata     |
 | `catalog_conditions`       | `id text`                  | Condition list (synced from Supabase)                            |
 | `catalog_condition_plants` | `(condition_id, plant_id)` | Condition–plant mapping                                          |
-| `safety_profiles`          | `plant_id text`            | Structured safety data (synced from catalog_safety)              |
+| `safety_profiles`          | `plant_id text`            | Structured safety data (synced from catalog_safety); includes `needs_strict_contraindications` |
 | `plant_habitats`           | `plant_id text`            | Known coordinates, region names, climate notes                   |
 | `catalog_plant_anatomy`    | `id text`                  | SVG path data for 2D interactive silhouette                      |
 
@@ -1032,7 +1038,7 @@ flutter clean && flutter pub get && flutter run
 
 **SnackBar:** Uses floating behavior (`SnackBarBehavior.floating`) so status messages do not displace the camera FAB or bottom nav.
 
-**Testing plans:** The `tests/` folder at repo root contains structured test plans: Unit, Integration, System, Acceptance, Performance, Usability, Compatibility, Security. See `TESTING_GUIDE.md` and `tests/*.md` for coverage.
+**Testing plans:** The `tests/` folder was removed from the repository (v0.9.4). For testing coverage and plans, see `TESTING_GUIDE.md` if present at repo root.
 
 ---
 
