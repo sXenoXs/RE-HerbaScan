@@ -3,3 +3,7 @@
 # (Supabase's new asymmetric signing breaks gateway verification; we validate inside the function).
 [functions.delete-user]
 verify_jwt = false
+
+# force-verify-user: same pattern; gateway skips JWT, function verifies via JWKS and checks admin role.
+[functions.force-verify-user]
+verify_jwt = false

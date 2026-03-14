@@ -164,4 +164,49 @@ class AuthService {
       rethrow;
     }
   }
+
+  /// Admin: force-verify a user's email (set email_confirmed_at). Caller must be admin.
+  /// Invokes the force-verify-user Edge Function. If the function is not deployed (404/501),
+  /// throws with a message telling the admin to deploy it.
+  Future<void> adminForceVerifyUser(String targetUserId) async {
+    await _client.auth.refreshSession();
+    if (currentSession == null) {
+      throw Exception('Not signed in');
+    }
+    if (kDebugMode) {
+      debugPrint('[AuthService][adminForceVerifyUser] targetUserId: $targetUserId');
+    }
+    try {
+      final res = await _client.functions.invoke(
+        'force-verify-user',
+        body: {'target_user_id': targetUserId},
+      );
+      if (kDebugMode) {
+        debugPrint('[AuthService][adminForceVerifyUser] response status: ${res.status}, data: ${res.data}');
+      }
+      if (res.status == 404 || res.status == 501) {
+        throw Exception(
+          'Force verify is not available. Deploy the force-verify-user Edge Function: '
+          'npx supabase functions deploy force-verify-user (see supabase/README.md).',
+        );
+      }
+      if (res.status != 200) {
+        final msg = res.data != null
+            ? (res.data is Map ? (res.data as Map)['message'] ?? res.data.toString() : res.data.toString())
+            : 'Failed to verify email (${res.status})';
+        throw Exception(msg.toString());
+      }
+    } on FunctionException catch (e) {
+      if (kDebugMode) {
+        debugPrint('[AuthService][adminForceVerifyUser] FunctionException status: ${e.status}, details: ${e.details}');
+      }
+      if (e.status == 404 || e.status == 501) {
+        throw Exception(
+          'Force verify is not available. Deploy the force-verify-user Edge Function: '
+          'npx supabase functions deploy force-verify-user (see supabase/README.md).',
+        );
+      }
+      rethrow;
+    }
+  }
 }

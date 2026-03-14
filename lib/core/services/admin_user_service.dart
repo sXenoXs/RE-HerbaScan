@@ -86,6 +86,18 @@ class AdminUserService {
     }
     await AuthService().adminDeleteUser(userId);
   }
+
+  /// Force-verify a user's email (admin only). Calls force-verify-user Edge Function.
+  /// Returns true on success. Throws on failure (e.g. function not deployed, not admin).
+  Future<bool> forceVerifyUser(String userId) async {
+    if (!isAvailable) return false;
+    try {
+      await AuthService().adminForceVerifyUser(userId);
+      return true;
+    } catch (_) {
+      rethrow;
+    }
+  }
 }
 
 class AdminProfileRow {

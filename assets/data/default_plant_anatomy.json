@@ -1,0 +1,62 @@
+{
+  "lagundi-001|leaves": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Leaves",
+    "description": "Lagundi leaves are used for cough and asthma. DOH clinically validated. Traditional preparation: decoction.",
+    "conditions": ["Cough and Asthma", "Fever", "Pain and Inflammation"]
+  },
+  "sambong-001|leaves": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Leaves",
+    "description": "Sambong leaves are used for lowering uric acid and hypertension. Traditional preparation: decoction.",
+    "conditions": ["Lowering Uric Acid", "Hypertension", "Kidney Stones"]
+  },
+  "akapulko-001|leaves": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Leaves",
+    "description": "Akapulko leaves are used for fungal infections (ringworm, athlete's foot). DOH approved. Applied as poultice or wash.",
+    "conditions": ["Skin Fungal Infections", "Ringworm and Fungal Infections"]
+  },
+  "ampalaya-001|leaves": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Leaves",
+    "description": "Ampalaya leaves are used for asthma, coughs, and diabetes. Traditional preparation: decoction.",
+    "conditions": ["Asthma and Coughs", "Diabetes Mellitus"]
+  },
+  "bawang-001|bulb": {
+    "svg_path": "M 80 60 L 120 60 L 120 140 L 80 140 Z",
+    "title": "Bulb (Garlic)",
+    "description": "Bawang bulb (garlic cloves) is used for wounds and toothaches. Applied topically as poultice. DOH approved.",
+    "conditions": ["Wounds", "Toothaches"]
+  },
+  "bayabas-001|leaves": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Leaves",
+    "description": "Bayabas leaves are used for wound healing, diarrhea, and stomach problems. Decoction or topical wash.",
+    "conditions": ["Wound Healing", "Diarrhea and Stomach Problems"]
+  },
+  "niyog-niyogan-001|seeds": {
+    "svg_path": "M 70 70 m -30 0 a 30 30 0 1 1 60 0 a 30 30 0 1 1 -60 0",
+    "title": "Seeds",
+    "description": "Niyog-niyogan seeds are used for expelling parasitic worms. DOH approved. Use under proper dosage guidance.",
+    "conditions": ["Expelling Parasitic Worms", "Parasitic Worms"]
+  },
+  "tsaang-gubat-001|leaves": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Leaves",
+    "description": "Tsaang gubat leaves are used for stomachaches and diarrhea. Traditional preparation: decoction.",
+    "conditions": ["Stomachaches", "Diarrhea"]
+  },
+  "ulasimang-bato-001|leaves": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Leaves (Aerial parts)",
+    "description": "Ulasimang-bato aerial parts are used for gout, rheumatism, and headache. Eaten raw or as decoction.",
+    "conditions": ["Gout and High Uric Acid", "Headache and Pain Relief", "Gout"]
+  },
+  "yerba-buena-001|leaves": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Leaves",
+    "description": "Yerba buena leaves are used for muscle and joint pain and headache. Applied as poultice or drunk as tea.",
+    "conditions": ["Muscle and Joint Pain", "Headache"]
+  }
+}

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -9,6 +10,7 @@ import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/core/widgets/plant_image.dart';
 import 'package:herbascan/core/services/catalog_plant_admin_service.dart';
 import 'package:herbascan/core/services/database_service.dart';
+import 'package:herbascan/core/services/default_anatomy_service.dart';
 import 'package:herbascan/core/services/habitat_service.dart';
 import 'package:herbascan/core/services/safety_profile_service.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
@@ -53,6 +55,11 @@ class _AdminPlantCatalogEditorScreenState
   List<String> _habitatRegionNames = [];
   String _habitatClimateNotes = '';
 
+  // Anatomy (catalog_plant_anatomy) — 6th tab
+  List<Map<String, dynamic>> _anatomyList = [];
+  Map<String, bool> _anatomyDefaultFlags = {}; // id -> isDefault
+  bool _anatomyLoading = true;
+
   final CatalogPlantAdminService _adminService = CatalogPlantAdminService();
   final DatabaseService _db = DatabaseService();
 
@@ -60,7 +67,7 @@ class _AdminPlantCatalogEditorScreenState
   void initState() {
     super.initState();
     _plant = widget.plant;
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 6, vsync: this);
     _loadCatalog();
   }
 
@@ -98,6 +105,57 @@ class _AdminPlantCatalogEditorScreenState
         _loading = false;
       });
     }
+    _loadAnatomy();
+  }
+
+  Future<void> _loadAnatomy() async {
+    setState(() => _anatomyLoading = true);
+    final list = await _adminService.getCatalogAnatomyForPlant(_plant.id);
+    final flags = <String, bool>{};
+    for (var row in list) {
+      final id = row['id']?.toString() ?? '';
+      final partName = row['part_name'] as String? ?? '';
+      flags[id] = await DefaultAnatomyService.isDefault(_plant.id, partName);
+    }
+    if (mounted) {
+      setState(() {
+        _anatomyList = list;
+        _anatomyDefaultFlags = flags;
+        _anatomyLoading = false;
+      });
+    }
+  }
+
+  /// After anatomy Supabase mutation: re-fetch and sync to local SQLite.
+  Future<void> _syncAnatomyToLocal() async {
+    final rows = await _adminService.getCatalogAnatomyForPlant(_plant.id);
+    try {
+      final localRows = rows.map((row) {
+        final conditionsRaw = row['conditions'];
+        String conditionsStr = '[]';
+        if (conditionsRaw is List) {
+          conditionsStr = jsonEncode(conditionsRaw);
+        } else if (conditionsRaw is String && conditionsRaw.isNotEmpty && conditionsRaw != '[]') {
+          conditionsStr = conditionsRaw;
+        }
+        return {
+          'id': row['id']?.toString() ?? '',
+          'plant_id': row['plant_id'] as String? ?? _plant.id,
+          'part_name': row['part_name'] as String? ?? '',
+          'svg_path': row['svg_path'] as String? ?? '',
+          'color_hex': row['color_hex'] as String? ?? '4CAF50',
+          'z_index': row['z_index'] is int ? row['z_index'] as int : int.tryParse(row['z_index'].toString()) ?? 0,
+          'is_interactive': (row['is_interactive'] as bool?) ?? true,
+          'title': row['title'] as String? ?? '',
+          'description': row['description'] as String? ?? '',
+          'conditions': conditionsStr,
+        };
+      }).toList();
+      await _db.replaceAnatomyForPlantFromSync(_plant.id, localRows);
+    } catch (e) {
+      debugPrint('[AdminEditor] Anatomy local sync failed: $e');
+    }
+    if (mounted) await _loadAnatomy();
   }
 
   Future<void> _save() async {
@@ -143,6 +201,7 @@ class _AdminPlantCatalogEditorScreenState
       }
     }
 
+    if (!mounted) return;
     setState(() => _saving = false);
     if (mounted) {
       if (ok) {
@@ -250,6 +309,7 @@ class _AdminPlantCatalogEditorScreenState
             Tab(text: 'Medicinal'),
             Tab(text: 'Preparations'),
             Tab(text: 'Safety'),
+            Tab(text: 'Anatomy'),
           ],
         ),
         actions: [
@@ -305,6 +365,7 @@ class _AdminPlantCatalogEditorScreenState
           _buildMedicinalTab(),
           _buildPreparationsTab(),
           _buildSafetyTab(),
+          _buildAnatomyTab(),
         ],
       ),
     );
@@ -367,21 +428,36 @@ class _AdminPlantCatalogEditorScreenState
           ),
           const SizedBox(height: 24),
           // Name fields
-          _textField('Common name', _plant.commonName,
-              (v) => setState(() => _plant = _copyWith(commonName: v))),
-          _textField('Scientific name', _plant.scientificName,
-              (v) => setState(() => _plant = _copyWith(scientificName: v))),
+          _EditableTextField(
+            label: 'Common name',
+            value: _plant.commonName,
+            onChanged: (v) => setState(() => _plant = _copyWith(commonName: v)),
+          ),
+          _EditableTextField(
+            label: 'Scientific name',
+            value: _plant.scientificName,
+            onChanged: (v) =>
+                setState(() => _plant = _copyWith(scientificName: v)),
+          ),
           // Grouped row: Family + Genus
           Row(
             children: [
               Expanded(
-                child: _textField('Family', _plant.family,
-                    (v) => setState(() => _plant = _copyWith(family: v))),
+                child: _EditableTextField(
+                  label: 'Family',
+                  value: _plant.family,
+                  onChanged: (v) =>
+                      setState(() => _plant = _copyWith(family: v)),
+                ),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: _textField('Genus', _plant.genus,
-                    (v) => setState(() => _plant = _copyWith(genus: v))),
+                child: _EditableTextField(
+                  label: 'Genus',
+                  value: _plant.genus,
+                  onChanged: (v) =>
+                      setState(() => _plant = _copyWith(genus: v)),
+                ),
               ),
             ],
           ),
@@ -389,36 +465,39 @@ class _AdminPlantCatalogEditorScreenState
           Row(
             children: [
               Expanded(
-                child: _textField('Species', _plant.species,
-                    (v) => setState(() => _plant = _copyWith(species: v))),
+                child: _EditableTextField(
+                  label: 'Species',
+                  value: _plant.species,
+                  onChanged: (v) =>
+                      setState(() => _plant = _copyWith(species: v)),
+                ),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: _textField('Local name', _plant.localName,
-                    (v) => setState(() => _plant = _copyWith(localName: v))),
+                child: _EditableTextField(
+                  label: 'Local name',
+                  value: _plant.localName,
+                  onChanged: (v) =>
+                      setState(() => _plant = _copyWith(localName: v)),
+                ),
               ),
             ],
           ),
-          _textField('English name', _plant.englishName,
-              (v) => setState(() => _plant = _copyWith(englishName: v))),
-          _textField('Morphology', _plant.morphology,
-              (v) => setState(() => _plant = _copyWith(morphology: v)),
-              maxLines: 4),
+          _EditableTextField(
+            label: 'English name',
+            value: _plant.englishName,
+            onChanged: (v) =>
+                setState(() => _plant = _copyWith(englishName: v)),
+          ),
+          _EditableTextField(
+            label: 'Morphology',
+            value: _plant.morphology,
+            onChanged: (v) =>
+                setState(() => _plant = _copyWith(morphology: v)),
+            maxLines: 6,
+            minLines: 2,
+          ),
         ],
-      ),
-    );
-  }
-
-  Widget _textField(String label, String value, void Function(String) onChanged,
-      {int maxLines = 1}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: TextField(
-        decoration: InputDecoration(labelText: label),
-        controller: TextEditingController(text: value)
-          ..selection = TextSelection.collapsed(offset: value.length),
-        maxLines: maxLines,
-        onChanged: onChanged,
       ),
     );
   }
@@ -473,15 +552,29 @@ class _AdminPlantCatalogEditorScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _textField('Ecology', _plant.ecology,
-              (v) => setState(() => _plant = _copyWith(ecology: v)),
-              maxLines: 4),
-          _textField('Habitat', _plant.habitat,
-              (v) => setState(() => _plant = _copyWith(habitat: v)),
-              maxLines: 4),
-          _textField('Climate notes (plant)', _climateNotes ?? '',
-              (v) => setState(() => _climateNotes = v),
-              maxLines: 3),
+          _EditableTextField(
+            label: 'Ecology',
+            value: _plant.ecology,
+            onChanged: (v) =>
+                setState(() => _plant = _copyWith(ecology: v)),
+            maxLines: 6,
+            minLines: 2,
+          ),
+          _EditableTextField(
+            label: 'Habitat',
+            value: _plant.habitat,
+            onChanged: (v) =>
+                setState(() => _plant = _copyWith(habitat: v)),
+            maxLines: 6,
+            minLines: 2,
+          ),
+          _EditableTextField(
+            label: 'Climate notes (plant)',
+            value: _climateNotes ?? '',
+            onChanged: (v) => setState(() => _climateNotes = v),
+            maxLines: 4,
+            minLines: 2,
+          ),
           const SizedBox(height: 20),
           Text('Known habitat regions',
               style: theme.textTheme.titleSmall
@@ -508,65 +601,20 @@ class _AdminPlantCatalogEditorScreenState
                       List<HabitatPoint>.from(_habitatCoordinates)..removeAt(i);
                 });
               },
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        decoration: const InputDecoration(
-                            isDense: true, labelText: 'Lat'),
-                        controller:
-                            TextEditingController(text: pt.lat.toString())
-                              ..selection = TextSelection.collapsed(
-                                  offset: pt.lat.toString().length),
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        onChanged: (v) {
-                          final n = double.tryParse(v);
-                          if (n != null) {
-                            final list =
-                                List<HabitatPoint>.from(_habitatCoordinates);
-                            list[i] = HabitatPoint(lat: n, lng: list[i].lng);
-                            setState(() => _habitatCoordinates = list);
-                          }
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        decoration: const InputDecoration(
-                            isDense: true, labelText: 'Lng'),
-                        controller:
-                            TextEditingController(text: pt.lng.toString())
-                              ..selection = TextSelection.collapsed(
-                                  offset: pt.lng.toString().length),
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        onChanged: (v) {
-                          final n = double.tryParse(v);
-                          if (n != null) {
-                            final list =
-                                List<HabitatPoint>.from(_habitatCoordinates);
-                            list[i] = HabitatPoint(lat: list[i].lat, lng: n);
-                            setState(() => _habitatCoordinates = list);
-                          }
-                        },
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.remove_circle_outline),
-                      onPressed: () {
-                        setState(() {
-                          _habitatCoordinates =
-                              List<HabitatPoint>.from(_habitatCoordinates)
-                                ..removeAt(i);
-                        });
-                      },
-                    ),
-                  ],
-                ),
+              child: _CoordRowWidget(
+                point: pt,
+                onChanged: (lat, lng) {
+                  final list = List<HabitatPoint>.from(_habitatCoordinates);
+                  list[i] = HabitatPoint(lat: lat, lng: lng);
+                  setState(() => _habitatCoordinates = list);
+                },
+                onRemove: () {
+                  setState(() {
+                    _habitatCoordinates =
+                        List<HabitatPoint>.from(_habitatCoordinates)
+                          ..removeAt(i);
+                  });
+                },
               ),
             );
           }),
@@ -596,35 +644,17 @@ class _AdminPlantCatalogEditorScreenState
                 setState(() => _habitatRegionNames =
                     List<String>.from(_habitatRegionNames)..removeAt(i));
               },
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        decoration: const InputDecoration(
-                            isDense: true, hintText: 'Region name'),
-                        controller:
-                            TextEditingController(text: _habitatRegionNames[i])
-                              ..selection = TextSelection.collapsed(
-                                  offset: _habitatRegionNames[i].length),
-                        onChanged: (v) {
-                          final list = List<String>.from(_habitatRegionNames);
-                          list[i] = v;
-                          setState(() => _habitatRegionNames = list);
-                        },
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.remove_circle_outline),
-                      onPressed: () {
-                        setState(() => _habitatRegionNames =
-                            List<String>.from(_habitatRegionNames)
-                              ..removeAt(i));
-                      },
-                    ),
-                  ],
-                ),
+              child: _RegionNameRowWidget(
+                value: _habitatRegionNames[i],
+                onChanged: (v) {
+                  final list = List<String>.from(_habitatRegionNames);
+                  list[i] = v;
+                  setState(() => _habitatRegionNames = list);
+                },
+                onRemove: () {
+                  setState(() => _habitatRegionNames =
+                      List<String>.from(_habitatRegionNames)..removeAt(i));
+                },
               ),
             );
           }),
@@ -635,9 +665,13 @@ class _AdminPlantCatalogEditorScreenState
             label: const Text('Add region'),
           ),
           const SizedBox(height: 12),
-          _textField('Habitat climate notes', _habitatClimateNotes,
-              (v) => setState(() => _habitatClimateNotes = v),
-              maxLines: 2),
+          _EditableTextField(
+            label: 'Habitat climate notes',
+            value: _habitatClimateNotes,
+            onChanged: (v) => setState(() => _habitatClimateNotes = v),
+            maxLines: 4,
+            minLines: 2,
+          ),
           if (hasHabitatData) ...[
             const SizedBox(height: 16),
             Card(
@@ -927,9 +961,225 @@ class _AdminPlantCatalogEditorScreenState
     );
   }
 
+  // ─── Anatomy Tab (Explore Plant Parts) ────────────────────────────────────────
+
+  Widget _buildAnatomyTab() {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    if (_anatomyLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return Column(
+      children: [
+        Expanded(
+          child: _anatomyList.isEmpty
+              ? Center(
+                  child: Text(
+                    l10n.adminAnatomyEmpty,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _anatomyList.length,
+                  itemBuilder: (context, index) {
+                    final row = _anatomyList[index];
+                    final id = row['id']?.toString() ?? '';
+                    final partName = row['part_name'] as String? ?? '';
+                    final title = row['title'] as String? ?? partName;
+                    final isDefault = _anatomyDefaultFlags[id] ?? false;
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: ListTile(
+                        title: Text(
+                          title.isNotEmpty ? title : partName,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Text(partName),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (isDefault)
+                              IconButton(
+                                icon: const Icon(Icons.restore),
+                                tooltip: l10n.restoreToDefault,
+                                onPressed: () => _restoreAnatomyPart(row),
+                              ),
+                            IconButton(
+                              icon: const Icon(Icons.edit_outlined),
+                              tooltip: l10n.edit,
+                              onPressed: () => _openEditAnatomyPart(row),
+                            ),
+                            if (!isDefault)
+                              IconButton(
+                                icon: Icon(Icons.delete_outline,
+                                    color: theme.colorScheme.error),
+                                tooltip: l10n.delete,
+                                onPressed: () => _deleteAnatomyPart(row),
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: _openAddAnatomyPart,
+              icon: const Icon(Icons.add),
+              label: Text(l10n.adminAnatomyAddPart),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppTheme.botanicalPrimary,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _openAddAnatomyPart() async {
+    final result = await Navigator.of(context).push<Map<String, dynamic>>(
+      MaterialPageRoute(
+        builder: (_) => _EditAnatomyPartScreen(
+          plantId: _plant.id,
+          initial: null,
+        ),
+      ),
+    );
+    if (result == null || !mounted) return;
+    final id = await _adminService.insertCatalogAnatomy(result);
+    if (id == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context).saveFailed)),
+        );
+      }
+      return;
+    }
+    await _syncAnatomyToLocal();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).savedToCatalog)),
+      );
+    }
+  }
+
+  Future<void> _openEditAnatomyPart(Map<String, dynamic> row) async {
+    final result = await Navigator.of(context).push<Map<String, dynamic>>(
+      MaterialPageRoute(
+        builder: (_) => _EditAnatomyPartScreen(
+          plantId: _plant.id,
+          initial: row,
+        ),
+      ),
+    );
+    if (result == null || !mounted) return;
+    final id = row['id']?.toString() ?? '';
+    if (id.isEmpty) return;
+    final ok = await _adminService.updateCatalogAnatomy(
+      id,
+      partName: result['part_name'] as String?,
+      svgPath: result['svg_path'] as String?,
+      title: result['title'] as String?,
+      description: result['description'] as String?,
+      conditions: result['conditions'],
+    );
+    if (!mounted) return;
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).saveFailed)),
+      );
+      return;
+    }
+    await _syncAnatomyToLocal();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(AppLocalizations.of(context).savedToCatalog)),
+    );
+  }
+
+  Future<void> _deleteAnatomyPart(Map<String, dynamic> row) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(AppLocalizations.of(context).delete),
+        content: Text(
+          '${AppLocalizations.of(context).adminAnatomyDeleteConfirm} "${row['title'] ?? row['part_name']}"?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(AppLocalizations.of(context).cancel),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(AppLocalizations.of(context).delete),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+    final id = row['id']?.toString() ?? '';
+    if (id.isEmpty) return;
+    final ok = await _adminService.deleteCatalogAnatomy(id);
+    if (!mounted) return;
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).saveFailed)),
+      );
+      return;
+    }
+    await _syncAnatomyToLocal();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(AppLocalizations.of(context).deleted)),
+    );
+  }
+
+  Future<void> _restoreAnatomyPart(Map<String, dynamic> row) async {
+    final partName = row['part_name'] as String? ?? '';
+    final defaultData = await DefaultAnatomyService.getDefaultData(_plant.id, partName);
+    if (defaultData == null || !mounted) return;
+    final id = row['id']?.toString() ?? '';
+    if (id.isEmpty) return;
+    final ok = await _adminService.updateCatalogAnatomy(
+      id,
+      svgPath: defaultData['svg_path'] as String?,
+      description: defaultData['description'] as String?,
+      conditions: defaultData['conditions'] is List
+          ? (defaultData['conditions'] as List).cast<String>()
+          : null,
+      title: defaultData['title'] as String?,
+    );
+    if (!mounted) return;
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).saveFailed)),
+      );
+      return;
+    }
+    await _syncAnatomyToLocal();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).restoredToDefault)),
+      );
+    }
+  }
+
   Widget _buildListSection(ThemeData theme, String title, List<String> items,
       void Function(List<String>) onChanged,
-      {Color? borderColor}) {
+      {Color? borderColor, int listItemMaxLines = 3}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: Column(
@@ -947,9 +1197,14 @@ class _AdminPlantCatalogEditorScreenState
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-              Text(title,
+              Expanded(
+                child: Text(
+                  title,
                   style: theme.textTheme.titleSmall
-                      ?.copyWith(fontWeight: FontWeight.bold)),
+                      ?.copyWith(fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
               const SizedBox(width: 8),
               TextButton.icon(
                 onPressed: () {
@@ -969,21 +1224,10 @@ class _AdminPlantCatalogEditorScreenState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        isDense: true,
-                        border: const OutlineInputBorder(),
-                        hintText: 'Item',
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                              color: borderColor ?? AppTheme.botanicalPrimary,
-                              width: 2),
-                        ),
-                      ),
-                      controller: TextEditingController(text: items[i])
-                        ..selection =
-                            TextSelection.collapsed(offset: (items[i]).length),
-                      maxLines: 1,
+                    child: _EditableListRow(
+                      value: items[i],
+                      hintText: 'Item',
+                      maxLines: listItemMaxLines,
                       onChanged: (v) {
                         final list = List<String>.from(items);
                         list[i] = v;
@@ -1002,6 +1246,240 @@ class _AdminPlantCatalogEditorScreenState
               ),
             );
           }),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Editable text field (owns controller; for Identity/Ecology long-form fields)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _EditableTextField extends StatefulWidget {
+  const _EditableTextField({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+    this.maxLines = 1,
+    this.minLines,
+  });
+
+  final String label;
+  final String value;
+  final ValueChanged<String> onChanged;
+  final int maxLines;
+  final int? minLines;
+
+  @override
+  State<_EditableTextField> createState() => _EditableTextFieldState();
+}
+
+class _EditableTextFieldState extends State<_EditableTextField> {
+  late TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.value);
+    _controller.selection =
+        TextSelection.collapsed(offset: widget.value.length);
+  }
+
+  @override
+  void didUpdateWidget(_EditableTextField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value && _controller.text != widget.value) {
+      _controller.text = widget.value;
+      _controller.selection =
+          TextSelection.collapsed(offset: widget.value.length);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextField(
+        controller: _controller,
+        decoration: InputDecoration(labelText: widget.label),
+        maxLines: widget.maxLines,
+        minLines: widget.minLines,
+        onChanged: widget.onChanged,
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Ecology coord / region row widgets (own controllers; no controller in build)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _CoordRowWidget extends StatefulWidget {
+  const _CoordRowWidget({
+    required this.point,
+    required this.onChanged,
+    required this.onRemove,
+  });
+
+  final HabitatPoint point;
+  final void Function(double lat, double lng) onChanged;
+  final VoidCallback onRemove;
+
+  @override
+  State<_CoordRowWidget> createState() => _CoordRowWidgetState();
+}
+
+class _CoordRowWidgetState extends State<_CoordRowWidget> {
+  late TextEditingController _latController;
+  late TextEditingController _lngController;
+
+  @override
+  void initState() {
+    super.initState();
+    _latController = TextEditingController(text: widget.point.lat.toString());
+    _lngController = TextEditingController(text: widget.point.lng.toString());
+    _latController.selection =
+        TextSelection.collapsed(offset: widget.point.lat.toString().length);
+    _lngController.selection =
+        TextSelection.collapsed(offset: widget.point.lng.toString().length);
+  }
+
+  @override
+  void didUpdateWidget(_CoordRowWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.point.lat != widget.point.lat &&
+        _latController.text != widget.point.lat.toString()) {
+      _latController.text = widget.point.lat.toString();
+      _latController.selection =
+          TextSelection.collapsed(offset: _latController.text.length);
+    }
+    if (oldWidget.point.lng != widget.point.lng &&
+        _lngController.text != widget.point.lng.toString()) {
+      _lngController.text = widget.point.lng.toString();
+      _lngController.selection =
+          TextSelection.collapsed(offset: _lngController.text.length);
+    }
+  }
+
+  @override
+  void dispose() {
+    _latController.dispose();
+    _lngController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _latController,
+              decoration: const InputDecoration(
+                  isDense: true, labelText: 'Lat'),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              onChanged: (v) {
+                final n = double.tryParse(v);
+                if (n != null) {
+                  widget.onChanged(n, widget.point.lng);
+                }
+              },
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              controller: _lngController,
+              decoration: const InputDecoration(
+                  isDense: true, labelText: 'Lng'),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              onChanged: (v) {
+                final n = double.tryParse(v);
+                if (n != null) {
+                  widget.onChanged(widget.point.lat, n);
+                }
+              },
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.remove_circle_outline),
+            onPressed: widget.onRemove,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RegionNameRowWidget extends StatefulWidget {
+  const _RegionNameRowWidget({
+    required this.value,
+    required this.onChanged,
+    required this.onRemove,
+  });
+
+  final String value;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onRemove;
+
+  @override
+  State<_RegionNameRowWidget> createState() => _RegionNameRowWidgetState();
+}
+
+class _RegionNameRowWidgetState extends State<_RegionNameRowWidget> {
+  late TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.value);
+    _controller.selection =
+        TextSelection.collapsed(offset: widget.value.length);
+  }
+
+  @override
+  void didUpdateWidget(_RegionNameRowWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value && _controller.text != widget.value) {
+      _controller.text = widget.value;
+      _controller.selection =
+          TextSelection.collapsed(offset: widget.value.length);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _controller,
+              decoration: const InputDecoration(
+                  isDense: true, hintText: 'Region name'),
+              onChanged: widget.onChanged,
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.remove_circle_outline),
+            onPressed: widget.onRemove,
+          ),
         ],
       ),
     );
@@ -1115,7 +1593,8 @@ class _EditMedicinalUseScreenState extends State<_EditMedicinalUseScreen> {
             TextField(
               controller: _descriptionController,
               decoration: const InputDecoration(labelText: 'Description'),
-              maxLines: 3,
+              maxLines: 6,
+              minLines: 2,
             ),
             const SizedBox(height: 12),
             _buildStringListSection(theme, 'Active compounds', _activeCompounds,
@@ -1124,11 +1603,15 @@ class _EditMedicinalUseScreenState extends State<_EditMedicinalUseScreen> {
             TextField(
               controller: _dosageController,
               decoration: const InputDecoration(labelText: 'Dosage'),
+              maxLines: 4,
+              minLines: 1,
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _durationController,
               decoration: const InputDecoration(labelText: 'Duration'),
+              maxLines: 4,
+              minLines: 1,
             ),
           ],
         ),
@@ -1143,9 +1626,14 @@ class _EditMedicinalUseScreenState extends State<_EditMedicinalUseScreen> {
       children: [
         Row(
           children: [
-            Text(title,
+            Expanded(
+              child: Text(
+                title,
                 style: theme.textTheme.titleSmall
-                    ?.copyWith(fontWeight: FontWeight.bold)),
+                    ?.copyWith(fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
             const SizedBox(width: 8),
             TextButton.icon(
               onPressed: () => onChanged(List<String>.from(items)..add('')),
@@ -1164,7 +1652,7 @@ class _EditMedicinalUseScreenState extends State<_EditMedicinalUseScreen> {
                   child: _EditableListRow(
                     value: items[i],
                     hintText: 'Compound',
-                    maxLines: 1,
+                    maxLines: 3,
                     onChanged: (v) {
                       final list = List<String>.from(items)..[i] = v;
                       onChanged(list);
@@ -1375,7 +1863,8 @@ class _EditPreparationMethodScreenState
             TextField(
               controller: _descriptionController,
               decoration: const InputDecoration(labelText: 'Description'),
-              maxLines: 2,
+              maxLines: 6,
+              minLines: 2,
             ),
             const SizedBox(height: 12),
             _buildStringListSection(theme, 'Steps', _steps,
@@ -1384,20 +1873,26 @@ class _EditPreparationMethodScreenState
             TextField(
               controller: _dosageController,
               decoration: const InputDecoration(labelText: 'Dosage'),
+              maxLines: 4,
+              minLines: 1,
             ),
             const SizedBox(height: 8),
             TextField(
               controller: _frequencyController,
               decoration: const InputDecoration(labelText: 'Frequency'),
+              maxLines: 4,
+              minLines: 1,
             ),
             const SizedBox(height: 8),
             TextField(
               controller: _durationController,
               decoration: const InputDecoration(labelText: 'Duration'),
+              maxLines: 4,
+              minLines: 1,
             ),
             const SizedBox(height: 12),
             _buildStringListSection(theme, 'Warnings', _warnings,
-                (list) => setState(() => _warnings = list)),
+                (list) => setState(() => _warnings = list), listItemMaxLines: 3),
             const SizedBox(height: 12),
             TextField(
               controller: _idController,
@@ -1406,6 +1901,8 @@ class _EditPreparationMethodScreenState
                   helperText: 'Auto-generated if empty',
                   helperStyle:
                       TextStyle(color: theme.colorScheme.onSurfaceVariant)),
+              maxLines: 3,
+              minLines: 1,
             ),
           ],
         ),
@@ -1414,17 +1911,24 @@ class _EditPreparationMethodScreenState
   }
 
   Widget _buildStringListSection(ThemeData theme, String title,
-      List<String> items, void Function(List<String>) onChanged) {
+      List<String> items, void Function(List<String>) onChanged,
+      {int? listItemMaxLines}) {
     final hintText = title == 'Steps' ? 'Step instruction' : 'Item';
-    final maxLines = title == 'Steps' ? 2 : 1;
+    final maxLines = listItemMaxLines ??
+        (title == 'Steps' ? 2 : (title == 'Warnings' ? 3 : 1));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Text(title,
+            Expanded(
+              child: Text(
+                title,
                 style: theme.textTheme.titleSmall
-                    ?.copyWith(fontWeight: FontWeight.bold)),
+                    ?.copyWith(fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
             const SizedBox(width: 8),
             TextButton.icon(
               onPressed: () => onChanged(List<String>.from(items)..add('')),
@@ -1455,6 +1959,206 @@ class _EditPreparationMethodScreenState
                   icon: const Icon(Icons.remove_circle_outline, size: 20),
                   onPressed: () =>
                       onChanged(List<String>.from(items)..removeAt(i)),
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Anatomy part add/edit screen (owns controllers; lifecycle-safe)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _EditAnatomyPartScreen extends StatefulWidget {
+  const _EditAnatomyPartScreen({
+    required this.plantId,
+    this.initial,
+  });
+
+  final String plantId;
+  final Map<String, dynamic>? initial;
+
+  @override
+  State<_EditAnatomyPartScreen> createState() => _EditAnatomyPartScreenState();
+}
+
+class _EditAnatomyPartScreenState extends State<_EditAnatomyPartScreen> {
+  late TextEditingController _partNameController;
+  late TextEditingController _svgPathController;
+  late TextEditingController _titleController;
+  late TextEditingController _descriptionController;
+  late List<String> _conditions;
+
+  @override
+  void initState() {
+    super.initState();
+    final m = widget.initial;
+    _partNameController =
+        TextEditingController(text: m?['part_name'] as String? ?? '');
+    _svgPathController =
+        TextEditingController(text: m?['svg_path'] as String? ?? '');
+    _titleController =
+        TextEditingController(text: m?['title'] as String? ?? '');
+    _descriptionController =
+        TextEditingController(text: m?['description'] as String? ?? '');
+    if (m?['conditions'] is List) {
+      _conditions =
+          (m!['conditions'] as List).map((e) => e.toString()).toList();
+    } else {
+      _conditions = [];
+    }
+  }
+
+  @override
+  void dispose() {
+    _partNameController.dispose();
+    _svgPathController.dispose();
+    _titleController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  void _done() {
+    final partName = _partNameController.text.trim();
+    if (partName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Part name is required')),
+      );
+      return;
+    }
+    final conditionsList =
+        _conditions.where((s) => s.trim().isNotEmpty).toList();
+    Navigator.of(context).pop({
+      'plant_id': widget.plantId,
+      'part_name': partName,
+      'svg_path': _svgPathController.text.trim(),
+      'title': _titleController.text.trim(),
+      'description': _descriptionController.text.trim(),
+      'conditions': conditionsList,
+      'color_hex': widget.initial?['color_hex'] as String? ?? '4CAF50',
+      'z_index': widget.initial?['z_index'] is int
+          ? widget.initial!['z_index'] as int
+          : int.tryParse(widget.initial?['z_index'].toString() ?? '0') ?? 0,
+      'is_interactive': widget.initial?['is_interactive'] ?? true,
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.initial == null
+            ? l10n.adminAnatomyAddPart
+            : l10n.edit),
+      ),
+      bottomNavigationBar: AnimatedPadding(
+        duration: const Duration(milliseconds: 150),
+        curve: Curves.easeOut,
+        padding: EdgeInsets.fromLTRB(
+            16,
+            8,
+            16,
+            MediaQuery.of(context).viewInsets.bottom +
+                MediaQuery.of(context).padding.bottom +
+                8),
+        child: FilledButton(
+          onPressed: _done,
+          style: FilledButton.styleFrom(
+            backgroundColor: AppTheme.botanicalPrimary,
+            minimumSize: const Size(double.infinity, 48),
+          ),
+          child: Text(l10n.save,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: _partNameController,
+              decoration: const InputDecoration(
+                labelText: 'Part name (e.g. leaves, bulb, seeds)',
+              ),
+              autofocus: true,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _titleController,
+              decoration: const InputDecoration(
+                  labelText: 'Title (display name)'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _svgPathController,
+              decoration: const InputDecoration(
+                labelText: 'SVG path (d="..." value)',
+                hintText: 'e.g. M 20 20 L 180 20 L 180 160 L 20 160 Z',
+              ),
+              maxLines: 3,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(labelText: 'Description'),
+              maxLines: 6,
+              minLines: 2,
+            ),
+            const SizedBox(height: 12),
+            _buildConditionsSection(theme),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildConditionsSection(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text('Conditions (medical uses)',
+                style: theme.textTheme.titleSmall
+                    ?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(width: 8),
+            TextButton.icon(
+              onPressed: () =>
+                  setState(() => _conditions = List.from(_conditions)..add('')),
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Add'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ...List.generate(_conditions.length, (i) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: _EditableListRow(
+                    value: _conditions[i],
+                    hintText: 'Condition',
+                    maxLines: 1,
+                    onChanged: (v) {
+                      final list = List<String>.from(_conditions)..[i] = v;
+                      setState(() => _conditions = list);
+                    },
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.remove_circle_outline, size: 20),
+                  onPressed: () => setState(
+                      () => _conditions = List.from(_conditions)..removeAt(i)),
                 ),
               ],
             ),

@@ -2,7 +2,7 @@ name: herbascan
 description: "HerbaScan: A CNN-Based Mobile Application for Herbal Plant Recognition and Data Retrieval"
 publish_to: "none"
 
-version: 0.9.3+1
+version: 0.9.4+1
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
@@ -82,7 +82,7 @@ dependencies:
   # 6-box OTP input (enter_signup_code_screen, enter_reset_code_screen)
   pinput: ^5.0.0
 
-  # PRD v0.9.3: Share, Gallery export, Preparation timers
+  # PRD v0.9.4: Share, Gallery export, Preparation timers
   gal: ^2.3.0
   share_plus: ^10.0.0
   flutter_local_notifications: ^18.0.0

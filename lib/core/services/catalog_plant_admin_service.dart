@@ -602,4 +602,106 @@ class CatalogPlantAdminService {
       return false;
     }
   }
+
+  // --- Anatomy (catalog_plant_anatomy) CRUD ---
+
+  /// List anatomy rows for a plant from Supabase, ordered by z_index.
+  Future<List<Map<String, dynamic>>> getCatalogAnatomyForPlant(String plantId) async {
+    if (!isAvailable) return [];
+    try {
+      final res = await _client
+          .from('catalog_plant_anatomy')
+          .select()
+          .eq('plant_id', plantId)
+          .order('z_index');
+      return (res as List).cast<Map<String, dynamic>>();
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('[CatalogPlantAdminService] getCatalogAnatomyForPlant: $e');
+        debugPrint(st.toString());
+      }
+      return [];
+    }
+  }
+
+  /// Insert one anatomy row. Returns the new id (UUID string) or null.
+  Future<String?> insertCatalogAnatomy(Map<String, dynamic> row) async {
+    if (!isAvailable) return null;
+    try {
+      final payload = <String, dynamic>{
+        'plant_id': row['plant_id'] as String? ?? '',
+        'part_name': row['part_name'] as String? ?? '',
+        'svg_path': row['svg_path'] as String? ?? '',
+        'color_hex': row['color_hex'] as String? ?? '4CAF50',
+        'z_index': row['z_index'] is int ? row['z_index'] as int : int.tryParse(row['z_index'].toString()) ?? 0,
+        'is_interactive': row['is_interactive'] == true || row['is_interactive'] == 1,
+        'title': row['title'] as String? ?? '',
+        'description': row['description'] as String? ?? '',
+        'conditions': row['conditions'],
+      };
+      if (payload['conditions'] is! List) {
+        payload['conditions'] = payload['conditions'] is String
+            ? (jsonDecode((payload['conditions'] as String).isEmpty ? '[]' : payload['conditions'] as String) as List<dynamic>)
+            : <dynamic>[];
+      }
+      final res = await _client.from('catalog_plant_anatomy').insert(payload).select('id');
+      final list = res as List;
+      final id = list.isNotEmpty ? list.first['id'] : null;
+      return id?.toString();
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('[CatalogPlantAdminService] insertCatalogAnatomy: $e');
+        debugPrint(st.toString());
+      }
+      return null;
+    }
+  }
+
+  /// Update an anatomy row by id. Only provided fields are updated.
+  Future<bool> updateCatalogAnatomy(String id, {
+    String? svgPath,
+    String? description,
+    dynamic conditions,
+    String? colorHex,
+    int? zIndex,
+    bool? isInteractive,
+    String? title,
+    String? partName,
+  }) async {
+    if (!isAvailable || id.isEmpty) return false;
+    try {
+      final payload = <String, dynamic>{'updated_at': DateTime.now().toUtc().toIso8601String()};
+      if (svgPath != null) payload['svg_path'] = svgPath;
+      if (description != null) payload['description'] = description;
+      if (conditions != null) payload['conditions'] = conditions is List ? conditions : (conditions is String ? jsonDecode(conditions.isEmpty ? '[]' : conditions) as List<dynamic> : <dynamic>[]);
+      if (colorHex != null) payload['color_hex'] = colorHex;
+      if (zIndex != null) payload['z_index'] = zIndex;
+      if (isInteractive != null) payload['is_interactive'] = isInteractive;
+      if (title != null) payload['title'] = title;
+      if (partName != null) payload['part_name'] = partName;
+      await _client.from('catalog_plant_anatomy').update(payload).eq('id', id);
+      return true;
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('[CatalogPlantAdminService] updateCatalogAnatomy: $e');
+        debugPrint(st.toString());
+      }
+      return false;
+    }
+  }
+
+  /// Delete an anatomy row by id. Call only for non-default entries (caller enforces).
+  Future<bool> deleteCatalogAnatomy(String id) async {
+    if (!isAvailable || id.isEmpty) return false;
+    try {
+      await _client.from('catalog_plant_anatomy').delete().eq('id', id);
+      return true;
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('[CatalogPlantAdminService] deleteCatalogAnatomy: $e');
+        debugPrint(st.toString());
+      }
+      return false;
+    }
+  }
 }

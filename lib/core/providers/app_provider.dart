@@ -7,8 +7,9 @@ class AppProvider extends ChangeNotifier {
   bool _showConfidenceScores = true;
   bool _showGradCAM = true;
   bool _showTop3Results = true; // Default to true (ON)
+  bool _autoSaveScans = true; // Default ON: auto-save new scans to device history
   bool _isDarkMode = false;
-  final String _appVersion = 'v0.9.3';
+  final String _appVersion = 'v0.9.4';
   final String _modelVersion = 'CNN v1.0';
   bool _isThemeChanging = false;
 
@@ -18,6 +19,7 @@ class AppProvider extends ChangeNotifier {
   bool get showConfidenceScores => _showConfidenceScores;
   bool get showGradCAM => _showGradCAM;
   bool get showTop3Results => _showTop3Results;
+  bool get autoSaveScans => _autoSaveScans;
   bool get isDarkMode => _isDarkMode;
   String get appVersion => _appVersion;
   String get modelVersion => _modelVersion;
@@ -41,6 +43,7 @@ class AppProvider extends ChangeNotifier {
       _showTop3Results = prefs.getBool('show_top3') ??
           prefs.getBool('showTop3Results') ??
           true; // Default to true (ON)
+      _autoSaveScans = prefs.getBool('auto_save_scans') ?? true;
       _isDarkMode = prefs.getBool('isDarkMode') ?? false;
 
       // Use a microtask to ensure smooth UI updates
@@ -63,6 +66,7 @@ class AppProvider extends ChangeNotifier {
         prefs.setBool('showConfidenceScores', _showConfidenceScores),
         prefs.setBool('showGradCAM', _showGradCAM),
         prefs.setBool('showTop3Results', _showTop3Results),
+        prefs.setBool('auto_save_scans', _autoSaveScans),
         prefs.setBool('isDarkMode', _isDarkMode),
       ]);
     } catch (e) {
@@ -116,6 +120,13 @@ class AppProvider extends ChangeNotifier {
   // Toggle top 3 results display
   Future<void> toggleTop3Results() async {
     _showTop3Results = !_showTop3Results;
+    await _saveSettings();
+    notifyListeners();
+  }
+
+  /// Toggle auto-save scans to device history when result screen opens.
+  Future<void> toggleAutoSaveScans() async {
+    _autoSaveScans = !_autoSaveScans;
     await _saveSettings();
     notifyListeners();
   }

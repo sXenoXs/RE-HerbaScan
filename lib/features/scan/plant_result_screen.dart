@@ -6,6 +6,7 @@ import 'package:herbascan/core/widgets/gradcam_visualization.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/providers/plant_provider.dart';
 import 'package:herbascan/core/providers/auth_provider.dart';
+import 'package:herbascan/core/providers/app_provider.dart';
 import 'package:herbascan/core/models/plant.dart';
 import 'package:herbascan/core/models/safety_profile.dart';
 import 'package:herbascan/core/models/scan_result.dart';
@@ -129,7 +130,9 @@ class _PlantResultScreenState extends State<PlantResultScreen>
     _loadSettings();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!widget.isFromHistory) {
+      if (!mounted) return;
+      final autoSave = context.read<AppProvider>().autoSaveScans;
+      if (!widget.isFromHistory && autoSave) {
         _saveResultsAutomatically();
       }
     });
