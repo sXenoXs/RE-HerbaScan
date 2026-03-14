@@ -9,6 +9,7 @@ import 'package:herbascan/core/models/safety_profile.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/core/widgets/plant_image.dart';
 import 'package:herbascan/core/services/catalog_plant_admin_service.dart';
+import 'package:herbascan/core/services/catalog_sync_service.dart';
 import 'package:herbascan/core/services/database_service.dart';
 import 'package:herbascan/core/services/default_anatomy_service.dart';
 import 'package:herbascan/core/services/habitat_service.dart';
@@ -46,6 +47,7 @@ class _AdminPlantCatalogEditorScreenState
   // Editable safety (catalog_safety)
   bool _isGenerallySafe = true;
   bool _pregnancyWarning = false;
+  bool _needsStrictContraindications = false;
   List<String> _knownSideEffects = [];
   List<String> _drugInteractions = [];
   List<String> _strictContraindications = [];
@@ -93,6 +95,7 @@ class _AdminPlantCatalogEditorScreenState
         if (safety != null) {
           _isGenerallySafe = safety.isGenerallySafe;
           _pregnancyWarning = safety.pregnancyWarning;
+          _needsStrictContraindications = safety.needsStrictContraindications;
           _knownSideEffects = List.from(safety.knownSideEffects);
           _drugInteractions = List.from(safety.drugInteractions);
           _strictContraindications = List.from(safety.strictContraindications);
@@ -167,6 +170,7 @@ class _AdminPlantCatalogEditorScreenState
       name: _plant.commonName,
       isGenerallySafe: _isGenerallySafe,
       pregnancyWarning: _pregnancyWarning,
+      needsStrictContraindications: _needsStrictContraindications,
       knownSideEffects: _knownSideEffects,
       drugInteractions: _drugInteractions,
       strictContraindications: _strictContraindications,
@@ -259,8 +263,8 @@ class _AdminPlantCatalogEditorScreenState
       builder: (ctx) => AlertDialog(
         title: const Text('Seed catalog from defaults?'),
         content: const Text(
-          'This will upsert all 42 plants from the bundled data into Supabase. '
-          'Existing catalog data will be overwritten.',
+          'This will upsert all 42 plants and default safety, habitat, conditions, and anatomy into Supabase. '
+          'Existing catalog data will be overwritten. Anatomy is additive (missing parts only).',
         ),
         actions: [
           TextButton(
@@ -275,13 +279,16 @@ class _AdminPlantCatalogEditorScreenState
     if (confirm != true) return;
     setState(() => _saving = true);
     final ok = await _adminService.seedCatalogFromDefaults();
+    if (!mounted) return;
     setState(() => _saving = false);
-    if (mounted) {
-      if (ok) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Catalog seeded from defaults')));
-        await _loadCatalog();
-      } else {
+    if (ok) {
+      await CatalogSyncService().syncFromSupabase();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Catalog seeded from defaults')));
+      await _loadCatalog();
+    } else {
+      if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(const SnackBar(content: Text('Seed failed')));
       }
@@ -934,6 +941,13 @@ class _AdminPlantCatalogEditorScreenState
             onChanged: (v) => setState(() => _pregnancyWarning = v),
             activeThumbColor: AppTheme.errorColor,
           ),
+          SwitchListTile(
+            title: const Text('Use with strict caution (prominent warning)'),
+            subtitle: const Text('Show "Use with strict caution" card at top of safety (e.g. Kamias, Kamoteng Kahoy, Kakawate)'),
+            value: _needsStrictContraindications,
+            onChanged: (v) => setState(() => _needsStrictContraindications = v),
+            activeThumbColor: Colors.orange,
+          ),
           const SizedBox(height: 16),
           _buildListSection(
             theme,
@@ -969,79 +983,76 @@ class _AdminPlantCatalogEditorScreenState
     if (_anatomyLoading) {
       return const Center(child: CircularProgressIndicator());
     }
-    return Column(
-      children: [
-        Expanded(
-          child: _anatomyList.isEmpty
-              ? Center(
-                  child: Text(
-                    l10n.adminAnatomyEmpty,
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    textAlign: TextAlign.center,
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (_anatomyList.isEmpty)
+            SizedBox(
+              height: 80,
+              child: Center(
+                child: Text(
+                  l10n.adminAnatomyEmpty,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _anatomyList.length,
-                  itemBuilder: (context, index) {
-                    final row = _anatomyList[index];
-                    final id = row['id']?.toString() ?? '';
-                    final partName = row['part_name'] as String? ?? '';
-                    final title = row['title'] as String? ?? partName;
-                    final isDefault = _anatomyDefaultFlags[id] ?? false;
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      child: ListTile(
-                        title: Text(
-                          title.isNotEmpty ? title : partName,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        subtitle: Text(partName),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (isDefault)
-                              IconButton(
-                                icon: const Icon(Icons.restore),
-                                tooltip: l10n.restoreToDefault,
-                                onPressed: () => _restoreAnatomyPart(row),
-                              ),
-                            IconButton(
-                              icon: const Icon(Icons.edit_outlined),
-                              tooltip: l10n.edit,
-                              onPressed: () => _openEditAnatomyPart(row),
-                            ),
-                            if (!isDefault)
-                              IconButton(
-                                icon: Icon(Icons.delete_outline,
-                                    color: theme.colorScheme.error),
-                                tooltip: l10n.delete,
-                                onPressed: () => _deleteAnatomyPart(row),
-                              ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
+                  textAlign: TextAlign.center,
                 ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: _openAddAnatomyPart,
-              icon: const Icon(Icons.add),
-              label: Text(l10n.adminAnatomyAddPart),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppTheme.botanicalPrimary,
               ),
+            )
+          else
+            ...List.generate(_anatomyList.length, (index) {
+              final row = _anatomyList[index];
+              final id = row['id']?.toString() ?? '';
+              final partName = row['part_name'] as String? ?? '';
+              final title = row['title'] as String? ?? partName;
+              final isDefault = _anatomyDefaultFlags[id] ?? false;
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ListTile(
+                  title: Text(
+                    title.isNotEmpty ? title : partName,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(partName),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isDefault)
+                        IconButton(
+                          icon: const Icon(Icons.restore),
+                          tooltip: l10n.restoreToDefault,
+                          onPressed: () => _restoreAnatomyPart(row),
+                        ),
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined),
+                        tooltip: l10n.edit,
+                        onPressed: () => _openEditAnatomyPart(row),
+                      ),
+                      if (!isDefault)
+                        IconButton(
+                          icon: Icon(Icons.delete_outline,
+                              color: theme.colorScheme.error),
+                          tooltip: l10n.delete,
+                          onPressed: () => _deleteAnatomyPart(row),
+                        ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          const SizedBox(height: 12),
+          TextButton.icon(
+            onPressed: _openAddAnatomyPart,
+            icon: const Icon(Icons.add),
+            label: Text(l10n.adminAnatomyAddPart),
+            style: TextButton.styleFrom(
+              foregroundColor: AppTheme.botanicalPrimary,
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

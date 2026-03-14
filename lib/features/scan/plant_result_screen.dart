@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:herbascan/core/constants/toxic_plant_blacklist.dart';
 import 'package:herbascan/core/widgets/gradcam_visualization.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/providers/plant_provider.dart';
@@ -781,7 +782,12 @@ class _PlantResultScreenState extends State<PlantResultScreen>
   }
 
   Widget _buildAlternativeMatches(ThemeData theme) {
-    final alternatives = widget.predictions.skip(1).toList();
+    // Exclude blacklisted toxic plants from alternative matches
+    final alternatives = widget.predictions.skip(1).where((pred) {
+      final label = pred['plantName'] as String? ?? pred['label'] as String?;
+      final canonical = normalizeToCanonicalKey(label);
+      return canonical == null || !toxicPlantBlacklist.contains(canonical);
+    }).toList();
     if (alternatives.isEmpty) return const SizedBox.shrink();
 
     return Column(

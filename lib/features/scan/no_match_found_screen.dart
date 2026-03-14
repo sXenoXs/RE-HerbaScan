@@ -2,21 +2,31 @@ import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
+import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/features/browse/browse_screen.dart';
 
 class NoMatchFoundScreen extends StatelessWidget {
   final String imagePath;
   final double? lowConfidence;
+  /// When true, shows toxic-plant warning (title/body) instead of "Plant Not Recognized".
+  final bool isToxicPlant;
+  /// Display name for the detected toxic plant (e.g. "Adelfa (Nerium oleander)").
+  final String? detectedToxicPlantName;
 
   const NoMatchFoundScreen({
     super.key,
     required this.imagePath,
     this.lowConfidence,
+    this.isToxicPlant = false,
+    this.detectedToxicPlantName,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final isToxic = isToxicPlant;
+    final toxicName = detectedToxicPlantName ?? 'Toxic plant';
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -67,18 +77,25 @@ class NoMatchFoundScreen extends StatelessWidget {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Icon with warning badge
+                        // Icon with warning badge (error tint for toxic)
                         Container(
                           width: 80,
                           height: 80,
                           decoration: BoxDecoration(
-                            color: AppTheme.warningAmber.withOpacity(0.18),
+                            color: (isToxic
+                                    ? AppTheme.errorDeep
+                                    : AppTheme.warningAmber)
+                                .withOpacity(0.18),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
-                            Icons.eco_rounded,
+                          child: Icon(
+                            isToxic
+                                ? Icons.warning_amber_rounded
+                                : Icons.eco_rounded,
                             size: 40,
-                            color: AppTheme.warningAmber,
+                            color: isToxic
+                                ? AppTheme.errorDeep
+                                : AppTheme.warningAmber,
                           ),
                         ),
 
@@ -86,7 +103,9 @@ class NoMatchFoundScreen extends StatelessWidget {
 
                         // Title
                         Text(
-                          'Plant Not Recognized',
+                          isToxic
+                              ? l10n.toxicPlantDetected
+                              : 'Plant Not Recognized',
                           style: theme.textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
@@ -98,7 +117,9 @@ class NoMatchFoundScreen extends StatelessWidget {
 
                         // Description
                         Text(
-                          "We don't recognize this plant. Ensure it's a clear single leaf.",
+                          isToxic
+                              ? l10n.toxicPlantBody.replaceFirst('%s', toxicName)
+                              : "We don't recognize this plant. Ensure it's a clear single leaf.",
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: Colors.white.withOpacity(0.80),
                           ),
@@ -132,7 +153,7 @@ class NoMatchFoundScreen extends StatelessWidget {
                           child: FilledButton.icon(
                             onPressed: () => Navigator.of(context).pop(),
                             icon: const Icon(Icons.camera_alt_rounded, size: 18),
-                            label: const Text('Retake Photo'),
+                            label: Text(l10n.retake),
                             style: FilledButton.styleFrom(
                               backgroundColor: AppTheme.botanicalPrimary,
                             ),
@@ -156,7 +177,7 @@ class NoMatchFoundScreen extends StatelessWidget {
                             style: TextButton.styleFrom(
                               foregroundColor: Colors.white,
                             ),
-                            child: const Text('Browse Catalog'),
+                            child: Text(l10n.browseCatalog),
                           ),
                         ),
                       ],

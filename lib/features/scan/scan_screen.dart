@@ -6,8 +6,10 @@ import 'dart:typed_data';
 import 'dart:async';
 import 'dart:io';
 
+import 'package:herbascan/core/constants/toxic_plant_blacklist.dart';
 import 'package:herbascan/core/providers/camera_provider.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
+import 'package:herbascan/features/scan/no_match_found_screen.dart';
 import 'package:herbascan/features/scan/plant_result_screen.dart';
 
 class ScanScreen extends StatefulWidget {
@@ -125,23 +127,40 @@ class _ScanScreenState extends State<ScanScreen>
         final predictions =
             result['predictions'] as List<Map<String, dynamic>>? ?? [];
         if (predictions.isNotEmpty) {
-          await Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => PlantResultScreen(
-                predictions: predictions,
-                imagePath: image.path,
-                gradcamImageBytes: result['gradcam_image'] as Uint8List?,
-                method: result['method'] as String? ?? 'cam',
-                fallbackUsed: result['fallback_used'] as bool? ?? true,
-                gradCAMPath: result['gradCAMPath'] as String?,
-                summaryGradCAMPath: result['summaryGradCAMPath'] as String?,
+          if (isTopPredictionBlacklisted(predictions)) {
+            if (!mounted) return;
+            final topLabel = predictions.first['plantName'] as String? ??
+                predictions.first['label'] as String?;
+            await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => NoMatchFoundScreen(
+                  imagePath: image.path,
+                  isToxicPlant: true,
+                  detectedToxicPlantName: toxicPlantDisplayName(topLabel),
+                ),
               ),
-            ),
-          );
+            );
+          } else {
+            if (!mounted) return;
+            await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => PlantResultScreen(
+                  predictions: predictions,
+                  imagePath: image.path,
+                  gradcamImageBytes: result['gradcam_image'] as Uint8List?,
+                  method: result['method'] as String? ?? 'cam',
+                  fallbackUsed: result['fallback_used'] as bool? ?? true,
+                  gradCAMPath: result['gradCAMPath'] as String?,
+                  summaryGradCAMPath: result['summaryGradCAMPath'] as String?,
+                ),
+              ),
+            );
+          }
           if (mounted && cameraProvider.cameraController != null) {
             await cameraProvider.cameraController?.resumePreview();
           }
         } else {
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('No plant detected.')),
           );
@@ -175,20 +194,37 @@ class _ScanScreenState extends State<ScanScreen>
         final predictions =
             result['predictions'] as List<Map<String, dynamic>>? ?? [];
         if (predictions.isNotEmpty) {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => PlantResultScreen(
-                predictions: predictions,
-                imagePath: image.path,
-                gradcamImageBytes: result['gradcam_image'] as Uint8List?,
-                method: result['method'] as String? ?? 'cam',
-                fallbackUsed: result['fallback_used'] as bool? ?? true,
-                gradCAMPath: result['gradCAMPath'] as String?,
-                summaryGradCAMPath: result['summaryGradCAMPath'] as String?,
+          if (isTopPredictionBlacklisted(predictions)) {
+            if (!mounted) return;
+            final topLabel = predictions.first['plantName'] as String? ??
+                predictions.first['label'] as String?;
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => NoMatchFoundScreen(
+                  imagePath: image.path,
+                  isToxicPlant: true,
+                  detectedToxicPlantName: toxicPlantDisplayName(topLabel),
+                ),
               ),
-            ),
-          );
+            );
+          } else {
+            if (!mounted) return;
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => PlantResultScreen(
+                  predictions: predictions,
+                  imagePath: image.path,
+                  gradcamImageBytes: result['gradcam_image'] as Uint8List?,
+                  method: result['method'] as String? ?? 'cam',
+                  fallbackUsed: result['fallback_used'] as bool? ?? true,
+                  gradCAMPath: result['gradCAMPath'] as String?,
+                  summaryGradCAMPath: result['summaryGradCAMPath'] as String?,
+                ),
+              ),
+            );
+          }
         } else {
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Failed to identify plant.')),
           );

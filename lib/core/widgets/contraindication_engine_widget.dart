@@ -167,6 +167,7 @@ class _ContraindicationEngineWidgetState
             ),
           ),
         ] else ...[
+          if (profile.needsStrictContraindications) _buildStrictCautionCard(context),
           if (profile.drugInteractions.isNotEmpty) _buildOrangeCard(context, l10n.drugInteractions, '${l10n.avoidUseWith} ${profile.drugInteractions.join(', ')}.'),
           if (profile.pregnancyWarning) _buildRedCard(context, l10n.notSafeForPregnancy),
           if (profile.knownSideEffects.isNotEmpty) _buildYellowSection(context, l10n.knownSideEffects, profile.knownSideEffects),
@@ -226,6 +227,65 @@ class _ContraindicationEngineWidgetState
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Prominent card when plant has needs_strict_contraindications (e.g. Kamias, Kamoteng Kahoy, Kakawate).
+  Widget _buildStrictCautionCard(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final bgColor = isDark
+        ? Colors.orange.withOpacity(0.2)
+        : Colors.orange.shade100;
+    final borderColor = isDark
+        ? Colors.orange.withOpacity(0.6)
+        : Colors.orange.shade700;
+    final titleColor = isDark ? Colors.orange.shade200 : Colors.orange.shade900;
+    final bodyColor = isDark
+        ? Colors.orange.shade100
+        : Colors.orange.shade900.withOpacity(0.9);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: bgColor,
+          border: Border.all(color: borderColor, width: 1.5),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.warning_amber_rounded, color: titleColor, size: 24),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.useWithStrictCaution,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: titleColor,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    l10n.useWithStrictCautionBody,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: bodyColor,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

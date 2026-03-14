@@ -8,6 +8,8 @@ class SafetyProfile {
   final List<String> knownSideEffects;
   final List<String> drugInteractions;
   final List<String> strictContraindications;
+  /// When true, show a prominent "use with strict caution" warning (e.g. Kamias, Kamoteng Kahoy, Kakawate).
+  final bool needsStrictContraindications;
 
   const SafetyProfile({
     required this.plantId,
@@ -17,10 +19,15 @@ class SafetyProfile {
     required this.knownSideEffects,
     required this.drugInteractions,
     required this.strictContraindications,
+    this.needsStrictContraindications = false,
   });
 
   factory SafetyProfile.fromJson(Map<String, dynamic> json) {
     final profile = json['safety_profile'] as Map<String, dynamic>? ?? json;
+    final strict = profile['needs_strict_contraindications'];
+    final needsStrict = strict is bool
+        ? strict
+        : (strict == true || strict == 1 || strict == 'true');
     return SafetyProfile(
       plantId: json['plant_id'] as String? ?? '',
       name: json['name'] as String? ?? '',
@@ -39,6 +46,7 @@ class SafetyProfile {
                   ?.map((e) => e.toString())
                   .toList() ??
               [],
+      needsStrictContraindications: needsStrict,
     );
   }
 
@@ -52,6 +60,7 @@ class SafetyProfile {
         'known_side_effects': knownSideEffects,
         'drug_interactions': drugInteractions,
         'strict_contraindications': strictContraindications,
+        'needs_strict_contraindications': needsStrictContraindications,
       },
     };
   }

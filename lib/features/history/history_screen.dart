@@ -5,11 +5,13 @@ import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/providers/plant_provider.dart';
 import 'package:herbascan/core/providers/auth_provider.dart';
 import 'package:herbascan/core/providers/offline_provider.dart';
+import 'package:herbascan/core/constants/toxic_plant_blacklist.dart';
 import 'package:herbascan/core/models/scan_result.dart';
 import 'package:herbascan/core/models/cloud_scan.dart';
 import 'package:herbascan/core/services/herbarium_service.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/features/auth/login_screen.dart';
+import 'package:herbascan/features/scan/no_match_found_screen.dart';
 import 'package:herbascan/features/scan/plant_result_screen.dart';
 import 'package:herbascan/features/scan/scan_screen.dart';
 import 'package:herbascan/core/services/usage_analytics.dart';
@@ -1311,11 +1313,26 @@ class _HistoryScreenState extends State<HistoryScreen>
             onToggleSelect();
             return;
           }
-          await Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => PlantResultScreen.fromScanResult(scan),
-            ),
-          );
+          if (!mounted) return;
+          if (isScanResultTopPredictionBlacklisted(scan)) {
+            await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => NoMatchFoundScreen(
+                  imagePath: scan.imagePath,
+                  isToxicPlant: true,
+                  detectedToxicPlantName: toxicPlantDisplayName(
+                    scan.topPrediction?.plantName,
+                  ),
+                ),
+              ),
+            );
+          } else {
+            await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => PlantResultScreen.fromScanResult(scan),
+              ),
+            );
+          }
           if (mounted) _loadCloudScans();
         },
         borderRadius: BorderRadius.circular(16),
