@@ -141,6 +141,10 @@ After successful setup:
 - ✅ Backend API for Grad-CAM (Railway); Postman collection
 
 **Recent Features (v0.9.4)**:
+- ✅ Toxic plant blacklist (Adelfa, Ipil-Ipil, Tuba-Tuba): dedicated warning screen; never shown as recommended
+- ✅ Strict-contraindication flagging (`needs_strict_contraindications`); prominent "Use with strict caution" card; Admin Safety tab switch
+- ✅ Extended plant anatomy (39 non-toxic plants in default_plant_anatomy.json); seed from defaults in Admin
+- ✅ Auto-save scans toggle in Settings; when OFF, new scans not auto-saved until user saves from Plant Result or History
 - ✅ Signup 6-digit email confirmation; duplicate email handling; stronger password rules; delete account
 - ✅ Preparation Guide (renamed from Instructions); interactive checklist, contextual timers, Focus Mode, calendar; save/export from Plant Result only
 - ✅ Heatmap in cloud sync (upload/download gradcam image; metadata `gradcam_url`)
@@ -161,6 +165,8 @@ After successful setup:
 - See `backend/README.md` → "🧪 Testing with Postman" for complete testing guide
 - Postman collection: `backend/HerbaScan_API.postman_collection.json`
 - Supports: Postman desktop, VS Code (REST Client, Thunder Client), curl
+
+**Project structure (v0.9.4):** The `tests/` folder (test plans: Unit, Integration, System, etc.) has been removed from the repository. User testing: see TESTING_GUIDE.md if present.
 
 ## Project Structure Overview
 

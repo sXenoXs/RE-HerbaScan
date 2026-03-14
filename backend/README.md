@@ -944,9 +944,12 @@ Main endpoint for plant identification with Grad-CAM.
   ],
   "gradcam_image": "iVBORw0KGgoAAAANSUhEUg...",
   "method": "grad-cam",
-  "processing_time_ms": 3456.78
+  "processing_time_ms": 3456.78,
+  "is_toxic": true
 }
 ```
+
+**Optional response field `is_toxic`:** When the top prediction class index is in `TOXIC_CLASS_INDICES` (0, 14, 39 — Adelfa, Ipil-Ipil, Tuba-Tuba), the backend may include `"is_toxic": true` in the response. The Flutter app's blacklist (`toxic_plant_blacklist.dart`) remains the primary authority; offline and older backends without this field remain safe.
 
 ## 🔧 Configuration
 
