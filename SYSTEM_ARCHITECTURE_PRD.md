@@ -1,6 +1,6 @@
 # HerbaScan – System Architecture & Product Requirements Document
 
-> **Version:** v0.9.3 · **Date:** March 11, 2026 · **Status:** Production-Ready (Thesis Phase)
+> **Version:** v0.9.4 · **Date:** March 14, 2026 · **Status:** Production-Ready (Thesis Phase)
 > **Revised** to reflect CHANGELOG through March 2026.
 >
 > **Source of Truth Hierarchy:** This document is derived from `CHANGELOG.md` as the absolute authority.
@@ -44,7 +44,7 @@ The application serves communities—particularly in rural areas with limited co
 - **Informing** users with structured, deterministic plant knowledge (taxonomy, ecology, medicinal preparation, safety profile).
 - **Empowering** researchers and administrators through a cloud-backed admin portal for dataset building and plant catalog management.
 
-### Current Production State (v0.9.3 – March 2026)
+### Current Production State (v0.9.4 – March 2026)
 
 
 | Dimension            | State                                                                             |
@@ -136,11 +136,11 @@ The application serves communities—particularly in rural areas with limited co
 | Feature                                    | Status | Notes                                                                                                                 |
 | ------------------------------------------ | ------ | --------------------------------------------------------------------------------------------------------------------- |
 | Image Review (Pending / All)               | ✅      | Approve / Reject / Delete submissions                                                                                 |
-| Plant Metadata editor (5-tab form)         | ✅      | Cloud-first, syncs to SQLite                                                                                          |
+| Plant Metadata editor (6-tab form)         | ✅      | Cloud-first, syncs to SQLite. Tabs: Identity, Ecology, Medicinal, Preparations, Safety, **Anatomy**. **Anatomy** (sixth tab): list/add/edit 2D silhouette parts; default entries from `default_plant_anatomy.json` (Restore to Default, delete protection). Consumer: Plant Detail → Medicinal → "Explore Plant Parts" supports **multi-part carousel** (PageView) when a plant has multiple anatomy parts. |
 | Editable safety + habitat tabs             | ✅      | Writes to Supabase `catalog_safety` / `catalog_habitat`                                                               |
 | Full medicinal uses + preparations editors | ✅      |                                                                                                                       |
 | Condition Search management                | ✅      | Add / edit / delete custom conditions + plant mapping                                                                 |
-| User Management                            | ✅      | Deactivate, delete; card layout (no DataTable overflow)                                                               |
+| User Management                            | ✅      | **ListTile** row: title (email + role badge), subtitle (Joined date • scan count); admin avatar/badge use **AppTheme.botanicalPrimary** + white in light mode for contrast. **Make admin / Remove admin** via `AdminUserService.setRole(userId, role)` (no migration). **Force activate email** (OTP bypass) via Edge Function `force-verify-user`. Deactivate, delete; trailing status dot + PopupMenuButton. |
 | Factory Reset                              | ✅      | Re-seeds 42 plants, safety, habitat, conditions to Supabase                                                           |
 | 2D Silhouette admin seed                   | ✅      | `catalog_plant_anatomy` insert templates                                                                              |
 | Instant local sync                         | ✅      | After catalog/condition/plant save, admin triggers local SQLite sync so browse/detail see changes without app restart |
@@ -284,17 +284,26 @@ if (loc == '/admin') {
 | Module                        | Service                    | Supabase Tables                                                                                                                         |
 | ----------------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | Image Review                  | `HerbariumService`         | `scans`, `storage.objects`                                                                                                              |
-| Plant Metadata (5-tab editor) | `CatalogPlantAdminService` | `catalog_plants`, `catalog_medicinal_uses`, `catalog_preparation_methods`, `catalog_safety`, `catalog_habitat`, `catalog_plant_anatomy` |
+| Plant Metadata (6-tab editor) | `CatalogPlantAdminService` | `catalog_plants`, `catalog_medicinal_uses`, `catalog_preparation_methods`, `catalog_safety`, `catalog_habitat`, `catalog_plant_anatomy` |
 | Condition Search              | `CatalogPlantAdminService` | `catalog_conditions`, `catalog_condition_plants`                                                                                        |
 | User Management               | `AdminUserService`         | `profiles`                                                                                                                              |
 
 
-#### delete-user Edge Function
+#### Edge Functions
+
+**delete-user**
 
 - **Runtime:** Deno, deployed via `npx supabase functions deploy delete-user`.
 - **JWT:** Gateway verification disabled (`supabase/config.toml`: `verify_jwt = false`); the function verifies internally via JWKS (Supabase asymmetric signing).
 - **Self-delete:** No body → deletes caller's account.
 - **Admin delete:** Body `{ "user_id": "<uuid>" }` → verifies caller is admin, deletes target.
+
+**force-verify-user**
+
+- **Purpose:** Admins can force-activate a user's email (set `email_confirmed_at`) so the user can sign in without completing OTP.
+- **Deploy:** `npx supabase functions deploy force-verify-user`.
+- **Config:** `supabase/config.toml`: `[functions.force-verify-user] verify_jwt = false`; function verifies caller is admin via `profiles.role` and sets target user's `email_confirmed_at` via Auth Admin API.
+- **App:** **AuthService** `adminForceVerifyUser(String targetUserId)`; **AdminUserService** `forceVerifyUser(String userId)`. Admin → User Management: "Force activate email" menu item; if function not deployed, SnackBar with deploy command.
 
 ---
 
@@ -360,7 +369,7 @@ if (loc == '/admin') {
                 │  catalog_conditions/_plants          │     │
                 │  catalog_plant_anatomy               │     │
                 │  Storage: herbarium-images           │     │
-                │  Edge Fn: delete-user (Deno/JWKS)    │     │
+                │  Edge Fn: delete-user, force-verify-user (Deno/JWKS) |     │
                 │  RLS via is_admin() SECDEF           │     │
                 └──────────────────────────────────────┘     │
                                                              │
@@ -395,7 +404,7 @@ if (loc == '/admin') {
 
 | Provider           | Responsibility                                                              |
 | ------------------ | --------------------------------------------------------------------------- |
-| `AppProvider`      | Theme, language, offline mode toggle, app-wide preferences                  |
+| `AppProvider`      | Theme, language, offline mode toggle, app-wide preferences; **auto-save scans** preference (`_autoSaveScans`, default true), persisted with key `'auto_save_scans'` in SharedPreferences; getter `autoSaveScans`, `toggleAutoSaveScans()`. Plant result screen gates automatic save on this preference. |
 | `AuthProvider`     | Supabase session, user role (`user` / `admin`), sign-in/out/OTP flows       |
 | `PlantProvider`    | Plant catalog (42 plants), scan history, anatomy data, catalog sync trigger |
 | `CameraProvider`   | Camera init, capture, gallery selection, zoom controls (skipped on desktop) |
@@ -438,6 +447,12 @@ AuthProvider
 
 HerbariumService ──► Supabase Storage + scans table
 ```
+
+**Additional core services (admin / anatomy):**
+
+- **DefaultAnatomyService:** Reads `assets/data/default_plant_anatomy.json` (key: plant_id|part_name); exposes `isDefault(plantId, partName)` and `getDefaultData(plantId, partName)` for Admin Anatomy tab "Restore to Default" and delete protection.
+- **CatalogPlantAdminService:** Anatomy methods: `getCatalogAnatomyForPlant`, `insertCatalogAnatomy`, `updateCatalogAnatomy`, `deleteCatalogAnatomy`.
+- **DatabaseService:** `replaceAnatomyForPlantFromSync(plantId, rows)` for single-plant anatomy sync after admin Anatomy edits.
 
 ---
 
@@ -642,6 +657,7 @@ On **every open**, `_ensureCatalogTablesExist()` runs `CREATE TABLE IF NOT EXIST
 | `assets/data/safety_profiles.json`              | JSON   | Contraindication Engine data for all 42 plants            |
 | `assets/data/plant_habitats.json`               | JSON   | Known coordinates + region names for habitat map          |
 | `assets/data/doh_plants.json`                   | JSON   | DOH-approved plant metadata                               |
+| `assets/data/default_plant_anatomy.json`       | JSON   | Default 2D anatomy parts for 10 DOH plants (key: plant_id\|part_name); used by Admin Anatomy tab and DefaultAnatomyService |
 | `assets/images/*.jpg`                           | JPEG   | Plant images (placeholder_plant.jpg for new batches)      |
 
 

@@ -572,7 +572,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
           padding: const EdgeInsets.all(16),
           sliver: SliverList(
             delegate: SliverChildListDelegate([
-              // Interactive anatomy silhouette (DOH plants)
+              // Interactive anatomy silhouette (single or multi-part carousel)
               FutureBuilder<List<PlantAnatomyPart>>(
                 future: plantProvider.getPlantAnatomy(widget.plant.id),
                 builder: (context, snapshot) {
@@ -593,12 +593,22 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
                           child: Container(
                             height: 400,
                             color: theme.colorScheme.surfaceContainerLow,
-                            child: AnatomyInteractiveView(
-                              parts: parts,
-                              height: 400,
-                              onPartTapped: (part) =>
-                                  _showAnatomyPartBottomSheet(context, part, theme),
-                            ),
+                            child: parts.length == 1
+                                ? AnatomyInteractiveView(
+                                    parts: parts,
+                                    height: 400,
+                                    onPartTapped: (part) =>
+                                        _showAnatomyPartBottomSheet(
+                                            context, part, theme),
+                                  )
+                                : _AnatomyPartCarousel(
+                                    parts: parts,
+                                    height: 400,
+                                    onPartTapped: (part) =>
+                                        _showAnatomyPartBottomSheet(
+                                            context, part, theme),
+                                    l10n: l10n,
+                                  ),
                           ),
                         ),
                       ],
@@ -1099,6 +1109,107 @@ class _DataSourceTile extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Multi-part anatomy carousel: one silhouette per part with Next/Previous.
+class _AnatomyPartCarousel extends StatefulWidget {
+  const _AnatomyPartCarousel({
+    required this.parts,
+    required this.height,
+    required this.onPartTapped,
+    required this.l10n,
+  });
+
+  final List<PlantAnatomyPart> parts;
+  final double height;
+  final ValueChanged<PlantAnatomyPart> onPartTapped;
+  final AppLocalizations l10n;
+
+  @override
+  State<_AnatomyPartCarousel> createState() => _AnatomyPartCarouselState();
+}
+
+class _AnatomyPartCarouselState extends State<_AnatomyPartCarousel> {
+  late PageController _pageController;
+  int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final part = widget.parts[_currentPage.clamp(0, widget.parts.length - 1)];
+    final label = part.title.isNotEmpty ? part.title : part.partName;
+    return Column(
+      children: [
+        SizedBox(
+          height: widget.height,
+          child: PageView.builder(
+            controller: _pageController,
+            onPageChanged: (index) => setState(() => _currentPage = index),
+            itemCount: widget.parts.length,
+            itemBuilder: (context, index) {
+              final p = widget.parts[index];
+              return AnatomyInteractiveView(
+                parts: [p],
+                height: widget.height,
+                onPartTapped: widget.onPartTapped,
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.chevron_left),
+              onPressed: _currentPage > 0
+                  ? () {
+                      _pageController.previousPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    }
+                  : null,
+              tooltip: widget.l10n.previousPart,
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Text(
+                label,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.chevron_right),
+              onPressed: _currentPage < widget.parts.length - 1
+                  ? () {
+                      _pageController.nextPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    }
+                  : null,
+              tooltip: widget.l10n.nextPart,
+            ),
+          ],
         ),
       ],
     );

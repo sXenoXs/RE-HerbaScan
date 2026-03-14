@@ -1,8 +1,8 @@
 # HerbaScan Backend - Quick Start Guide
 
 **Last Updated**: March 2026  
-**Backend Version**: 0.9.3  
-**Flutter App Version**: v0.9.3
+**Backend Version**: 0.9.4
+**Flutter App Version**: v0.9.4
 
 **Model Standardization**: MobileNetV2 Only (Phase 34) - HerbaScan custom model deprecated  
 **AI Explanation Standardization**: Phase 35 Complete - Structured format with 42 plants
@@ -270,7 +270,7 @@ Once deployed, you have:
 - ✅ Base64 encoded heatmap images
 - ✅ Top-3 predictions with confidence scores
 - ✅ Ready for Flutter integration
-- ✅ Integrated with Hybrid XAI Explanation System (v0.9.3) - supports 42 plants with complete structured offline explanations (taxonomy, ecology, medicinal_preparation, safety_consideration)
+- ✅ Integrated with Hybrid XAI Explanation System (v0.9.4) - supports 42 plants with complete structured offline explanations (taxonomy, ecology, medicinal_preparation, safety_consideration)
 
 ### Next Steps
 

@@ -83,7 +83,8 @@ class _AdminUserManagementScreenState
     _actionInProgress = true;
     try {
       final ok = await AdminUserService().setActive(row.id, active);
-      if (ok && mounted) await _load();
+      if (!mounted) return;
+      if (ok) await _load();
     } finally {
       if (mounted) setState(() => _actionInProgress = false);
     }
@@ -140,8 +141,45 @@ class _AdminUserManagementScreenState
           );
         }
       } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to update role.')),
+          );
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _actionInProgress = false);
+    }
+  }
+
+  Future<void> _forceVerifyUser(AdminProfileRow row) async {
+    if (_actionInProgress) return;
+    _actionInProgress = true;
+    try {
+      await AdminUserService().forceVerifyUser(row.id);
+      if (!mounted) return;
+      await _load();
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to update role.')),
+          SnackBar(content: Text(AppLocalizations.of(context).emailVerified)),
+        );
+      }
+    } on FunctionException catch (e) {
+      if (e.status == 404 || e.status == 501) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(AppLocalizations.of(context).forceVerifyNotAvailable),
+            ),
+          );
+        }
+      } else {
+        rethrow;
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Force verify failed: $e')),
         );
       }
     } finally {
@@ -339,7 +377,7 @@ class _AdminUserManagementScreenState
             child: ListView.separated(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
               itemCount: _filtered.length,
-              separatorBuilder: (_, __) => const Divider(height: 1),
+              separatorBuilder: (_, __) => const Divider(height: 1, indent: 72),
               itemBuilder: (context, index) {
                 final row = _filtered[index];
                 return _buildUserRow(context, theme, row, dateFormat);
@@ -357,69 +395,122 @@ class _AdminUserManagementScreenState
     final initials = row.email.isNotEmpty
         ? row.email[0].toUpperCase()
         : '?';
+    final l10n = AppLocalizations.of(context);
+
+    final subtitleParts = <String>[
+      if (row.createdAt != null)
+        'Joined ${dateFormat.format(row.createdAt!)}',
+      '${row.scanCount} Scan${row.scanCount == 1 ? '' : 's'}',
+    ];
 
     return ListTile(
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       leading: CircleAvatar(
+        radius: 24,
         backgroundColor: isAdmin
-            ? AppTheme.darkSurface
+            ? AppTheme.botanicalPrimary
             : theme.colorScheme.surfaceContainerHighest,
-        foregroundColor:
-            isAdmin ? Colors.white : theme.colorScheme.onSurfaceVariant,
-        child: Text(initials,
-            style: const TextStyle(fontWeight: FontWeight.w600)),
+        foregroundColor: isAdmin
+            ? Colors.white
+            : theme.colorScheme.onSurfaceVariant,
+        child: Text(
+          initials,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+          ),
+        ),
       ),
-      title: Text(
-        row.email.isEmpty ? '(no email)' : row.email,
-        style: theme.textTheme.bodyLarge
-            ?.copyWith(fontWeight: FontWeight.w600),
-        maxLines: 2,
-        overflow: TextOverflow.visible,
-        softWrap: true,
+      title: Row(
+        children: [
+          Flexible(
+            child: Text(
+              row.email.isEmpty ? '(no email)' : row.email,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              softWrap: true,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 8,
+              vertical: 2,
+            ),
+            decoration: BoxDecoration(
+              color: isAdmin
+                  ? AppTheme.botanicalPrimary
+                  : theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              isAdmin ? 'ADMIN' : 'USER',
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: isAdmin
+                    ? Colors.white
+                    : theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
       ),
-      subtitle: Text(
-        [
-          row.createdAt != null
-              ? 'Joined ${dateFormat.format(row.createdAt!)}'
-              : null,
-          '${row.scanCount} Scan${row.scanCount == 1 ? '' : 's'}',
-        ].whereType<String>().join(' • '),
-        style: theme.textTheme.bodySmall?.copyWith(
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+      subtitle: Padding(
+        padding: const EdgeInsets.only(top: 4),
+        child: Text(
+          subtitleParts.join(' • '),
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+          ),
         ),
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Status dot
           Container(
-            width: 8,
-            height: 8,
+            width: 10,
+            height: 10,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isActive ? AppTheme.safeGreen : AppTheme.errorColor,
+              color: isActive
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.error,
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert_rounded),
             onSelected: (action) {
-              switch (action) {
-                case 'suspend':
-                  _setActive(row, false);
-                case 'reactivate':
-                  _setActive(row, true);
-                case 'make_admin':
-                  _setRole(row, 'admin');
-                case 'remove_admin':
-                  _setRole(row, 'user');
-                case 'delete':
-                  _deleteUser(row);
-              }
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                switch (action) {
+                  case 'suspend':
+                    _setActive(row, false);
+                    break;
+                  case 'reactivate':
+                    _setActive(row, true);
+                    break;
+                  case 'make_admin':
+                    _setRole(row, 'admin');
+                    break;
+                  case 'remove_admin':
+                    _setRole(row, 'user');
+                    break;
+                  case 'delete':
+                    _deleteUser(row);
+                    break;
+                  case 'force_verify':
+                    _forceVerifyUser(row);
+                    break;
+                }
+              });
             },
             itemBuilder: (ctx) {
-              final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+              final currentUserId =
+                  Supabase.instance.client.auth.currentUser?.id;
               final isCurrentUser = currentUserId == row.id;
               return [
                 if (isActive)
@@ -447,7 +538,7 @@ class _AdminUserManagementScreenState
                     child: Row(children: [
                       const Icon(Icons.admin_panel_settings_outlined),
                       const SizedBox(width: 12),
-                      Text(AppLocalizations.of(context).makeAdmin),
+                      Text(l10n.makeAdmin),
                     ]),
                   ),
                 if (isAdmin && !isCurrentUser)
@@ -456,9 +547,17 @@ class _AdminUserManagementScreenState
                     child: Row(children: [
                       const Icon(Icons.admin_panel_settings_rounded),
                       const SizedBox(width: 12),
-                      Text(AppLocalizations.of(context).removeAdmin),
+                      Text(l10n.removeAdmin),
                     ]),
                   ),
+                PopupMenuItem(
+                  value: 'force_verify',
+                  child: Row(children: [
+                    const Icon(Icons.mark_email_read_outlined),
+                    const SizedBox(width: 12),
+                    Text(l10n.forceVerifyEmail),
+                  ]),
+                ),
                 PopupMenuItem(
                   value: 'delete',
                   child: Row(children: [
@@ -466,8 +565,7 @@ class _AdminUserManagementScreenState
                         color: theme.colorScheme.error),
                     const SizedBox(width: 12),
                     Text('Delete User Data',
-                        style:
-                            TextStyle(color: theme.colorScheme.error)),
+                        style: TextStyle(color: theme.colorScheme.error)),
                   ]),
                 ),
               ];

@@ -572,27 +572,44 @@ class DatabaseService {
     await db.transaction((txn) async {
       await txn.delete(_anatomyTable);
       for (var row in rows) {
-        await txn.insert(_anatomyTable, {
-          'id': row['id'] as String? ?? '',
-          'plant_id': row['plant_id'] as String? ?? '',
-          'part_name': row['part_name'] as String? ?? '',
-          'svg_path': row['svg_path'] as String? ?? '',
-          'color_hex': row['color_hex'] as String? ?? '4CAF50',
-          'z_index': row['z_index'] is int
-              ? row['z_index'] as int
-              : int.tryParse(row['z_index'].toString()) ?? 0,
-          'is_interactive':
-              row['is_interactive'] == true || row['is_interactive'] == 1
-                  ? 1
-                  : 0,
-          'title': row['title'] as String? ?? '',
-          'description': row['description'] as String? ?? '',
-          'conditions': row['conditions'] is String
-              ? row['conditions'] as String
-              : jsonEncode(row['conditions'] ?? []),
-        });
+        await txn.insert(_anatomyTable, _anatomyRowToInsert(row));
       }
     });
+  }
+
+  /// Replaces anatomy rows for a single plant (for admin instant sync after edit). Deletes existing for plant_id then inserts.
+  Future<void> replaceAnatomyForPlantFromSync(String plantId, List<Map<String, dynamic>> rows) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete(_anatomyTable, where: 'plant_id = ?', whereArgs: [plantId]);
+      for (var row in rows) {
+        final insertRow = Map<String, dynamic>.from(_anatomyRowToInsert(row));
+        insertRow['plant_id'] = plantId;
+        await txn.insert(_anatomyTable, insertRow);
+      }
+    });
+  }
+
+  static Map<String, dynamic> _anatomyRowToInsert(Map<String, dynamic> row) {
+    return {
+      'id': row['id'] as String? ?? '',
+      'plant_id': row['plant_id'] as String? ?? '',
+      'part_name': row['part_name'] as String? ?? '',
+      'svg_path': row['svg_path'] as String? ?? '',
+      'color_hex': row['color_hex'] as String? ?? '4CAF50',
+      'z_index': row['z_index'] is int
+          ? row['z_index'] as int
+          : int.tryParse(row['z_index'].toString()) ?? 0,
+      'is_interactive':
+          row['is_interactive'] == true || row['is_interactive'] == 1
+              ? 1
+              : 0,
+      'title': row['title'] as String? ?? '',
+      'description': row['description'] as String? ?? '',
+      'conditions': row['conditions'] is String
+          ? row['conditions'] as String
+          : jsonEncode(row['conditions'] ?? []),
+    };
   }
 
   /// Returns anatomy parts for a plant from local DB (synced from Supabase), ordered by z_index.

@@ -170,6 +170,27 @@ class AppLocalizations {
   // 2D Interactive Plant Silhouette (anatomy)
   String get explorePlantParts =>
       _localizedValues[locale.languageCode]!['explorePlantParts']!;
+  String get nextPart => _localizedValues[locale.languageCode]!['nextPart']!;
+  String get previousPart =>
+      _localizedValues[locale.languageCode]!['previousPart']!;
+
+  // Admin Anatomy tab
+  String get adminAnatomyEmpty =>
+      _localizedValues[locale.languageCode]!['adminAnatomyEmpty']!;
+  String get adminAnatomyAddPart =>
+      _localizedValues[locale.languageCode]!['adminAnatomyAddPart']!;
+  String get restoreToDefault =>
+      _localizedValues[locale.languageCode]!['restoreToDefault']!;
+  String get edit => _localizedValues[locale.languageCode]!['edit']!;
+  String get adminAnatomyDeleteConfirm =>
+      _localizedValues[locale.languageCode]!['adminAnatomyDeleteConfirm']!;
+  String get savedToCatalog =>
+      _localizedValues[locale.languageCode]!['savedToCatalog']!;
+  String get saveFailed =>
+      _localizedValues[locale.languageCode]!['saveFailed']!;
+  String get deleted => _localizedValues[locale.languageCode]!['deleted']!;
+  String get restoredToDefault =>
+      _localizedValues[locale.languageCode]!['restoredToDefault']!;
 
   // Settings
   String get language => _localizedValues[locale.languageCode]!['language']!;
@@ -237,6 +258,12 @@ class AppLocalizations {
       _localizedValues[locale.languageCode]!['userNowAdmin']!;
   String get adminRemoved =>
       _localizedValues[locale.languageCode]!['adminRemoved']!;
+  String get forceVerifyEmail =>
+      _localizedValues[locale.languageCode]!['forceVerifyEmail']!;
+  String get emailVerified =>
+      _localizedValues[locale.languageCode]!['emailVerified']!;
+  String get forceVerifyNotAvailable =>
+      _localizedValues[locale.languageCode]!['forceVerifyNotAvailable']!;
 
   // Condition Search
   String get browseByCondition =>
@@ -409,6 +436,18 @@ class AppLocalizations {
       'whereItGrows': 'Where it grows',
       'habitatLoadError': 'Failed to load habitat data.',
       'explorePlantParts': 'Explore plant parts',
+      'nextPart': 'Next part',
+      'previousPart': 'Previous part',
+      'adminAnatomyEmpty':
+          'No plant parts yet. Add parts to show the interactive silhouette on the Plant Detail screen.',
+      'adminAnatomyAddPart': 'Add plant part',
+      'restoreToDefault': 'Restore to default',
+      'edit': 'Edit',
+      'adminAnatomyDeleteConfirm': 'Delete this plant part',
+      'savedToCatalog': 'Saved to catalog',
+      'saveFailed': 'Save failed',
+      'deleted': 'Deleted',
+      'restoredToDefault': 'Restored to default',
       'language': 'Language / Wika',
       'offlineMode': 'Offline Mode',
       'showConfidenceScores': 'Show Confidence Scores',
@@ -445,6 +484,10 @@ class AppLocalizations {
       'removeAdmin': 'Remove admin',
       'userNowAdmin': 'User is now an administrator.',
       'adminRemoved': 'Admin role removed.',
+      'forceVerifyEmail': 'Force activate email',
+      'emailVerified': 'Email verified. User can sign in without OTP.',
+      'forceVerifyNotAvailable':
+          'Force verify is not available. Deploy the force-verify-user Edge Function.',
       'browseByCondition': 'Browse by Condition',
       'selectCondition': 'Select a medical condition',
       'commonConditions': 'Common Conditions',
@@ -573,6 +616,18 @@ class AppLocalizations {
       'whereItGrows': 'Saan ito tumutubo',
       'habitatLoadError': 'Hindi ma-load ang data ng tirahan.',
       'explorePlantParts': 'Tuklasin ang mga bahagi ng halaman',
+      'nextPart': 'Susunod na bahagi',
+      'previousPart': 'Nakaraang bahagi',
+      'adminAnatomyEmpty':
+          'Walang bahagi ng halaman. Magdagdag ng bahagi para ipakita ang interactive silhouette sa Plant Detail.',
+      'adminAnatomyAddPart': 'Magdagdag ng bahagi ng halaman',
+      'restoreToDefault': 'Ibalik sa default',
+      'edit': 'I-edit',
+      'adminAnatomyDeleteConfirm': 'Tanggalin ang bahaging ito ng halaman',
+      'savedToCatalog': 'Nai-save sa catalog',
+      'saveFailed': 'Hindi nai-save',
+      'deleted': 'Natanggal',
+      'restoredToDefault': 'Naibalik sa default',
       'language': 'Wika / Language',
       'offlineMode': 'Offline Mode',
       'showConfidenceScores': 'Ipakita ang Confidence Scores',
@@ -610,6 +665,10 @@ class AppLocalizations {
       'removeAdmin': 'Alisin ang admin',
       'userNowAdmin': 'Ang user ay administrator na.',
       'adminRemoved': 'Naalis na ang admin role.',
+      'forceVerifyEmail': 'Pilitin i-activate ang email',
+      'emailVerified': 'Na-verify na ang email. Maaari nang mag-sign in ang user nang walang OTP.',
+      'forceVerifyNotAvailable':
+          'Hindi available ang force verify. I-deploy ang force-verify-user Edge Function.',
       'browseByCondition': 'Tingnan Ayon sa Kondisyon',
       'selectCondition': 'Pumili ng kondisyong medikal',
       'commonConditions': 'Mga Karaniwang Kondisyon',

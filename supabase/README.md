@@ -326,4 +326,18 @@ The function lives in `supabase/functions/delete-user/index.ts`. (1) **Self-dele
 
 ---
 
+## Force activate email (Edge Function)
+
+Admins can **force-verify a user’s email** (set `email_confirmed_at`) from **Admin → User Management** via the **"Force activate email"** menu item. This lets users sign in without completing the email OTP/link flow. The app calls the Edge Function **`force-verify-user`**, which verifies the caller is admin (via `profiles.role`) and then uses the Auth Admin API to set the user’s email as confirmed.
+
+**Deploy the function**
+
+1. Install the [Supabase CLI](https://supabase.com/docs/guides/cli) and log in: `npx supabase login`.
+2. Link the project (if not already): `npx supabase link --project-ref YOUR_PROJECT_REF`.
+3. Deploy: `npx supabase functions deploy force-verify-user`.
+
+Config in `supabase/config.toml`: `[functions.force-verify-user] verify_jwt = false` (same pattern as `delete-user`; the function verifies JWT via JWKS and checks admin role). If the function is not deployed, the app shows a SnackBar: *"Force verify is not available. Deploy the force-verify-user Edge Function."*
+
+---
+
 **Using Supabase CLI (recommended):** From project root, run once: `npx supabase login` (opens browser). Then: `npx supabase link --project-ref tsahfzmxqsgbxrrtbdnw` (use your project ref if different). Then: `npx supabase db push` to apply migrations. If prompted for database password, use the one from Supabase Dashboard → Project Settings → Database.

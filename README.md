@@ -10,7 +10,7 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 
 ## 🚀 Current Development Status
 
-**Version**: v0.9.3  
+**Version**: v0.9.4  
 **Last Updated**: March 2026
 **Project Phase**: Phase 35 Complete (AI Explanation Content Standardization & Complete Plant Database Migration)  
 **Overall Progress**: 90% Complete - **PRODUCTION READY** 
@@ -101,7 +101,7 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **Tap to Expand Plant Image**: ✅ **NEW** Implemented tap to expand feature - tap plant image to view in full-screen with Hero animation, pinch-to-zoom (0.5x-4.0x), and pan gestures
 - **Full Screen Reading Mode**: ✅ **NEW** Implemented full-screen reading mode for Summary tab - distraction-free view with larger text and regenerate capability
 - **AI Explanation Tab Simplification**: ✅ **NEW** Removed 'Original' sub-tab from AI Explanation section - simplified navigation to only Heatmap and Summary tabs
-- **Version Update**: ✅ **NEW** Updated all version references to v0.9.3 across the application (splash, settings, app info, feedback, docs)
+- **Version Update**: ✅ **NEW** Updated all version references to v0.9.4 across the application (splash, settings, app info, feedback, docs)
 
 ### 🔄 In Progress (Phase 6: Offline CAM Fix)
 
@@ -111,7 +111,7 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **Beta Testing**: User testing with TESTING_GUIDE.md
 - **Data Collection**: Gathering user feedback and metrics
 
-### ✅ Recently Fixed (v0.9.3)
+### ✅ Recently Fixed (v0.9.4)
 
 - **Online GradCAM Prediction Mapping**: Fixed "Unknown" plant names in online GradCAM predictions
 - **Backend Response Field Mapping**: Corrected mapping from backend 'class' and 'class_index' to Flutter format
@@ -497,7 +497,7 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - [x] Added markdown text formatting
 - [x] Implemented usability assessment with clear status indicators
 - [x] Added refresh functionality for regenerating explanations
-- [x] **Content Standardization** (v0.9.3): Standardized structure with four sections (Taxonomy, Ecology, Medicinal Uses, Safety) - identical format for online and offline
+- [x] **Content Standardization** (v0.9.4): Standardized structure with four sections (Taxonomy, Ecology, Medicinal Uses, Safety) - identical format for online and offline
 
 ### Phase 10: Beta Testing & Deployment (🔄 In Progress)
 
@@ -642,7 +642,7 @@ herbascan/
 
 ## 📊 Progress Metrics
 
-- **Version**: v0.9.3
+- **Version**: v0.9.4
 - **Code Files Created**: 50+ files
 - **Lines of Code**: 10,000+ lines
 - **Features Implemented**: 45+ core features
@@ -721,7 +721,7 @@ HerbaScan is designed to work seamlessly in rural areas without internet connect
 
 ## 🔧 Development Notes
 
-### Recent Changes (Version v0.9.3 – March 2026)
+### Recent Changes (Version v0.9.4 – March 2026)
 
 **CHANGELOG.md** is the authoritative change log; this README is kept in sync with it. Summary:
 
@@ -731,13 +731,17 @@ HerbaScan is designed to work seamlessly in rural areas without internet connect
 - **Auth & Account**: Signup 6-digit confirmation; duplicate email handling; stronger password rules; change password with live requirements; delete account (Settings → Account); account deactivation by admin (sign-out with message); friendly auth error messages; 6-digit OTP password reset and auth deep links.
 - **Preparation Guide**: Renamed from Instructions; interactive checklist and contextual timers; timer notifications and persistence (SharedPreferences, flutter_local_notifications); Focus Mode; calendar add-to-device with pre-fill.
 - **Safety & XAI**: Contraindication Engine (safety_profiles.json); no live LLM – explanations from cache/offline/fallback only; Summary tab fixes and taxonomy formatting.
-- **Admin**: Cloud-first catalog sync; instant local sync after catalog/condition/plant save; condition list plant count 1:1 with browse; Plant Metadata (5-tab editor); Condition Search management; Factory Reset; 2D plant anatomy; Image Review and User Management; admin on Windows and mobile; RLS via `is_admin()`.
+- **Admin**: Cloud-first catalog sync; instant local sync after catalog/condition/plant save; condition list plant count 1:1 with browse; Plant Metadata (6-tab editor, including Anatomy); Condition Search management; Factory Reset; 2D plant anatomy; Image Review and User Management; admin on Windows and mobile; RLS via `is_admin()`.
+- **Auto-save Scans:** Settings toggle (key `auto_save_scans`); when OFF, new scans are not auto-saved to History until user uses Save from Plant Result or History.
+- **Admin User Management:** ListTile row layout (email + role badge on title line, metadata as subtitle); admin avatar/badge contrast fix in light mode; **Force activate email** (OTP bypass) via `force-verify-user` Edge Function; **Make admin / Remove admin** via `AdminUserService.setRole`.
+- **Admin Plant Catalog Editor:** Sixth tab **Anatomy** for 2D silhouette CRUD; multiline/no horizontal scroll for Safety, Medicinal Use, and Preparation Method fields; instant local sync after saves.
+- **Interactive Plant Anatomy:** DefaultAnatomyService + `default_plant_anatomy.json`; Plant Detail "Explore Plant Parts" multi-part carousel when multiple anatomy parts exist.
 - **Labels & models**: App uses `assets/models/class_indices.json` (name→index); offline CAM uses `mobilenetv2_multi_output.tflite`. No `labels.txt`.
 - **Settings & Offline**: De-jargonified AI labels (e.g. "Show Prediction Confidence", "Show AI Reasoning Heatmap"); Offline Storage Info refreshes before dialog; System Diagnostics (renamed from Offline Demo).
 - **SnackBar**: Floating behavior so camera FAB is not displaced.
 - **Backend**: Railway `/identify` allows unauthenticated requests when `SUPABASE_JWT_SECRET` unset; see supabase/README.md and backend/README.md.
 - **Testing plans**: `tests/` folder (Unit, Integration, System, Acceptance, Performance, Usability, Compatibility, Security); see TESTING_GUIDE.md and tests/*.md.
-- **Version**: All app version references set to v0.9.3.
+- **Version**: All app version references set to v0.9.4.
 
 ### Known Issues
 

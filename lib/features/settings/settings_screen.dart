@@ -323,13 +323,16 @@ class SettingsScreen extends StatelessWidget {
   }
 
   Widget _buildAutoSaveTile(BuildContext context, ThemeData theme) {
+    final appProvider = Provider.of<AppProvider>(context);
     return SwitchListTile(
       secondary: const Icon(Icons.save_outlined),
       title: const Text('Auto-save Scans'),
       subtitle: const Text('Automatically save scan results'),
-      value: true,
-      onChanged: (_) {
-        // TODO: Implement auto-save setting
+      value: appProvider.autoSaveScans,
+      onChanged: (value) async {
+        appProvider.toggleAutoSaveScans();
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('auto_save_scans', value);
       },
     );
   }
