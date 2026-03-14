@@ -58,5 +58,179 @@
     "title": "Leaves",
     "description": "Yerba buena leaves are used for muscle and joint pain and headache. Applied as poultice or drunk as tea.",
     "conditions": ["Muscle and Joint Pain", "Headache"]
+  },
+  "tawa-tawa-001|whole plant": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Whole plant",
+    "description": "Tawa-tawa (Euphorbia hirta) whole plant is traditionally used for dengue support and fever. Contains phytochemicals with platelet-enhancing properties. Use under medical guidance.",
+    "conditions": ["Dengue support", "Fever", "Respiratory"]
+  },
+  "malunggay-001|leaves": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Leaves",
+    "description": "Malunggay (Moringa) leaves are highly nutritious and used for malnutrition, inflammation, and blood sugar support. Rich in vitamins and minerals. Traditional preparation: fresh leaves in soup or tea.",
+    "conditions": ["Nutrition", "Inflammation", "Blood sugar"]
+  },
+  "oregano-001|leaves": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Leaves",
+    "description": "Oregano leaves are used for cough, respiratory and digestive issues. Contains antimicrobial compounds. Traditional preparation: decoction or tea.",
+    "conditions": ["Cough", "Respiratory", "Digestive"]
+  },
+  "luya-001|rhizome": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Rhizome",
+    "description": "Luya (ginger/turmeric) rhizome contains curcumin; proven anti-inflammatory. Traditional preparation: decoction, poultice, or grated in food. Do not substitute for medical treatment.",
+    "conditions": ["Inflammation", "Digestive", "Pain relief"]
+  },
+  "gotu-kola-001|leaves": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Leaves",
+    "description": "Gotu kola leaves are used for wound healing and cognitive support. Scientifically documented. Traditional preparation: poultice for wounds or tea.",
+    "conditions": ["Wound healing", "Cognitive support", "Skin"]
+  },
+  "aloe-vera-001|leaf gel": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Leaf gel",
+    "description": "Aloe vera inner leaf gel is used for burns and skin health. Avoid the yellow latex near the skin (strong laxative). External use well documented.",
+    "conditions": ["Burns", "Skin health", "Wound healing"]
+  },
+  "sampa-sampalukan-001|whole plant": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Whole plant",
+    "description": "Sampa-sampalukan (Phyllanthus niruri) whole plant is used for kidney and liver support. Scientifically documented. Traditional preparation: decoction.",
+    "conditions": ["Kidney stones", "Liver support", "Urinary"]
+  },
+  "banaba-001|leaves": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Leaves",
+    "description": "Banaba leaves contain corosolic acid; proven anti-diabetic. Traditional preparation: decoction. Consult a doctor for kidney disorders.",
+    "conditions": ["Diabetes", "Blood sugar", "Kidney support"]
+  },
+  "kamoteng-kahoy-001|roots": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Roots and leaves",
+    "description": "Kamoteng kahoy (cassava) roots and leaves release cyanide if raw or improperly prepared. Never eat raw. Must be thoroughly cooked. Use with strict caution and professional guidance.",
+    "conditions": ["Nutrition (cooked only)", "Starch"]
+  },
+  "kamias-001|fruit": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Fruit",
+    "description": "Kamias fruit is high in oxalic acid. Excessive consumption may cause acute kidney injury. Use in moderation; avoid if you have kidney issues. Follow preparation and dosage guidance.",
+    "conditions": ["Cough", "Hypertension", "Skin (external)"]
+  },
+  "kakawate-001|leaves": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Leaves",
+    "description": "Kakawate leaves are for external (topical) use only. Toxic if ingested. Used traditionally for skin wounds and scabies. Do not consume.",
+    "conditions": ["Skin wounds", "Scabies", "Topical only"]
+  },
+  "alagaw-001|leaves": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Leaves",
+    "description": "Alagaw leaves are used for cough and respiratory relief. Traditional preparation: decoction.",
+    "conditions": ["Cough", "Respiratory", "Fever"]
+  },
+  "gumamela-001|leaves": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Leaves and flowers",
+    "description": "Gumamela leaves and flowers are used for respiratory and skin conditions. Traditional preparation: decoction or poultice.",
+    "conditions": ["Cough", "Bronchitis", "Skin"]
+  },
+  "guyabano-001|leaves": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Leaves",
+    "description": "Guyabano leaves are traditionally used for fever and pain. Preparation: decoction or tea.",
+    "conditions": ["Fever", "Pain", "Relaxation"]
+  },
+  "mayana-001|leaves": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Leaves",
+    "description": "Mayana (Coleus) leaves are used for pain relief and inflammation. Traditional preparation: poultice or decoction.",
+    "conditions": ["Pain", "Inflammation", "Headache"]
+  },
+  "calamansi-001|fruit": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Fruit and juice",
+    "description": "Calamansi fruit and juice are rich in vitamin C; used for cough and immune support. Common in Filipino cuisine.",
+    "conditions": ["Cough", "Immune support", "Nutrition"]
+  },
+  "dayap-001|fruit": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Fruit and juice",
+    "description": "Dayap (lime) fruit and juice provide vitamin C and are used for cough and digestive support.",
+    "conditions": ["Cough", "Digestive", "Nutrition"]
+  },
+  "kahel-001|fruit": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Fruit",
+    "description": "Kahel (orange) fruit is a source of vitamin C and used for immune support and cough relief.",
+    "conditions": ["Immune support", "Cough", "Nutrition"]
+  },
+  "pomelo-001|fruit": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Fruit and juice",
+    "description": "Pomelo fruit and juice are used for cough and digestive health. Rich in vitamin C.",
+    "conditions": ["Cough", "Digestive", "Nutrition"]
+  },
+  "siling-labuyo-001|fruit": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Fruit",
+    "description": "Siling labuyo fruit is used for pain relief and circulation. Use in moderation; can irritate digestive tract.",
+    "conditions": ["Pain relief", "Circulation", "Culinary"]
+  },
+  "pandan-001|leaves": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Leaves",
+    "description": "Pandan leaves are used for relaxation and flavor in cooking. Traditional preparation: decoction or extract.",
+    "conditions": ["Relaxation", "Culinary", "Aromatic"]
+  },
+  "saluyot-001|leaves": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Leaves",
+    "description": "Saluyot (jute) leaves are nutritious and used for digestive health. Common in Ilocano cuisine.",
+    "conditions": ["Digestive", "Nutrition", "Fiber"]
+  },
+  "balanoy-001|leaves": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Leaves",
+    "description": "Balanoy (basil) leaves are used for cough and digestive issues. Traditional preparation: tea or fresh in food.",
+    "conditions": ["Cough", "Digestive", "Culinary"]
+  },
+  "bignay-001|fruit": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Fruit and leaves",
+    "description": "Bignay fruit and leaves are used for diabetes and liver support. Traditional preparation: decoction.",
+    "conditions": ["Diabetes", "Liver", "Antioxidant"]
+  },
+  "kamote-001|leaves": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Leaves",
+    "description": "Kamote (sweet potato) leaves are nutritious and used for digestive health. Common in Filipino cooking.",
+    "conditions": ["Nutrition", "Digestive", "Vitamins"]
+  },
+  "mango-001|leaves": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Leaves",
+    "description": "Mango leaves are traditionally used for cough and respiratory support. Preparation: decoction.",
+    "conditions": ["Cough", "Respiratory", "Traditional use"]
+  },
+  "sampalok-001|pulp": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Pulp and leaves",
+    "description": "Sampalok (tamarind) pulp is used for digestive and laxative effects. Leaves in traditional preparations.",
+    "conditions": ["Digestive", "Laxative", "Culinary"]
+  },
+  "mani-001|seeds": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Seeds (nuts)",
+    "description": "Mani (peanut) seeds are nutritious; used in traditional preparations. Be aware of allergy risk.",
+    "conditions": ["Nutrition", "Protein", "Culinary"]
+  },
+  "kamantigue-001|leaves": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Leaves",
+    "description": "Kamantigue (impatiens) leaves contain calcium oxalate; can be irritating if ingested. Traditional topical use.",
+    "conditions": ["Skin", "Topical", "Warts"]
   }
 }

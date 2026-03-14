@@ -246,6 +246,7 @@ class CatalogPlantAdminService {
         'known_side_effects': profile.knownSideEffects,
         'drug_interactions': profile.drugInteractions,
         'strict_contraindications': profile.strictContraindications,
+        'needs_strict_contraindications': profile.needsStrictContraindications,
       }, onConflict: 'plant_id');
       if (kDebugMode) debugPrint('[CatalogPlantAdminService] Saved safety for $plantId');
       return true;
@@ -363,6 +364,7 @@ class CatalogPlantAdminService {
       if (kDebugMode) debugPrint('[CatalogPlantAdminService] Seeded ${plants.length} plants.');
       await seedCatalogSafetyAndHabitatFromAssets();
       await seedCatalogConditionsFromDefaults();
+      await seedCatalogAnatomyFromDefaults();
       return true;
     } catch (e, st) {
       if (kDebugMode) {
@@ -394,6 +396,7 @@ class CatalogPlantAdminService {
           'known_side_effects': profile.knownSideEffects,
           'drug_interactions': profile.drugInteractions,
           'strict_contraindications': profile.strictContraindications,
+          'needs_strict_contraindications': profile.needsStrictContraindications,
         }, onConflict: 'plant_id');
       }
       if (kDebugMode) debugPrint('[CatalogPlantAdminService] Seeded ${safetyData.length} safety profiles.');
@@ -468,6 +471,65 @@ class CatalogPlantAdminService {
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint('[CatalogPlantAdminService] seedCatalogConditionsFromDefaults: $e');
+        debugPrint(st.toString());
+      }
+    }
+  }
+
+  /// Seed catalog_plant_anatomy from assets/data/default_plant_anatomy.json.
+  /// Additive: only inserts missing (plant_id, part_name) pairs; does not delete existing rows.
+  /// Called by seedCatalogFromDefaults; ensures all 39 non-toxic plants have at least one anatomy part.
+  Future<void> seedCatalogAnatomyFromDefaults() async {
+    if (!isAvailable) return;
+    try {
+      final existingRes = await _client.from('catalog_plant_anatomy').select('plant_id, part_name');
+      final existingList = (existingRes as List).cast<Map<String, dynamic>>();
+      final existingKeys = <String>{};
+      for (var row in existingList) {
+        final pid = row['plant_id'] as String? ?? '';
+        final pn = row['part_name'] as String? ?? '';
+        if (pid.isNotEmpty) existingKeys.add('$pid|$pn');
+      }
+
+      final jsonStr = await rootBundle.loadString('assets/data/default_plant_anatomy.json');
+      final defaultData = jsonDecode(jsonStr) as Map<String, dynamic>? ?? {};
+      int inserted = 0;
+      for (final entry in defaultData.entries) {
+        final key = entry.key;
+        if (!key.contains('|')) continue;
+        if (existingKeys.contains(key)) continue;
+        final value = entry.value as Map<String, dynamic>? ?? {};
+        final plantId = key.split('|').first;
+        final partName = key.split('|').skip(1).join('|');
+        final svgPath = value['svg_path'] as String? ?? 'M 20 20 L 180 20 L 180 160 L 20 160 Z';
+        final title = value['title'] as String? ?? partName;
+        final description = value['description'] as String? ?? '';
+        final conditionsRaw = value['conditions'];
+        final conditions = conditionsRaw is List
+            ? conditionsRaw.map((e) => e.toString()).toList()
+            : <String>[];
+
+        final row = <String, dynamic>{
+          'plant_id': plantId,
+          'part_name': partName,
+          'svg_path': svgPath,
+          'color_hex': '4CAF50',
+          'z_index': 0,
+          'is_interactive': true,
+          'title': title,
+          'description': description,
+          'conditions': conditions,
+        };
+        final id = await insertCatalogAnatomy(row);
+        if (id != null) {
+          existingKeys.add(key);
+          inserted++;
+        }
+      }
+      if (kDebugMode) debugPrint('[CatalogPlantAdminService] Seeded $inserted anatomy rows from defaults.');
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('[CatalogPlantAdminService] seedCatalogAnatomyFromDefaults: $e');
         debugPrint(st.toString());
       }
     }

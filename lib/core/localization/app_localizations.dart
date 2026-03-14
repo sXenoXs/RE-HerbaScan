@@ -132,6 +132,10 @@ class AppLocalizations {
       _localizedValues[locale.languageCode]!['knownSideEffects']!;
   String get strictContraindications =>
       _localizedValues[locale.languageCode]!['strictContraindications']!;
+  String get useWithStrictCaution =>
+      _localizedValues[locale.languageCode]!['useWithStrictCaution']!;
+  String get useWithStrictCautionBody =>
+      _localizedValues[locale.languageCode]!['useWithStrictCautionBody']!;
   String get generallySafeForConsumption =>
       _localizedValues[locale.languageCode]!['generallySafeForConsumption']!;
   String get safetyDisclaimerEducational =>
@@ -304,6 +308,12 @@ class AppLocalizations {
   String get retake => _localizedValues[locale.languageCode]!['retake']!;
   String get browseManually =>
       _localizedValues[locale.languageCode]!['browseManually']!;
+  String get browseCatalog =>
+      _localizedValues[locale.languageCode]!['browseCatalog']!;
+  String get toxicPlantDetected =>
+      _localizedValues[locale.languageCode]!['toxicPlantDetected']!;
+  String get toxicPlantBody =>
+      _localizedValues[locale.languageCode]!['toxicPlantBody']!;
   String get scanningTipsTitle =>
       _localizedValues[locale.languageCode]!['scanningTipsTitle']!;
 
@@ -415,6 +425,8 @@ class AppLocalizations {
       'notSafeForPregnancy': 'Not safe for pregnancy',
       'knownSideEffects': 'Known side effects',
       'strictContraindications': 'Strict contraindications',
+      'useWithStrictCaution': 'Use with strict caution',
+      'useWithStrictCautionBody': 'Preparation and dosage must be followed. Do not use without professional guidance.',
       'generallySafeForConsumption': 'Generally safe for normal consumption.',
       'safetyDisclaimerEducational':
           'This app is for educational purposes only. It is not a replacement for professional medical advice. Always consult a healthcare professional before using herbal remedies, especially if you are pregnant, nursing, taking medications, or have existing medical conditions.',
@@ -509,6 +521,10 @@ class AppLocalizations {
       'tryAgain': 'Try Again',
       'retake': 'Retake Photo',
       'browseManually': 'Browse Manually',
+      'browseCatalog': 'Browse Catalog',
+      'toxicPlantDetected': 'Toxic plant detected',
+      'toxicPlantBody':
+          'This plant may be %s. Do not use for food or medicine. If ingested or exposed, seek medical attention.',
       'scanningTipsTitle': 'Scanning Tips',
       'helpAndTutorial': 'Help & Tutorial',
       'bestPractices': 'Best Practices for Scanning',
@@ -595,6 +611,8 @@ class AppLocalizations {
       'notSafeForPregnancy': 'Hindi ligtas para sa pagbubuntis',
       'knownSideEffects': 'Kilalang side effects',
       'strictContraindications': 'Strikto na mga kontraindikasyon',
+      'useWithStrictCaution': 'Gamitin nang may mahigpit na pag-iingat',
+      'useWithStrictCautionBody': 'Dapat sundin ang paraan ng paghahanda at dosis. Huwag gamitin nang walang gabay ng propesyonal.',
       'generallySafeForConsumption': 'Sa pangkalahatan ay ligtas para sa normal na pagkonsumo.',
       'safetyDisclaimerEducational':
           'Ang app na ito ay para lamang sa edukasyonal na layunin. Hindi ito kapalit ng propesyonal na payo medikal. Laging kumonsulta sa propesyonal sa kalusugan bago gumamit ng halamang gamot, lalo na kung ikaw ay buntis, nagpapasuso, umiinom ng gamot, o may umiiral na kondisyong medikal.',
@@ -690,6 +708,10 @@ class AppLocalizations {
       'tryAgain': 'Subukan Muli',
       'retake': 'Kumuha Muli ng Larawan',
       'browseManually': 'Mag-browse Nang Manu-mano',
+      'browseCatalog': 'Mag-browse ng Katalogo',
+      'toxicPlantDetected': 'Nadetect ang lason na halaman',
+      'toxicPlantBody':
+          'Ang halamang ito ay maaaring %s. Huwag gamitin para sa pagkain o gamot. Kung nalunok o na-expose, humingi ng medikal na atensyon.',
       'scanningTipsTitle': 'Mga Tip sa Pag-scan',
       'helpAndTutorial': 'Tulong at Tutorial',
       'bestPractices': 'Pinakamahusay na Gawain sa Pag-scan',

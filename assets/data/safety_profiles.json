@@ -183,7 +183,8 @@
       "pregnancy_warning": false,
       "known_side_effects": ["Toxic to humans if ingested"],
       "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["External use only", "Do not consume leaves or bark"]
+      "strict_contraindications": ["External use only", "Do not consume leaves or bark"],
+      "needs_strict_contraindications": true
     }
   },
   "Kamantigue": {
@@ -205,7 +206,8 @@
       "pregnancy_warning": false,
       "known_side_effects": ["Acute kidney injury from oxalate crystals with excessive consumption"],
       "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["Kidney issues – avoid excessive fruit or juice"]
+      "strict_contraindications": ["Kidney issues – avoid excessive fruit or juice"],
+      "needs_strict_contraindications": true
     }
   },
   "Kamote": {
@@ -220,14 +222,15 @@
     }
   },
   "KamotengKahoy": {
-    "plant_id": "kamotengkahoy-001",
+    "plant_id": "kamoteng-kahoy-001",
     "name": "Kamoteng-kahoy",
     "safety_profile": {
       "is_generally_safe": false,
       "pregnancy_warning": false,
       "known_side_effects": ["Cyanide release if raw or improperly prepared"],
       "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["Never eat leaves or roots raw", "Must be thoroughly cooked"]
+      "strict_contraindications": ["Never eat leaves or roots raw", "Must be thoroughly cooked"],
+      "needs_strict_contraindications": true
     }
   },
   "Lagundi": {

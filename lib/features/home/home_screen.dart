@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:herbascan/core/constants/toxic_plant_blacklist.dart';
 import 'package:herbascan/core/providers/plant_provider.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
@@ -8,6 +9,7 @@ import 'package:herbascan/features/browse/browse_screen.dart';
 import 'package:herbascan/features/history/history_screen.dart';
 import 'package:herbascan/features/doh/doh_screen.dart';
 import 'package:herbascan/features/settings/settings_screen.dart';
+import 'package:herbascan/features/scan/no_match_found_screen.dart';
 import 'package:herbascan/features/scan/plant_result_screen.dart';
 import 'package:herbascan/features/scan/plant_detail_screen.dart';
 import 'package:herbascan/core/models/scan_result.dart';
@@ -443,11 +445,26 @@ class _HomeDashboardState extends State<HomeDashboard> {
 
     return InkWell(
       onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => PlantResultScreen.fromScanResult(scan),
-          ),
-        );
+        if (!mounted) return;
+        if (isScanResultTopPredictionBlacklisted(scan)) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => NoMatchFoundScreen(
+                imagePath: scan.imagePath,
+                isToxicPlant: true,
+                detectedToxicPlantName: toxicPlantDisplayName(
+                  scan.topPrediction?.plantName,
+                ),
+              ),
+            ),
+          );
+        } else {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => PlantResultScreen.fromScanResult(scan),
+            ),
+          );
+        }
       },
       borderRadius: BorderRadius.circular(16),
       child: Container(

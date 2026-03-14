@@ -244,6 +244,8 @@ class CatalogSyncService {
       }
       return [];
     }
+    final strict = row['needs_strict_contraindications'];
+    final needsStrict = strict == true || strict == 1;
     return SafetyProfile(
       plantId: plantId,
       name: '',
@@ -252,6 +254,7 @@ class CatalogSyncService {
       knownSideEffects: listFrom(row['known_side_effects']),
       drugInteractions: listFrom(row['drug_interactions']),
       strictContraindications: listFrom(row['strict_contraindications']),
+      needsStrictContraindications: needsStrict,
     );
   }
 

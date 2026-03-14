@@ -12,7 +12,7 @@ import 'package:herbascan/core/models/scan_result.dart';
 class DatabaseService {
   static Database? _database;
   static const String _databaseName = 'herbascan.db';
-  static const int _databaseVersion = 7;
+  static const int _databaseVersion = 8;
 
   // Table names
   static const String _plantsTable = 'plants';
@@ -167,7 +167,8 @@ class DatabaseService {
         pregnancy_warning INTEGER NOT NULL DEFAULT 0,
         known_side_effects TEXT NOT NULL DEFAULT '[]',
         drug_interactions TEXT NOT NULL DEFAULT '[]',
-        strict_contraindications TEXT NOT NULL DEFAULT '[]'
+        strict_contraindications TEXT NOT NULL DEFAULT '[]',
+        needs_strict_contraindications INTEGER NOT NULL DEFAULT 0
       )
     ''');
     await db.execute(
@@ -278,7 +279,8 @@ class DatabaseService {
             pregnancy_warning INTEGER NOT NULL DEFAULT 0,
             known_side_effects TEXT NOT NULL DEFAULT '[]',
             drug_interactions TEXT NOT NULL DEFAULT '[]',
-            strict_contraindications TEXT NOT NULL DEFAULT '[]'
+            strict_contraindications TEXT NOT NULL DEFAULT '[]',
+            needs_strict_contraindications INTEGER NOT NULL DEFAULT 0
           )
         ''');
         await db.execute(
@@ -346,6 +348,15 @@ class DatabaseService {
         print('✅ Added catalog_plant_anatomy table');
       } catch (e) {
         print('ℹ️ catalog_plant_anatomy may already exist: $e');
+      }
+    }
+    if (oldVersion < 8) {
+      try {
+        await db.execute(
+            'ALTER TABLE $_safetyProfilesTable ADD COLUMN needs_strict_contraindications INTEGER NOT NULL DEFAULT 0');
+        print('✅ Added needs_strict_contraindications to safety_profiles');
+      } catch (e) {
+        print('ℹ️ needs_strict_contraindications may already exist: $e');
       }
     }
   }
@@ -467,6 +478,7 @@ class DatabaseService {
       'known_side_effects': jsonEncode(profile.knownSideEffects),
       'drug_interactions': jsonEncode(profile.drugInteractions),
       'strict_contraindications': jsonEncode(profile.strictContraindications),
+      'needs_strict_contraindications': profile.needsStrictContraindications ? 1 : 0,
     };
     await db.insert(
       _safetyProfilesTable,
@@ -634,6 +646,10 @@ class DatabaseService {
       }
     }
 
+    final strictRaw = row['needs_strict_contraindications'];
+    final needsStrict = strictRaw == 1 ||
+        strictRaw == true ||
+        (strictRaw is String && strictRaw == '1');
     return SafetyProfile(
       plantId: row['plant_id'] as String? ?? '',
       name: '',
@@ -643,6 +659,7 @@ class DatabaseService {
       drugInteractions: list(row['drug_interactions'] as String? ?? '[]'),
       strictContraindications:
           list(row['strict_contraindications'] as String? ?? '[]'),
+      needsStrictContraindications: needsStrict,
     );
   }
 

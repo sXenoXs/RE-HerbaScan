@@ -43,6 +43,9 @@ MOBILENETV2_MODEL_PATH = Path("models/MobileNetV2_model.keras")
 LABELS_PATH = Path("models/labels.json")
 SUPABASE_JWT_SECRET = os.environ.get("SUPABASE_JWT_SECRET")
 
+# Toxic plant class indices (Adelfa=0, IpilIpil=14, TubaTuba=39 per class_indices.json)
+TOXIC_CLASS_INDICES = {0, 14, 39}
+
 
 def verify_supabase_jwt(authorization: str = Header(None)) -> bool:
     """
@@ -288,6 +291,9 @@ async def identify_plant(
         # Calculate processing time
         processing_time = (time.time() - start_time) * 1000  # Convert to ms
         
+        # Toxic plant flag (app-layer blacklist remains primary; this is optional for clients)
+        is_toxic = predicted_class_idx in TOXIC_CLASS_INDICES
+        
         # Prepare response
         response = {
             "plant_name": predicted_class_name,
@@ -298,7 +304,8 @@ async def identify_plant(
             "gradcam_image": gradcam_base64,
             "method": "grad-cam",
             "model_used": model_name_used,
-            "processing_time_ms": round(processing_time, 2)
+            "processing_time_ms": round(processing_time, 2),
+            "is_toxic": is_toxic,
         }
         
         return JSONResponse(content=response)
