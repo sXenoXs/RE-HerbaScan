@@ -1,6 +1,6 @@
 ## Quick Setup Instructions
 
-**Last Updated**: March 2026 · **App Version**: v0.9.4
+**Last Updated**: March 16, 2026 · **App Version**: v0.9.5
 
 ### 1. Install Flutter
 
@@ -124,7 +124,7 @@ After successful setup:
 4. **Test Multi-language**: Switch between English and Filipino
 5. **Deploy**: Build APK with `flutter build apk` for release
 
-**Current Features Ready for Testing** (v0.9.4 – March 2026). For full detail see **CHANGELOG.md**.
+**Current Features Ready for Testing** (v0.9.5 – March 2026). For full detail see **CHANGELOG.md**.
 
 - ✅ Plant identification (camera + gallery)
 - ✅ GradCAM visualization with working overlay controls
@@ -140,7 +140,7 @@ After successful setup:
 - ✅ Settings and preferences; offline management
 - ✅ Backend API for Grad-CAM (Railway); Postman collection
 
-**Recent Features (v0.9.4)**:
+**Recent Features (v0.9.5)**:
 - ✅ Toxic plant blacklist (Adelfa, Ipil-Ipil, Tuba-Tuba): dedicated warning screen; never shown as recommended
 - ✅ Strict-contraindication flagging (`needs_strict_contraindications`); prominent "Use with strict caution" card; Admin Safety tab switch
 - ✅ Extended plant anatomy (39 non-toxic plants in default_plant_anatomy.json); seed from defaults in Admin
@@ -154,7 +154,7 @@ After successful setup:
 - ✅ Scan History: swipe between tabs, pull-to-refresh on Cloud, select mode, batch sync; save/export from Plant Result only
 - ✅ Friendly auth errors; 6-digit OTP password reset; auth deep links
 
-**Recent Fixes (v0.9.4)**:
+**Recent Fixes (v0.9.5)**:
 - ✅ Summary tab content and layout; taxonomy Markdown line breaks
 - ✅ Railway /identify 401 when not logged in (optional JWT; recommend unset)
 - ✅ Calendar add-event on Android (queries intent); Focus Mode contrast
@@ -166,7 +166,7 @@ After successful setup:
 - Postman collection: `backend/HerbaScan_API.postman_collection.json`
 - Supports: Postman desktop, VS Code (REST Client, Thunder Client), curl
 
-**Project structure (v0.9.4):** The `tests/` folder (test plans: Unit, Integration, System, etc.) has been removed from the repository. User testing: see TESTING_GUIDE.md if present.
+**Project structure (v0.9.5):** The `tests/` folder (test plans: Unit, Integration, System, etc.) has been removed from the repository. User testing: see TESTING_GUIDE.md if present.
 
 ## Project Structure Overview
 
@@ -302,6 +302,8 @@ The app uses SQLite for local storage. The database is created automatically on 
 
 To enable Admin **Force activate email** (OTP bypass), deploy the Edge Function: `npx supabase functions deploy force-verify-user`. See [supabase/README.md](supabase/README.md).
 
+For Admin **Feedback** tab (Option B: store feedback in Supabase and allow admins to view/delete), run migrations `20260316000000_user_feedback.sql` and `20260316000001_user_feedback_admin_delete.sql` in the Supabase SQL Editor (or `npx supabase db push`). See [supabase/README.md](supabase/README.md) Steps 6d and 6e.
+
 ## XAI Explanation System Setup
 
 ### Offline Explanations
@@ -310,8 +312,8 @@ To enable Admin **Force activate email** (OTP bypass), deploy the Edge Function:
 - **Format**: JSON with taxonomy, ecology, medicinal uses, safety; structured safety profiles
 - **Status**: ✅ Automatically included in app assets
 
-### Online Explanations (No Live LLM in v0.9.4)
-- **Behavior**: As of v0.9.4, the app does **not** use live generative AI at runtime. Explanations come only from: SharedPreferences/file cache (read-only), offline `plant_explanations.json`, and fallback text. Safety is fully deterministic via the Contraindication Engine (`safety_profiles.json`).
+### Online Explanations (No Live LLM in v0.9.5)
+- **Behavior**: As of v0.9.5, the app does **not** use live generative AI at runtime. Explanations come only from: SharedPreferences/file cache (read-only), offline `plant_explanations.json`, and fallback text. Safety is fully deterministic via the Contraindication Engine (`safety_profiles.json`).
 - **Offline data**: `assets/data/plant_explanations.json` and `assets/data/safety_profiles.json`.
 - **Fallback**: If no cached or offline explanation is found, a fallback message is shown.
 
@@ -350,7 +352,7 @@ To enable Admin **Force activate email** (OTP bypass), deploy the Edge Function:
 
 ### API Configuration
 - **Backend (GradCAM)**: `lib/core/services/online_gradcam_service.dart` – set base URL to your Railway deployment. Default production URL: `https://re-herbascan-production.up.railway.app`. Optional JWT: see `supabase/README.md` (Step 3 – recommend leaving unset) and `backend/README.md`.
-- **No live LLM in v0.9.4**: Explanations use cache/offline JSON and fallback only.
+- **No live LLM in v0.9.5**: Explanations use cache/offline JSON and fallback only.
 
 ### Backend API URL
 - **Location**: `lib/core/services/online_gradcam_service.dart`

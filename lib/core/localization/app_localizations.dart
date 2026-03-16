@@ -361,6 +361,16 @@ class AppLocalizations {
   String get feedbackSubmitted =>
       _localizedValues[locale.languageCode]!['feedbackSubmitted']!;
   String get done => _localizedValues[locale.languageCode]!['done']!;
+  String get didWeGetThisRight =>
+      _localizedValues[locale.languageCode]!['didWeGetThisRight']!;
+  String get milestoneFeedbackTitle =>
+      _localizedValues[locale.languageCode]!['milestoneFeedbackTitle']!;
+  String get milestoneFeedbackBody =>
+      _localizedValues[locale.languageCode]!['milestoneFeedbackBody']!;
+  String get rateExperience =>
+      _localizedValues[locale.languageCode]!['rateExperience']!;
+  String get maybeLater =>
+      _localizedValues[locale.languageCode]!['maybeLater']!;
   String get appPerformance =>
       _localizedValues[locale.languageCode]!['appPerformance']!;
   String get viewPerformanceData =>
@@ -550,6 +560,13 @@ class AppLocalizations {
       'feedbackSubmitted':
           'Your feedback has been submitted successfully. Thank you for helping us improve HerbaScan!',
       'done': 'Done',
+      'didWeGetThisRight':
+          'Did we get this right? Help our research.',
+      'milestoneFeedbackTitle': 'You\'ve been exploring HerbaScan!',
+      'milestoneFeedbackBody':
+          'Would you mind taking 30 seconds to rate your experience for our thesis research?',
+      'rateExperience': 'Rate experience',
+      'maybeLater': 'Maybe later',
       'appPerformance': 'App Performance',
       'viewPerformanceData': 'View performance data and statistics',
     },
@@ -737,6 +754,13 @@ class AppLocalizations {
       'feedbackSubmitted':
           'Ang iyong feedback ay matagumpay na naisumite. Salamat sa pagtulong sa amin na mapabuti ang HerbaScan!',
       'done': 'Tapos na',
+      'didWeGetThisRight':
+          'Tama ba ang resulta? Tulungan ang aming pananaliksik.',
+      'milestoneFeedbackTitle': 'Nag-explore ka na ng HerbaScan!',
+      'milestoneFeedbackBody':
+          'Pwede mo bang gugulin ng 30 segundo para i-rate ang iyong karanasan para sa aming pananaliksik?',
+      'rateExperience': 'I-rate ang karanasan',
+      'maybeLater': 'Mamaya na',
       'appPerformance': 'Pagganap ng App',
       'viewPerformanceData': 'Tingnan ang data at istatistika ng pagganap',
     },

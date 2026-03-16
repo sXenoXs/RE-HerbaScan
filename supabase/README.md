@@ -207,6 +207,13 @@ This runs your `20260223000000_herbarium_schema.sql` file in Supabase **without*
 **Step 6c – Strict contraindication flagging (optional)**  
 - Run `supabase/migrations/20260314000000_catalog_safety_strict_contraindications.sql` in the SQL Editor to add column `needs_strict_contraindications` (BOOLEAN, default false) to `catalog_safety`. The migration backfills `true` for Kamias, Kamoteng Kahoy, and Kakawate. The Flutter app uses this to show a prominent "Use with strict caution" card; local SQLite is upgraded to version 8 with the same column in `safety_profiles`.
 
+**Step 6d – User feedback table (optional)**
+- Run `supabase/migrations/20260316000000_user_feedback.sql` in the SQL Editor to create `public.user_feedback` and RLS (INSERT allowed for all, SELECT for admins only). Required for the Admin **Feedback** tab (Option B: store feedback in Supabase and view submissions from all users). You can also run `npx supabase db push` to apply all pending migrations.
+- **Schema:** Table `public.user_feedback` has columns: `id` (UUID PK), `user_id` (UUID NULL, references auth.users), `rating`, `category`, `comment`, `feature_suggestion`, `metadata` (JSONB), `created_at`. Index on `created_at DESC` for admin list ordering. RLS policies: `user_feedback_insert_allow_all` (INSERT with check true), `user_feedback_select_admin_only` (SELECT using `public.is_admin()`).
+
+**Step 6e – Admin delete feedback (optional)**
+- Run `supabase/migrations/20260316000001_user_feedback_admin_delete.sql` in the SQL Editor (or `npx supabase db push`) to add RLS policy `user_feedback_delete_admin_only` (DELETE using `public.is_admin()`) so admins can delete feedback rows from the Admin Feedback tab. Requires Step 6d first.
+
 **If you get an error**
 - If it says something like “relation already exists”, you may have run the migration before. That’s okay; the script uses `CREATE TABLE IF NOT EXISTS` so it’s safe to run again in most cases.
 - If the error is about a trigger or policy already existing, you can drop it first in a new query (e.g. `DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;`) then run the migration again, or ask for help with the exact error message.

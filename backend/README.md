@@ -1,8 +1,8 @@
 # HerbaScan Backend API
 
 **Last Updated**: March 2026  
-**Backend Version**: 0.9.4
-**Flutter App Version**: v0.9.4
+**Backend Version**: 0.9.5
+**Flutter App Version**: v0.9.5
 
 **Model Standardization**: MobileNetV2 Only (Phase 34) - HerbaScan custom model deprecated  
 **AI Explanation Standardization**: Phase 35 Complete - Structured format with 42 plants
@@ -28,7 +28,7 @@ Build/start come from `backend/railway.json` (Dockerfile + start command). No se
 
 ## 📋 Setup Instructions
 
-> **Note**: This backend is part of the HerbaScan Hybrid XAI Explanation System. The Flutter app (v0.9.4) uses this backend for online GradCAM computation, while offline explanations use pre-written structured JSON data (42 plants with taxonomy, ecology, medicinal_preparation, and safety_consideration) and offline CAM heatmaps.
+> **Note**: This backend is part of the HerbaScan Hybrid XAI Explanation System. The Flutter app (v0.9.5) uses this backend for online GradCAM computation, while offline explanations use pre-written structured JSON data (42 plants with taxonomy, ecology, medicinal_preparation, and safety_consideration) and offline CAM heatmaps.
 
 ### 1. Place Model Files
 
@@ -863,7 +863,7 @@ Or use Postman (see Testing section below).
 
 Once deployed, update your Flutter app with the Railway URL:
 
-> **Note**: The Flutter app (v0.9.4) includes a Hybrid XAI Explanation System that uses this backend for online GradCAM heatmaps. The app automatically falls back to offline CAM and offline structured JSON explanations (42 plants with standardized format: taxonomy, ecology, medicinal_preparation, safety_consideration) when internet is unavailable. See the main `README.md` for details on the XAI system.
+> **Note**: The Flutter app (v0.9.5) includes a Hybrid XAI Explanation System that uses this backend for online GradCAM heatmaps. The app automatically falls back to offline CAM and offline structured JSON explanations (42 plants with standardized format: taxonomy, ecology, medicinal_preparation, safety_consideration) when internet is unavailable. See the main `README.md` for details on the XAI system.
 
 ```dart
 // lib/core/services/online_gradcam_service.dart
@@ -1059,7 +1059,7 @@ curl -X POST https://YOUR-RAILWAY-URL.railway.app/identify -F "file=@image.jpg"
   - Upload to cloud storage (S3, GCS) and download on startup
   - Include in Docker image if < 100MB
 - **Model Standardization (Phase 34):** Backend uses only `MobileNetV2_model.keras`. HerbaScan custom model is deprecated for prediction consistency between offline CAM and online GradCAM.
-- **AI Explanation Standardization (Phase 35):** Flutter app (v0.9.4) now uses standardized structured format for all 42 plants with identical data depth (taxonomy, ecology, medicinal_preparation, safety_consideration) for both online (Gemini API) and offline (JSON) explanations.
+- **AI Explanation Standardization (Phase 35):** Flutter app (v0.9.5) now uses standardized structured format for all 42 plants with identical data depth (taxonomy, ecology, medicinal_preparation, safety_consideration) for both online (Gemini API) and offline (JSON) explanations.
 
 ### TensorFlow Compatibility
 

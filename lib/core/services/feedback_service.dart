@@ -1,32 +1,96 @@
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:herbascan/core/models/user_feedback.dart';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:herbascan/core/config/supabase_config.dart';
+import 'package:herbascan/core/models/user_feedback.dart';
 
-/// Service for managing user feedback
+/// Service for managing user feedback (local + optional Supabase for admin view).
 class FeedbackService {
   static const String _feedbackKey = 'user_feedback_list';
   static const String _feedbackCountKey = 'user_feedback_count';
   static const String _lastFeedbackDateKey = 'last_feedback_date';
+  static const String _lastMilestoneFeedbackShownKey =
+      'last_milestone_feedback_shown_at';
 
-  /// Save user feedback
+  /// Save user feedback. Always saves locally; also inserts to Supabase when configured (Option B).
   Future<void> saveFeedback(UserFeedback feedback) async {
     final prefs = await SharedPreferences.getInstance();
-    
+
     // Get existing feedback
     final feedbackList = await getAllFeedback();
-    
+
     // Add new feedback
     feedbackList.add(feedback);
-    
-    // Save to preferences
+
+    // Save to preferences (source of truth on device)
     final jsonList = feedbackList.map((f) => f.toJson()).toList();
     await prefs.setString(_feedbackKey, jsonEncode(jsonList));
-    
+
     // Update metadata
     await prefs.setInt(_feedbackCountKey, feedbackList.length);
     await prefs.setString(_lastFeedbackDateKey, DateTime.now().toIso8601String());
-    
-    print('Feedback saved: ${feedback.category} - ${feedback.rating} stars');
+
+    if (kDebugMode) {
+      debugPrint('Feedback saved: ${feedback.category} - ${feedback.rating} stars');
+    }
+
+    // Option B: insert to Supabase when configured (for admin view across users)
+    if (isSupabaseConfigured) {
+      try {
+        final userId = Supabase.instance.client.auth.currentUser?.id;
+        await Supabase.instance.client.from('user_feedback').insert({
+          'id': feedback.id,
+          'user_id': userId,
+          'rating': feedback.rating,
+          'category': feedback.category,
+          'comment': feedback.comment,
+          'feature_suggestion': feedback.featureSuggestion,
+          'metadata': feedback.metadata,
+          'created_at': feedback.createdAt.toIso8601String(),
+        });
+      } catch (e, st) {
+        if (kDebugMode) {
+          debugPrint('FeedbackService: Supabase insert failed (local save succeeded): $e');
+          debugPrint('$st');
+        }
+      }
+    }
+  }
+
+  /// Delete a single feedback row from Supabase by id. Admins only (RLS). Returns true if deleted.
+  Future<bool> deleteFeedbackFromSupabase(String id) async {
+    if (!isSupabaseConfigured) return false;
+    try {
+      await Supabase.instance.client.from('user_feedback').delete().eq('id', id);
+      return true;
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('FeedbackService: deleteFeedbackFromSupabase failed: $e');
+        debugPrint('$st');
+      }
+      return false;
+    }
+  }
+
+  /// Fetch all feedback from Supabase for admin view. Returns empty list if not configured or on error.
+  Future<List<Map<String, dynamic>>> getFeedbackFromSupabase() async {
+    if (!isSupabaseConfigured) return [];
+    try {
+      final res = await Supabase.instance.client
+          .from('user_feedback')
+          .select()
+          .order('created_at', ascending: false);
+      final list = res as List<dynamic>?;
+      if (list == null) return [];
+      return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('FeedbackService: getFeedbackFromSupabase failed: $e');
+        debugPrint('$st');
+      }
+      return [];
+    }
   }
 
   /// Get all feedback
@@ -71,12 +135,35 @@ class FeedbackService {
   /// (e.g., after 5 successful scans and not asked in last 7 days)
   Future<bool> shouldPromptForFeedback(int successfulScans) async {
     if (successfulScans < 5) return false;
-    
+
     final lastDate = await getLastFeedbackDate();
     if (lastDate == null) return true;
-    
+
     final daysSinceLastFeedback = DateTime.now().difference(lastDate).inDays;
     return daysSinceLastFeedback >= 7;
+  }
+
+  /// Returns true when scanCount is 3 or 5 and we haven't shown milestone prompt in last 7 days.
+  Future<bool> shouldShowMilestonePrompt(int scanCount) async {
+    if (scanCount != 3 && scanCount != 5) return false;
+    final prefs = await SharedPreferences.getInstance();
+    final last = prefs.getString(_lastMilestoneFeedbackShownKey);
+    if (last == null) return true;
+    try {
+      final lastDate = DateTime.parse(last);
+      return DateTime.now().difference(lastDate).inDays >= 7;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  /// Call after showing the milestone dialog (so we don't prompt again for 7 days).
+  Future<void> recordMilestonePromptShown() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _lastMilestoneFeedbackShownKey,
+      DateTime.now().toIso8601String(),
+    );
   }
 
   /// Get feedback statistics

@@ -5,6 +5,8 @@ import 'package:herbascan/features/admin/admin_condition_search_screen.dart';
 import 'package:herbascan/features/admin/admin_dashboard_screen.dart';
 import 'package:herbascan/features/admin/admin_plant_metadata_screen.dart';
 import 'package:herbascan/features/admin/admin_user_management_screen.dart';
+import 'package:herbascan/features/admin/admin_system_health_screen.dart';
+import 'package:herbascan/features/admin/admin_feedback_screen.dart';
 
 /// Admin web dashboard: desktop layout with NavigationRail and three modules.
 /// RBAC guard ensures only admins reach this screen.
@@ -23,6 +25,8 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
   static const int _plantMetadataIndex = 1;
   static const int _conditionSearchIndex = 2;
   static const int _userManagementIndex = 3;
+  static const int _systemHealthIndex = 4;
+  static const int _feedbackIndex = 5;
 
   static const _destinations = [
     (
@@ -44,6 +48,16 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
       icon: Icons.people_outline,
       selectedIcon: Icons.people,
       label: 'User Directory',
+    ),
+    (
+      icon: Icons.monitor_heart_outlined,
+      selectedIcon: Icons.monitor_heart,
+      label: 'System Health',
+    ),
+    (
+      icon: Icons.feedback_outlined,
+      selectedIcon: Icons.feedback,
+      label: 'Feedback',
     ),
   ];
 
@@ -67,10 +81,13 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
       );
     }
 
-    // Narrow/mobile: hamburger drawer
+    // Narrow/mobile: hamburger drawer. AppBar uses theme surface/onSurface so it adapts in dark mode.
+    final theme = Theme.of(context);
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
+        backgroundColor: theme.colorScheme.surface,
+        foregroundColor: theme.colorScheme.onSurface,
         title: const Text('Admin Console'),
         leading: IconButton(
           icon: const Icon(Icons.menu),
@@ -349,6 +366,10 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
         return const AdminConditionSearchScreen();
       case _userManagementIndex:
         return const AdminUserManagementScreen();
+      case _systemHealthIndex:
+        return const AdminSystemHealthScreen();
+      case _feedbackIndex:
+        return const AdminFeedbackScreen();
       default:
         return const Center(child: Text('Select a module'));
     }
