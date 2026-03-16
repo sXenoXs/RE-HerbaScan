@@ -306,8 +306,8 @@ class _AdminUserManagementScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Header row
-        Padding(
+        Container(
+          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
           padding: const EdgeInsets.fromLTRB(16, 16, 8, 0),
           child: Row(
             children: [

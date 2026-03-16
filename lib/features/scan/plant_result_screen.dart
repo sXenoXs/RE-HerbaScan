@@ -17,6 +17,9 @@ import 'package:herbascan/core/services/habitat_service.dart';
 import 'package:herbascan/core/services/safety_profile_service.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/core/widgets/contraindication_engine_widget.dart';
+import 'package:herbascan/core/services/feedback_service.dart';
+import 'package:herbascan/features/feedback/feedback_bottom_sheet.dart';
+import 'package:herbascan/features/feedback/feedback_screen.dart';
 import 'package:herbascan/features/help/help_tutorial_screen.dart';
 import 'package:herbascan/features/scan/habitat_map_screen.dart';
 import 'package:herbascan/features/scan/plant_detail_screen.dart';
@@ -471,9 +474,50 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                 const SizedBox(height: 24),
                 _buildAlternativeMatches(theme),
               ],
+              const SizedBox(height: 24),
+              _buildFeedbackCTA(context),
             ],
           );
         },
+      ),
+    );
+  }
+
+  /// "Did we get this right? Help our research." — opens feedback bottom sheet with scan context.
+  Widget _buildFeedbackCTA(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final scanId = _savedScanResult?.id ?? widget.scanResultFromHistory?.id;
+    final plantName = widget.predictions.isNotEmpty
+        ? (widget.predictions[0]['plantName'] ?? widget.predictions[0]['label']) as String?
+        : null;
+    final confidence = widget.predictions.isNotEmpty
+        ? (widget.predictions[0]['confidence'] as num?)?.toDouble()
+        : null;
+    return Center(
+      child: TextButton.icon(
+        onPressed: () {
+          showModalBottomSheet<void>(
+            context: context,
+            isScrollControlled: true,
+            builder: (ctx) => FeedbackBottomSheetContent(
+              scanId: scanId,
+              plantName: plantName,
+              confidence: confidence,
+              onClosed: () {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(l10n.thankYou),
+                      backgroundColor: AppTheme.safeGreen,
+                    ),
+                  );
+                }
+              },
+            ),
+          );
+        },
+        icon: const Icon(Icons.feedback_outlined, size: 20),
+        label: Text(l10n.didWeGetThisRight),
       ),
     );
   }
@@ -1288,9 +1332,53 @@ class _PlantResultScreenState extends State<PlantResultScreen>
         _isSaved = true;
         _savedScanResult = scanResult;
       });
+
+      // Milestone feedback prompt (3rd or 5th save)
+      final count = plantProvider.scanHistory.length;
+      final feedbackService = FeedbackService();
+      final shouldShow =
+          await feedbackService.shouldShowMilestonePrompt(count);
+      if (!mounted) return;
+      if (shouldShow) {
+        await feedbackService.recordMilestonePromptShown();
+        if (!mounted) return;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _showMilestoneFeedbackDialog(context);
+        });
+      }
     } catch (e) {
       debugPrint('❌ Error saving scan result: $e');
     }
+  }
+
+  void _showMilestoneFeedbackDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.milestoneFeedbackTitle),
+        content: Text(l10n.milestoneFeedbackBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(l10n.maybeLater),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              if (!context.mounted) return;
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const FeedbackScreen(),
+                ),
+              );
+            },
+            child: Text(l10n.rateExperience),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _saveToDeviceOnly() async {

@@ -279,36 +279,43 @@ class _AdminConditionSearchScreenState
       );
     }
 
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            floating: true,
-            automaticallyImplyLeading: false,
-            title: const Text('Health Conditions'),
-            actions: [
-              if (_conditions.isEmpty)
-                TextButton.icon(
-                  onPressed: _seedConditions,
-                  icon: const Icon(Icons.add_circle_outline),
-                  label: const Text('Seed defaults'),
-                )
-              else
-                IconButton(
-                  onPressed: _seedConditions,
-                  icon: const Icon(Icons.refresh),
-                  tooltip: 'Re-seed conditions',
-                ),
-            ],
-          ),
-          SliverToBoxAdapter(
-            child: Container(
+    return Stack(
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+              padding: const EdgeInsets.fromLTRB(16, 16, 8, 0),
+              child: Row(
+                children: [
+                  Text(
+                    'Health Conditions',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  if (_conditions.isEmpty)
+                    TextButton.icon(
+                      onPressed: _seedConditions,
+                      icon: const Icon(Icons.add_circle_outline, size: 20),
+                      label: const Text('Seed defaults'),
+                    )
+                  else
+                    IconButton(
+                      onPressed: _seedConditions,
+                      icon: const Icon(Icons.refresh),
+                      tooltip: 'Re-seed conditions',
+                    ),
+                ],
+              ),
+            ),
+            Container(
               margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest
-                    .withValues(alpha: 0.4),
+                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -318,44 +325,52 @@ class _AdminConditionSearchScreenState
                 ),
               ),
             ),
-          ),
-          if (_conditions.isEmpty)
-            const SliverFillRemaining(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.local_hospital_outlined,
-                        size: 64, color: Colors.grey),
-                    SizedBox(height: 16),
-                    Text(
-                        'No conditions yet. Tap "Seed defaults" to add the 15 default conditions.'),
-                  ],
+            const SizedBox(height: 8),
+            if (_conditions.isEmpty)
+              Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.local_hospital_outlined, size: 64, color: Colors.grey),
+                      const SizedBox(height: 16),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 24),
+                        child: Text(
+                          'No conditions yet. Tap "Seed defaults" to add the 15 default conditions.',
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.only(bottom: 88),
+                  itemCount: _conditions.length,
+                  itemBuilder: (context, index) {
+                    final c = _conditions[index];
+                    final count = _plantCounts[c.id] ?? 0;
+                    return _buildConditionRow(context, theme, c, count);
+                  },
                 ),
               ),
-            )
-          else
-            SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final c = _conditions[index];
-                  final count = _plantCounts[c.id] ?? 0;
-                  return _buildConditionRow(context, theme, c, count);
-                },
-                childCount: _conditions.length,
-              ),
-            ),
-          // bottom padding for FAB
-          const SliverToBoxAdapter(child: SizedBox(height: 88)),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddCondition,
-        backgroundColor: AppTheme.botanicalPrimary,
-        foregroundColor: Colors.white,
-        tooltip: 'New Condition',
-        child: const Icon(Icons.add),
-      ),
+          ],
+        ),
+        Positioned(
+          right: 16,
+          bottom: 16,
+          child: FloatingActionButton(
+            onPressed: _showAddCondition,
+            backgroundColor: AppTheme.botanicalPrimary,
+            foregroundColor: Colors.white,
+            tooltip: 'New Condition',
+            child: const Icon(Icons.add),
+          ),
+        ),
+      ],
     );
   }
 

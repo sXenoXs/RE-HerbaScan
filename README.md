@@ -10,8 +10,8 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 
 ## 🚀 Current Development Status
 
-**Version**: v0.9.4  
-**Last Updated**: March 2026
+**Version**: v0.9.5  
+**Last Updated**: March 16, 2026
 **Project Phase**: Phase 35 Complete (AI Explanation Content Standardization & Complete Plant Database Migration)  
 **Overall Progress**: 90% Complete - **PRODUCTION READY** 
 
@@ -72,7 +72,9 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **Performance Monitoring**: ✅ **NEW** Track app performance metrics automatically
 - **Usage Analytics**: ✅ **NEW** Scan success rate and feature usage tracking
 - **Error Logging**: ✅ **NEW** Comprehensive error tracking and reporting
-- **Performance Dashboard**: ✅ **NEW** View metrics, analytics, and error logs
+- **Admin System Health**: ✅ **NEW** Single admin-only tab for AI model stats, live usage, error logs, and export/clear (replaces former Performance Metrics and Performance Dashboard)
+- **Admin Feedback tab**: ✅ **NEW** 6th admin destination; Option B stores feedback in Supabase `user_feedback`; admins can view and delete entries (RLS: INSERT all, SELECT/DELETE admins only)
+- **Contextual feedback**: ✅ **NEW** Feedback no longer linked from consumer Settings; Plant Result CTA "Did we get this right?" opens modal sheet; milestone prompt (3rd/5th save) invites rating; shared form used by full-screen Feedback and sheet
 - **Testing Guide**: ✅ **NEW** Complete user testing documentation
 - **Backend API**: ✅ **NEW** Python FastAPI server for true Grad-CAM computation
 - **Backend Documentation**: ✅ **NEW** Comprehensive model management and deployment guides
@@ -101,28 +103,36 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **Tap to Expand Plant Image**: ✅ **NEW** Implemented tap to expand feature - tap plant image to view in full-screen with Hero animation, pinch-to-zoom (0.5x-4.0x), and pan gestures
 - **Full Screen Reading Mode**: ✅ **NEW** Implemented full-screen reading mode for Summary tab - distraction-free view with larger text and regenerate capability
 - **AI Explanation Tab Simplification**: ✅ **NEW** Removed 'Original' sub-tab from AI Explanation section - simplified navigation to only Heatmap and Summary tabs
-- **Version Update**: ✅ **NEW** Updated all version references to v0.9.4 across the application (splash, settings, app info, feedback, docs)
+- **Version Update**: ✅ **NEW** Updated all version references to v0.9.5 across the application (splash, settings, app info, feedback, docs)
 - **Toxic plant blacklist**: ✅ When the top prediction is Adelfa, Ipil-Ipil, or Tuba-Tuba, the app shows a dedicated toxic-plant warning screen (never as a recommended result); no auto-save of toxic scans. Source: `lib/core/constants/toxic_plant_blacklist.dart`.
 - **Strict-contraindication flagging**: ✅ New `needs_strict_contraindications` (catalog_safety / safety_profiles); prominent orange "Use with strict caution" card for plants such as Kamias, Kamoteng Kahoy, Kakawate. Admin Safety tab includes switch for this flag.
 - **Extended plant anatomy**: ✅ Default anatomy data extended to 39 non-toxic plants (10 DOH unchanged; 3 toxic excluded). Admin can seed anatomy from defaults; local sync after seed so Plant Detail shows anatomy without restart.
 - **Auto-save scans toggle**: ✅ Settings preference (key `auto_save_scans`); when OFF, new scans are not auto-saved to History until the user saves from Plant Result or History.
-- **Project structure**: The `tests/` folder (test plans) has been removed from the repository as of v0.9.4. User testing documentation: see `TESTING_GUIDE.md` if present.
+- **Project structure**: The `tests/` folder (test plans) has been removed from the repository as of v0.9.5. User testing documentation: see `TESTING_GUIDE.md` if present.
 
 ### 🔄 In Progress (Phase 6: Offline CAM Fix)
 
 - **Offline CAM Inference Fix**: Fixed multiple output buffers shape mismatch error
 - **TFLite Multiple Outputs**: Corrected output buffer passing for multi-output models
 - **Testing**: Verifying offline CAM heatmap generation in offline mode
-- **Beta Testing**: User testing (see TESTING_GUIDE.md; `tests/` folder removed in v0.9.4)
+- **Beta Testing**: User testing (see TESTING_GUIDE.md; `tests/` folder removed in v0.9.5)
 - **Data Collection**: Gathering user feedback and metrics
 
-### ✅ Recently Fixed (v0.9.4)
+### ✅ Recently Fixed (v0.9.5)
 
 - **Online GradCAM Prediction Mapping**: Fixed "Unknown" plant names in online GradCAM predictions
 - **Backend Response Field Mapping**: Corrected mapping from backend 'class' and 'class_index' to Flutter format
 - **Label Format Parsing**: Added parsing to extract plant names from backend label format
 - **Toxic plant flow**: Dedicated warning screen when top prediction is Adelfa, Ipil-Ipil, or Tuba-Tuba; Alternative Matches filters out blacklisted plants
 - **Strict contraindication UX**: Prominent "Use with strict caution" card when `needs_strict_contraindications` is true
+- **Admin header dark mode**: Admin Console header (narrow/mobile layout) now uses theme surface/onSurface so it adapts in dark mode
+- **Admin Feedback delete**: Admins can delete feedback entries via card overflow menu; requires Supabase RLS policy from migration `20260316000001_user_feedback_admin_delete.sql`
+- **Admin Feedback card redesign**: Card shows category pill, stars, timestamp, user line, divider, comment in quote-style container, optional suggestion, and theme-consistent metadata chips for better scannability; scan_id chip truncated to first 8 chars + ellipsis
+- **Admin Feedback card overflow & contrast**: Header row timestamp in `Expanded` with ellipsis on narrow screens to fix "RIGHT OVERFLOWED BY 89 PIXELS"; category pill text uses `AppTheme.primaryDark` in light mode for readable contrast (dark mode unchanged)
+- **Feedback form keyboard**: Comment and feature-suggestion fields scroll into view when focused; bottom padding and sheet height use viewInsets so keyboard no longer overlaps content; keyboard dismisses on drag
+- **Feedback bottom sheet validation SnackBars**: Validation messages (rating, category, comment length) now display inside the sheet via ScaffoldMessenger/Scaffold wrapper so they stay visible above the Submit button and with keyboard open
+- **Admin title bar consistency**: All five admin content screens (Plant Catalog, User Directory, Health Conditions, Feedback, System Health) use a unified fixed title bar under the menu (left-aligned title + actions); no nested Scaffold/AppBar, no back arrow
+- **System Health & Feedback screens**: Nested Scaffold removed; both return content-only (RefreshIndicator + scrollable content) so no rogue back button inside Admin shell
 
 ### ⏳ Pending (Future Updates)
 
@@ -504,7 +514,7 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - [x] Added markdown text formatting
 - [x] Implemented usability assessment with clear status indicators
 - [x] Added refresh functionality for regenerating explanations
-- [x] **Content Standardization** (v0.9.4): Standardized structure with four sections (Taxonomy, Ecology, Medicinal Uses, Safety) - identical format for online and offline
+- [x] **Content Standardization** (v0.9.5): Standardized structure with four sections (Taxonomy, Ecology, Medicinal Uses, Safety) - identical format for online and offline
 
 ### Phase 10: Beta Testing & Deployment (🔄 In Progress)
 
@@ -513,7 +523,7 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 #### Current Status
 
 - [x] **Production Ready**: All core features implemented
-- [x] **Testing Framework**: TESTING_GUIDE.md (tests/ folder removed in v0.9.4)
+- [x] **Testing Framework**: TESTING_GUIDE.md (tests/ folder removed in v0.9.5)
 - [x] **Data Collection**: All systems operational for thesis research
 - [x] **Hybrid XAI System**: Complete offline/online explanation system
 - [ ] **Beta Testing**: User testing with real devices
@@ -601,7 +611,7 @@ herbascan/
 │   └── features/          ✅ (15+ screens: Home, Scan, Browse, History, DOH,
 │                              Settings, Feedback, Dashboard, Help, etc.)
 ├── assets/                ✅ (models, images, data/plant_explanations.json, animations, icons, fonts)
-├── (tests/ removed v0.9.4)  — Testing plans were in tests/; see TESTING_GUIDE.md for user testing
+├── (tests/ removed v0.9.5)  — Testing plans were in tests/; see TESTING_GUIDE.md for user testing
 └── Configuration          ✅ (pubspec.yaml, analysis_options.yaml)
 ```
 
@@ -627,7 +637,7 @@ herbascan/
 
 ### Immediate (Beta Testing Phase)
 
-1. **User Testing**: Distribute app to beta testers (TESTING_GUIDE.md; tests/ folder removed in v0.9.4)
+1. **User Testing**: Distribute app to beta testers (TESTING_GUIDE.md; tests/ folder removed in v0.9.5)
 2. **Data Collection**: Gather user feedback, performance metrics, and usage analytics
 3. **Bug Fixes**: Address any issues found during testing
 4. **Performance Optimization**: Fine-tune based on collected metrics
@@ -649,7 +659,7 @@ herbascan/
 
 ## 📊 Progress Metrics
 
-- **Version**: v0.9.4
+- **Version**: v0.9.5
 - **Code Files Created**: 50+ files
 - **Lines of Code**: 10,000+ lines
 - **Features Implemented**: 45+ core features
@@ -728,7 +738,7 @@ HerbaScan is designed to work seamlessly in rural areas without internet connect
 
 ## 🔧 Development Notes
 
-### Recent Changes (Version v0.9.4 – March 2026)
+### Recent Changes (Version v0.9.5 – March 2026)
 
 **CHANGELOG.md** is the authoritative change log; this README is kept in sync with it. Summary:
 
@@ -747,8 +757,8 @@ HerbaScan is designed to work seamlessly in rural areas without internet connect
 - **Settings & Offline**: De-jargonified AI labels (e.g. "Show Prediction Confidence", "Show AI Reasoning Heatmap"); Offline Storage Info refreshes before dialog; System Diagnostics (renamed from Offline Demo).
 - **SnackBar**: Floating behavior so camera FAB is not displaced.
 - **Backend**: Railway `/identify` allows unauthenticated requests when `SUPABASE_JWT_SECRET` unset; see supabase/README.md and backend/README.md.
-- **Testing plans**: `tests/` folder removed in v0.9.4; see TESTING_GUIDE.md for user testing.
-- **Version**: All app version references set to v0.9.4.
+- **Testing plans**: `tests/` folder removed in v0.9.5; see TESTING_GUIDE.md for user testing.
+- **Version**: All app version references set to v0.9.5.
 
 ### Known Issues
 

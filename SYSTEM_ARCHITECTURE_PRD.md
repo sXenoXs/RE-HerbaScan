@@ -1,6 +1,6 @@
 # HerbaScan – System Architecture & Product Requirements Document
 
-> **Version:** v0.9.4 · **Date:** March 14, 2026 · **Status:** Production-Ready (Thesis Phase)
+> **Version:** v0.9.5 · **Date:** March 16, 2026 · **Status:** Production-Ready (Thesis Phase)
 > **Revised** to reflect CHANGELOG through March 2026.
 >
 > **Source of Truth Hierarchy:** This document is derived from `CHANGELOG.md` as the absolute authority.
@@ -44,7 +44,7 @@ The application serves communities—particularly in rural areas with limited co
 - **Informing** users with structured, deterministic plant knowledge (taxonomy, ecology, medicinal preparation, safety profile).
 - **Empowering** researchers and administrators through a cloud-backed admin portal for dataset building and plant catalog management.
 
-### Current Production State (v0.9.4 – March 2026)
+### Current Production State (v0.9.5 – March 2026)
 
 
 | Dimension            | State                                                                             |
@@ -268,8 +268,8 @@ The `ContraindicationEngineWidget` renders these deterministically on the Plant 
 
 The Admin Portal is a **fully integrated Flutter feature** accessible on all platforms (Android, Windows desktop, web) via GoRouter route `/admin` (protected by auth + role guard). It renders as:
 
-- **Wide screen (≥ 800px):** `NavigationRail` sidebar with 3 modules.
-- **Narrow screen:** Drawer with gradient header.
+- **Wide screen (≥ 800px):** `NavigationRail` sidebar with 6 modules (Image Review, Plant Metadata, Condition Search, User Management, System Health, Feedback).
+- **Narrow screen:** Drawer with gradient header and the same 6 destinations.
 
 #### Auth Guard (GoRouter redirect)
 
@@ -290,7 +290,14 @@ if (loc == '/admin') {
 | Plant Metadata (6-tab editor) | `CatalogPlantAdminService` | `catalog_plants`, `catalog_medicinal_uses`, `catalog_preparation_methods`, `catalog_safety`, `catalog_habitat`, `catalog_plant_anatomy` |
 | Condition Search              | `CatalogPlantAdminService` | `catalog_conditions`, `catalog_condition_plants`                                                                                        |
 | User Management               | `AdminUserService`         | `profiles`                                                                                                                              |
+| Feedback                       | `FeedbackService`          | `user_feedback` (getFeedbackFromSupabase, deleteFeedbackFromSupabase; RLS DELETE admins only)                                           |
 
+
+**System Health** (5th nav) replaced the former Performance Metrics and Performance Dashboard screens; it is the single admin-only destination for AI model stats, live usage, error logs, and export/clear. **Feedback** (6th nav) loads from `FeedbackService.getFeedbackFromSupabase()`; Option B stores submissions in Supabase when configured.
+
+**System Health** and **Feedback** are content-only panels: they do not use an inner `Scaffold` or `AppBar`; each returns a single root (e.g. `RefreshIndicator` with scrollable content and an inline title + refresh). This avoids a nested Scaffold and rogue back button when rendered inside the host Admin shell. The **Admin Console** header (narrow/mobile layout) uses `theme.colorScheme.surface` and `theme.colorScheme.onSurface` so it adapts in dark mode. The **User Feedback** card is redesigned with a header row (category pill, stars, timestamp, overflow menu), user line, divider, comment in a quote-style container, optional suggestion line, and theme-consistent metadata chips; admins can delete entries via the card menu (requires RLS policy from migration `20260316000001_user_feedback_admin_delete.sql`). On narrow screens the header timestamp uses `Expanded` with `TextOverflow.ellipsis` and `maxLines: 1` to avoid overflow; the category pill uses `AppTheme.primaryDark` in light mode for readable contrast (dark mode uses `onPrimaryContainer`).
+
+**Contextual feedback bottom sheet (“Did we get this right?”):** Validation SnackBars (e.g. “Please select feedback category”, “Please provide at least 10 characters”) are shown inside the sheet by wrapping sheet content in `ScaffoldMessenger` and `Scaffold` so messages appear above the Submit button and remain visible with the keyboard open. Sheet uses `keyboardDismissBehavior: manual` so the user can scroll without dismissing the keyboard; the Send feedback button is fixed outside the scroll view; when the keyboard is open the sheet uses full height above the keyboard (`size.height - viewInsets.bottom`).
 
 #### Edge Functions
 
@@ -560,6 +567,11 @@ public.catalog_condition_plants  (condition_id, plant_id)
 public.catalog_plant_anatomy     (id, plant_id, part_name, svg_path, color_hex,
                                   z_index, is_interactive, title, description, conditions)
 
+-- User feedback (Option B: admin view across users)
+public.user_feedback    (id uuid PK, user_id uuid NULL, rating int, category text,
+                          comment text, feature_suggestion text NULL, metadata jsonb, created_at timestamptz)
+                          RLS: INSERT all; SELECT and DELETE admins only (via is_admin()).
+
 -- Legacy admin text overrides (superseded by catalog_plants for most edits)
 public.plant_metadata    (plant_id, description, safety_warnings,
                           preparation_steps_json, updated_at)
@@ -583,6 +595,7 @@ AS $$ SELECT EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ad
 | `profiles`       | No            | Own row  | All rows               |
 | `scans`          | No            | Own rows | All rows               |
 | `catalog_*`      | Yes           | No       | Yes (via `is_admin()`) |
+| `user_feedback`  | No            | INSERT only (all) | SELECT and DELETE (admins only, via `is_admin()`) |
 | `plant_metadata` | No            | No       | Yes                    |
 
 
@@ -1038,7 +1051,7 @@ flutter clean && flutter pub get && flutter run
 
 **SnackBar:** Uses floating behavior (`SnackBarBehavior.floating`) so status messages do not displace the camera FAB or bottom nav.
 
-**Testing plans:** The `tests/` folder was removed from the repository (v0.9.4). For testing coverage and plans, see `TESTING_GUIDE.md` if present at repo root.
+**Testing plans:** The `tests/` folder was removed from the repository (v0.9.5). For testing coverage and plans, see `TESTING_GUIDE.md` if present at repo root.
 
 ---
 
