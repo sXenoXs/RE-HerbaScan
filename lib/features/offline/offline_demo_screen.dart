@@ -116,10 +116,35 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
     final totalPlants = offlineProvider.offlineStats['totalPlants'] ?? 0;
     final totalScans = offlineProvider.offlineStats['totalScans'] ?? 0;
     final pendingSync = offlineProvider.offlineStats['pendingSync'] ?? 0;
-    final aiReady = offlineProvider.offlineStats['aiInitialized'] == true;
+    final aiModelLoaded = offlineProvider.offlineStats['aiModelLoaded'] == true;
+    final aiLabelsLoaded =
+        offlineProvider.offlineStats['aiLabelsLoaded'] == true;
+    final aiLabelCount = offlineProvider.offlineStats['aiLabelCount'] ?? 0;
+    final aiReady = aiModelLoaded && aiLabelsLoaded;
 
     final pendingColor =
         pendingSync == 0 ? AppTheme.textSecondary : AppTheme.warningAmber;
+
+    final aiValue = aiReady
+        ? 'Loaded'
+        : aiModelLoaded
+            ? 'Partial'
+            : 'Not Loaded';
+    final aiSubtitle = aiReady
+        ? 'TFLite model ready ($aiLabelCount labels)'
+        : aiModelLoaded
+            ? 'Model loaded, labels missing'
+            : 'Local TFLite model unavailable';
+    final aiColor = aiReady
+        ? AppTheme.botanicalPrimary
+        : aiModelLoaded
+            ? AppTheme.warningAmber
+            : AppTheme.errorDeep;
+    final aiBg = aiReady
+        ? AppTheme.safeBgLight
+        : aiModelLoaded
+            ? AppTheme.warningBgLight
+            : AppTheme.errorBgLight;
 
     return GridView.count(
       crossAxisCount: 2,
@@ -127,7 +152,7 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: 12,
       crossAxisSpacing: 12,
-      childAspectRatio: 1.4,
+      childAspectRatio: 1.3,
       children: [
         _buildStatCard(
           context,
@@ -139,11 +164,11 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
         ),
         _buildStatCard(
           context,
-          value: aiReady ? 'AI model' : 'Not Loaded',
-          subtitle: aiReady ? 'Offline AI ready' : 'AI model unavailable',
+          value: aiValue,
+          subtitle: aiSubtitle,
           icon: Icons.memory_rounded,
-          iconColor: aiReady ? AppTheme.botanicalPrimary : AppTheme.errorDeep,
-          bgColor: aiReady ? AppTheme.safeBgLight : AppTheme.errorBgLight,
+          iconColor: aiColor,
+          bgColor: aiBg,
         ),
         _buildStatCard(
           context,
@@ -175,42 +200,51 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
     required Color bgColor,
   }) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: iconColor, size: 22),
+          Align(
+            alignment: Alignment.center,
+            child: Icon(icon, color: iconColor, size: 20),
+          ),
           const SizedBox(height: 8),
           Text(
             value,
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontFamily: 'Inter',
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.w700,
               color: iconColor,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 11,
-              fontWeight: FontWeight.w400,
-              color: AppTheme.textSecondary,
+          const SizedBox(height: 3),
+          Flexible(
+            child: Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 10.5,
+                fontWeight: FontWeight.w400,
+                color: AppTheme.textSecondary,
+              ),
             ),
           ),
         ],
@@ -226,19 +260,9 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
         OutlinedButton.icon(
           icon: const Icon(Icons.sync_rounded),
           label: const Text('Force Cloud Sync'),
-          onPressed: () => _handleForceSync(context, offlineProvider),
+          onPressed: () => _handleForceSync(offlineProvider),
         ),
-        const SizedBox(height: 12),
-        OutlinedButton.icon(
-          icon: const Icon(Icons.delete_sweep_rounded),
-          label: const Text('Wipe Local Cache'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppTheme.errorColor,
-            side: const BorderSide(color: AppTheme.errorColor, width: 2),
-          ),
-          onPressed: () => _showWipeCacheDialog(context, offlineProvider),
-        ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 10),
         Consumer<OfflineProvider>(
           builder: (context, provider, _) {
             return SwitchListTile(
@@ -267,36 +291,42 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
             );
           },
         ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          icon: const Icon(Icons.delete_sweep_rounded),
+          label: const Text('Wipe Local Cache'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppTheme.errorColor,
+            side: const BorderSide(color: AppTheme.errorColor, width: 2),
+          ),
+          onPressed: () => _showWipeCacheDialog(offlineProvider),
+        ),
       ],
     );
   }
 
-  Future<void> _handleForceSync(
-      BuildContext context, OfflineProvider offlineProvider) async {
+  Future<void> _handleForceSync(OfflineProvider offlineProvider) async {
     try {
       await offlineProvider.refreshOfflineData();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Sync complete'),
-            backgroundColor: AppTheme.botanicalPrimary,
-          ),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sync complete'),
+          backgroundColor: AppTheme.botanicalPrimary,
+        ),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Sync failed: $e'),
-            backgroundColor: AppTheme.errorColor,
-          ),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Sync failed: $e'),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
     }
   }
 
-  void _showWipeCacheDialog(
-      BuildContext context, OfflineProvider offlineProvider) {
+  void _showWipeCacheDialog(OfflineProvider offlineProvider) {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -315,23 +345,21 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
               Navigator.of(dialogContext).pop();
               try {
                 await offlineProvider.clearOfflineData();
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Local cache wiped'),
-                      backgroundColor: AppTheme.botanicalPrimary,
-                    ),
-                  );
-                }
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Local cache wiped'),
+                    backgroundColor: AppTheme.botanicalPrimary,
+                  ),
+                );
               } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Error wiping cache: $e'),
-                      backgroundColor: AppTheme.errorColor,
-                    ),
-                  );
-                }
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error wiping cache: $e'),
+                    backgroundColor: AppTheme.errorColor,
+                  ),
+                );
               }
             },
             child: const Text(

@@ -124,7 +124,7 @@ class _SplashScreenState extends State<SplashScreen>
 
                       // Tagline
                       Text(
-                        'Discover Philippine medicinal plants.',
+                        'Discover Philippine medicinal plants',
                         textAlign: TextAlign.center,
                         style: theme.textTheme.bodyLarge?.copyWith(
                           color: textSecondary,

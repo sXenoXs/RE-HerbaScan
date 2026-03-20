@@ -192,6 +192,27 @@ class _FeedbackCardState extends State<_FeedbackCard> {
   bool _expanded = false;
   bool _deleteInProgress = false;
 
+  Widget _buildMetaTag(String text) {
+    final theme = widget.theme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Text(
+        text,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
   Future<void> _onDelete() async {
     final id = widget.row['id']?.toString();
     if (id == null || id.isEmpty) return;
@@ -268,19 +289,30 @@ class _FeedbackCardState extends State<_FeedbackCard> {
               // 1. Header row: category pill + stars + time + menu
               Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      categoryDisplay,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: theme.brightness == Brightness.light
-                            ? AppTheme.primaryDark
-                            : theme.colorScheme.onPrimaryContainer,
-                        fontWeight: FontWeight.w600,
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        constraints: const BoxConstraints(minWidth: 0),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          categoryDisplay,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: theme.brightness == Brightness.light
+                                ? AppTheme.primaryDark
+                                : theme.colorScheme.onPrimaryContainer,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -293,17 +325,7 @@ class _FeedbackCardState extends State<_FeedbackCard> {
                       color: filled ? Colors.amber : theme.colorScheme.onSurfaceVariant,
                     );
                   }),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      created,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                    ),
-                  ),
+                  const SizedBox(width: 6),
                   PopupMenuButton<String>(
                     icon: _deleteInProgress
                         ? const SizedBox(
@@ -333,10 +355,12 @@ class _FeedbackCardState extends State<_FeedbackCard> {
               // 2. User line
               const SizedBox(height: 6),
               Text(
-                widget.userLabel,
+                '${widget.userLabel} • $created',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
               // 3. Divider
               const SizedBox(height: 8),
@@ -362,7 +386,7 @@ class _FeedbackCardState extends State<_FeedbackCard> {
                     ),
                     if (comment.length > maxCommentPreview)
                       Padding(
-                        padding: const EdgeInsets.only(top: 6),
+                        padding: const EdgeInsets.only(top: 10),
                         child: TextButton(
                           onPressed: () => setState(() => _expanded = !_expanded),
                           child: Text(_expanded ? 'Show less' : 'Show more'),
@@ -374,14 +398,23 @@ class _FeedbackCardState extends State<_FeedbackCard> {
               // 5. Suggestion
               if (featureSuggestion != null && featureSuggestion.isNotEmpty) ...[
                 const SizedBox(height: 10),
-                Text(
-                  'Suggestion: $featureSuggestion',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontStyle: FontStyle.italic,
-                    color: theme.colorScheme.onSurfaceVariant,
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.2,
+                    ),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  maxLines: _expanded ? null : 2,
-                  overflow: _expanded ? null : TextOverflow.ellipsis,
+                  child: Text(
+                    'Suggestion: $featureSuggestion',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    maxLines: _expanded ? null : 2,
+                    overflow: _expanded ? null : TextOverflow.ellipsis,
+                  ),
                 ),
               ],
               // 6. Metadata chips
@@ -392,43 +425,19 @@ class _FeedbackCardState extends State<_FeedbackCard> {
                   runSpacing: 4,
                   children: [
                     if (metaMap['scan_id'] != null)
-                      Chip(
-                        side: BorderSide(color: theme.colorScheme.outline),
-                        backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                        labelStyle: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.onSurface,
-                        ),
-                        label: Builder(
-                          builder: (_) {
-                            final s = metaMap['scan_id']!.toString();
-                            final truncated = s.length >= 8 ? '${s.substring(0, 8)}...' : s;
-                            return Text('scan: $truncated');
-                          },
-                        ),
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        visualDensity: VisualDensity.compact,
+                      Builder(
+                        builder: (_) {
+                          final s = metaMap['scan_id']!.toString();
+                          final truncated =
+                              s.length >= 8 ? '${s.substring(0, 8)}...' : s;
+                          return _buildMetaTag('scan: $truncated');
+                        },
                       ),
                     if (metaMap['plant_name'] != null)
-                      Chip(
-                        side: BorderSide(color: theme.colorScheme.outline),
-                        backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                        labelStyle: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.onSurface,
-                        ),
-                        label: Text('${metaMap['plant_name']}'),
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        visualDensity: VisualDensity.compact,
-                      ),
+                      _buildMetaTag('${metaMap['plant_name']}'),
                     if (metaMap['confidence'] != null)
-                      Chip(
-                        side: BorderSide(color: theme.colorScheme.outline),
-                        backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                        labelStyle: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.onSurface,
-                        ),
-                        label: Text('${(metaMap['confidence'] * 100).toStringAsFixed(0)}%'),
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        visualDensity: VisualDensity.compact,
+                      _buildMetaTag(
+                        '${(metaMap['confidence'] * 100).toStringAsFixed(0)}%',
                       ),
                   ],
                 ),

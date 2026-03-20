@@ -642,135 +642,147 @@ class _HistoryScreenState extends State<HistoryScreen>
       AppLocalizations appLocalizations,
       PlantProvider plantProvider,
       List<ScanResult> sortedScans) {
+    Future<void> onRefresh() async {
+      await plantProvider.loadScanHistory();
+    }
+
     if (plantProvider.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
     if (sortedScans.isEmpty) {
-      return _buildEmptyState(context, theme, appLocalizations);
+      return RefreshIndicator(
+        onRefresh: onRefresh,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.of(context).size.height * 0.6,
+            ),
+            child: _buildEmptyState(context, theme, appLocalizations),
+          ),
+        ),
+      );
     }
-    return ListView.builder(
-      padding: EdgeInsets.fromLTRB(
-          16, 8, 16, 60 + 56 + 60 + MediaQuery.of(context).padding.bottom),
-      itemCount: sortedScans.length,
-      itemBuilder: (context, index) {
-        final scan = sortedScans[index];
-        final isSelected = _selectedDeviceIds.contains(scan.id);
-        return Dismissible(
-          key: ValueKey(scan.id),
-          background: _buildSwipeBackground(
-            color: AppTheme.botanicalPrimary,
-            icon: Icons.cloud_upload_rounded,
-            alignment: Alignment.centerLeft,
-            label: appLocalizations.saveToCloud,
-          ),
-          secondaryBackground: _buildSwipeBackground(
-            color: theme.colorScheme.error,
-            icon: Icons.delete_rounded,
-            alignment: Alignment.centerRight,
-            label: appLocalizations.delete,
-          ),
-          confirmDismiss: (direction) async {
-            if (direction == DismissDirection.startToEnd) {
-              // Save to Cloud — don't dismiss the item
-              final auth = context.read<AuthProvider>();
-              final offline = context.read<OfflineProvider>();
-              if (!auth.isLoggedIn) {
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView.builder(
+        padding: EdgeInsets.fromLTRB(
+            16, 8, 16, 60 + 56 + 60 + MediaQuery.of(context).padding.bottom),
+        itemCount: sortedScans.length,
+        itemBuilder: (context, index) {
+          final scan = sortedScans[index];
+          final isSelected = _selectedDeviceIds.contains(scan.id);
+          return Dismissible(
+            key: ValueKey(scan.id),
+            background: _buildSwipeBackground(
+              color: AppTheme.botanicalPrimary,
+              icon: Icons.cloud_upload_rounded,
+              alignment: Alignment.centerLeft,
+              label: appLocalizations.saveToCloud,
+            ),
+            secondaryBackground: _buildSwipeBackground(
+              color: theme.colorScheme.error,
+              icon: Icons.delete_rounded,
+              alignment: Alignment.centerRight,
+              label: appLocalizations.delete,
+            ),
+            confirmDismiss: (direction) async {
+              if (direction == DismissDirection.startToEnd) {
+                // Save to Cloud — don't dismiss the item
+                final auth = context.read<AuthProvider>();
+                final offline = context.read<OfflineProvider>();
+                if (!auth.isLoggedIn) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Sign in to save to cloud')),
+                    );
+                  }
+                  return false;
+                }
+                if (!offline.isOnline) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('No internet connection')),
+                    );
+                  }
+                  return false;
+                }
+                if (scan.imagePath.isEmpty || !File(scan.imagePath).existsSync()) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Image file not found')),
+                    );
+                  }
+                  return false;
+                }
+                final id =
+                    await HerbariumService().uploadScan(scan, scan.imagePath);
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Sign in to save to cloud')),
-                  );
+                  if (id != null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Saved to cloud')),
+                    );
+                    _loadCloudScans();
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Failed to save to cloud')),
+                    );
+                  }
                 }
                 return false;
+              } else {
+                // Delete — confirm first
+                final ok = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: Text(appLocalizations.confirmDelete),
+                    content: Text(appLocalizations.deleteConfirmation),
+                    actions: [
+                      TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: Text(appLocalizations.cancel)),
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: Text(appLocalizations.delete,
+                            style: TextStyle(color: theme.colorScheme.error)),
+                      ),
+                    ],
+                  ),
+                );
+                return ok ?? false;
               }
-              if (!offline.isOnline) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('No internet connection')),
-                  );
-                }
-                return false;
-              }
-              if (scan.imagePath.isEmpty ||
-                  !File(scan.imagePath).existsSync()) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Image file not found')),
-                  );
-                }
-                return false;
-              }
-              final id = await HerbariumService().uploadScan(
-                  scan, scan.imagePath);
-              if (mounted) {
-                if (id != null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Saved to cloud')),
-                  );
-                  _loadCloudScans();
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Failed to save to cloud')),
-                  );
-                }
-              }
-              return false;
-            } else {
-              // Delete — confirm first
-              final ok = await showDialog<bool>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: Text(appLocalizations.confirmDelete),
-                  content: Text(appLocalizations.deleteConfirmation),
-                  actions: [
-                    TextButton(
-                        onPressed: () => Navigator.pop(ctx, false),
-                        child: Text(appLocalizations.cancel)),
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, true),
-                      child: Text(appLocalizations.delete,
-                          style: TextStyle(color: theme.colorScheme.error)),
-                    ),
-                  ],
-                ),
-              );
-              return ok ?? false;
-            }
-          },
-          onDismissed: (direction) {
-            if (direction == DismissDirection.endToStart) {
-              plantProvider.deleteScanResult(scan.id);
-              _selectedDeviceIds.remove(scan.id);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Scan deleted'),
-                  backgroundColor: theme.colorScheme.error,
-                ),
-              );
-            }
-          },
-          child: _buildScanCard(
-            context,
-            theme,
-            scan,
-            isSelectMode: _selectMode,
-            isSelected: isSelected,
-            onToggleSelect: () {
-              setState(() {
-                if (isSelected) {
-                  _selectedDeviceIds.remove(scan.id);
-                } else {
-                  _selectedDeviceIds.add(scan.id);
-                }
-              });
             },
-          ),
-        );
-      },
+            onDismissed: (direction) {
+              if (direction == DismissDirection.endToStart) {
+                plantProvider.deleteScanResult(scan.id);
+                _selectedDeviceIds.remove(scan.id);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('Scan deleted'),
+                    backgroundColor: theme.colorScheme.error,
+                  ),
+                );
+              }
+            },
+            child: _buildScanCard(
+              context,
+              theme,
+              scan,
+              isSelectMode: _selectMode,
+              isSelected: isSelected,
+              onToggleSelect: () {
+                setState(() {
+                  if (isSelected) {
+                    _selectedDeviceIds.remove(scan.id);
+                  } else {
+                    _selectedDeviceIds.add(scan.id);
+                  }
+                });
+              },
+            ),
+          );
+        },
+      ),
     );
   }
 
