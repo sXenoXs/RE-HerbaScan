@@ -15,6 +15,7 @@ class PlantPrediction {
 class TflitePlantService {
   Interpreter? _mobilenetv2Interpreter;
   List<String>? _labels;
+  String? _lastLoadError;
 
   // Output indices for multi-output models (determined during initialization)
   int _mobilenetv2PredictionIndex = 1; // Default: predictions at output 1
@@ -29,9 +30,27 @@ class TflitePlantService {
   // MATCHING PYTHON: 224x224
   static const int inputSize = 224;
 
+  bool get isModelLoaded => _mobilenetv2Interpreter != null;
+  bool get areLabelsLoaded => _labels != null && _labels!.isNotEmpty;
+  int get labelCount => _labels?.length ?? 0;
+  String? get lastLoadError => _lastLoadError;
+  bool get isReady => isModelLoaded && areLabelsLoaded;
+
+  Map<String, dynamic> getModelHealth() {
+    return {
+      'modelLoaded': isModelLoaded,
+      'labelsLoaded': areLabelsLoaded,
+      'labelCount': labelCount,
+      'modelPath': mobilenetv2ModelPath,
+      'labelPath': labelPath,
+      'lastLoadError': _lastLoadError,
+    };
+  }
+
   Future<void> loadModel() async {
     if (platform_utils.isDesktop()) return;
     try {
+      _lastLoadError = null;
       // Load MobileNetV2 multi-output model (ONLY MODEL - HerbaScan deprecated)
       try {
         _mobilenetv2Interpreter =
@@ -53,8 +72,12 @@ class TflitePlantService {
       }
 
       await _loadLabels();
+      if (!areLabelsLoaded) {
+        throw Exception('Labels were not loaded from $labelPath');
+      }
       print("✅ MobileNetV2 TFLite Model loaded successfully.");
     } catch (e) {
+      _lastLoadError = e.toString();
       print("❌ Error loading model: $e");
       rethrow;
     }
@@ -98,6 +121,7 @@ class TflitePlantService {
       print("   ✅ Labels loaded: ${_labels!.length} labels");
       print("   📋 First 5 labels: ${_labels!.take(5).toList()}");
     } catch (e, stackTrace) {
+      _lastLoadError = 'Failed to load labels: $e';
       print("❌ Error loading labels: $e");
       print("Stack trace: $stackTrace");
     }
@@ -345,5 +369,7 @@ class TflitePlantService {
   void close() {
     _mobilenetv2Interpreter?.close();
     _mobilenetv2Interpreter = null;
+    _labels = null;
+    _lastLoadError = null;
   }
 }

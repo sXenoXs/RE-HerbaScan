@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:herbascan/core/services/database_service.dart';
 import 'package:herbascan/core/services/plant_classifier_service.dart';
+import 'package:herbascan/core/services/tflite_plant_service.dart';
 import 'package:herbascan/core/services/offline_data_manager.dart';
 import 'package:herbascan/core/services/offline_sync_manager.dart';
 import 'package:herbascan/core/models/scan_result.dart';
@@ -20,6 +21,7 @@ class OfflineService {
   // Dependencies
   final DatabaseService _databaseService = DatabaseService();
   final PlantClassifierService _classifierService = PlantClassifierService();
+  final TflitePlantService _tfliteService = TflitePlantService();
   final OfflineDataManager _dataManager = OfflineDataManager();
   final OfflineSyncManager _syncManager = OfflineSyncManager();
   final Connectivity _connectivity = Connectivity();
@@ -349,6 +351,12 @@ class OfflineService {
       final scanHistory = await getOfflineScanHistory();
       final plants = await getOfflinePlants();
       final dohPlants = await getOfflineDOHPlants();
+      if (!_tfliteService.isReady) {
+        await _tfliteService.loadModel();
+      }
+      final modelHealth = _tfliteService.getModelHealth();
+      final aiReady =
+          modelHealth['modelLoaded'] == true && modelHealth['labelsLoaded'] == true;
       
       return {
         'totalScans': scanHistory.length,
@@ -357,7 +365,11 @@ class OfflineService {
         'pendingSync': _pendingSyncResults.length,
         'isOfflineMode': _isOfflineMode,
         'isOnline': _isOnline,
-        'aiInitialized': _classifierService.isInitialized,
+        'aiInitialized': aiReady,
+        'aiModelLoaded': modelHealth['modelLoaded'] == true,
+        'aiLabelsLoaded': modelHealth['labelsLoaded'] == true,
+        'aiLabelCount': modelHealth['labelCount'] ?? 0,
+        'aiLastError': modelHealth['lastLoadError'],
       };
     } catch (e) {
       print('❌ Error getting offline stats: $e');
@@ -369,6 +381,10 @@ class OfflineService {
         'isOfflineMode': _isOfflineMode,
         'isOnline': _isOnline,
         'aiInitialized': false,
+        'aiModelLoaded': false,
+        'aiLabelsLoaded': false,
+        'aiLabelCount': 0,
+        'aiLastError': e.toString(),
       };
     }
   }

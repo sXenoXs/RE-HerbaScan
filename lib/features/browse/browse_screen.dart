@@ -76,8 +76,12 @@ class _BrowseScreenState extends State<BrowseScreen> {
     return GestureDetector(
       onTap: () => _searchFocusNode.unfocus(),
       child: Scaffold(
-        body: CustomScrollView(
-          slivers: [
+        body: RefreshIndicator(
+          onRefresh: () async {
+            await context.read<PlantProvider>().refreshPlants();
+          },
+          child: CustomScrollView(
+            slivers: [
             // Safe-area top padding
             SliverToBoxAdapter(
               child: SizedBox(height: MediaQuery.of(context).padding.top + 8),
@@ -318,7 +322,8 @@ class _BrowseScreenState extends State<BrowseScreen> {
                   ),
                 ),
               ),
-          ],
+            ],
+          ),
         ),
       ),
     );
