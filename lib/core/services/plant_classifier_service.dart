@@ -15,7 +15,9 @@ class PlantClassifierService {
   
   // Model input/output shapes
   static const int _inputSize = 224;
-  static const int _numClasses = 42; // From class_indices.json (42 plants)
+  // _numClasses is derived from the loaded labels list so it matches
+  // whatever class_indices.json contains (30, 42, or any future count).
+  int get _numClasses => _labels.length;
 
   /// Load label list from class_indices.json (format: {"PlantName": index}).
   /// Returns labels in index order [0..N-1].

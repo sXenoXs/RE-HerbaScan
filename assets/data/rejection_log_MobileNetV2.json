@@ -1,0 +1,12 @@
+{
+  "model": "MobileNetV2",
+  "threshold": 0.55,
+  "routing": {
+    "normal": 1143,
+    "no_match": 48,
+    "toxic_warning": 134,
+    "poor_quality": 0
+  },
+  "toxic_recall": 1.0,
+  "missed_cases": []
+}

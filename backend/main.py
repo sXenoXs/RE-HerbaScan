@@ -41,10 +41,16 @@ mobilenetv2_model = None
 labels = None
 MOBILENETV2_MODEL_PATH = Path("models/MobileNetV2_model.keras")
 LABELS_PATH = Path("models/labels.json")
+OOD_CONFIG_PATH = Path("models/ood_safety_config.json")
 SUPABASE_JWT_SECRET = os.environ.get("SUPABASE_JWT_SECRET")
 
-# Toxic plant class indices (Adelfa=0, IpilIpil=14, TubaTuba=39 per class_indices.json)
-TOXIC_CLASS_INDICES = {0, 14, 39}
+# OOD safety config — loaded at startup from ood_safety_config.json.
+# Fallback values match the 30-class model defaults.
+ood_config: dict = {}
+TOXIC_CLASS_INDICES: set = set()
+CONFIDENCE_THRESHOLD_ACCEPT: float = 0.55
+CONFIDENCE_THRESHOLD_OOD: float = 0.4
+NUM_CLASSES_FALLBACK: int = 30  # used only when labels.json is missing
 
 
 def verify_supabase_jwt(authorization: str = Header(None)) -> bool:
@@ -74,13 +80,37 @@ def verify_supabase_jwt(authorization: str = Header(None)) -> bool:
 
 @app.on_event("startup")
 async def load_models():
-    """Load MobileNetV2 Keras model and labels on server startup."""
-    global mobilenetv2_model, labels
-    
+    """Load MobileNetV2 Keras model, labels, and OOD safety config on server startup."""
+    global mobilenetv2_model, labels, ood_config
+    global TOXIC_CLASS_INDICES, CONFIDENCE_THRESHOLD_ACCEPT, CONFIDENCE_THRESHOLD_OOD
+
+    # ── 1. Load OOD safety config ────────────────────────────────────────────
+    if OOD_CONFIG_PATH.exists():
+        try:
+            with open(OOD_CONFIG_PATH, 'r') as f:
+                ood_config = json.load(f)
+            CONFIDENCE_THRESHOLD_ACCEPT = float(
+                ood_config.get("confidence_threshold_accept", CONFIDENCE_THRESHOLD_ACCEPT))
+            CONFIDENCE_THRESHOLD_OOD = float(
+                ood_config.get("confidence_threshold_ood", CONFIDENCE_THRESHOLD_OOD))
+            toxic_profiles = ood_config.get("toxic_plant_profiles", {})
+            TOXIC_CLASS_INDICES = {
+                int(profile["class_index"])
+                for profile in toxic_profiles.values()
+                if "class_index" in profile
+            }
+            print(f"✅ OOD config loaded: {ood_config.get('num_classes')} classes, "
+                  f"accept≥{CONFIDENCE_THRESHOLD_ACCEPT}, ood<{CONFIDENCE_THRESHOLD_OOD}, "
+                  f"toxic indices={TOXIC_CLASS_INDICES}")
+        except Exception as e:
+            print(f"⚠️  Failed to load OOD config ({OOD_CONFIG_PATH}): {e}. Using defaults.")
+    else:
+        print(f"⚠️  OOD config not found at {OOD_CONFIG_PATH}. Using built-in defaults.")
+
     try:
         print("🔄 Loading MobileNetV2 Keras model...")
-        
-        # Load MobileNetV2 model (ONLY MODEL - HerbaScan deprecated)
+
+        # ── 2. Load MobileNetV2 model (ONLY MODEL - HerbaScan deprecated) ────
         if MOBILENETV2_MODEL_PATH.exists():
             try:
                 mobilenetv2_model = tf.keras.models.load_model(str(MOBILENETV2_MODEL_PATH))
@@ -93,13 +123,12 @@ async def load_models():
             print(f"❌ MobileNetV2 model file not found at: {MOBILENETV2_MODEL_PATH}")
             print("❌ Please ensure MobileNetV2_model.keras exists in models/ directory")
             return
-        
-        # Check if model is loaded
+
         if mobilenetv2_model is None:
             print("❌ MobileNetV2 model failed to load! Please check the model file.")
             return
-        
-        # Load labels
+
+        # ── 3. Load labels ────────────────────────────────────────────────────
         if LABELS_PATH.exists():
             with open(LABELS_PATH, 'r') as f:
                 labels = json.load(f)
@@ -107,9 +136,11 @@ async def load_models():
         else:
             print(f"⚠️  Labels file not found at: {LABELS_PATH}")
             print("📝 Please place your labels.json file in the models/ directory")
-            # Create dummy labels (42 classes for HerbaScan)
-            labels = {str(i): f"Plant_{i}" for i in range(42)}
-        
+            # Fallback: use num_classes from OOD config (or hard default) — no longer tied to 42
+            num_fallback = int(ood_config.get("num_classes", NUM_CLASSES_FALLBACK))
+            labels = {str(i): f"Plant_{i}" for i in range(num_fallback)}
+            print(f"📝 Using {num_fallback} dummy labels (from ood_safety_config.json)")
+
     except Exception as e:
         print(f"❌ Error loading models: {str(e)}")
         print("📝 Server will start, but /identify endpoint will not work")
@@ -140,7 +171,10 @@ async def health_check():
         "mobilenetv2_loaded": mobilenetv2_model is not None,
         "models_loaded": mobilenetv2_model is not None,
         "labels_loaded": labels is not None,
-        "num_classes": len(labels) if labels else 0
+        "num_classes": len(labels) if labels else 0,
+        "confidence_threshold_accept": CONFIDENCE_THRESHOLD_ACCEPT,
+        "confidence_threshold_ood": CONFIDENCE_THRESHOLD_OOD,
+        "toxic_class_indices": sorted(TOXIC_CLASS_INDICES),
     }
 
 
@@ -291,9 +325,22 @@ async def identify_plant(
         # Calculate processing time
         processing_time = (time.time() - start_time) * 1000  # Convert to ms
         
-        # Toxic plant flag (app-layer blacklist remains primary; this is optional for clients)
+        # ── OOD / confidence routing ─────────────────────────────────────────
+        # below ood threshold  → no_match (out-of-distribution)
+        # ood threshold..accept threshold → low_confidence (show with caution)
+        # at or above accept threshold → accepted
+        if confidence < CONFIDENCE_THRESHOLD_OOD:
+            routing_decision = "no_match"
+        elif confidence < CONFIDENCE_THRESHOLD_ACCEPT:
+            routing_decision = "low_confidence"
+        else:
+            routing_decision = "accepted"
+
+        # Toxic plant flag — indices come from ood_safety_config.json
         is_toxic = predicted_class_idx in TOXIC_CLASS_INDICES
-        
+        if is_toxic:
+            routing_decision = "toxic_warning"
+
         # Prepare response
         response = {
             "plant_name": predicted_class_name,
@@ -306,6 +353,9 @@ async def identify_plant(
             "model_used": model_name_used,
             "processing_time_ms": round(processing_time, 2),
             "is_toxic": is_toxic,
+            "routing_decision": routing_decision,
+            "confidence_threshold_accept": CONFIDENCE_THRESHOLD_ACCEPT,
+            "confidence_threshold_ood": CONFIDENCE_THRESHOLD_OOD,
         }
         
         return JSONResponse(content=response)

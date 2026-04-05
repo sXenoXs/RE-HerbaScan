@@ -17,7 +17,7 @@ class OfflineCAMService {
 
   Interpreter? _interpreter;
   Interpreter? _mobilenetv2Interpreter;
-  List<List<double>>? _camWeights; // [256, 40]
+  List<List<double>>? _camWeights; // [256, num_classes] — size determined at load time
   List<List<double>>? _mobilenetv2CamWeights;
   Map<String, String>? _labels; // Loaded from labels.json
   bool _isInitialized = false;
@@ -32,9 +32,10 @@ class OfflineCAMService {
 
   // Model configuration
   static const int inputSize = 224;
-  // numClasses is now dynamic - determined from labels file (42 classes: 0-41)
+  // numClasses is dynamic — determined from the loaded labels file so it
+  // matches whatever class_indices.json contains (30, 42, or any future count).
   int get numClasses =>
-      _labels?.length ?? 42; // Default to 42 if labels not loaded
+      _labels?.length ?? 30; // Default to 30 (current 30-class model)
   static const int featureDim = 256; // From Phase 2 analysis
   static const List<int> expectedFeatureMapShape = [
     7,
@@ -246,18 +247,18 @@ class OfflineCAMService {
             print('═══════════════════════════════════════════════════════');
             print('⚠️ MODEL RE-EXPORT ISSUE DETECTED');
             print('═══════════════════════════════════════════════════════');
-            print('The re-exported model only has predictions output [1, 40]');
+            print('The re-exported model only has predictions output [1, num_classes]');
             print('CAM requires feature maps output [1, 7, 7, 1280]');
             print('');
             print('SOLUTION: Re-export the model with BOTH outputs:');
             print('  1. Feature maps from last conv layer: [1, 7, 7, 1280]');
-            print('  2. Predictions: [1, 40]');
+            print('  2. Predictions: [1, num_classes]');
             print('');
-            print('Use the script: backend/create_multi_output_tflite.py');
+            print('Use the script: backend/re_export_models.py');
             print('This will create a model with 2 outputs for CAM.');
             print('═══════════════════════════════════════════════════════');
             throw Exception(
-                'Model does not have feature maps output required for CAM. The re-exported model only has predictions [1, 40]. Please re-export with both feature maps [1, 7, 7, 1280] and predictions [1, 40] outputs.');
+                'Model does not have feature maps output required for CAM. The re-exported model only has a predictions output. Please re-export with both feature maps [1, 7, 7, 1280] and predictions [1, num_classes] outputs.');
           } else {
             _logger.e('❌ Unknown output structure: $output0Shape');
             throw Exception('Model output structure is not recognized');
@@ -900,7 +901,7 @@ class OfflineCAMService {
           '   Buffer created: ${featuresOutput.length}x${featuresOutput[0].length}x${featuresOutput[0][0].length}x${featuresOutput[0][0][0].length}');
 
       // Prepare predictions output buffer (only if predictions tensor exists)
-      // CRITICAL: Must be List<List<double>> to match tensor shape [1, 40]
+      // CRITICAL: Must be List<List<double>> to match tensor shape [1, num_classes]
       List<List<double>>? predictionsOutput;
 
       if (predictionsTensor != null) {
@@ -908,7 +909,7 @@ class OfflineCAMService {
         _logger.i('   Predictions tensor shape: $predictionsShape');
 
         // CRITICAL: Output buffers must match tensor shapes EXACTLY, including batch dimension
-        // For [1, 40] tensor, we need List<List<double>> with shape [1][40], not List<double> [40]
+        // For [1, num_classes] tensor, we need List<List<double>> with shape [1][num_classes]
         if (predictionsShape.length == 2) {
           // 2D tensor: [batch, num_classes] - create 2D buffer with batch dimension
           final batchSize = predictionsShape[0];
@@ -1085,7 +1086,7 @@ class OfflineCAMService {
   /// Process:
   /// 1. Global Average Pooling: [7, 7, 1280] → [1280]
   /// 2. Reduce to 256 dimensions (matching CAM weights)
-  /// 3. Apply CAM weights: [256] × [256, 40] → [40]
+  /// 3. Apply CAM weights: [256] × [256, num_classes] → [num_classes]
   /// 4. Apply softmax to get probabilities
   List<double> _computePredictionsFromFeatures(
     List<List<List<double>>> spatialFeatures,
@@ -1100,8 +1101,8 @@ class OfflineCAMService {
       // Shape: [256]
 
       // Step 3: Apply CAM weights to get class logits
-      // weights: [256, 40], features: [256]
-      // result: [40] = features^T × weights
+      // weights: [256, num_classes], features: [256]
+      // result: [num_classes] = features^T × weights
       final predictions = List<double>.filled(numClasses, 0.0);
 
       if (_camWeights == null) {
@@ -1229,8 +1230,8 @@ class OfflineCAMService {
           double camValue = 0.0;
 
           // Sum weighted features across channels
-          // Use first 256 channels to match CAM weights dimension [256, 40]
-          // Note: For full accuracy, we'd need weights [1280, 40], but using first 256 is a good approximation
+          // Use first 256 channels to match CAM weights dimension [256, num_classes]
+          // Note: For full accuracy, we'd need weights [1280, num_classes], but using first 256 is a good approximation
           final maxChannels = math.min(256, channels);
           for (int k = 0; k < maxChannels; k++) {
             if (k < _camWeights!.length) {

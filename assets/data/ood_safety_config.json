@@ -1,0 +1,46 @@
+{
+  "generated_at": "2026-04-05T05:25:04.461725Z",
+  "model_architecture": "MobileNetV2",
+  "num_classes": 30,
+  "not_plant_class": "Not_Plant",
+  "not_plant_class_index": null,
+  "confidence_threshold_accept": 0.55,
+  "confidence_threshold_ood": 0.4,
+  "ood_darkness_threshold": 15.0,
+  "ood_blur_threshold": 80.0,
+  "ood_edge_density_min": 0.01,
+  "toxic_blacklist": [
+    "Adelfa",
+    "IpilIpil",
+    "TubaTuba"
+  ],
+  "toxic_plant_profiles": {
+    "TubaTuba": {
+      "class_index": 27,
+      "scientific_name": "Jatropha curcas",
+      "is_generally_safe": false,
+      "known_side_effects": [],
+      "strict_contraindications": [],
+      "routing_action": "contraindication_engine",
+      "generate_gradcam": true
+    },
+    "Adelfa": {
+      "class_index": 0,
+      "scientific_name": "Nerium oleander",
+      "is_generally_safe": false,
+      "known_side_effects": [],
+      "strict_contraindications": [],
+      "routing_action": "contraindication_engine",
+      "generate_gradcam": true
+    },
+    "IpilIpil": {
+      "class_index": 12,
+      "scientific_name": "Leucaena leucocephala",
+      "is_generally_safe": false,
+      "known_side_effects": [],
+      "strict_contraindications": [],
+      "routing_action": "contraindication_engine",
+      "generate_gradcam": true
+    }
+  }
+}
