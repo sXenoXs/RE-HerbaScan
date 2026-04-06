@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import "package:flutter/material.dart";
 
 /// Registry of icon_key (String) to IconData for Condition Search and admin.
 /// Condition names in catalog_conditions use these keys; UI looks up icon here.

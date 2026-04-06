@@ -10,8 +10,8 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 
 ## 🚀 Current Development Status
 
-**Version**: v0.9.5  
-**Last Updated**: March 16, 2026
+**Version**: v0.9.6  
+**Last Updated**: April 4, 2026
 **Project Phase**: Phase 35 Complete (AI Explanation Content Standardization & Complete Plant Database Migration)  
 **Overall Progress**: 90% Complete - **PRODUCTION READY** 
 
@@ -117,6 +117,10 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **Testing**: Verifying offline CAM heatmap generation in offline mode
 - **Beta Testing**: User testing (see TESTING_GUIDE.md; `tests/` folder removed in v0.9.5)
 - **Data Collection**: Gathering user feedback and metrics
+
+### ✨ New in v0.9.6
+
+- **Preparation Step Infographics**: All preparation step cards (boil, add leaves, strain, cool, drink, wash, chop, mix, grind, pour, etc.) now show a context-aware icon with color-coded accent (orange for heat, green for herbs, teal for filter, blue for cool, amber for drink). Interactive step cards with animated icon → check transition on completion. Focus Mode shows a large 96 px animated icon above each step instruction.
 
 ### ✅ Recently Fixed (v0.9.5)
 
@@ -659,7 +663,7 @@ herbascan/
 
 ## 📊 Progress Metrics
 
-- **Version**: v0.9.5
+- **Version**: v0.9.6
 - **Code Files Created**: 50+ files
 - **Lines of Code**: 10,000+ lines
 - **Features Implemented**: 45+ core features
@@ -738,9 +742,11 @@ HerbaScan is designed to work seamlessly in rural areas without internet connect
 
 ## 🔧 Development Notes
 
-### Recent Changes (Version v0.9.5 – March 2026)
+### Recent Changes (Version v0.9.6 – March 2026)
 
 **CHANGELOG.md** is the authoritative change log; this README is kept in sync with it. Summary:
+
+- **Preparation Step Infographics** (v0.9.6): Redesigned all preparation step cards with context-aware icons and color-coded borders per step type (boil=fire/orange, leaves=eco/green, strain=filter/teal, cool=snowflake/blue, drink=café/amber, wash=drop/blue, etc.). Focus Mode shows a large animated 96 px icon above each step instruction with spring-scale entrance animation. Interactive animated icon-to-check transition on step completion.
 
 - **UI/UX Redesign**: Design system (Emerald botanical green, app_theme.dart); Splash (solid background, linear loader); Onboarding (de-jargonified); Home (BottomAppBar, center FAB, DOH carousel); Browse (SearchBar, SegmentedButton, condition banner); Scan (edge-to-edge, reticle, tips sheet); Plant Result (Insights + AI Vision tabs, glassmorphic hero); Plant Detail (SliverAppBar hero, Quick Facts); History (TabBar, device cards, select mode, swipe export/delete, batch sync/download); Settings (grouped cards, Account block); DOH and Help redesigns; Auth/OTP (botanical header, pinput 6-box); Condition Search (directory + ConditionResultsScreen); Habitat Map; Preparation Guide and Focus Mode; System Diagnostics (renamed from Offline Demo); admin polish (instant local sync, condition count sync, user management crash fix).
 - **Heatmap in cloud**: Upload stores heatmap as `{scan_id}_gradcam.jpg` in Storage; metadata `gradcam_url`; download restores `gradCAMPath`.
@@ -758,7 +764,7 @@ HerbaScan is designed to work seamlessly in rural areas without internet connect
 - **SnackBar**: Floating behavior so camera FAB is not displaced.
 - **Backend**: Railway `/identify` allows unauthenticated requests when `SUPABASE_JWT_SECRET` unset; see supabase/README.md and backend/README.md.
 - **Testing plans**: `tests/` folder removed in v0.9.5; see TESTING_GUIDE.md for user testing.
-- **Version**: All app version references set to v0.9.5.
+- **Version**: All app version references updated to v0.9.6.
 
 ### Known Issues
 

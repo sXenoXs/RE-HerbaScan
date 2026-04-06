@@ -335,6 +335,77 @@ class _PreparationFocusModeScreenState
     );
   }
 
+  /// Maps step instruction keywords to a (icon, color) pair for visual context.
+  static (IconData, Color) _getStepVisual(String instruction) {
+    final lower = instruction.toLowerCase();
+    if (lower.contains('strain') ||
+        lower.contains('filter') ||
+        lower.contains('sieve') ||
+        lower.contains('cheesecloth')) {
+      return (Icons.filter_alt_rounded, const Color(0xFF0D9488));
+    }
+    if (lower.contains('boil') ||
+        lower.contains('simmer') ||
+        lower.contains('heat')) {
+      return (Icons.local_fire_department_rounded, const Color(0xFFEA580C));
+    }
+    if (lower.contains('leaf') ||
+        lower.contains('leaves') ||
+        lower.contains('herb') ||
+        lower.contains('bark') ||
+        lower.contains('root')) {
+      return (Icons.eco_rounded, const Color(0xFF16A34A));
+    }
+    if (lower.contains('wash') ||
+        lower.contains('rinse') ||
+        lower.contains('clean')) {
+      return (Icons.water_drop_rounded, const Color(0xFF2563EB));
+    }
+    if (lower.contains('chop') ||
+        lower.contains('cut') ||
+        lower.contains('slice') ||
+        lower.contains('pound') ||
+        lower.contains('crush')) {
+      return (Icons.content_cut_rounded, const Color(0xFFD97706));
+    }
+    if (lower.contains('cool') ||
+        lower.contains('chill') ||
+        lower.contains('temperature')) {
+      return (Icons.ac_unit_rounded, const Color(0xFF0284C7));
+    }
+    if (lower.contains('drink') ||
+        lower.contains('consume') ||
+        lower.contains('serve') ||
+        lower.contains('take')) {
+      return (Icons.local_cafe_rounded, const Color(0xFFB45309));
+    }
+    if (lower.contains('mix') ||
+        lower.contains('stir') ||
+        lower.contains('blend') ||
+        lower.contains('combine')) {
+      return (Icons.loop_rounded, const Color(0xFF7C3AED));
+    }
+    if (lower.contains('grind') ||
+        lower.contains('powder') ||
+        lower.contains('mash')) {
+      return (Icons.grain_rounded, const Color(0xFF92400E));
+    }
+    if (lower.contains('add') ||
+        lower.contains('measure') ||
+        lower.contains('cup') ||
+        lower.contains('tablespoon') ||
+        lower.contains('teaspoon')) {
+      return (Icons.science_rounded, const Color(0xFF059669));
+    }
+    if (lower.contains('water') || lower.contains('pour')) {
+      return (Icons.water_drop_rounded, const Color(0xFF0369A1));
+    }
+    if (lower.contains('dry') || lower.contains('sun')) {
+      return (Icons.wb_sunny_rounded, const Color(0xFFCA8A04));
+    }
+    return (Icons.spa_rounded, const Color(0xFF16A34A));
+  }
+
   Widget _buildStepPage(
     BuildContext context,
     int index,
@@ -354,6 +425,8 @@ class _PreparationFocusModeScreenState
         isTimerStep &&
         _timerRemainingSeconds != null &&
         _timerRemainingSeconds! > 0;
+
+    final (stepIcon, stepColor) = _getStepVisual(instruction);
 
     return SafeArea(
       child: Padding(
@@ -379,14 +452,47 @@ class _PreparationFocusModeScreenState
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (isCompleted) ...[
-                        const Icon(
-                          Icons.check_circle_rounded,
-                          color: AppTheme.botanicalPrimary,
-                          size: 32,
+                      // Large animated step icon
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 400),
+                        transitionBuilder: (child, anim) => ScaleTransition(
+                          scale: CurvedAnimation(
+                            parent: anim,
+                            curve: Curves.elasticOut,
+                          ),
+                          child: FadeTransition(opacity: anim, child: child),
                         ),
-                        const SizedBox(height: 12),
-                      ],
+                        child: Container(
+                          key: ValueKey('step_icon_${index}_$isCompleted'),
+                          width: 96,
+                          height: 96,
+                          decoration: BoxDecoration(
+                            color:
+                                isCompleted
+                                    ? AppTheme.botanicalPrimary.withOpacity(0.12)
+                                    : stepColor.withOpacity(0.12),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color:
+                                  isCompleted
+                                      ? AppTheme.botanicalPrimary.withOpacity(0.30)
+                                      : stepColor.withOpacity(0.30),
+                              width: 2.5,
+                            ),
+                          ),
+                          child: Icon(
+                            isCompleted
+                                ? Icons.check_circle_rounded
+                                : stepIcon,
+                            size: 46,
+                            color:
+                                isCompleted
+                                    ? AppTheme.botanicalPrimary
+                                    : stepColor,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
                       Text(
                         instruction,
                         style: theme.textTheme.headlineMedium?.copyWith(

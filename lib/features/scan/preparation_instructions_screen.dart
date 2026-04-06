@@ -719,6 +719,77 @@ class _PreparationInstructionsScreenState
     return '${s}s';
   }
 
+  /// Maps step instruction keywords to a (icon, color) pair for visual context.
+  static (IconData, Color) _getStepVisual(String instruction) {
+    final lower = instruction.toLowerCase();
+    if (lower.contains('strain') ||
+        lower.contains('filter') ||
+        lower.contains('sieve') ||
+        lower.contains('cheesecloth')) {
+      return (Icons.filter_alt_rounded, const Color(0xFF0D9488));
+    }
+    if (lower.contains('boil') ||
+        lower.contains('simmer') ||
+        lower.contains('heat')) {
+      return (Icons.local_fire_department_rounded, const Color(0xFFEA580C));
+    }
+    if (lower.contains('leaf') ||
+        lower.contains('leaves') ||
+        lower.contains('herb') ||
+        lower.contains('bark') ||
+        lower.contains('root')) {
+      return (Icons.eco_rounded, const Color(0xFF16A34A));
+    }
+    if (lower.contains('wash') ||
+        lower.contains('rinse') ||
+        lower.contains('clean')) {
+      return (Icons.water_drop_rounded, const Color(0xFF2563EB));
+    }
+    if (lower.contains('chop') ||
+        lower.contains('cut') ||
+        lower.contains('slice') ||
+        lower.contains('pound') ||
+        lower.contains('crush')) {
+      return (Icons.content_cut_rounded, const Color(0xFFD97706));
+    }
+    if (lower.contains('cool') ||
+        lower.contains('chill') ||
+        lower.contains('temperature')) {
+      return (Icons.ac_unit_rounded, const Color(0xFF0284C7));
+    }
+    if (lower.contains('drink') ||
+        lower.contains('consume') ||
+        lower.contains('serve') ||
+        lower.contains('take')) {
+      return (Icons.local_cafe_rounded, const Color(0xFFB45309));
+    }
+    if (lower.contains('mix') ||
+        lower.contains('stir') ||
+        lower.contains('blend') ||
+        lower.contains('combine')) {
+      return (Icons.loop_rounded, const Color(0xFF7C3AED));
+    }
+    if (lower.contains('grind') ||
+        lower.contains('powder') ||
+        lower.contains('mash')) {
+      return (Icons.grain_rounded, const Color(0xFF92400E));
+    }
+    if (lower.contains('add') ||
+        lower.contains('measure') ||
+        lower.contains('cup') ||
+        lower.contains('tablespoon') ||
+        lower.contains('teaspoon')) {
+      return (Icons.science_rounded, const Color(0xFF059669));
+    }
+    if (lower.contains('water') || lower.contains('pour')) {
+      return (Icons.water_drop_rounded, const Color(0xFF0369A1));
+    }
+    if (lower.contains('dry') || lower.contains('sun')) {
+      return (Icons.wb_sunny_rounded, const Color(0xFFCA8A04));
+    }
+    return (Icons.spa_rounded, const Color(0xFF16A34A));
+  }
+
   Widget _buildStepItem(
     BuildContext context,
     int stepNumber,
@@ -734,151 +805,171 @@ class _PreparationInstructionsScreenState
     VoidCallback? onToggleTimer,
     VoidCallback? onLongPressTimer,
   }) {
+    final (stepIcon, stepColor) = _getStepVisual(step);
     final timerColor =
         isTimerActive
             ? (isTimerPaused ? AppTheme.warningAmber : AppTheme.botanicalPrimary)
             : AppTheme.botanicalPrimary;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Material(
-            color:
-                isCompleted
-                    ? theme.colorScheme.primaryContainer.withOpacity(0.35)
-                    : theme.colorScheme.surfaceContainerLow.withOpacity(0.5),
-            borderRadius: BorderRadius.circular(12),
-            child: InkWell(
-              onTap: onTap,
-              borderRadius: BorderRadius.circular(12),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Checkbox-style circle (tap = toggle)
-                    GestureDetector(
-                      onTap: onTap,
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 200),
-                        child:
+      padding: const EdgeInsets.only(bottom: 14),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        decoration: BoxDecoration(
+          color:
+              isCompleted
+                  ? stepColor.withValues(alpha: 0.06)
+                  : theme.colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(16),
+          border: Border(
+            left: BorderSide(
+              color: isCompleted ? stepColor.withValues(alpha: 0.4) : stepColor,
+              width: 4,
+            ),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: stepColor.withValues(alpha: 0.07),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Header row: icon + "Step N" label + timer ─────────────
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Step type icon circle
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 250),
+                        transitionBuilder: (child, anim) => ScaleTransition(
+                          scale: anim,
+                          child: FadeTransition(opacity: anim, child: child),
+                        ),
+                        child: Container(
+                          key: ValueKey(isCompleted ? 'done_$stepNumber' : 'todo_$stepNumber'),
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color:
+                                isCompleted
+                                    ? AppTheme.botanicalPrimary.withValues(alpha: 0.12)
+                                    : stepColor.withValues(alpha: 0.14),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
                             isCompleted
-                                ? Container(
-                                  key: const ValueKey('checked'),
-                                  width: 32,
-                                  height: 32,
-                                  decoration: const BoxDecoration(
-                                    color: AppTheme.botanicalPrimary,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.check,
-                                    color: Colors.white,
-                                    size: 18,
-                                  ),
-                                )
-                                : Container(
-                                  key: const ValueKey('unchecked'),
-                                  width: 32,
-                                  height: 32,
-                                  decoration: BoxDecoration(
-                                    color: theme.colorScheme.primary,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      stepNumber.toString(),
-                                      style: theme.textTheme.bodyMedium
-                                          ?.copyWith(
-                                            color: theme.colorScheme.onPrimary,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                    ),
-                                  ),
-                                ),
+                                ? Icons.check_circle_rounded
+                                : stepIcon,
+                            color:
+                                isCompleted
+                                    ? AppTheme.botanicalPrimary
+                                    : stepColor,
+                            size: 22,
+                          ),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 4),
+                      const SizedBox(width: 10),
+                      // Step label
+                      Expanded(
                         child: Text(
-                          step,
-                          style: theme.textTheme.bodyMedium?.copyWith(
+                          'Step $stepNumber',
+                          style: theme.textTheme.labelMedium?.copyWith(
                             color:
                                 isCompleted
                                     ? theme.colorScheme.onSurfaceVariant
-                                    : theme.colorScheme.onSurface,
-                            height: 1.5,
-                            decoration:
-                                isCompleted
-                                    ? TextDecoration.lineThrough
-                                    : TextDecoration.none,
-                            decorationColor:
-                                isCompleted
-                                    ? theme.colorScheme.onSurfaceVariant
-                                    : null,
+                                    : stepColor,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.3,
                           ),
                         ),
                       ),
-                    ),
-                    // Timer pill (if step has a timer)
-                    if (timerSeconds != null && timerSeconds > 0) ...[
-                      const SizedBox(width: 8),
-                      GestureDetector(
-                        onTap: onToggleTimer,
-                        onLongPress: onLongPressTimer,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 250),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: timerColor.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(100),
-                            border: Border.all(
-                              color: timerColor.withOpacity(0.4),
+                      // Timer pill
+                      if (timerSeconds != null && timerSeconds > 0) ...[
+                        GestureDetector(
+                          onTap: onToggleTimer,
+                          onLongPress: onLongPressTimer,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 250),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: timerColor.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(100),
+                              border: Border.all(
+                                color: timerColor.withOpacity(0.4),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  isTimerActive
+                                      ? (isTimerPaused
+                                          ? Icons.play_arrow_rounded
+                                          : Icons.pause_rounded)
+                                      : Icons.timer_outlined,
+                                  size: 14,
+                                  color: timerColor,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  isTimerActive
+                                      ? _formatDuration(timerRemainingSeconds)
+                                      : _formatDuration(timerSeconds),
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: timerColor,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                isTimerActive
-                                    ? (isTimerPaused
-                                        ? Icons.play_arrow_rounded
-                                        : Icons.pause_rounded)
-                                    : Icons.timer_outlined,
-                                size: 14,
-                                color: timerColor,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                isTimerActive
-                                    ? _formatDuration(timerRemainingSeconds)
-                                    : _formatDuration(timerSeconds),
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: timerColor,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
                         ),
-                      ),
+                      ],
                     ],
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 10),
+                  // ── Instruction text (indented to align under label) ────────
+                  Padding(
+                    padding: const EdgeInsets.only(left: 54),
+                    child: Text(
+                      step,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color:
+                            isCompleted
+                                ? theme.colorScheme.onSurfaceVariant
+                                : theme.colorScheme.onSurface,
+                        height: 1.55,
+                        decoration:
+                            isCompleted
+                                ? TextDecoration.lineThrough
+                                : TextDecoration.none,
+                        decorationColor:
+                            isCompleted
+                                ? theme.colorScheme.onSurfaceVariant
+                                : null,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
