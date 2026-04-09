@@ -97,6 +97,125 @@ class _AdminPlantMetadataScreenState extends State<AdminPlantMetadataScreen> {
     );
   }
 
+  Future<void> _editAIVisionSummary(Plant plant, PlantMetadataOverride? currentOverride) async {
+    final theme = Theme.of(context);
+    final textController = TextEditingController(text: currentOverride?.aiVisionSummary ?? '');
+    bool isSaving = false;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: theme.colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(ctx).viewInsets.bottom,
+                left: 16,
+                right: 16,
+                top: 24,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.psychology_rounded, color: AppTheme.botanicalPrimary),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Machine Learning UI',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'AI Vision Summary for ${plant.commonName}',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: textController,
+                      maxLines: 4,
+                      decoration: const InputDecoration(
+                        labelText: 'AI Vision Summary',
+                        hintText: 'Enter a custom explanation for GradCAM...',
+                        border: OutlineInputBorder(),
+                        alignLabelWithHint: true,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        TextButton.icon(
+                          onPressed: isSaving ? null : () async {
+                            setModalState(() => isSaving = true);
+                            final success = await PlantMetadataService().save(
+                              plantId: plant.id,
+                              description: currentOverride?.description,
+                              safetyWarnings: currentOverride?.safetyWarnings,
+                              preparationStepsJson: currentOverride?.preparationStepsJson,
+                              aiVisionSummary: null, // Restores default by setting it to null
+                            );
+                            setModalState(() => isSaving = false);
+                            if (success && ctx.mounted) {
+                              Navigator.pop(ctx);
+                              _load();
+                            }
+                          },
+                          icon: const Icon(Icons.restore_rounded),
+                          label: const Text('Restore Default'),
+                          style: TextButton.styleFrom(foregroundColor: theme.colorScheme.error),
+                        ),
+                        const Spacer(),
+                        FilledButton(
+                          onPressed: isSaving ? null : () async {
+                            setModalState(() => isSaving = true);
+                            final success = await PlantMetadataService().save(
+                              plantId: plant.id,
+                              description: currentOverride?.description,
+                              safetyWarnings: currentOverride?.safetyWarnings,
+                              preparationStepsJson: currentOverride?.preparationStepsJson,
+                              aiVisionSummary: textController.text.trim().isEmpty ? null : textController.text.trim(),
+                            );
+                            setModalState(() => isSaving = false);
+                            if (success && ctx.mounted) {
+                              Navigator.pop(ctx);
+                              _load();
+                            }
+                          },
+                          child: isSaving 
+                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              : const Text('Save'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _factoryReset() async {
     final theme = Theme.of(context);
     final confirmController = TextEditingController();
@@ -322,11 +441,26 @@ class _AdminPlantMetadataScreenState extends State<AdminPlantMetadataScreen> {
                   subtitle: Text(plant.scientificName,
                       style: const TextStyle(
                           fontStyle: FontStyle.italic, fontSize: 12)),
-                  trailing: hasOverride
-                      ? const Icon(Icons.edit_rounded,
-                          color: AppTheme.botanicalPrimary, size: 18)
-                      : Icon(Icons.edit_outlined,
-                          color: Colors.grey.shade400, size: 18),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.psychology_rounded),
+                        color: _overrides[plant.id]?.aiVisionSummary != null
+                            ? AppTheme.botanicalPrimary
+                            : Colors.grey.shade400,
+                        tooltip: 'Edit AI Vision Summary',
+                        onPressed: () => _editAIVisionSummary(plant, _overrides[plant.id]),
+                      ),
+                      IconButton(
+                        icon: hasOverride
+                            ? const Icon(Icons.edit_rounded, color: AppTheme.botanicalPrimary)
+                            : Icon(Icons.edit_outlined, color: Colors.grey.shade400),
+                        tooltip: 'Edit Catalog Data',
+                        onPressed: () => _openEditor(plant),
+                      ),
+                    ],
+                  ),
                   onTap: () => _openEditor(plant),
                 );
               },

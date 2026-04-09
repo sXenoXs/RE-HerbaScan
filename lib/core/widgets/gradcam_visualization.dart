@@ -8,6 +8,7 @@ import 'package:herbascan/core/providers/offline_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
+import 'package:herbascan/core/services/plant_metadata_service.dart';
 
 class GradCAMVisualization extends StatefulWidget {
   final String? gradCAMPath; // Legacy: file path (deprecated)
@@ -60,6 +61,8 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
   String? _explanationSource;
   bool _shouldForceOnline = false;
   bool _isReadMoreExpanded = false;
+  
+  String? _aiVisionSummary;
 
   static const int _collapsedMaxLines = 4;
 
@@ -110,6 +113,17 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
       _explanationError = null;
       _explanationSource = null;
     });
+
+    if (widget.plant != null) {
+      try {
+        final overrideMetadata = await PlantMetadataService().get(widget.plant!.id);
+        if (mounted && overrideMetadata != null && overrideMetadata.aiVisionSummary != null) {
+          setState(() {
+            _aiVisionSummary = overrideMetadata.aiVisionSummary;
+          });
+        }
+      } catch (_) {}
+    }
 
     try {
       final offlineProvider =
@@ -200,7 +214,9 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
         Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: Text(
-            'The highlighted areas show what the AI examined to identify this plant. Brighter areas were most important to the decision.',
+            (_aiVisionSummary != null && _aiVisionSummary!.isNotEmpty)
+                ? _aiVisionSummary!
+                : 'The highlighted areas show what the AI examined to identify this plant. Brighter areas were most important to the decision.',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
               height: 1.4,
@@ -314,21 +330,32 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                           _buildImageErrorPlaceholder(theme),
                     ),
                     if (_showHeatmap && _opacity > 0)
-                      Opacity(
-                        opacity: _opacity,
-                        child: widget.gradcamImageBytes != null
-                            ? Image.memory(
-                                widget.gradcamImageBytes!,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) =>
-                                    const SizedBox.shrink(),
-                              )
-                            : Image.file(
-                                File(widget.gradCAMPath!),
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) =>
-                                    const SizedBox.shrink(),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          return ClipRect(
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              widthFactor: _opacity, // Using opacity as sliderValue
+                              child: SizedBox(
+                                width: constraints.maxWidth,
+                                height: constraints.maxHeight,
+                                child: widget.gradcamImageBytes != null
+                                    ? Image.memory(
+                                        widget.gradcamImageBytes!,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) =>
+                                            const SizedBox.shrink(),
+                                      )
+                                    : Image.file(
+                                        File(widget.gradCAMPath!),
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) =>
+                                            const SizedBox.shrink(),
+                                      ),
                               ),
+                            ),
+                          );
+                        },
                       ),
                     // Tap to expand hint
                     Positioned(

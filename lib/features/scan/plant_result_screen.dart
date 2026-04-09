@@ -1615,33 +1615,40 @@ class _FullScreenHeatmapRouteState extends State<FullScreenHeatmapRoute> {
 
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          Center(
-            child: InteractiveViewer(
-              minScale: 0.5,
-              maxScale: 4.0,
-              child: _showOverlay
-                  ? LayoutBuilder(
-                      builder: (context, constraints) {
-                        return Stack(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return Stack(
+            children: [
+              Center(
+                child: InteractiveViewer(
+                  minScale: 0.5,
+                  maxScale: 4.0,
+                  child: SizedBox(
+                    width: constraints.maxWidth,
+                    height: constraints.maxHeight,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      fit: StackFit.expand,
+                      children: [
+                        Image.file(
+                          File(widget.originalImagePath),
+                          fit: BoxFit.cover,
                           alignment: Alignment.center,
-                          fit: StackFit.expand,
-                          children: [
-                            Image.file(
-                              File(widget.originalImagePath),
-                              fit: BoxFit.contain,
-                              alignment: Alignment.center,
-                              errorBuilder: (_, __, ___) =>
-                                  _buildErrorWidget('Original image not found'),
-                            ),
-                            Positioned.fill(
-                              child: Opacity(
-                                opacity: _opacity,
+                          errorBuilder: (_, __, ___) =>
+                              _buildErrorWidget('Original image not found'),
+                        ),
+                        if (_showOverlay && _opacity > 0)
+                          ClipRect(
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              widthFactor: _opacity,
+                              child: SizedBox(
+                                width: constraints.maxWidth,
+                                height: constraints.maxHeight,
                                 child: hasImageBytes
                                     ? Image.memory(
                                         widget.gradcamImageBytes!,
-                                        fit: BoxFit.contain,
+                                        fit: BoxFit.cover,
                                         alignment: Alignment.center,
                                         errorBuilder: (_, __, ___) =>
                                             const SizedBox.shrink(),
@@ -1649,7 +1656,7 @@ class _FullScreenHeatmapRouteState extends State<FullScreenHeatmapRoute> {
                                     : hasFilePath
                                         ? Image.file(
                                             File(widget.gradCAMPath!),
-                                            fit: BoxFit.contain,
+                                            fit: BoxFit.cover,
                                             alignment: Alignment.center,
                                             errorBuilder: (_, __, ___) =>
                                                 const SizedBox.shrink(),
@@ -1657,27 +1664,20 @@ class _FullScreenHeatmapRouteState extends State<FullScreenHeatmapRoute> {
                                         : const SizedBox.shrink(),
                               ),
                             ),
-                          ],
-                        );
-                      },
-                    )
-                  : Image.file(
-                      File(widget.originalImagePath),
-                      fit: BoxFit.contain,
-                      alignment: Alignment.center,
-                      errorBuilder: (_, __, ___) =>
-                          _buildErrorWidget('Original image not found'),
+                          ),
+                      ],
                     ),
-            ),
-          ),
-          // Close button
-          Positioned(
-            top: 8,
-            left: 8,
-            child: SafeArea(
-              child: IconButton(
-                onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.close, color: Colors.white, size: 32),
+                  ),
+                ),
+              ),
+              // Close button
+              Positioned(
+                top: 8,
+                left: 8,
+                child: SafeArea(
+                  child: IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close, color: Colors.white, size: 32),
                 style: IconButton.styleFrom(
                   backgroundColor: Colors.black.withOpacity(0.5),
                   shape: const CircleBorder(),
@@ -1747,6 +1747,8 @@ class _FullScreenHeatmapRouteState extends State<FullScreenHeatmapRoute> {
             ),
           ),
         ],
+          );
+        },
       ),
     );
   }
