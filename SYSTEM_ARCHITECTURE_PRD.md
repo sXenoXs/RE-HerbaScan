@@ -1,7 +1,7 @@
 # HerbaScan – System Architecture & Product Requirements Document
 
-> **Version:** v0.9.5 · **Date:** March 16, 2026 · **Status:** Production-Ready (Thesis Phase)
-> **Revised** to reflect CHANGELOG through March 2026.
+> **Version:** v0.9.7 · **Date:** March 16, 2026 · **Status:** Production-Ready (Thesis Phase)
+> **Revised** to reflect CHANGELOG through April 2026.
 >
 > **Source of Truth Hierarchy:** This document is derived from `CHANGELOG.md` as the absolute authority.
 > Any README or setup guide that contradicts the Changelog (e.g., mentions of the Gemini live LLM or the
@@ -17,7 +17,7 @@
   - 2.2 Offline-First Sync Strategy
   - 2.3 Hybrid XAI Explanation System (No-LLM)
   - 2.4 Admin Portal
-  - 2.5 UI/UX Redesign (March 2026)
+  - 2.5 UI/UX Redesign (April 2026)
 3. [System Architecture](#3-system-architecture)
   - 3.1 Flutter Frontend Layer
   - 3.2 Python FastAPI Backend (Railway)
@@ -39,12 +39,12 @@
 
 The application serves communities—particularly in rural areas with limited connectivity—by:
 
-- **Identifying** 42 medicinal plant species (10 DOH-approved + 32 additional) from a camera or gallery image.
+- **Identifying** 43 classes (42 medicinal plants + 1 OOD rejection class) from a camera or gallery image.
 - **Explaining** the AI's reasoning through Explainable AI (XAI) heatmaps (Grad-CAM online / CAM offline).
 - **Informing** users with structured, deterministic plant knowledge (taxonomy, ecology, medicinal preparation, safety profile).
 - **Empowering** researchers and administrators through a cloud-backed admin portal for dataset building and plant catalog management.
 
-### Current Production State (v0.9.5 – March 2026)
+### Current Production State (v0.9.7 – April 2026)
 
 
 | Dimension            | State                                                                             |
@@ -52,7 +52,7 @@ The application serves communities—particularly in rural areas with limited co
 | **Overall progress** | ~90% — all core features implemented; beta testing pending                        |
 | **AI Model**         | MobileNetV2-only (HerbaScan custom model deprecated in Phase 34)                  |
 | **XAI Explanations** | Fully deterministic — no live LLM at runtime (Gemini removed in CHANGELOG)        |
-| **Plant Database**   | 42 medicinal plants, all migrated to structured 4-section format (Phase 35)       |
+| **Plant Database**   | 42 medicinal plants + 1 OOD class, all migrated to structured 4-section format (Phase 35)       |
 | **Cloud Backend**    | FastAPI on Railway (`re-herbascan-production.up.railway.app`) — Grad-CAM provider |
 | **Auth & Cloud DB**  | Supabase (Auth, PostgreSQL, Storage, Edge Functions)                              |
 | **Local DB**         | SQLite v8 (8 tables), offline-first with Supabase sync                            |
@@ -90,7 +90,7 @@ The application serves communities—particularly in rural areas with limited co
 
 | Feature                                 | Status | Notes                                        |
 | --------------------------------------- | ------ | -------------------------------------------- |
-| 42-plant database                       | ✅      | 10 DOH-approved + 32 additional              |
+| 43-class database                       | ✅      | 10 DOH-approved + 32 additional              |
 | Plant Detail screen (4 tabs)            | ✅      | Taxonomy / Ecology / Medicinal / Safety      |
 | Interactive 2D plant silhouette         | ✅      | SVG path hit-testing, DB-backed anatomy data |
 | Static habitat heatmap (OSM)            | ✅      | `flutter_map` + curated coordinates          |
@@ -143,7 +143,7 @@ The application serves communities—particularly in rural areas with limited co
 | Full medicinal uses + preparations editors | ✅      |                                                                                                                       |
 | Condition Search management                | ✅      | Add / edit / delete custom conditions + plant mapping                                                                 |
 | User Management                            | ✅      | **ListTile** row: title (email + role badge), subtitle (Joined date • scan count); admin avatar/badge use **AppTheme.botanicalPrimary** + white in light mode for contrast. **Make admin / Remove admin** via `AdminUserService.setRole(userId, role)` (no migration). **Force activate email** (OTP bypass) via Edge Function `force-verify-user`. Deactivate, delete; trailing status dot + PopupMenuButton. |
-| Factory Reset                              | ✅      | Re-seeds 42 plants, safety, habitat, conditions to Supabase                                                           |
+| Factory Reset                              | ✅      | Re-seeds 42 medicinal plants (+1 OOD), safety, habitat, conditions to Supabase                                                           |
 | 2D Silhouette admin seed                   | ✅      | `catalog_plant_anatomy` insert templates                                                                              |
 | Instant local sync                         | ✅      | After catalog/condition/plant save, admin triggers local SQLite sync so browse/detail see changes without app restart |
 | Condition list plant count                 | ✅      | Admin "X plants" matches browse (same two-step logic: explicit mappings then keyword fallback)                        |
@@ -151,7 +151,7 @@ The application serves communities—particularly in rural areas with limited co
 
 ---
 
-### 2.5 UI/UX Redesign (March 2026)
+### 2.5 UI/UX Redesign (April 2026)
 
 The following reflects the CHANGELOG UI/UX redesign (design system and screen-by-screen updates).
 
@@ -226,11 +226,11 @@ App Launch (PlantProvider._initializeData)
 identifyPlant() triggers explanation lookup:
 
   Priority 1 → SharedPreferences / file cache  (read-only; previously saved from old online calls)
-  Priority 2 → assets/data/plant_explanations.json  (42 plants, bundled in APK)
+  Priority 2 → assets/data/plant_explanations.json  (42 medicinal plants (+1 OOD), bundled in APK)
   Priority 3 → Hardcoded fallback text
 ```
 
-#### Standardized 4-Section Structure (Phase 35 – all 42 plants)
+#### Standardized 4-Section Structure (Phase 35 – all 42 medicinal plants (+1 OOD))
 
 Each plant explanation in `plant_explanations.json` follows this canonical schema:
 
@@ -416,7 +416,7 @@ if (loc == '/admin') {
 | ------------------ | --------------------------------------------------------------------------- |
 | `AppProvider`      | Theme, language, offline mode toggle, app-wide preferences; **auto-save scans** preference (`_autoSaveScans`, default true), persisted with key `'auto_save_scans'` in SharedPreferences; getter `autoSaveScans`, `toggleAutoSaveScans()`. Plant result screen gates automatic save on this preference. |
 | `AuthProvider`     | Supabase session, user role (`user` / `admin`), sign-in/out/OTP flows       |
-| `PlantProvider`    | Plant catalog (42 plants), scan history, anatomy data, catalog sync trigger |
+| `PlantProvider`    | Plant catalog (42 medicinal plants (+1 OOD)), scan history, anatomy data, catalog sync trigger |
 | `CameraProvider`   | Camera init, capture, gallery selection, zoom controls (skipped on desktop) |
 | `LanguageProvider` | English / Filipino localization, runtime switching                          |
 | `OfflineProvider`  | Connectivity monitoring (`connectivity_plus`), offline mode, sync state     |
@@ -645,7 +645,7 @@ RLS policies applied via `20260302000000_storage_herbarium_policies.sql`.
 
 | Table                      | Primary Key                | Purpose                                                          |
 | -------------------------- | -------------------------- | ---------------------------------------------------------------- |
-| `plants`                   | `id text`                  | 42 medicinal plants + `image_url` (Supabase Storage URL or null) |
+| `plants`                   | `id text`                  | 42 medicinal plants + 1 OOD class + `image_url` (Supabase Storage URL or null) |
 | `medicinal_uses`           | `id integer`               | Therapeutic applications per plant                               |
 | `preparation_methods`      | `id text`                  | Preparation steps, step_details_json, schedule_json              |
 | `scan_history`             | `id text`                  | Local scan results with GradCAM paths, predictions, metadata     |
@@ -658,7 +658,7 @@ RLS policies applied via `20260302000000_storage_herbarium_policies.sql`.
 
 #### Database Initialization
 
-On **first launch** (or when empty), `DatabaseInitService` seeds all 42 plants from `PlantDataService._getAllMedicinalPlantsData()` using `ConflictAlgorithm.replace` (idempotent).
+On **first launch** (or when empty), `DatabaseInitService` seeds all 42 medicinal plants (+1 OOD) from `PlantDataService._getAllMedicinalPlantsData()` using `ConflictAlgorithm.replace` (idempotent).
 
 On **every open**, `_ensureCatalogTablesExist()` runs `CREATE TABLE IF NOT EXISTS` for all catalog tables — ensuring fresh installs and upgrades never miss schema additions.
 
@@ -672,8 +672,8 @@ On **every open**, `_ensureCatalogTablesExist()` runs `CREATE TABLE IF NOT EXIST
 | `assets/models/mobilenetv2_multi_output.tflite` | TFLite | Offline inference (2 outputs: feature maps + predictions) |
 | `assets/models/mobilenetv2_cam_weights.json`    | JSON   | CAM weight matrix (1280 features × 42 classes)            |
 | `assets/models/class_indices.json`              | JSON   | Label map (name → index, e.g. `"Adelfa": 0`)              |
-| `assets/data/plant_explanations.json`           | JSON   | 4-section XAI explanations for all 42 plants (~150 KB)    |
-| `assets/data/safety_profiles.json`              | JSON   | Contraindication Engine data for all 42 plants            |
+| `assets/data/plant_explanations.json`           | JSON   | 4-section XAI explanations for all 42 medicinal plants (+1 OOD) (~150 KB)    |
+| `assets/data/safety_profiles.json`              | JSON   | Contraindication Engine data for all 42 medicinal plants (+1 OOD)            |
 | `assets/data/plant_habitats.json`               | JSON   | Known coordinates + region names for habitat map          |
 | `assets/data/doh_plants.json`                   | JSON   | DOH-approved plant metadata                               |
 | `assets/data/default_plant_anatomy.json`       | JSON   | Default 2D anatomy parts for 10 DOH plants (key: plant_id\|part_name); used by Admin Anatomy tab and DefaultAnatomyService |
@@ -723,7 +723,7 @@ flowchart TD
     %% ─── XAI Explanation (NO LIVE LLM) ──────────────────────────
     PR --> XAI["XAIExplanationService\n(deterministic — no LLM)"]
     XAI -->|"Priority 1"| CACHE[("SharedPreferences\nfile cache\n(read-only)")]
-    XAI -->|"Priority 2"| PEJSON[("plant_explanations.json\n42 plants · 4-section format")]
+    XAI -->|"Priority 2"| PEJSON[("plant_explanations.json\n42 medicinal plants (+1 OOD) · 4-section format")]
     XAI -->|"Priority 3"| FBK["Fallback text"]
 
     %% ─── Safety (Contraindication Engine) ───────────────────────
@@ -1051,7 +1051,7 @@ flutter clean && flutter pub get && flutter run
 
 **SnackBar:** Uses floating behavior (`SnackBarBehavior.floating`) so status messages do not displace the camera FAB or bottom nav.
 
-**Testing plans:** The `tests/` folder was removed from the repository (v0.9.5). For testing coverage and plans, see `TESTING_GUIDE.md` if present at repo root.
+**Testing plans:** The `tests/` folder was removed from the repository (v0.9.7). For testing coverage and plans, see `TESTING_GUIDE.md` if present at repo root.
 
 ---
 

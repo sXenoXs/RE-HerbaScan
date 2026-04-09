@@ -10,7 +10,7 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 
 ## 🚀 Current Development Status
 
-**Version**: v0.9.6  
+**Version**: v0.9.7  
 **Last Updated**: April 4, 2026
 **Project Phase**: Phase 35 Complete (AI Explanation Content Standardization & Complete Plant Database Migration)  
 **Overall Progress**: 90% Complete - **PRODUCTION READY** 
@@ -103,27 +103,31 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **Tap to Expand Plant Image**: ✅ **NEW** Implemented tap to expand feature - tap plant image to view in full-screen with Hero animation, pinch-to-zoom (0.5x-4.0x), and pan gestures
 - **Full Screen Reading Mode**: ✅ **NEW** Implemented full-screen reading mode for Summary tab - distraction-free view with larger text and regenerate capability
 - **AI Explanation Tab Simplification**: ✅ **NEW** Removed 'Original' sub-tab from AI Explanation section - simplified navigation to only Heatmap and Summary tabs
-- **Version Update**: ✅ **NEW** Updated all version references to v0.9.5 across the application (splash, settings, app info, feedback, docs)
+- **Version Update**: ✅ **NEW** Updated all version references to v0.9.7 across the application (splash, settings, app info, feedback, docs)
 - **Toxic plant blacklist**: ✅ When the top prediction is Adelfa, Ipil-Ipil, or Tuba-Tuba, the app shows a dedicated toxic-plant warning screen (never as a recommended result); no auto-save of toxic scans. Source: `lib/core/constants/toxic_plant_blacklist.dart`.
 - **Strict-contraindication flagging**: ✅ New `needs_strict_contraindications` (catalog_safety / safety_profiles); prominent orange "Use with strict caution" card for plants such as Kamias, Kamoteng Kahoy, Kakawate. Admin Safety tab includes switch for this flag.
 - **Extended plant anatomy**: ✅ Default anatomy data extended to 39 non-toxic plants (10 DOH unchanged; 3 toxic excluded). Admin can seed anatomy from defaults; local sync after seed so Plant Detail shows anatomy without restart.
 - **Auto-save scans toggle**: ✅ Settings preference (key `auto_save_scans`); when OFF, new scans are not auto-saved to History until the user saves from Plant Result or History.
-- **Project structure**: The `tests/` folder (test plans) has been removed from the repository as of v0.9.5. User testing documentation: see `TESTING_GUIDE.md` if present.
+- **Project structure**: The `tests/` folder (test plans) has been removed from the repository as of v0.9.7. User testing documentation: see `TESTING_GUIDE.md` if present.
 
 ### 🔄 In Progress (Phase 6: Offline CAM Fix)
 
 - **Offline CAM Inference Fix**: Fixed multiple output buffers shape mismatch error
 - **TFLite Multiple Outputs**: Corrected output buffer passing for multi-output models
 - **Testing**: Verifying offline CAM heatmap generation in offline mode
-- **Beta Testing**: User testing (see TESTING_GUIDE.md; `tests/` folder removed in v0.9.5)
+- **Beta Testing**: User testing (see TESTING_GUIDE.md; `tests/` folder removed in v0.9.7)
 - **Data Collection**: Gathering user feedback and metrics
 
-### ✨ New in v0.9.6
+### ✨ New in v0.9.7
 
 - **Preparation Step Infographics**: All preparation step cards (boil, add leaves, strain, cool, drink, wash, chop, mix, grind, pour, etc.) now show a context-aware icon with color-coded accent (orange for heat, green for herbs, teal for filter, blue for cool, amber for drink). Interactive step cards with animated icon → check transition on completion. Focus Mode shows a large 96 px animated icon above each step instruction.
+- **Two-Stage Image Validation Pipeline**: Added a heuristic gatekeeper (blur/darkness via OpenCV) and OOD ML rejection (`Not_Plant` class) to explicitly drop irrelevant images prior to analysis.
+- **OOD Config Integration**: Synced `ood_safety_config.json` locally and across standard endpoints to control strict acceptance limits.
 
-### ✅ Recently Fixed (v0.9.5)
+### ✅ Recently Fixed (v0.9.7)
 
+- **Feedback Bottom Sheet Keyboard Overflow**: Prevented Samsung/Android 16 bottom layout squishing by refactoring `FeedbackBottomSheetContent` using programmatic dynamic paddings over rigid Scaffolds.
+- **Not_Plant Array Shift**: Solidified all database mappings around string-based identifiers, securing them from the alphabetical model integer changes when `Not_Plant` was introduced.
 - **Online GradCAM Prediction Mapping**: Fixed "Unknown" plant names in online GradCAM predictions
 - **Backend Response Field Mapping**: Corrected mapping from backend 'class' and 'class_index' to Flutter format
 - **Label Format Parsing**: Added parsing to extract plant names from backend label format
@@ -518,7 +522,7 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - [x] Added markdown text formatting
 - [x] Implemented usability assessment with clear status indicators
 - [x] Added refresh functionality for regenerating explanations
-- [x] **Content Standardization** (v0.9.5): Standardized structure with four sections (Taxonomy, Ecology, Medicinal Uses, Safety) - identical format for online and offline
+- [x] **Content Standardization** (v0.9.7): Standardized structure with four sections (Taxonomy, Ecology, Medicinal Uses, Safety) - identical format for online and offline
 
 ### Phase 10: Beta Testing & Deployment (🔄 In Progress)
 
@@ -527,7 +531,7 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 #### Current Status
 
 - [x] **Production Ready**: All core features implemented
-- [x] **Testing Framework**: TESTING_GUIDE.md (tests/ folder removed in v0.9.5)
+- [x] **Testing Framework**: TESTING_GUIDE.md (tests/ folder removed in v0.9.7)
 - [x] **Data Collection**: All systems operational for thesis research
 - [x] **Hybrid XAI System**: Complete offline/online explanation system
 - [ ] **Beta Testing**: User testing with real devices
@@ -615,7 +619,7 @@ herbascan/
 │   └── features/          ✅ (15+ screens: Home, Scan, Browse, History, DOH,
 │                              Settings, Feedback, Dashboard, Help, etc.)
 ├── assets/                ✅ (models, images, data/plant_explanations.json, animations, icons, fonts)
-├── (tests/ removed v0.9.5)  — Testing plans were in tests/; see TESTING_GUIDE.md for user testing
+├── (tests/ removed v0.9.7)  — Testing plans were in tests/; see TESTING_GUIDE.md for user testing
 └── Configuration          ✅ (pubspec.yaml, analysis_options.yaml)
 ```
 
@@ -641,7 +645,7 @@ herbascan/
 
 ### Immediate (Beta Testing Phase)
 
-1. **User Testing**: Distribute app to beta testers (TESTING_GUIDE.md; tests/ folder removed in v0.9.5)
+1. **User Testing**: Distribute app to beta testers (TESTING_GUIDE.md; tests/ folder removed in v0.9.7)
 2. **Data Collection**: Gather user feedback, performance metrics, and usage analytics
 3. **Bug Fixes**: Address any issues found during testing
 4. **Performance Optimization**: Fine-tune based on collected metrics
@@ -663,7 +667,7 @@ herbascan/
 
 ## 📊 Progress Metrics
 
-- **Version**: v0.9.6
+- **Version**: v0.9.7
 - **Code Files Created**: 50+ files
 - **Lines of Code**: 10,000+ lines
 - **Features Implemented**: 45+ core features
@@ -742,11 +746,11 @@ HerbaScan is designed to work seamlessly in rural areas without internet connect
 
 ## 🔧 Development Notes
 
-### Recent Changes (Version v0.9.6 – March 2026)
+### Recent Changes (Version v0.9.7 – March 2026)
 
 **CHANGELOG.md** is the authoritative change log; this README is kept in sync with it. Summary:
 
-- **Preparation Step Infographics** (v0.9.6): Redesigned all preparation step cards with context-aware icons and color-coded borders per step type (boil=fire/orange, leaves=eco/green, strain=filter/teal, cool=snowflake/blue, drink=café/amber, wash=drop/blue, etc.). Focus Mode shows a large animated 96 px icon above each step instruction with spring-scale entrance animation. Interactive animated icon-to-check transition on step completion.
+- **Preparation Step Infographics** (v0.9.7): Redesigned all preparation step cards with context-aware icons and color-coded borders per step type (boil=fire/orange, leaves=eco/green, strain=filter/teal, cool=snowflake/blue, drink=café/amber, wash=drop/blue, etc.). Focus Mode shows a large animated 96 px icon above each step instruction with spring-scale entrance animation. Interactive animated icon-to-check transition on step completion.
 
 - **UI/UX Redesign**: Design system (Emerald botanical green, app_theme.dart); Splash (solid background, linear loader); Onboarding (de-jargonified); Home (BottomAppBar, center FAB, DOH carousel); Browse (SearchBar, SegmentedButton, condition banner); Scan (edge-to-edge, reticle, tips sheet); Plant Result (Insights + AI Vision tabs, glassmorphic hero); Plant Detail (SliverAppBar hero, Quick Facts); History (TabBar, device cards, select mode, swipe export/delete, batch sync/download); Settings (grouped cards, Account block); DOH and Help redesigns; Auth/OTP (botanical header, pinput 6-box); Condition Search (directory + ConditionResultsScreen); Habitat Map; Preparation Guide and Focus Mode; System Diagnostics (renamed from Offline Demo); admin polish (instant local sync, condition count sync, user management crash fix).
 - **Heatmap in cloud**: Upload stores heatmap as `{scan_id}_gradcam.jpg` in Storage; metadata `gradcam_url`; download restores `gradCAMPath`.
@@ -763,8 +767,8 @@ HerbaScan is designed to work seamlessly in rural areas without internet connect
 - **Settings & Offline**: De-jargonified AI labels (e.g. "Show Prediction Confidence", "Show AI Reasoning Heatmap"); Offline Storage Info refreshes before dialog; System Diagnostics (renamed from Offline Demo).
 - **SnackBar**: Floating behavior so camera FAB is not displaced.
 - **Backend**: Railway `/identify` allows unauthenticated requests when `SUPABASE_JWT_SECRET` unset; see supabase/README.md and backend/README.md.
-- **Testing plans**: `tests/` folder removed in v0.9.5; see TESTING_GUIDE.md for user testing.
-- **Version**: All app version references updated to v0.9.6.
+- **Testing plans**: `tests/` folder removed in v0.9.7; see TESTING_GUIDE.md for user testing.
+- **Version**: All app version references updated to v0.9.7.
 
 ### Known Issues
 

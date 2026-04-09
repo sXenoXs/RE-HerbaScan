@@ -133,7 +133,10 @@ class _ScanScreenState extends State<ScanScreen>
           if (stage == 1) {
             await Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) => PoorImageQualityScreen(imagePath: image.path),
+                builder: (_) => PoorImageQualityScreen(
+                  imagePath: image.path,
+                  reason: result['failure_reason'] as String?,
+                ),
               ),
             );
           } else {
@@ -224,7 +227,10 @@ class _ScanScreenState extends State<ScanScreen>
           if (stage == 1) {
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) => PoorImageQualityScreen(imagePath: image.path),
+                builder: (_) => PoorImageQualityScreen(
+                  imagePath: image.path,
+                  reason: result['failure_reason'] as String?,
+                ),
               ),
             );
           } else {

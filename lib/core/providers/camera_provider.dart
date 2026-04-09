@@ -302,6 +302,19 @@ class CameraProvider extends ChangeNotifier {
         if (tfliteResult == null) {
           throw Exception("Model could not identify image.");
         }
+
+        // Hard-reject for OOD / Not_Plant in fallback
+        if (tfliteResult.label == 'Not_Plant') {
+          print('🚫 [CameraProvider] Fallback TFLite Stage 2 OOD failure');
+          _isClassifying = false;
+          notifyListeners();
+          return {
+            'validation_failed': true,
+            'failure_reason': 'Validation Failed: Subject unrecognized or not a plant.',
+            'stage': 2,
+          };
+        }
+
         
         final predictions = [{
           'label': tfliteResult.label,
@@ -333,6 +346,13 @@ class CameraProvider extends ChangeNotifier {
           'gradCAMPath': null,
           'summaryGradCAMPath': null,
         };
+      }
+
+      // If validation failed inside AdaptiveGradCAMService, propagate it immediately
+      if (result['validation_failed'] == true) {
+        _isClassifying = false;
+        notifyListeners();
+        return result;
       }
 
       // Extract predictions from result
@@ -367,6 +387,7 @@ class CameraProvider extends ChangeNotifier {
         'processing_time_ms': result['processing_time_ms'] as double? ?? 0.0,
         'gradCAMPath': result['gradCAMPath'] as String?,
         'summaryGradCAMPath': result['summaryGradCAMPath'] as String?,
+        'validation_failed': false,
       };
 
     } catch (e, stackTrace) {

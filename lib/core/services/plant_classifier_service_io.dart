@@ -14,7 +14,7 @@ class PlantClassifierService {
   
   // Model input/output shapes
   static const int _inputSize = 224;
-  static const int _numClasses = 42; // From class_indices.json (42 plants)
+  static const int _numClasses = 43; // From class_indices.json (43 classes)
 
   /// Load label list from class_indices.json (format: {"PlantName": index}).
   static Future<List<String>> _loadLabelsFromClassIndices() async {

@@ -1,8 +1,8 @@
 # HerbaScan Backend - Quick Start Guide
 
 **Last Updated**: March 2026  
-**Backend Version**: 0.9.5
-**Flutter App Version**: v0.9.5
+**Backend Version**: 0.9.7
+**Flutter App Version**: v0.9.7
 
 **Model Standardization**: MobileNetV2 Only (Phase 34) - HerbaScan custom model deprecated  
 **AI Explanation Standardization**: Phase 35 Complete - Structured format with 42 plants
@@ -86,7 +86,7 @@ Should see:
 {
   "status": "healthy",
   "model_loaded": true,
-  "num_classes": 42
+  "num_classes": 43
 }
 ```
 
@@ -266,11 +266,11 @@ When you have a new trained model:
 
 Once deployed, you have:
 - ✅ Working Grad-CAM API
-- ✅ 42 plant species identification
+- ✅ 42 medicinal plant species + 1 OOD rejection class (`Not_Plant`)
 - ✅ Base64 encoded heatmap images
 - ✅ Top-3 predictions with confidence scores
 - ✅ Ready for Flutter integration
-- ✅ Integrated with Hybrid XAI Explanation System (v0.9.5) - supports 42 plants with complete structured offline explanations (taxonomy, ecology, medicinal_preparation, safety_consideration)
+- ✅ Integrated with Hybrid XAI Explanation System (v0.9.7) - supports 42 plants with complete structured offline explanations (taxonomy, ecology, medicinal_preparation, safety_consideration)
 
 ### Next Steps
 

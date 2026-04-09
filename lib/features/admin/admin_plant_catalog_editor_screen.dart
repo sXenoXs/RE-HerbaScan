@@ -263,7 +263,7 @@ class _AdminPlantCatalogEditorScreenState
       builder: (ctx) => AlertDialog(
         title: const Text('Seed catalog from defaults?'),
         content: const Text(
-          'This will upsert all 42 plants and default safety, habitat, conditions, and anatomy into Supabase. '
+          'This will upsert all 43 plants and default safety, habitat, conditions, and anatomy into Supabase. '
           'Existing catalog data will be overwritten. Anatomy is additive (missing parts only).',
         ),
         actions: [

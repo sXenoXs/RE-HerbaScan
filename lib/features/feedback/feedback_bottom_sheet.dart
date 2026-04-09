@@ -74,55 +74,56 @@ class _FeedbackBottomSheetContentState extends State<FeedbackBottomSheetContent>
     }
   }
 
+  // IMPORTANT CALLER INSTRUCTION: 
+  // Any parent function calling showModalBottomSheet for this widget MUST have 
+  // `isScrollControlled: true` set, otherwise Flutter will forcefully cap the height 
+  // to 50% and ruin the layout.
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final size = MediaQuery.sizeOf(context);
-    final viewInsets = MediaQuery.viewInsetsOf(context);
-    final keyboardOpen = viewInsets.bottom > 0;
-    // When keyboard is open, use full space above keyboard so the sheet doesn't shrink to a tiny strip.
-    // When keyboard is closed, use 85% of screen.
-    final height = keyboardOpen
-        ? (size.height - viewInsets.bottom).clamp(280.0, size.height)
-        : (size.height * 0.85).clamp(200.0, size.height);
-    return SizedBox(
-      height: height,
-      child: ScaffoldMessenger(
-        child: Scaffold(
-          body: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 8),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade400,
-                  borderRadius: BorderRadius.circular(2),
+    
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: SizedBox(
+        height: MediaQuery.sizeOf(context).height * 0.85,
+        child: ScaffoldMessenger(
+          child: Scaffold(
+            resizeToAvoidBottomInset: false,
+            body: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 8),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade400,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: Text(
-                  l10n.sendFeedback,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  child: Text(
+                    l10n.sendFeedback,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: FeedbackFormContent(
-                  commentController: _commentController,
-                  featureSuggestionController: _featureController,
-                  metadata: _metadata,
-                  onSubmit: _onSubmit,
-                  isSubmitting: _isSubmitting,
-                  compact: true,
+                const SizedBox(height: 8),
+                Expanded(
+                  child: FeedbackFormContent(
+                    commentController: _commentController,
+                    featureSuggestionController: _featureController,
+                    metadata: _metadata,
+                    onSubmit: _onSubmit,
+                    isSubmitting: _isSubmitting,
+                    compact: true,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-            ],
+                const SizedBox(height: 12),
+              ],
+            ),
           ),
         ),
       ),

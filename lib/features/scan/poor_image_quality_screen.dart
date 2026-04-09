@@ -6,10 +6,12 @@ import 'package:herbascan/features/browse/browse_screen.dart';
 
 class PoorImageQualityScreen extends StatelessWidget {
   final String imagePath;
+  final String? reason;
 
   const PoorImageQualityScreen({
     super.key,
     required this.imagePath,
+    this.reason,
   });
 
   @override
@@ -96,7 +98,7 @@ class PoorImageQualityScreen extends StatelessWidget {
 
                         // Description
                         Text(
-                          "Couldn't get a clear look. Try better lighting or wipe your lens.",
+                          reason ?? "Couldn't get a clear look. Try better lighting or wipe your lens.",
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: Colors.white.withOpacity(0.80),
                           ),

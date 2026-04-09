@@ -1,8 +1,8 @@
 name: herbascan
-description: "HerbaScan: A CNN-Based Mobile Application for Herbal Plant Recognition and Data Retrieval"
+description: "A complete, self-contained offline-first flutter app for local plant identification with 42 medicinal plants, powered by TFLite and a smart offline-sync layer."
 publish_to: "none"
 
-version: 0.9.6+1
+version: 0.9.7+1
 
 environment:
   sdk: ">=3.4.0 <4.0.0"

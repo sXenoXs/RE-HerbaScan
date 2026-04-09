@@ -191,7 +191,7 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'MobileNet V2 · 42 Philippine medicinal plants',
+          'MobileNet V2 · 43 Philippine medicinal plants',
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),

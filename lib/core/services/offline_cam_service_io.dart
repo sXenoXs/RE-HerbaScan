@@ -33,9 +33,9 @@ class OfflineCAMService {
 
   // Model configuration
   static const int inputSize = 224;
-  // numClasses is now dynamic - determined from labels file (42 classes: 0-41)
+  // numClasses is now dynamic - determined from labels file (43 classes: 0-42)
   int get numClasses =>
-      _labels?.length ?? 42; // Default to 42 if labels not loaded
+      _labels?.length ?? 43; // Default to 43 if labels not loaded
   static const int featureDim = 256; // From Phase 2 analysis
   static const List<int> expectedFeatureMapShape = [
     7,

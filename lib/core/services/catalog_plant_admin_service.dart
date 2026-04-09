@@ -352,7 +352,7 @@ class CatalogPlantAdminService {
     return true;
   }
 
-  /// Seed Supabase catalog from bundled defaults (42 plants). Call once or for Factory Reset.
+  /// Seed Supabase catalog from bundled defaults (43 plants). Call once or for Factory Reset.
   /// Also seeds catalog_safety, catalog_habitat, and catalog_conditions from assets/defaults.
   Future<bool> seedCatalogFromDefaults() async {
     if (!isAvailable) return false;
