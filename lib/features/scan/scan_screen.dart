@@ -11,6 +11,7 @@ import 'package:herbascan/core/providers/camera_provider.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/features/scan/no_match_found_screen.dart';
 import 'package:herbascan/features/scan/plant_result_screen.dart';
+import 'package:herbascan/features/scan/poor_image_quality_screen.dart';
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
@@ -124,6 +125,30 @@ class _ScanScreenState extends State<ScanScreen>
         final result =
             await cameraProvider.processPlantIdentificationWithGradCAM(imageBytes);
         if (!mounted) return;
+
+        // Stage 1 (blur/dark) → PoorImageQualityScreen
+        // Stage 2 (OOD)       → NoMatchFoundScreen
+        if (result['validation_failed'] == true) {
+          final stage = result['stage'] as int? ?? 2;
+          if (stage == 1) {
+            await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => PoorImageQualityScreen(imagePath: image.path),
+              ),
+            );
+          } else {
+            await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => NoMatchFoundScreen(imagePath: image.path),
+              ),
+            );
+          }
+          if (mounted && cameraProvider.cameraController != null) {
+            await cameraProvider.cameraController?.resumePreview();
+          }
+          return;
+        }
+
         final predictions =
             result['predictions'] as List<Map<String, dynamic>>? ?? [];
         if (predictions.isNotEmpty) {
@@ -191,6 +216,27 @@ class _ScanScreenState extends State<ScanScreen>
         final result =
             await cameraProvider.processPlantIdentificationWithGradCAM(imageBytes);
         if (!mounted) return;
+
+        // Stage 1 (blur/dark) → PoorImageQualityScreen
+        // Stage 2 (OOD)       → NoMatchFoundScreen
+        if (result['validation_failed'] == true) {
+          final stage = result['stage'] as int? ?? 2;
+          if (stage == 1) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => PoorImageQualityScreen(imagePath: image.path),
+              ),
+            );
+          } else {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => NoMatchFoundScreen(imagePath: image.path),
+              ),
+            );
+          }
+          return;
+        }
+
         final predictions =
             result['predictions'] as List<Map<String, dynamic>>? ?? [];
         if (predictions.isNotEmpty) {

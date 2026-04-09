@@ -101,6 +101,7 @@ class OnlineGradCAMService {
 
         // Parse response
         if (response.statusCode == 200) {
+          // ── success path (unchanged) ──────────────────────────────────
           final data = jsonDecode(response.body) as Map<String, dynamic>;
 
           // Debug logging
@@ -137,8 +138,22 @@ class OnlineGradCAMService {
           _logger.i('Method used: ${data['method']}');
 
           return data;
+        } else if (response.statusCode == 422) {
+          // Validation failure from backend Stage 1 (blur/dark) or Stage 2 (OOD).
+          // Do NOT retry and do NOT fall back to offline — it's a hard rejection.
+          String detail =
+              'Validation Failed: Subject unrecognized or not a plant.';
+          try {
+            final body = jsonDecode(response.body) as Map<String, dynamic>;
+            detail = body['detail'] as String? ?? detail;
+          } catch (_) {}
+          _logger.w('Backend validation failure (422): $detail');
+          return {
+            'validation_failed': true,
+            'failure_reason': detail,
+          };
         } else {
-          // Server error - log but don't retry (server issue, not network)
+          // 5xx or other server error — return null (triggers offline fallback).
           _logger.e('Server error: ${response.statusCode} - ${response.body}');
           return null;
         }

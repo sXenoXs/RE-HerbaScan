@@ -5,6 +5,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:logger/logger.dart';
 import 'package:herbascan/core/services/online_gradcam_service.dart';
 import 'package:herbascan/core/services/offline_cam_service.dart';
+import 'package:herbascan/core/services/image_quality_service.dart';
 
 /// Adaptive service that automatically chooses between online Grad-CAM and offline CAM
 /// based on connectivity and service availability
@@ -20,6 +21,7 @@ class AdaptiveGradCAMService {
   final OnlineGradCAMService _onlineService = OnlineGradCAMService();
   final OfflineCAMService _offlineService = OfflineCAMService();
   final Connectivity _connectivity = Connectivity();
+  final ImageQualityService _imageQualityService = ImageQualityService();
 
   // State
   bool _isInitialized = false;
@@ -191,6 +193,22 @@ class AdaptiveGradCAMService {
       return null;
     }
 
+    // ── Stage 1: Image quality gate (blur + darkness) ──────────────────────
+    // Run BEFORE connectivity check — no point uploading a bad image online,
+    // and an OOD/offline failure should not happen because of image quality.
+    print('🔍 [AdaptiveGradCAM] Running Stage 1 image quality check...');
+    final qualityResult = await _imageQualityService.check(imageBytes);
+    if (!qualityResult.passed) {
+      print('🚫 [AdaptiveGradCAM] Stage 1 FAILED: ${qualityResult.failureReason}');
+      return {
+        'validation_failed': true,
+        'failure_reason': qualityResult.failureReason ??
+            'Validation Failed: Image is too blurry.',
+        'stage': 1,
+      };
+    }
+    print('✅ [AdaptiveGradCAM] Stage 1 PASSED');
+
     try {
       // Step 1: Check connectivity
       print('📡 [AdaptiveGradCAM] Checking connectivity...');
@@ -207,6 +225,18 @@ class AdaptiveGradCAMService {
           final onlineResult = await _tryOnline(imagePath);
 
           if (onlineResult != null) {
+            // Validation failure from backend (Stage 1 or 2) — hard reject,
+            // do NOT fall back to offline inference.
+            if (onlineResult['validation_failed'] == true) {
+              final reason = onlineResult['failure_reason'] as String? ?? '';
+              print('🚫 [AdaptiveGradCAM] Online validation failure: $reason');
+              return {
+                'validation_failed': true,
+                'failure_reason': reason,
+                'stage': _stageFromReason(reason),
+              };
+            }
+
             _logger.i('✅ Online Grad-CAM succeeded');
 
             // Debug logging for gradcam_image
@@ -339,6 +369,12 @@ class AdaptiveGradCAMService {
           '   Offline CAM result: ${offlineResult != null ? "SUCCESS" : "NULL"}');
 
       if (offlineResult != null) {
+        // Stage 2 OOD rejection from offline inference — propagate as-is.
+        if (offlineResult['validation_failed'] == true) {
+          print('🚫 [AdaptiveGradCAM] Offline OOD failure: ${offlineResult['failure_reason']}');
+          return offlineResult;
+        }
+
         // Enhanced logging for debugging
         print('🔍 [AdaptiveGradCAM] Offline CAM result received:');
         print('   Result keys: ${offlineResult.keys.toList()}');
@@ -456,6 +492,13 @@ class AdaptiveGradCAMService {
       _logger.e('Stack trace: $stackTrace');
       return null;
     }
+  }
+
+  /// Derive the validation stage (1 = image quality, 2 = OOD/unrecognized)
+  /// from the failure_reason string so the UI can route to the correct screen.
+  int _stageFromReason(String reason) {
+    if (reason.contains('too blurry') || reason.contains('too dark')) return 1;
+    return 2;
   }
 
   /// Try online Grad-CAM identification

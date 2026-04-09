@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
 import 'package:logger/logger.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
+import 'package:herbascan/core/services/ood_config_service.dart';
 
 /// Service for offline CAM (Class Activation Mapping) computation
 /// Uses pre-extracted weights and TFLite model for on-device visualization
@@ -687,8 +688,39 @@ class OfflineCAMService {
         return null;
       }
 
-      final predictions = inferenceResult['predictions'];
-      final predictedClassIdx = inferenceResult['predictedClassIdx'];
+      final predictions = inferenceResult['predictions'] as List<double>;
+      final predictedClassIdx = inferenceResult['predictedClassIdx'] as int;
+
+      // ── Stage 2: OOD confidence gate ─────────────────────────────────────
+      // Load OOD config (singleton — reads from disk only once per process).
+      final oodConfig = OodConfigService();
+      await oodConfig.load();
+
+      final maxConf = predictions.reduce(math.max);
+      final maxIdx  = predictions.indexOf(maxConf);
+
+      // Optional not_plant class check.
+      if (oodConfig.notPlantClassIndex >= 0 &&
+          oodConfig.notPlantClassIndex < predictions.length &&
+          maxIdx == oodConfig.notPlantClassIndex) {
+        print('🚫 [OfflineCAM] Stage 2: top class is not_plant (idx $maxIdx)');
+        return {
+          'validation_failed': true,
+          'failure_reason': 'Validation Failed: Subject unrecognized or not a plant.',
+          'stage': 2,
+        };
+      }
+
+      // OOD threshold gate.
+      if (maxConf < oodConfig.confidenceThresholdOod) {
+        print('🚫 [OfflineCAM] Stage 2: OOD — max_conf $maxConf < ${oodConfig.confidenceThresholdOod}');
+        return {
+          'validation_failed': true,
+          'failure_reason': 'Validation Failed: Subject unrecognized or not a plant.',
+          'stage': 2,
+        };
+      }
+      print('✅ [OfflineCAM] Stage 2 PASSED — max_conf=$maxConf (idx $maxIdx)');
 
       // 3. Compute CAM using SPATIAL features (preserves spatial information)
       // CRITICAL: Use spatialFeatures instead of pooled features for proper CAM
