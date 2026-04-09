@@ -330,32 +330,21 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
                           _buildImageErrorPlaceholder(theme),
                     ),
                     if (_showHeatmap && _opacity > 0)
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          return ClipRect(
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              widthFactor: _opacity, // Using opacity as sliderValue
-                              child: SizedBox(
-                                width: constraints.maxWidth,
-                                height: constraints.maxHeight,
-                                child: widget.gradcamImageBytes != null
-                                    ? Image.memory(
-                                        widget.gradcamImageBytes!,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) =>
-                                            const SizedBox.shrink(),
-                                      )
-                                    : Image.file(
-                                        File(widget.gradCAMPath!),
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) =>
-                                            const SizedBox.shrink(),
-                                      ),
+                      Opacity(
+                        opacity: _opacity,
+                        child: widget.gradcamImageBytes != null
+                            ? Image.memory(
+                                widget.gradcamImageBytes!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) =>
+                                    const SizedBox.shrink(),
+                              )
+                            : Image.file(
+                                File(widget.gradCAMPath!),
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) =>
+                                    const SizedBox.shrink(),
                               ),
-                            ),
-                          );
-                        },
                       ),
                     // Tap to expand hint
                     Positioned(
