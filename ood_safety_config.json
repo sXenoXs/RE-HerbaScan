@@ -1,0 +1,16 @@
+{
+  "generated_at": "2026-04-08T11:20:01.025280Z",
+  "num_classes": 43,
+  "not_plant_class": "Not_Plant",
+  "not_plant_class_index": 28,
+  "confidence_threshold_accept": 0.6,
+  "confidence_threshold_ood": 0.4,
+  "ood_darkness_threshold": 10.0,
+  "ood_blur_threshold": 15.0,
+  "ood_edge_density_min": 0.003,
+  "toxic_blacklist": [
+    "Adelfa",
+    "IpilIpil",
+    "TubaTuba"
+  ]
+}

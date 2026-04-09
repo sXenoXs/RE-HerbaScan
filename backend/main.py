@@ -20,6 +20,7 @@ from pathlib import Path
 
 from utils.gradcam import generate_gradcam_for_image
 from utils.preprocessing import preprocess_image, array_to_pil_image
+from utils.validation_pipeline import run_pipeline, USE_TFLITE
 
 # Global variables for models (loaded once at startup)
 mobilenetv2_model = None
@@ -180,7 +181,8 @@ async def identify_plant(
     try:
         image_bytes = await file.read()
 
-        print(f"DEBUG: Received file '{file.filename}', content_type: {file.content_type}, bytes type: {type(image_bytes)}, bytes len: {len(image_bytes) if isinstance(image_bytes, bytes) else 'N/A'}")
+        print(f"DEBUG: Received file '{file.filename}', content_type: {file.content_type}, "
+              f"bytes type: {type(image_bytes)}, bytes len: {len(image_bytes) if isinstance(image_bytes, bytes) else 'N/A'}")
 
         if not isinstance(image_bytes, bytes):
             raise HTTPException(
@@ -188,53 +190,39 @@ async def identify_plant(
                 detail=f"Expected bytes, got {type(image_bytes)}"
             )
 
-        img_array = preprocess_image(image_bytes, target_size=(224, 224))
+        # ------------------------------------------------------------------ #
+        # Two-stage validation + inference pipeline                           #
+        # Stage 1 (OpenCV heuristics): blur & darkness checks                #
+        # Stage 2 (ML + OOD):          inference with confidence gate        #
+        # ------------------------------------------------------------------ #
+        pipeline_result = run_pipeline(
+            image_bytes,
+            model=mobilenetv2_model,
+            labels=labels,
+        )
+        if pipeline_result["status"] == "fail":
+            raise HTTPException(
+                status_code=422,
+                detail=pipeline_result["result"],
+            )
+
+        _res = pipeline_result["result"]
+        img_array            = _res["img_array"]          # reuse — no double inference
+        predicted_class_idx  = _res["top_class_idx"]
+        predicted_class_name = _res["top_class"]
+        confidence           = _res["confidence"]
+        predictions          = _res["predictions"]
+        all_predictions      = _res["all_predictions"]
+        model_name_used      = "MobileNetV2-TFLite" if USE_TFLITE else "MobileNetV2"
+
+        print(f"✅ Pipeline PASS — {predicted_class_name} (confidence: {confidence:.4f})")
 
         original_image = Image.open(io.BytesIO(image_bytes))
         if original_image.mode != 'RGB':
             original_image = original_image.convert('RGB')
 
-        try:
-            preds = mobilenetv2_model.predict(img_array, verbose=0)
-            preds = preds[0]
-            max_idx = np.argmax(preds)
-            max_conf = float(preds[max_idx])
-
-            best_predictions = preds
-            best_model = mobilenetv2_model
-            best_confidence = max_conf
-            best_class_idx = max_idx
-            model_name_used = "MobileNetV2"
-            print(f"📊 MobileNetV2 prediction: class {max_idx}, confidence {max_conf:.4f}")
-        except Exception as e:
-            print(f"❌ Error running MobileNetV2 inference: {str(e)}")
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to run inference: {str(e)}"
-            )
-
-        if best_predictions is None or best_model is None:
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to run inference on MobileNetV2 model"
-            )
-
-        print(f"✅ Using MobileNetV2 model (confidence: {best_confidence:.4f})")
-
-        top_3_indices = np.argsort(best_predictions)[-3:][::-1]
-
-        def get_plant_name_from_index(idx):
-            for plant_name, plant_idx in labels.items():
-                if plant_idx == idx:
-                    return plant_name
-            return f"Plant_{idx}"
-
-        predicted_class_idx = best_class_idx
-        predicted_class_name = get_plant_name_from_index(predicted_class_idx)
-        confidence = best_confidence
-
         gradcam_result = generate_gradcam_for_image(
-            model=best_model,
+            model=mobilenetv2_model,
             img_array=img_array,
             original_image=original_image,
             class_idx=predicted_class_idx,
@@ -245,26 +233,6 @@ async def identify_plant(
         buffered = io.BytesIO()
         overlay_img.save(buffered, format="PNG")
         gradcam_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
-
-        all_predictions = []
-        predictions = []
-        for idx in top_3_indices:
-            plant_name = get_plant_name_from_index(int(idx))
-            pred_data = {
-                "label": plant_name,
-                "plantName": plant_name,
-                "scientificName": plant_name,
-                "class_index": int(idx),
-                "index": int(idx),
-                "confidence": float(best_predictions[idx]),
-                "isDOHApproved": False
-            }
-            all_predictions.append({
-                "class": plant_name,
-                "class_index": int(idx),
-                "confidence": float(best_predictions[idx])
-            })
-            predictions.append(pred_data)
 
         processing_time = (time.time() - start_time) * 1000
         is_toxic = predicted_class_idx in TOXIC_CLASS_INDICES
