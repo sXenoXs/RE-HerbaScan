@@ -1,9 +1,11 @@
 // lib/core/services/plant_classifier_service.dart
 import 'dart:convert';
+import 'dart:io';
 import 'package:tflite_flutter/tflite_flutter.dart';
 import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
 import 'package:herbascan/core/platform_utils_stub.dart' if (dart.library.io) 'package:herbascan/core/platform_utils_io.dart' as platform_utils;
+import 'package:herbascan/core/services/ota_model_service.dart';
 // Old GradCAM service removed - replaced with AdaptiveGradCAMService
 // import 'package:herbascan/core/services/gradcam_service.dart';
 
@@ -19,8 +21,15 @@ class PlantClassifierService {
 
   /// Load label list from class_indices.json (format: {"PlantName": index}).
   /// Returns labels in index order [0..N-1].
+  /// Priority: OTA documents-dir file → bundled asset.
   static Future<List<String>> _loadLabelsFromClassIndices() async {
-    final jsonString = await rootBundle.loadString('assets/models/class_indices.json');
+    final String jsonString;
+    final otaPath = OtaModelService.instance.classIndicesPath;
+    if (otaPath != null) {
+      jsonString = await File(otaPath).readAsString();
+    } else {
+      jsonString = await rootBundle.loadString('assets/models/class_indices.json');
+    }
     final Map<String, dynamic> map = jsonDecode(jsonString) as Map<String, dynamic>;
     final entries = map.entries.map((e) => MapEntry(e.key, (e.value as num).toInt())).toList();
     entries.sort((a, b) => a.value.compareTo(b.value));
@@ -31,8 +40,18 @@ class PlantClassifierService {
     if (platform_utils.isDesktop()) return;
     try {
       _labels = await _loadLabelsFromClassIndices();
+      // MobileNet feature extractor: prefer OTA tflite path, fall back to asset.
+      // Note: OTA downloads mobilenetv2_multi_output.tflite (the shared model).
+      // PlantClassifierService looks for the feature-extractor variant; if only
+      // the multi-output OTA file is present, the asset lookup below is the
+      // intended fallback for this optional extractor path.
       try {
-        _mobilenetInterpreter = await Interpreter.fromAsset('assets/models/mobilenetv2_feature_extractor.tflite');
+        final otaTflitePath = OtaModelService.instance.tflitePath;
+        if (otaTflitePath != null) {
+          _mobilenetInterpreter = await Interpreter.fromFile(File(otaTflitePath));
+        } else {
+          _mobilenetInterpreter = await Interpreter.fromAsset('assets/models/mobilenetv2_feature_extractor.tflite');
+        }
       } catch (_) {
         // Asset not in bundle (app uses mobilenetv2_multi_output.tflite via TflitePlantService)
         _isInitialized = false;

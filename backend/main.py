@@ -28,6 +28,9 @@ labels = None
 MOBILENETV2_MODEL_PATH = Path("models/MobileNetV2_model.keras")
 LABELS_PATH = Path("models/labels.json")
 SUPABASE_JWT_SECRET = os.environ.get("SUPABASE_JWT_SECRET")
+ADMIN_RELOAD_SECRET = os.environ.get("ADMIN_RELOAD_SECRET")
+SUPABASE_URL        = os.environ.get("SUPABASE_URL")
+SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
 
 # Toxic plant class indices (Adelfa=0, IpilIpil=14, TubaTuba=39 per class_indices.json)
 TOXIC_CLASS_INDICES = {0, 14, 39}
@@ -258,6 +261,67 @@ async def identify_plant(
             detail=f"Error processing image: {str(e)}"
         )
 
+@app.post("/admin/reload-model")
+async def reload_model_endpoint(x_admin_secret: str = Header(None)):
+    """
+    Secured endpoint — downloads latest model + labels from Supabase
+    and hot-reloads them into memory without restarting the server.
+    """
+    global mobilenetv2_model, labels
+
+    # ── Auth check ────────────────────────────────────────────────────────────
+    if not ADMIN_RELOAD_SECRET:
+        raise HTTPException(status_code=500, detail="ADMIN_RELOAD_SECRET not configured on server.")
+    if x_admin_secret != ADMIN_RELOAD_SECRET:
+        raise HTTPException(status_code=401, detail="Invalid admin secret.")
+
+    # ── Supabase config check ─────────────────────────────────────────────────
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        raise HTTPException(status_code=500, detail="Supabase credentials not configured on server.")
+
+    try:
+        import httpx
+
+        headers = {
+            "apikey": SUPABASE_SERVICE_KEY,
+            "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+        }
+        bucket_url = f"{SUPABASE_URL}/storage/v1/object/live-models"
+
+        # ── Download MobileNetV2_model.keras ──────────────────────────────────
+        print("🔄 Downloading new MobileNetV2_model.keras from Supabase...")
+        async with httpx.AsyncClient(timeout=120) as client:
+            r = await client.get(f"{bucket_url}/MobileNetV2_model.keras", headers=headers)
+            if r.status_code != 200:
+                raise HTTPException(status_code=502, detail=f"Failed to download model: {r.text}")
+            MOBILENETV2_MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
+            MOBILENETV2_MODEL_PATH.write_bytes(r.content)
+            print(f"✅ Model downloaded ({len(r.content) / 1e6:.1f} MB)")
+
+            # ── Download labels.json ──────────────────────────────────────────
+            print("🔄 Downloading new labels.json from Supabase...")
+            r2 = await client.get(f"{bucket_url}/labels.json", headers=headers)
+            if r2.status_code != 200:
+                raise HTTPException(status_code=502, detail=f"Failed to download labels: {r2.text}")
+            LABELS_PATH.write_bytes(r2.content)
+            print("✅ Labels downloaded.")
+
+        # ── Reload model into memory ──────────────────────────────────────────
+        print("🔄 Reloading model into memory...")
+        mobilenetv2_model = tf.keras.models.load_model(str(MOBILENETV2_MODEL_PATH))
+        print("✅ Model reloaded successfully.")
+
+        # ── Reload labels into memory ─────────────────────────────────────────
+        with open(LABELS_PATH, "r") as f:
+            labels = json.load(f)
+        print(f"✅ Labels reloaded: {len(labels)} classes.")
+
+        return {"status": "ok", "num_classes": len(labels)}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Reload failed: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

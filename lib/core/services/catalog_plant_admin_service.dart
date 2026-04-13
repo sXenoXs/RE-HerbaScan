@@ -11,6 +11,44 @@ import 'package:herbascan/core/models/safety_profile.dart';
 import 'package:herbascan/core/services/condition_service.dart';
 import 'package:herbascan/core/services/plant_data_service.dart';
 
+/// Lightweight summary row for the Plant Management list view.
+class CatalogPlantEntry {
+  final String id;
+  final String commonName;
+  final String scientificName;
+  final String? plantSlug;
+  final String status; // 'active' | 'draft'
+  final int trainingImageCount;
+  final String? imageUrl;
+
+  const CatalogPlantEntry({
+    required this.id,
+    required this.commonName,
+    required this.scientificName,
+    this.plantSlug,
+    required this.status,
+    required this.trainingImageCount,
+    this.imageUrl,
+  });
+
+  factory CatalogPlantEntry.fromRow(Map<String, dynamic> row) {
+    return CatalogPlantEntry(
+      id: row['id'] as String? ?? '',
+      commonName: row['common_name'] as String? ?? '',
+      scientificName: row['scientific_name'] as String? ?? '',
+      plantSlug: row['plant_slug'] as String?,
+      status: row['status'] as String? ?? 'active',
+      trainingImageCount:
+          row['training_image_count'] is int
+              ? row['training_image_count'] as int
+              : int.tryParse(
+                      row['training_image_count']?.toString() ?? '0') ??
+                  0,
+      imageUrl: row['image_url'] as String?,
+    );
+  }
+}
+
 /// Admin-only: read/write plant catalog in Supabase (catalog_plants + relations)
 /// and upload plant images to Storage.
 class CatalogPlantAdminService {
@@ -139,10 +177,23 @@ class CatalogPlantAdminService {
   }
 
   /// Save plant to Supabase (upsert catalog_plants, replace medicinal_uses and preparation_methods).
-  Future<bool> saveCatalogPlant(Plant plant, {String? climateNotes}) async {
+  ///
+  /// [plantSlug] — unique URL-friendly identifier (used as training-datasets path prefix).
+  /// [status]    — 'active' (visible to users) or 'draft' (admin only). Defaults to 'active'.
+  /// [trainingImageCount] — denormalised count; set after bulk image uploads.
+  ///
+  /// NOTE: catalog_plants must have these columns added via Supabase migration:
+  ///   plant_slug TEXT UNIQUE, status TEXT DEFAULT 'active', training_image_count INT DEFAULT 0
+  Future<bool> saveCatalogPlant(
+    Plant plant, {
+    String? climateNotes,
+    String? plantSlug,
+    String? status,
+    int? trainingImageCount,
+  }) async {
     if (!isAvailable) return false;
     try {
-      await _client.from('catalog_plants').upsert({
+      final payload = <String, dynamic>{
         'id': plant.id,
         'common_name': plant.commonName,
         'scientific_name': plant.scientificName,
@@ -158,7 +209,13 @@ class CatalogPlantAdminService {
         'image_url': plant.imageUrl,
         'is_doh_approved': plant.isDOHApproved,
         'last_updated': DateTime.now().toUtc().toIso8601String(),
-      }, onConflict: 'id');
+      };
+      if (plantSlug != null) payload['plant_slug'] = plantSlug;
+      if (status != null) payload['status'] = status;
+      if (trainingImageCount != null) {
+        payload['training_image_count'] = trainingImageCount;
+      }
+      await _client.from('catalog_plants').upsert(payload, onConflict: 'id');
 
       await _client
           .from('catalog_medicinal_uses')
@@ -323,6 +380,85 @@ class CatalogPlantAdminService {
         debugPrint(st.toString());
       }
       return null;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Plant Management List helpers
+  // ---------------------------------------------------------------------------
+
+  /// Returns a lightweight summary of every row in catalog_plants, including
+  /// status, plant_slug and training_image_count (if those columns exist).
+  Future<List<CatalogPlantEntry>> listCatalogPlantsWithStatus() async {
+    if (!isAvailable) return [];
+    try {
+      final res = await _client
+          .from('catalog_plants')
+          .select(
+              'id, common_name, scientific_name, plant_slug, status, training_image_count, image_url')
+          .order('common_name');
+      final list = (res as List).cast<Map<String, dynamic>>();
+      return list.map(CatalogPlantEntry.fromRow).toList();
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('[CatalogPlantAdminService] listCatalogPlantsWithStatus: $e');
+        debugPrint(st.toString());
+      }
+      return [];
+    }
+  }
+
+  /// Returns true when [slug] does not already exist in catalog_plants.plant_slug.
+  Future<bool> checkSlugUnique(String slug) async {
+    if (!isAvailable || slug.isEmpty) return false;
+    try {
+      final res = await _client
+          .from('catalog_plants')
+          .select('id')
+          .eq('plant_slug', slug)
+          .maybeSingle();
+      return res == null; // null → no match → unique
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[CatalogPlantAdminService] checkSlugUnique: $e');
+      }
+      return false;
+    }
+  }
+
+  /// Update only the status field of a plant (e.g. 'active' ↔ 'draft').
+  Future<bool> updatePlantStatus(String plantId, String status) async {
+    if (!isAvailable || plantId.isEmpty) return false;
+    try {
+      await _client.from('catalog_plants').update({
+        'status': status,
+        'last_updated': DateTime.now().toUtc().toIso8601String(),
+      }).eq('id', plantId);
+      return true;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[CatalogPlantAdminService] updatePlantStatus: $e');
+      }
+      return false;
+    }
+  }
+
+  /// Set the training_image_count for a plant.
+  /// Uses UPSERT so it works even if the plant row doesn't exist yet.
+  Future<bool> updateTrainingImageCount(String plantId, int count) async {
+    if (!isAvailable || plantId.isEmpty) return false;
+    try {
+      await _client.from('catalog_plants').upsert({
+        'id': plantId,
+        'training_image_count': count,
+        'last_updated': DateTime.now().toUtc().toIso8601String(),
+      }, onConflict: 'id');
+      return true;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[CatalogPlantAdminService] updateTrainingImageCount: $e');
+      }
+      return false;
     }
   }
 

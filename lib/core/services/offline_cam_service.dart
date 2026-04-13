@@ -1,10 +1,12 @@
 // lib/core/services/offline_cam_service.dart
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
 import 'package:logger/logger.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
+import 'package:herbascan/core/services/ota_model_service.dart';
 
 /// Service for offline CAM (Class Activation Mapping) computation
 /// Uses pre-extracted weights and TFLite model for on-device visualization
@@ -104,12 +106,18 @@ class OfflineCAMService {
           );
         }
 
-        // Load MobileNetV2 interpreter
+        // Load MobileNetV2 interpreter.
+        // Priority: OTA file from documents dir → bundled asset.
         try {
-          _logger
-              .d('   Creating MobileNetV2 interpreter from: $mobilenetv2Path');
-          _mobilenetv2Interpreter =
-              await Interpreter.fromAsset(mobilenetv2Path);
+          final otaTflitePath = OtaModelService.instance.tflitePath;
+          if (otaTflitePath != null) {
+            _logger.d('   Creating MobileNetV2 interpreter from OTA file: $otaTflitePath');
+            print('✅ [OfflineCAMService] Loading MobileNetV2 from OTA path');
+            _mobilenetv2Interpreter = await Interpreter.fromFile(File(otaTflitePath));
+          } else {
+            _logger.d('   Creating MobileNetV2 interpreter from asset: $mobilenetv2Path');
+            _mobilenetv2Interpreter = await Interpreter.fromAsset(mobilenetv2Path);
+          }
           _mobilenetv2Interpreter!.allocateTensors();
           _logger.i('✅ MobileNetV2 interpreter created successfully');
           print('✅ [OfflineCAMService] MobileNetV2 interpreter created!');
@@ -530,10 +538,18 @@ class OfflineCAMService {
       _logger.i('Loading CAM weights from JSON files...');
       print('📦 [OfflineCAMService] Loading CAM weights...');
 
-      // Load MobileNetV2 CAM weights
+      // Load MobileNetV2 CAM weights.
+      // Priority: OTA file from documents dir → bundled asset.
       try {
-        final jsonString = await rootBundle
-            .loadString('assets/models/mobilenetv2_cam_weights.json');
+        final otaCamWeightsPath = OtaModelService.instance.camWeightsPath;
+        final String jsonString;
+        if (otaCamWeightsPath != null) {
+          print('✅ [OfflineCAMService] Loading CAM weights from OTA path');
+          jsonString = await File(otaCamWeightsPath).readAsString();
+        } else {
+          jsonString = await rootBundle
+              .loadString('assets/models/mobilenetv2_cam_weights.json');
+        }
         final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
         final weightsList = jsonData['weights'] as List;
         _mobilenetv2CamWeights = weightsList.map((row) {

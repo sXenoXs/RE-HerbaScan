@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 import 'package:image/image.dart' as img;
 import 'package:herbascan/core/platform_utils_stub.dart' if (dart.library.io) 'package:herbascan/core/platform_utils_io.dart' as platform_utils;
+import 'package:herbascan/core/services/ota_model_service.dart';
 
 class PlantPrediction {
   final String label;
@@ -53,8 +54,15 @@ class TflitePlantService {
       _lastLoadError = null;
       // Load MobileNetV2 multi-output model (ONLY MODEL - HerbaScan deprecated)
       try {
-        _mobilenetv2Interpreter =
-            await Interpreter.fromAsset(mobilenetv2ModelPath);
+        final otaTflitePath = OtaModelService.instance.tflitePath;
+        if (otaTflitePath != null) {
+          print("✅ Loading MobileNetV2 from OTA path: $otaTflitePath");
+          _mobilenetv2Interpreter =
+              await Interpreter.fromFile(File(otaTflitePath));
+        } else {
+          _mobilenetv2Interpreter =
+              await Interpreter.fromAsset(mobilenetv2ModelPath);
+        }
         _mobilenetv2Interpreter!.allocateTensors();
         _mobilenetv2PredictionIndex =
             _determinePredictionOutputIndex(_mobilenetv2Interpreter!);
@@ -108,7 +116,10 @@ class TflitePlantService {
   Future<void> _loadLabels() async {
     print("   📋 Loading labels from: $labelPath");
     try {
-      final labelData = await rootBundle.loadString(labelPath);
+      final otaClassIndicesPath = OtaModelService.instance.classIndicesPath;
+      final String labelData = otaClassIndicesPath != null
+          ? await File(otaClassIndicesPath).readAsString()
+          : await rootBundle.loadString(labelPath);
       print("   📋 Label data loaded: ${labelData.length} characters");
       final Map<String, dynamic> jsonMap = json.decode(labelData);
       print("   📋 Parsed ${jsonMap.length} labels");

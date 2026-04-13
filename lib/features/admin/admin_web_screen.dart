@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/features/admin/admin_condition_search_screen.dart';
 import 'package:herbascan/features/admin/admin_dashboard_screen.dart';
+import 'package:herbascan/features/admin/admin_overview_screen.dart';
 import 'package:herbascan/features/admin/admin_plant_metadata_screen.dart';
 import 'package:herbascan/features/admin/admin_user_management_screen.dart';
 import 'package:herbascan/features/admin/admin_system_health_screen.dart';
@@ -21,18 +22,19 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
   int _selectedIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  static const int _imageReviewIndex = 0;
+  static const int _overviewIndex = 0;
   static const int _plantMetadataIndex = 1;
   static const int _conditionSearchIndex = 2;
   static const int _userManagementIndex = 3;
   static const int _systemHealthIndex = 4;
   static const int _feedbackIndex = 5;
+  static const int _submissionTriageIndex = 6;
 
   static const _destinations = [
     (
-      icon: Icons.photo_library_outlined,
-      selectedIcon: Icons.photo_library,
-      label: 'Image Review',
+      icon: Icons.dashboard_outlined,
+      selectedIcon: Icons.dashboard_rounded,
+      label: 'Overview',
     ),
     (
       icon: Icons.eco_outlined,
@@ -58,6 +60,11 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
       icon: Icons.feedback_outlined,
       selectedIcon: Icons.feedback,
       label: 'Feedback',
+    ),
+    (
+      icon: Icons.inbox_outlined,
+      selectedIcon: Icons.inbox_rounded,
+      label: 'Submissions',
     ),
   ];
 
@@ -358,8 +365,8 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
 
   Widget _buildModuleContent() {
     switch (_selectedIndex) {
-      case _imageReviewIndex:
-        return const AdminDashboardScreen();
+      case _overviewIndex:
+        return const AdminOverviewScreen();
       case _plantMetadataIndex:
         return const AdminPlantMetadataScreen();
       case _conditionSearchIndex:
@@ -370,6 +377,8 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
         return const AdminSystemHealthScreen();
       case _feedbackIndex:
         return const AdminFeedbackScreen();
+      case _submissionTriageIndex:
+        return const AdminDashboardScreen();
       default:
         return const Center(child: Text('Select a module'));
     }
