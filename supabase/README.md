@@ -204,14 +204,14 @@ This runs your `20260223000000_herbarium_schema.sql` file in Supabase **without*
 **Step 6b – Admin user management (optional)**  
 - Run the second migration `supabase/migrations/20260228000000_profiles_admin_and_email.sql` in the SQL Editor to add `is_active` and `email` to `profiles`, backfill email, and add admin policies for listing and deactivating users. Required for the Admin Web Portal **User Management** module.
 
-**Step 6c – Strict contraindication flagging (optional)**  
+**Step 6c – Strict contraindication flagging (optional)** *(introduced in v0.9.4 – March 10, 2026)*  
 - Run `supabase/migrations/20260314000000_catalog_safety_strict_contraindications.sql` in the SQL Editor to add column `needs_strict_contraindications` (BOOLEAN, default false) to `catalog_safety`. The migration backfills `true` for Kamias, Kamoteng Kahoy, and Kakawate. The Flutter app uses this to show a prominent "Use with strict caution" card; local SQLite is upgraded to version 8 with the same column in `safety_profiles`.
 
-**Step 6d – User feedback table (optional)**
+**Step 6d – User feedback table (optional)** *(introduced in v0.9.4 – March 10, 2026)*
 - Run `supabase/migrations/20260316000000_user_feedback.sql` in the SQL Editor to create `public.user_feedback` and RLS (INSERT allowed for all, SELECT for admins only). Required for the Admin **Feedback** tab (Option B: store feedback in Supabase and view submissions from all users). You can also run `npx supabase db push` to apply all pending migrations.
 - **Schema:** Table `public.user_feedback` has columns: `id` (UUID PK), `user_id` (UUID NULL, references auth.users), `rating`, `category`, `comment`, `feature_suggestion`, `metadata` (JSONB), `created_at`. Index on `created_at DESC` for admin list ordering. RLS policies: `user_feedback_insert_allow_all` (INSERT with check true), `user_feedback_select_admin_only` (SELECT using `public.is_admin()`).
 
-**Step 6e – Admin delete feedback (optional)**
+**Step 6e – Admin delete feedback (optional)** *(introduced in v0.9.5 – March 16, 2026)*
 - Run `supabase/migrations/20260316000001_user_feedback_admin_delete.sql` in the SQL Editor (or `npx supabase db push`) to add RLS policy `user_feedback_delete_admin_only` (DELETE using `public.is_admin()`) so admins can delete feedback rows from the Admin Feedback tab. Requires Step 6d first.
 
 **If you get an error**
@@ -336,7 +336,7 @@ The function lives in `supabase/functions/delete-user/index.ts`. (1) **Self-dele
 
 ---
 
-## Force activate email (Edge Function)
+## Force activate email (Edge Function) *(introduced in v0.9.5 – March 16, 2026)*
 
 Admins can **force-verify a user’s email** (set `email_confirmed_at`) from **Admin → User Management** via the **"Force activate email"** menu item. This lets users sign in without completing the email OTP/link flow. The app calls the Edge Function **`force-verify-user`**, which verifies the caller is admin (via `profiles.role`) and then uses the Auth Admin API to set the user’s email as confirmed.
 

@@ -1,7 +1,7 @@
 # HerbaScan – System Architecture & Product Requirements Document
 
-> **Version:** v0.9.7 · **Date:** March 16, 2026 · **Status:** Production-Ready (Thesis Phase)
-> **Revised** to reflect CHANGELOG through April 2026.
+> **Version:** v0.9.7 · **Last CHANGELOG sync:** April 4, 2026 (v0.9.6) · **Status:** Production-Ready (Thesis Phase)
+> **Revised** to reflect CHANGELOG through v0.9.6 (April 4, 2026). Covers v0.9.4 (March 10), v0.9.5 (March 16), and v0.9.6 (April 4) releases.
 >
 > **Source of Truth Hierarchy:** This document is derived from `CHANGELOG.md` as the absolute authority.
 > Any README or setup guide that contradicts the Changelog (e.g., mentions of the Gemini live LLM or the
@@ -178,7 +178,7 @@ The following reflects the CHANGELOG UI/UX redesign (design system and screen-by
 | Auth/OTP                       | Botanical header widget, pinput 6-box OTP, password requirements micro-pills                                                                  |
 | Condition Search               | Directory grid; tap opens ConditionResultsScreen                                                                                              |
 | Habitat Map                    | Edge-to-edge map, floating back/zoom, DraggableScrollableSheet info panel                                                                     |
-| Preparation Guide / Focus Mode | Warnings at top, checklist, contextual timers, FAB for Focus Mode                                                                             |
+| Preparation Guide / Focus Mode | Warnings at top, checklist, contextual timers, FAB for Focus Mode. **v0.9.6:** Step-type icon cards (44 px animated circle per step type: boil/heat → orange, herb → green, strain → teal, cool → blue, drink → amber); colored left border (`AnimatedContainer`); step label in accent color. Focus Mode adds 96 px icon above instruction with `Curves.elasticOut` spring entrance via `AnimatedSwitcher`; unified `_getStepVisual()` helper shared across `PreparationInstructionsScreen` and `PreparationFocusModeScreen`. |
 | System Diagnostics             | Renamed from Offline Demo; 2×2 stat cards, connection banner, Force Sync / Wipe Cache                                                         |
 
 

@@ -120,9 +120,33 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 
 ### ✨ New in v0.9.7
 
-- **Preparation Step Infographics**: All preparation step cards (boil, add leaves, strain, cool, drink, wash, chop, mix, grind, pour, etc.) now show a context-aware icon with color-coded accent (orange for heat, green for herbs, teal for filter, blue for cool, amber for drink). Interactive step cards with animated icon → check transition on completion. Focus Mode shows a large 96 px animated icon above each step instruction.
 - **Two-Stage Image Validation Pipeline**: Added a heuristic gatekeeper (blur/darkness via OpenCV) and OOD ML rejection (`Not_Plant` class) to explicitly drop irrelevant images prior to analysis.
 - **OOD Config Integration**: Synced `ood_safety_config.json` locally and across standard endpoints to control strict acceptance limits.
+
+### ✨ New in v0.9.6 (April 4, 2026)
+
+- **Preparation Step Infographics** (`preparation_instructions_screen.dart`, `preparation_focus_mode_screen.dart`) — All preparation step cards (boil, add leaves, strain, cool, drink, wash, chop, mix, grind, pour, etc.) now display a context-aware icon with a color-coded accent (🔥 orange for boil/heat, 🌿 green for herbs, 🔵 teal for strain/filter, ❄️ blue for cool, ☕ amber for drink/consume).
+- **Interactive Step Cards** — Redesigned step cards with a 44 px animated icon circle (step-type icon, swaps to green check on completion), colored left border per step type (animated via `AnimatedContainer`), step label in the step's accent color, and subtle drop shadow.
+- **Focus Mode Step Icons** — Large 96 px animated icon circle added above each step instruction in Focus Mode, with spring-scale entrance animation (`Curves.elasticOut`) via `AnimatedSwitcher`; transitions to a green check circle on completion.
+- **Shared step-visual helper** — Both screens use a unified `_getStepVisual(String instruction)` keyword-mapping function.
+
+### ✨ New in v0.9.5 (March 16, 2026)
+
+- **Admin Feedback Management** — Admins can view, filter, and delete user feedback from the Admin Portal.
+- **System Health Dashboard** — Real-time backend and Supabase connectivity indicators in the Admin Portal.
+- **Contextual Feedback UX** — Feedback button is context-aware (post-scan, browse, general) with smarter prompts; no longer linked from consumer Settings.
+- **Force-Verify User** (Edge Function) — Admin can manually verify a user's email from the Admin Portal without requiring the user to complete OTP/link flow.
+- **Auto-Save Toggle** — Users can enable/disable automatic scan saving in Settings (`auto_save_scans` preference key).
+- **Extended Plant Anatomy** — 39 non-toxic plants now have detailed anatomy data (roots, stems, leaves, flowers, fruits) in `default_plant_anatomy.json`; 3 toxic plants (Adelfa, Ipil-Ipil, Tuba-Tuba) excluded.
+- **Strict Contraindication Flagging** — Toxic plant blacklist with hard-block UI for unsafe plants; `needs_strict_contraindications` flag for prominent "Use with strict caution" card (Kamias, Kamoteng Kahoy, Kakawate).
+
+### ✨ New in v0.9.4 (March 10, 2026)
+
+- **Catalog Safety Strict Contraindications** — Migration (`20260314000000_catalog_safety_strict_contraindications.sql`) adds `needs_strict_contraindications` column to `catalog_safety`.
+- **User Feedback System** — Database migration (`20260316000000_user_feedback.sql`) and RLS for user feedback collection; admin delete policy via `20260316000001_user_feedback_admin_delete.sql`.
+- **Admin User Service** — Admin can deactivate and delete user accounts via `AdminUserService`.
+- **Plant Anatomy DOH Seed Data** — Plant anatomy engine extended with DOH seed data for all applicable plants.
+- **Admin UX Improvements** — Unified title bar across all admin content screens; improved catalog and user management screens.
 
 ### ✅ Recently Fixed (v0.9.7)
 

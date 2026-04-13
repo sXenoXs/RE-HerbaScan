@@ -4,6 +4,8 @@
 **Backend Version**: 0.9.7
 **Flutter App Version**: v0.9.7
 
+> **Changelog note (v0.9.4 – v0.9.6):** No backend API or server-side changes were introduced in app versions v0.9.4, v0.9.5, or v0.9.6. All changes in those releases were Flutter-side (UI/UX, admin portal, Supabase migrations). The backend remains at v0.9.7 spec: MobileNetV2-only, 43-class output, `/identify`, `/health`, `/test` endpoints unchanged.
+
 **Model Standardization**: MobileNetV2 Only (Phase 34) - HerbaScan custom model deprecated  
 **AI Explanation Standardization**: Phase 35 Complete - Structured format with 42 plants
 

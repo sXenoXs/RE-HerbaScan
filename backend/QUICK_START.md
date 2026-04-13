@@ -1,8 +1,10 @@
 # HerbaScan Backend - Quick Start Guide
 
-**Last Updated**: March 2026  
+**Last Updated**: April 2026  
 **Backend Version**: 0.9.7
 **Flutter App Version**: v0.9.7
+
+> **Changelog note (v0.9.4 – v0.9.6):** No backend terminal commands, script changes, or migration steps were introduced in app versions v0.9.4, v0.9.5, or v0.9.6. The quick-start steps, Railway config, and model extraction workflow are unchanged from v0.9.7.
 
 **Model Standardization**: MobileNetV2 Only (Phase 34) - HerbaScan custom model deprecated  
 **AI Explanation Standardization**: Phase 35 Complete - Structured format with 42 plants

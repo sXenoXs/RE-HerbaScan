@@ -140,6 +140,22 @@ After successful setup:
 - ✅ Settings and preferences; offline management
 - ✅ Backend API for Grad-CAM (Railway); Postman collection
 
+**Recent Features (v0.9.6 – April 4, 2026)**:
+- ✅ Preparation Step Infographics: All step cards in `PreparationInstructionsScreen` and `PreparationFocusModeScreen` show context-aware icons with color-coded accent borders (heat → orange, herb → green, filter → teal, cool → blue, drink → amber); animated icon → check transition on completion; 96 px Focus Mode icon with spring entrance animation
+
+**Recent Features (v0.9.5 – March 16, 2026)**:
+- ✅ Admin Feedback Management: Admins can view, filter, and delete user feedback from Admin Portal
+- ✅ System Health Dashboard: Real-time backend and Supabase connectivity indicators in Admin Portal
+- ✅ Force-Verify User Edge Function: Admin can manually verify a user's email (deploy: `npx supabase functions deploy force-verify-user`)
+- ✅ Auto-Save Toggle: Settings preference `auto_save_scans`; when OFF, new scans not auto-saved until user saves
+- ✅ Extended Plant Anatomy: 39 non-toxic plants with anatomy data in `default_plant_anatomy.json`
+- ✅ Strict Contraindication Flagging: `needs_strict_contraindications` flag; prominent "Use with strict caution" card
+
+**Recent Features (v0.9.4 – March 10, 2026)**:
+- ✅ Catalog Safety migration: `20260314000000_catalog_safety_strict_contraindications.sql` — run in Supabase SQL Editor
+- ✅ User Feedback System: migrations `20260316000000_user_feedback.sql` + `20260316000001_user_feedback_admin_delete.sql`
+- ✅ Admin User Service: admin can deactivate and delete user accounts
+
 **Recent Features (v0.9.7)**:
 - ✅ Two-Stage Image Validation Pipeline: Added a heuristic gatekeeper (blur/darkness) and OOD ML rejection (`Not_Plant` class) to explicitly drop irrelevant images
 - ✅ Toxic plant blacklist (Adelfa, Ipil-Ipil, Tuba-Tuba): dedicated warning screen; never shown as recommended
