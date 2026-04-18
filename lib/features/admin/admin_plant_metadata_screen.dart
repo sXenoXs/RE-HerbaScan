@@ -11,6 +11,7 @@ import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/core/widgets/plant_image.dart';
 import 'package:herbascan/features/admin/admin_new_plant_wizard.dart';
 import 'package:herbascan/features/admin/admin_plant_catalog_editor_screen.dart';
+import 'package:herbascan/features/admin/widgets/trigger_training_widget.dart';
 
 /// Plant Catalog: searchable, filterable list of all plants with status badges.
 ///
@@ -1091,6 +1092,13 @@ class _TrainingImagesSheetState extends State<_TrainingImagesSheet> {
               ),
             ],
 
+            const SizedBox(height: 20),
+            const Divider(),
+            const SizedBox(height: 8),
+            TriggerTrainingWidget(
+              plantSlug: widget.plantSlug,
+              newClassName: widget.plantName,
+            ),
             const SizedBox(height: 24),
           ],
         ),

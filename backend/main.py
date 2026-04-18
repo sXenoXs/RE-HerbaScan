@@ -4,7 +4,7 @@ FastAPI server for true Grad-CAM computation using TensorFlow
 """
 
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Header
+from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Header, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import tensorflow as tf
@@ -31,6 +31,7 @@ SUPABASE_JWT_SECRET = os.environ.get("SUPABASE_JWT_SECRET")
 ADMIN_RELOAD_SECRET = os.environ.get("ADMIN_RELOAD_SECRET")
 SUPABASE_URL        = os.environ.get("SUPABASE_URL")
 SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
+MODAL_TRAINING_URL  = os.environ.get("MODAL_TRAINING_URL")
 
 # Toxic plant class indices (Adelfa=0, IpilIpil=14, TubaTuba=39 per class_indices.json)
 TOXIC_CLASS_INDICES = {0, 14, 39}
@@ -296,6 +297,66 @@ async def reload_model_endpoint(x_admin_secret: str = Header(None)):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Reload failed: {str(e)}")
+@app.post("/admin/trigger-training")
+async def trigger_training(
+    request_body: dict = Body(...),
+    x_admin_secret: str = Header(None),
+):
+    """
+    Called by Flutter admin app.
+    Validates secret, then calls Modal training endpoint.
+    Returns immediately — training runs in background.
+    """
+    if not ADMIN_RELOAD_SECRET:
+        raise HTTPException(status_code=500, detail="ADMIN_RELOAD_SECRET not configured.")
+    if x_admin_secret != ADMIN_RELOAD_SECRET:
+        raise HTTPException(status_code=401, detail="Invalid admin secret.")
+
+    plant_slug     = request_body.get("plant_slug")
+    new_class_name = request_body.get("new_class_name")
+
+    if not plant_slug or not new_class_name:
+        raise HTTPException(
+            status_code=400,
+            detail="plant_slug and new_class_name are required."
+        )
+
+    if not MODAL_TRAINING_URL:
+        raise HTTPException(status_code=500, detail="MODAL_TRAINING_URL not configured.")
+
+    try:
+        import httpx
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.post(
+                MODAL_TRAINING_URL,
+                json={
+                    "plant_slug":     plant_slug,
+                    "new_class_name": new_class_name,
+                },
+                headers={"Content-Type": "application/json"},
+            )
+
+        if response.status_code == 200:
+            return {
+                "status": "training_started",
+                "plant_slug": plant_slug,
+                "new_class_name": new_class_name,
+                "message": "Training job queued on Modal. Takes ~15 min on T4 GPU."
+            }
+        else:
+            raise HTTPException(
+                status_code=502,
+                detail=f"Modal returned {response.status_code}: {response.text}"
+            )
+
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="Modal endpoint timed out.")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to trigger training: {str(e)}")
+
+
 if __name__ == "__main__":
     import uvicorn
 
