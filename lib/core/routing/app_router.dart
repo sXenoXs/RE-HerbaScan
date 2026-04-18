@@ -27,15 +27,22 @@ GoRouter createAppRouter(GlobalKey<NavigatorState> navigatorKey) {
     initialLocation: _initialLocation(),
     redirect: (BuildContext context, GoRouterState state) async {
       final loc = state.matchedLocation;
+      final auth = context.read<AuthProvider>();
+
       // Guard /admin: require login then admin role
       if (loc == '/admin') {
-        final auth = context.read<AuthProvider>();
         if (!auth.isLoggedIn) return '/login';
         await auth.refreshRole();
         if (!context.mounted) return null;
         final authAfter = context.read<AuthProvider>();
         if (!authAfter.isAdmin) return '/home?unauthorized=1';
       }
+
+      // Redirect admins away from /home to the admin console
+      if (loc == '/home') {
+        if (auth.isLoggedIn && auth.isAdmin) return '/admin';
+      }
+
       return null;
     },
     routes: <RouteBase>[

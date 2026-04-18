@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:herbascan/core/providers/app_provider.dart';
+import 'package:herbascan/core/providers/auth_provider.dart';
 import 'package:herbascan/core/services/performance_monitor.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 
@@ -62,7 +63,12 @@ class _SplashScreenState extends State<SplashScreen>
       if (appProvider.isFirstLaunch) {
         context.go('/onboarding');
       } else {
-        context.go('/home');
+        final auth = Provider.of<AuthProvider>(context, listen: false);
+        if (auth.isLoggedIn && auth.isAdmin) {
+          context.go('/admin');
+        } else {
+          context.go('/home');
+        }
       }
     }
   }
