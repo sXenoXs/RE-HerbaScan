@@ -231,6 +231,168 @@ class CatalogSyncService {
     }
   }
 
+  /// Syncs only catalog_conditions and catalog_condition_plants to local SQLite.
+  /// Used by [PlantProvider] when a Realtime event fires on catalog_conditions.
+  Future<void> syncConditionsOnly() async {
+    if (!isSupabaseConfigured) return;
+    final condRes = await _client.from('catalog_conditions').select().order('sort_order');
+    final condList = (condRes as List).cast<Map<String, dynamic>>();
+    final conditions = condList.map((row) => _conditionRowToCatalogCondition(row)).toList();
+    if (conditions.isNotEmpty) {
+      await _db.replaceConditionsFromSync(conditions);
+    }
+    final cpRes = await _client.from('catalog_condition_plants').select();
+    final cpList = (cpRes as List).cast<Map<String, dynamic>>();
+    final pairs = <MapEntry<int, String>>[];
+    for (var row in cpList) {
+      final cid = row['condition_id'];
+      final pid = row['plant_id'] as String? ?? '';
+      if (cid != null && pid.isNotEmpty) {
+        final id = cid is int ? cid : int.tryParse(cid.toString());
+        if (id != null) pairs.add(MapEntry(id, pid));
+      }
+    }
+    if (pairs.isNotEmpty) {
+      await _db.replaceConditionPlantsFromSync(pairs);
+    }
+    if (kDebugMode) debugPrint('[CatalogSync] Conditions-only sync done.');
+  }
+
+  /// Fetches a single plant by [plantId] from Supabase, writes it to local
+  /// SQLite, and returns the hydrated [Plant]. Returns null on any error or if
+  /// the plant does not exist in the remote catalog.
+  ///
+  /// Used by [PlantProvider] when a Realtime event fires for a specific row so
+  /// only that one record is re-fetched instead of the entire catalog.
+  Future<Plant?> syncSinglePlant(String plantId) async {
+    if (!isSupabaseConfigured || plantId.isEmpty) return null;
+    try {
+      final rows = await _client
+          .from('catalog_plants')
+          .select()
+          .eq('id', plantId)
+          .limit(1);
+      final plantsList = (rows as List).cast<Map<String, dynamic>>();
+      if (plantsList.isEmpty) return null;
+      final row = plantsList.first;
+
+      final defaults = PlantDataService.getAllMedicinalPlantsData();
+      final defaultPlant = defaults.firstWhere(
+        (p) => p.id == plantId,
+        orElse: () => defaults.first,
+      );
+      final imagePath = defaultPlant.id == plantId
+          ? defaultPlant.imagePath
+          : 'assets/images/placeholder_plant.jpg';
+
+      final medicinalRes = await _client
+          .from('catalog_medicinal_uses')
+          .select()
+          .eq('plant_id', plantId);
+      final medicinalList = (medicinalRes as List).cast<Map<String, dynamic>>();
+
+      final prepRes = await _client
+          .from('catalog_preparation_methods')
+          .select()
+          .eq('plant_id', plantId);
+      final prepList = (prepRes as List).cast<Map<String, dynamic>>();
+
+      final medicinalUses = medicinalList.map((m) {
+        final ac = m['active_compounds'];
+        return MedicinalUse(
+          condition: m['condition'] as String? ?? '',
+          description: m['description'] as String? ?? '',
+          effectiveness: m['effectiveness'] as String? ?? '',
+          activeCompounds: ac is String
+              ? (ac.isEmpty ? [] : ac.split(',').map((e) => e.trim()).toList())
+              : (ac is List ? ac.map((e) => e.toString()).toList() : []),
+          dosage: m['dosage'] as String? ?? '',
+          duration: m['duration'] as String? ?? '',
+        );
+      }).toList();
+
+      final preparationMethods = prepList.map((m) {
+        List<PreparationStepDetail>? stepDetails;
+        final sd = m['step_details_json'];
+        if (sd != null && sd is String && sd.isNotEmpty) {
+          try {
+            final list = jsonDecode(sd) as List<dynamic>?;
+            if (list != null) {
+              stepDetails = list
+                  .map((e) => PreparationStepDetail.fromJson(
+                      e as Map<String, dynamic>))
+                  .toList();
+            }
+          } catch (_) {}
+        }
+        PreparationSchedule? schedule;
+        final sj = m['schedule_json'];
+        if (sj != null && sj is String && sj.isNotEmpty) {
+          try {
+            schedule = PreparationSchedule.fromJson(
+                jsonDecode(sj) as Map<String, dynamic>);
+          } catch (_) {}
+        }
+        final stepsStr = m['steps'] as String? ?? '';
+        final steps = stepsStr.isEmpty ? <String>[] : stepsStr.split('|');
+        final warningsStr = m['warnings'] as String? ?? '';
+        final warnings =
+            warningsStr.isEmpty ? <String>[] : warningsStr.split('|');
+        return PreparationMethod(
+          id: m['id'] as String? ?? plantId,
+          condition: m['condition'] as String? ?? '',
+          title: m['title'] as String? ?? '',
+          description: m['description'] as String? ?? '',
+          steps: steps,
+          dosage: m['dosage'] as String? ?? '',
+          frequency: m['frequency'] as String? ?? '',
+          duration: m['duration'] as String? ?? '',
+          warnings: warnings,
+          preparationType: m['preparation_type'] as String? ?? '',
+          stepDetails: stepDetails,
+          schedule: schedule,
+        );
+      }).toList();
+
+      final lastUpdated = row['last_updated'];
+      final updatedAt = lastUpdated != null
+          ? DateTime.tryParse(lastUpdated.toString()) ?? DateTime.now()
+          : DateTime.now();
+
+      final plant = Plant(
+        id: plantId,
+        commonName: row['common_name'] as String? ?? '',
+        scientificName: row['scientific_name'] as String? ?? '',
+        localName: row['local_name'] as String? ?? '',
+        englishName: row['english_name'] as String? ?? '',
+        family: row['family'] as String? ?? '',
+        genus: row['genus'] as String? ?? '',
+        species: row['species'] as String? ?? '',
+        isDOHApproved: (row['is_doh_approved'] as bool?) ?? false,
+        morphology: row['morphology'] as String? ?? '',
+        ecology: row['ecology'] as String? ?? '',
+        habitat: row['habitat'] as String? ?? '',
+        medicinalUses: medicinalUses,
+        preparationMethods: preparationMethods,
+        safetyWarnings: [],
+        imagePath: imagePath,
+        imageUrl: row['image_url'] as String?,
+        createdAt: updatedAt,
+        updatedAt: updatedAt,
+      );
+
+      await _db.replacePlantFromSync(plant);
+      if (kDebugMode) debugPrint('[CatalogSync] Single-plant sync done: $plantId');
+      return plant;
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('[CatalogSync] syncSinglePlant error for $plantId: $e');
+        debugPrint(st.toString());
+      }
+      return null;
+    }
+  }
+
   /// Parse a catalog_safety row (Supabase JSONB may be List or String).
   static SafetyProfile _safetyRowToProfile(String plantId, Map<String, dynamic> row) {
     List<String> listFrom(dynamic v) {

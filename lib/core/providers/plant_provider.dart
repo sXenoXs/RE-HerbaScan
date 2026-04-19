@@ -1,4 +1,5 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:herbascan/core/models/plant.dart';
 import 'package:herbascan/core/models/plant_anatomy_part.dart';
@@ -7,11 +8,16 @@ import 'package:herbascan/core/services/plant_service.dart';
 import 'package:herbascan/core/services/database_service.dart';
 import 'package:herbascan/core/services/database_init_service.dart';
 import 'package:herbascan/core/services/catalog_sync_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:herbascan/core/config/supabase_config.dart';
 
 class PlantProvider extends ChangeNotifier {
   final PlantService _plantService = PlantService();
   final DatabaseService _databaseService = DatabaseService();
   late final DatabaseInitService _databaseInitService;
+
+  /// Supabase Realtime channel that listens for admin edits to catalog_plants.
+  RealtimeChannel? _catalogChannel;
 
   List<Plant> _plants = [];
   List<ScanResult> _scanHistory = [];
@@ -66,6 +72,177 @@ class PlantProvider extends ChangeNotifier {
     await loadPlants();
     await loadScanHistory();
     await loadDOHApprovedPlants();
+
+    // Start listening for admin edits after the initial load is done.
+    _subscribeToRealtimeUpdates();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Realtime catalog synchronization
+  // ---------------------------------------------------------------------------
+
+  /// Opens a Supabase Realtime channel that reacts to changes on catalog_plants
+  /// and all related tables. Any admin edit — medicinal uses, preparation
+  /// methods, safety, habitat, anatomy, conditions — triggers an immediate
+  /// in-app update with no restart required.
+  void _subscribeToRealtimeUpdates() {
+    if (!isSupabaseConfigured) return;
+    _catalogChannel?.unsubscribe();
+
+    // Tables that carry a plant_id and require a single-plant re-sync.
+    const plantRelatedTables = [
+      'catalog_medicinal_uses',
+      'catalog_preparation_methods',
+      'catalog_safety',
+      'catalog_habitat',
+      'catalog_plant_anatomy',
+      'catalog_condition_plants',
+    ];
+
+    var channel = Supabase.instance.client
+        .channel('catalog_all_changes')
+        // catalog_plants INSERT / UPDATE / DELETE
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'catalog_plants',
+          callback: (payload) => _onCatalogPlantChanged(payload.newRecord),
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'catalog_plants',
+          callback: (payload) => _onCatalogPlantChanged(payload.newRecord),
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.delete,
+          schema: 'public',
+          table: 'catalog_plants',
+          callback: (payload) => _onCatalogPlantDeleted(payload.oldRecord),
+        );
+
+    // Related plant tables — re-sync the affected plant on any change.
+    for (final table in plantRelatedTables) {
+      channel = channel
+          .onPostgresChanges(
+            event: PostgresChangeEvent.insert,
+            schema: 'public',
+            table: table,
+            callback: (payload) => _onRelatedTableChanged(payload.newRecord),
+          )
+          .onPostgresChanges(
+            event: PostgresChangeEvent.update,
+            schema: 'public',
+            table: table,
+            callback: (payload) => _onRelatedTableChanged(payload.newRecord),
+          )
+          .onPostgresChanges(
+            event: PostgresChangeEvent.delete,
+            schema: 'public',
+            table: table,
+            callback: (payload) => _onRelatedTableChanged(payload.oldRecord),
+          );
+    }
+
+    // catalog_conditions has no plant_id — sync the whole conditions table.
+    channel = channel
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'catalog_conditions',
+          callback: (_) => _onConditionsChanged(),
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'catalog_conditions',
+          callback: (_) => _onConditionsChanged(),
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.delete,
+          schema: 'public',
+          table: 'catalog_conditions',
+          callback: (_) => _onConditionsChanged(),
+        );
+
+    _catalogChannel = channel.subscribe((status, [error]) {
+      if (kDebugMode) {
+        debugPrint('[PlantProvider] Realtime status: $status'
+            '${error != null ? " — $error" : ""}');
+      }
+    });
+  }
+
+  /// Called whenever Supabase pushes a catalog_plants INSERT or UPDATE.
+  Future<void> _onCatalogPlantChanged(Map<String, dynamic> record) async {
+    final plantId = record['id'] as String?;
+    if (plantId == null || plantId.isEmpty) return;
+
+    if (kDebugMode) debugPrint('[PlantProvider] Realtime update for plant: $plantId');
+
+    final updated = await CatalogSyncService().syncSinglePlant(plantId);
+    if (updated == null) return;
+
+    final idx = _plants.indexWhere((p) => p.id == plantId);
+    if (idx != -1) {
+      _plants[idx] = updated;
+    } else {
+      _plants.add(updated);
+    }
+
+    final dohIdx = _dohApprovedPlants.indexWhere((p) => p.id == plantId);
+    if (updated.isDOHApproved) {
+      if (dohIdx != -1) {
+        _dohApprovedPlants[dohIdx] = updated;
+      } else {
+        _dohApprovedPlants.add(updated);
+      }
+    } else if (dohIdx != -1) {
+      _dohApprovedPlants.removeAt(dohIdx);
+    }
+
+    if (_selectedPlant?.id == plantId) _selectedPlant = updated;
+
+    _applyFilters();
+    notifyListeners();
+  }
+
+  /// Called when a related table row changes — extracts plant_id and re-syncs
+  /// that single plant so all its details are refreshed.
+  Future<void> _onRelatedTableChanged(Map<String, dynamic> record) async {
+    final plantId = record['plant_id'] as String?;
+    if (plantId == null || plantId.isEmpty) return;
+    if (kDebugMode) debugPrint('[PlantProvider] Related table change for plant: $plantId');
+    await _onCatalogPlantChanged({'id': plantId});
+  }
+
+  /// Called when a catalog_plants row is deleted — removes it from memory.
+  void _onCatalogPlantDeleted(Map<String, dynamic> record) {
+    final plantId = record['id'] as String?;
+    if (plantId == null || plantId.isEmpty) return;
+    if (kDebugMode) debugPrint('[PlantProvider] Plant deleted: $plantId');
+    _plants.removeWhere((p) => p.id == plantId);
+    _dohApprovedPlants.removeWhere((p) => p.id == plantId);
+    if (_selectedPlant?.id == plantId) _selectedPlant = null;
+    _applyFilters();
+    notifyListeners();
+  }
+
+  /// Called when catalog_conditions changes — re-syncs the conditions table.
+  Future<void> _onConditionsChanged() async {
+    if (kDebugMode) debugPrint('[PlantProvider] catalog_conditions changed, re-syncing...');
+    try {
+      await CatalogSyncService().syncConditionsOnly();
+      notifyListeners();
+    } catch (e) {
+      if (kDebugMode) debugPrint('[PlantProvider] Conditions re-sync failed: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _catalogChannel?.unsubscribe();
+    super.dispose();
   }
 
   // Refresh plants and check for database updates

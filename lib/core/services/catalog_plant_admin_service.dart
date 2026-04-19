@@ -448,11 +448,10 @@ class CatalogPlantAdminService {
   Future<bool> updateTrainingImageCount(String plantId, int count) async {
     if (!isAvailable || plantId.isEmpty) return false;
     try {
-      await _client.from('catalog_plants').upsert({
-        'id': plantId,
+      await _client.from('catalog_plants').update({
         'training_image_count': count,
         'last_updated': DateTime.now().toUtc().toIso8601String(),
-      }, onConflict: 'id');
+      }).eq('id', plantId);
       return true;
     } catch (e) {
       if (kDebugMode) {

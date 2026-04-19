@@ -353,8 +353,9 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
               const SizedBox(height: 24),
               _sectionHeader('Morphology', theme),
               const SizedBox(height: 8),
-              Text(
+              _buildTextOrPlaceholder(
                 widget.plant.morphology,
+                theme,
                 style: theme.textTheme.bodyLarge?.copyWith(
                   height: 1.65,
                   color: theme.colorScheme.onSurface,
@@ -452,16 +453,18 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
 
               _sectionHeader('Ecology', theme),
               const SizedBox(height: 8),
-              Text(
+              _buildTextOrPlaceholder(
                 widget.plant.ecology,
+                theme,
                 style: theme.textTheme.bodyMedium?.copyWith(height: 1.65),
               ),
               const SizedBox(height: 20),
 
               _sectionHeader('Habitat', theme),
               const SizedBox(height: 8),
-              Text(
+              _buildTextOrPlaceholder(
                 widget.plant.habitat,
+                theme,
                 style: theme.textTheme.bodyMedium?.copyWith(height: 1.65),
               ),
               const SizedBox(height: 24),
@@ -1003,6 +1006,26 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
+
+  /// Renders [text] if non-empty; otherwise shows a subtle placeholder so the
+  /// UI stays intact while the catalog field is being edited by the admin or
+  /// arrives via a Realtime sync event.
+  Widget _buildTextOrPlaceholder(
+    String text,
+    ThemeData theme, {
+    TextStyle? style,
+  }) {
+    if (text.isNotEmpty) {
+      return Text(text, style: style);
+    }
+    return Text(
+      'Information not yet available.',
+      style: (style ?? theme.textTheme.bodyMedium)?.copyWith(
+        color: theme.colorScheme.onSurface.withOpacity(0.38),
+        fontStyle: FontStyle.italic,
+      ),
+    );
+  }
 
   Widget _sectionHeader(String title, ThemeData theme) {
     return Text(
