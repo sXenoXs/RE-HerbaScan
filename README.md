@@ -10,10 +10,10 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 
 ## 🚀 Current Development Status
 
-**Version**: v0.9.7  
-**Last Updated**: April 4, 2026
-**Project Phase**: Phase 35 Complete (AI Explanation Content Standardization & Complete Plant Database Migration)  
-**Overall Progress**: 90% Complete - **PRODUCTION READY** 
+**Version**: v0.9.8  
+**Last Updated**: April 19, 2026
+**Project Phase**: Phase 36 Complete (Automated Modal Training Pipeline & Admin Role Routing)  
+**Overall Progress**: 93% Complete - **PRODUCTION READY** 
 
 ### ✅ Added Features (Complete/Incomplete Features)
 
@@ -109,6 +109,15 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **Extended plant anatomy**: ✅ Default anatomy data extended to 39 non-toxic plants (10 DOH unchanged; 3 toxic excluded). Admin can seed anatomy from defaults; local sync after seed so Plant Detail shows anatomy without restart.
 - **Auto-save scans toggle**: ✅ Settings preference (key `auto_save_scans`); when OFF, new scans are not auto-saved to History until the user saves from Plant Result or History.
 - **Project structure**: The `tests/` folder (test plans) has been removed from the repository as of v0.9.7. User testing documentation: see `TESTING_GUIDE.md` if present.
+- **Admin role routing**: ✅ **NEW** Admins are now routed directly to the Admin Console on login (splash screen + router guard). Regular users continue to see the standard home screen. Admins navigating to `/home` are automatically redirected to `/admin`.
+- **Modal automated training pipeline**: ✅ **NEW** One-tap model retraining from the admin panel. Uploads training images → triggers Modal GPU job → retrains MobileNetV2 → uploads new model + TFLite + CAM weights to Supabase → reloads Railway backend automatically.
+- **POST /admin/trigger-training endpoint**: ✅ **NEW** Railway backend endpoint that validates the admin secret and forwards training requests to Modal.
+- **TriggerTrainingWidget**: ✅ **NEW** Flutter admin widget embedded in the Training Images sheet. Shows plant slug, class name, and a "Start Training" button. Displays success/error status inline.
+- **Training image count fix**: ✅ **NEW** Fixed NOT NULL constraint crash when updating `training_image_count` — switched from upsert to update so only existing rows are modified.
+- **Supabase Realtime catalog sync**: ✅ **NEW** `PlantProvider` subscribes to Realtime changes on `catalog_plants` and all related tables. Any admin edit (medicinal uses, preparation methods, safety, habitat, anatomy, conditions) triggers an immediate in-app update with no app restart required.
+- **Single-plant sync**: ✅ **NEW** `CatalogSyncService.syncSinglePlant()` fetches and hydrates a single plant from Supabase, used by Realtime handlers to avoid full catalog re-downloads.
+- **Conditions-only sync**: ✅ **NEW** `CatalogSyncService.syncConditionsOnly()` re-syncs only `catalog_conditions` and `catalog_condition_plants`, triggered by Realtime events on the conditions table.
+- **Plant detail placeholders**: ✅ **NEW** Morphology, ecology, and habitat fields show "Information not yet available." in italic gray when empty, instead of blank space.
 
 ### 🔄 In Progress (Phase 6: Offline CAM Fix)
 
@@ -117,6 +126,18 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **Testing**: Verifying offline CAM heatmap generation in offline mode
 - **Beta Testing**: User testing (see TESTING_GUIDE.md; `tests/` folder removed in v0.9.7)
 - **Data Collection**: Gathering user feedback and metrics
+
+### ✨ New in v0.9.8 (April 19, 2026)
+
+- **Admin Role Routing**: Admins are routed directly to `/admin` on login via the splash screen and a router-level redirect. Any admin navigating to `/home` is automatically redirected to the Admin Console.
+- **Modal Automated Training Pipeline** (`modal_train.py`): Full GPU training pipeline triggered by a single tap in the admin panel. Downloads the existing model from Supabase, fetches training images, runs transfer learning on a T4 GPU, validates accuracy (≥0.75 threshold), exports TFLite + CAM weights, uploads all assets to Supabase, inserts a `model_versions` row, and triggers Railway backend reload — all automatically.
+- **POST /admin/trigger-training** (`backend/main.py`): New Railway endpoint. Validates `x-admin-secret` header, forwards `plant_slug` and `new_class_name` to the Modal web endpoint, and returns immediately while training runs in the background.
+- **TriggerTrainingWidget** (`lib/features/admin/widgets/trigger_training_widget.dart`): Admin-only Flutter widget embedded in the Training Images bottom sheet. Shows the plant slug and class name, fires the training request with a single tap, and displays inline success/error feedback.
+- **Training image count fix**: `updateTrainingImageCount` now uses `update` instead of `upsert`, fixing a NOT NULL constraint crash on `common_name` when the plant row did not yet exist.
+- **Supabase Realtime catalog sync**: `PlantProvider` opens a Realtime channel on startup that listens to INSERT/UPDATE/DELETE on `catalog_plants`, `catalog_medicinal_uses`, `catalog_preparation_methods`, `catalog_safety`, `catalog_habitat`, `catalog_plant_anatomy`, `catalog_condition_plants`, and `catalog_conditions`. Admin edits appear in-app instantly without a restart.
+- **Single-plant sync** (`CatalogSyncService.syncSinglePlant`): Re-fetches and hydrates one plant from Supabase including all related tables, used by Realtime handlers.
+- **Conditions-only sync** (`CatalogSyncService.syncConditionsOnly`): Re-syncs only conditions tables on a Realtime event, avoiding a full catalog download.
+- **Plant detail placeholders**: Morphology, ecology, and habitat fields display a subtle italic placeholder instead of blank space when the catalog field is empty.
 
 ### ✨ New in v0.9.7
 
@@ -517,6 +538,31 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - [x] **Overlay Controls**: Fixed "Show Heatmap Overlay" toggle and "Heatmap Opacity" slider functionality
 - [x] **Offline Processing**: Fixed offline processing path that was setting GradCAM paths to null
 
+### Phase 36: Automated Training Pipeline & Admin Role Routing (✅ COMPLETED)
+
+**Date**: April 19, 2026
+
+#### Automated Modal Training Pipeline
+- [x] **modal_train.py** — Full GPU training pipeline: download model → transfer learning on T4 → TFLite + CAM export → Supabase upload → Railway reload
+- [x] **POST /admin/trigger-training** — Railway endpoint that validates admin secret and forwards to Modal web endpoint
+- [x] **TriggerTrainingWidget** — Flutter admin widget in Training Images sheet; one-tap training trigger with inline status feedback
+- [x] **Versioned model backup** — Each training run uploads a timestamped `.keras` backup to `live-models/versions/`
+- [x] **Accuracy gate** — Training aborts and does not upload if `val_accuracy < 0.75`
+- [x] **model_versions table insert** — Each successful run inserts a row with class count, accuracy, new class name/index, and `is_active=false`
+
+#### Admin Role Routing
+- [x] **Splash screen routing** — Admin users are routed to `/admin` instead of `/home` after the splash delay
+- [x] **Router-level redirect** — `/home` redirects to `/admin` for logged-in admin users, preventing accidental access to the consumer home screen
+
+#### Catalog Realtime Sync
+- [x] **PlantProvider Realtime subscription** — Listens to 8 tables; admin edits appear in-app instantly
+- [x] **syncSinglePlant** — Fetches and hydrates one plant from Supabase on Realtime event
+- [x] **syncConditionsOnly** — Re-syncs conditions tables without a full catalog download
+- [x] **Plant detail placeholders** — Empty morphology/ecology/habitat fields show italic placeholder text
+
+#### Bug Fixes
+- [x] **Training image count NOT NULL crash** — `updateTrainingImageCount` switched from upsert to update
+
 ### Phase 6: Backend API & Documentation (✅ COMPLETED)
 - [x] Python FastAPI backend for true Grad-CAM computation
 - [x] Backend documentation (`backend/README.md`)
@@ -691,19 +737,20 @@ herbascan/
 
 ## 📊 Progress Metrics
 
-- **Version**: v0.9.7
-- **Code Files Created**: 50+ files
-- **Lines of Code**: 10,000+ lines
-- **Features Implemented**: 45+ core features
+- **Version**: v0.9.8
+- **Code Files Created**: 55+ files
+- **Lines of Code**: 11,000+ lines
+- **Features Implemented**: 50+ core features
 - **Screens Created**: 19 screens
 - **Providers**: 6 state management providers (App, Auth, Plant, Camera, Language, Offline)
-- **Services**: Database, Plant, Offline, GradCAM, XAI Explanation, Auth, Herbarium, CatalogSync, Config, Performance, Analytics, Error Logger, Feedback, and others
+- **Services**: Database, Plant, Offline, GradCAM, XAI Explanation, Auth, Herbarium, CatalogSync, OtaModel, TrainingDataset, CatalogPlantAdmin, Config, Performance, Analytics, Error Logger, Feedback, and others
 - **Models**: 3 data models (Plant, ScanResult, UserFeedback)
 - **Database Tables**: SQLite with 9 tables—plants, medicinal_uses, preparation_methods, scan_history, catalog_conditions, catalog_condition_plants, safety_profiles, plant_habitats, catalog_plant_anatomy (catalog tables synced from Supabase when online)
 - **Plant Database**: 42 medicinal plants (10 DOH-approved + 32 additional)
 - **Languages Supported**: 2 (English, Filipino)
 - **Documentation Files**: 20+ comprehensive documentation files
 - **Test Cases**: 50+ test cases documented
+- **Training Pipeline**: Modal T4 GPU automated retraining triggered from admin panel
 
 ## 📊 Data Collection for Thesis Research
 
@@ -769,6 +816,16 @@ HerbaScan is designed to work seamlessly in rural areas without internet connect
 - **OfflineDemoScreen**: Add a testing interface for offline capabilities
 
 ## 🔧 Development Notes
+
+### Recent Changes (Version v0.9.8 – April 2026)
+
+**CHANGELOG.md** is the authoritative change log; this README is kept in sync with it. Summary:
+
+- **Admin Role Routing** (v0.9.8): Splash screen checks `auth.isAdmin` and routes admins directly to `/admin`. Router-level redirect on `/home` sends admin users to `/admin`. Regular users are unaffected. "Exit Admin Console" button remains the escape hatch.
+- **Modal Automated Training Pipeline** (v0.9.8): `modal_train.py` runs on a Modal T4 GPU. Triggered by `POST /admin/trigger-training` on the Railway backend. Steps: download model from Supabase → download training images → transfer learning (10 epochs) → accuracy gate (≥0.75) → TFLite + CAM weights export → upload all assets + versioned backup → insert `model_versions` row → trigger `/admin/reload-model`. `TriggerTrainingWidget` in the admin Training Images sheet provides one-tap access.
+- **Supabase Realtime sync** (v0.9.8): `PlantProvider` subscribes to 8 catalog tables on startup. Admin edits propagate to all connected devices instantly via `syncSinglePlant` and `syncConditionsOnly`.
+- **Plant detail placeholders** (v0.9.8): Morphology, ecology, and habitat render a subtle italic placeholder when empty instead of leaving blank space.
+- **Training image count crash fix** (v0.9.8): `updateTrainingImageCount` switched from upsert to update to avoid NOT NULL constraint violation on `common_name`.
 
 ### Recent Changes (Version v0.9.7 – March 2026)
 
@@ -911,12 +968,14 @@ HerbaScan includes a Python backend API for true gradient-based Grad-CAM computa
 **Location**: `backend/` directory
 
 **Features**:
-- ✅ FastAPI server with 4 endpoints (/, /health, /test, /identify)
+- ✅ FastAPI server with 6 endpoints (/, /health, /test, /identify, /admin/reload-model, /admin/trigger-training)
 - ✅ True Grad-CAM implementation using TensorFlow GradientTape
 - ✅ Docker configuration for Railway deployment
 - ✅ Comprehensive documentation (`backend/README.md`)
 - ✅ Postman collection for API testing
 - ✅ Model management guides
+- ✅ **NEW** `POST /admin/trigger-training` — forwards training requests to Modal GPU pipeline
+- ✅ **NEW** `MODAL_TRAINING_URL` environment variable support
 
 **Documentation**:
 - **Backend README**: `backend/README.md` - Complete backend documentation (1,500+ lines)

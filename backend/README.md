@@ -1,8 +1,8 @@
 # HerbaScan Backend API
 
 **Last Updated**: April 2026  
-**Backend Version**: 0.9.7
-**Flutter App Version**: v0.9.7
+**Backend Version**: 0.9.8
+**Flutter App Version**: v0.9.8
 
 > **Changelog note (v0.9.4 – v0.9.6):** No backend API or server-side changes were introduced in app versions v0.9.4, v0.9.5, or v0.9.6. All changes in those releases were Flutter-side (UI/UX, admin portal, Supabase migrations). The backend remains at v0.9.7 spec: MobileNetV2-only, 43-class output, `/identify`, `/health`, `/test` endpoints unchanged.
 
@@ -927,6 +927,42 @@ For debugging and testing server connectivity.
 
 ### `POST /identify` - Plant Identification
 Main endpoint for plant identification with Grad-CAM.
+
+### `POST /admin/reload-model` - Reload Model
+Downloads the latest model and labels from Supabase Storage and hot-reloads them without a server restart. Requires `x-admin-secret` header matching `ADMIN_RELOAD_SECRET`.
+
+### `POST /admin/trigger-training` - Trigger Modal Training ✅ NEW
+Validates the `x-admin-secret` header then forwards `plant_slug` and `new_class_name` to the Modal web endpoint (`MODAL_TRAINING_URL`). Returns immediately — training runs on Modal in the background (~15 min on T4 GPU).
+
+**Request headers:**
+```
+x-admin-secret: <ADMIN_RELOAD_SECRET>
+Content-Type: application/json
+```
+
+**Request body:**
+```json
+{
+  "plant_slug": "sambong-001",
+  "new_class_name": "Sambong"
+}
+```
+
+**Response:**
+```json
+{
+  "status": "training_started",
+  "plant_slug": "sambong-001",
+  "new_class_name": "Sambong",
+  "message": "Training job queued on Modal. Takes ~15 min on T4 GPU."
+}
+```
+
+**Required Railway environment variables:**
+```
+ADMIN_RELOAD_SECRET   = <shared secret>
+MODAL_TRAINING_URL    = https://your-org--herbascan-training-trigger-training.modal.run
+```
 
 **Request:**
 - Method: `POST`
