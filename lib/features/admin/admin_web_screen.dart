@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/features/admin/admin_condition_search_screen.dart';
 import 'package:herbascan/features/admin/admin_dashboard_screen.dart';
@@ -189,14 +190,14 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
                         style: TextStyle(
                             color: AppTheme.errorLight, fontSize: 13)),
                     onPressed: () =>
-                        Navigator.of(context).popUntil((r) => r.isFirst),
+                        context.go('/home'),
                   )
                 : IconButton(
                     icon: const Icon(Icons.exit_to_app,
                         color: AppTheme.errorLight, size: 22),
                     tooltip: 'Exit Admin Console',
                     onPressed: () =>
-                        Navigator.of(context).popUntil((r) => r.isFirst),
+                        context.go('/home'),
                   ),
           ),
           const SizedBox(height: 8),
@@ -314,7 +315,7 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
                       color: AppTheme.errorLight, fontSize: 14)),
               onPressed: () {
                 Navigator.pop(context);
-                Navigator.of(context).popUntil((r) => r.isFirst);
+                context.go('/home');
               },
             ),
           ),

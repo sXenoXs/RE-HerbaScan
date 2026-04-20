@@ -38,11 +38,6 @@ GoRouter createAppRouter(GlobalKey<NavigatorState> navigatorKey) {
         if (!authAfter.isAdmin) return '/home?unauthorized=1';
       }
 
-      // Redirect admins away from /home to the admin console
-      if (loc == '/home') {
-        if (auth.isLoggedIn && auth.isAdmin) return '/admin';
-      }
-
       return null;
     },
     routes: <RouteBase>[
