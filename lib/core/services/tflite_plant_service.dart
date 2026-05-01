@@ -49,7 +49,10 @@ class TflitePlantService {
   }
 
   Future<void> loadModel() async {
-    if (platform_utils.isDesktop()) return;
+    if (platform_utils.isDesktop()) {
+      print('⚠️ [TflitePlantService] Skipping TFLite init on desktop platform');
+      return;
+    }
     try {
       _lastLoadError = null;
       // Load MobileNetV2 multi-output model (ONLY MODEL - HerbaScan deprecated)

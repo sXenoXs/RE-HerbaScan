@@ -744,7 +744,7 @@ class _DeployModelSheetState extends State<_DeployModelSheet> {
       await Supabase.instance.client.from('model_versions').insert({
         'version': _versionCtrl.text.trim(),
         'is_active': true,
-        'model_url': _tfliteCtrl.text.trim(),
+        'tflite_url': _tfliteCtrl.text.trim(),
         'class_indices_url': _classIndicesCtrl.text.trim(),
         'cam_weights_url': _camWeightsCtrl.text.trim(),
       });

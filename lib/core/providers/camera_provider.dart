@@ -18,6 +18,7 @@ class CameraProvider extends ChangeNotifier {
   CameraController? _cameraController;
   List<CameraDescription> _cameras = [];
   bool _isInitialized = false;
+  bool _isWindowsDesktop = false;
   bool _isCapturing = false;
   final bool _isProcessing = false;
   String? _lastCapturedImagePath;
@@ -52,6 +53,7 @@ class CameraProvider extends ChangeNotifier {
   Uint8List? get lastCapturedImageData => _lastCapturedImageData;
   String? get errorMessage => _errorMessage;
   bool get hasError => _errorMessage != null;
+  bool get isWindowsDesktop => _isWindowsDesktop;
 
   List<Map<String, dynamic>> get lastPredictions => _lastPredictions;
   bool get isClassifying => _isClassifying;
@@ -69,7 +71,8 @@ class CameraProvider extends ChangeNotifier {
 
   Future<void> _initializeCamera() async {
     if (Platform.isWindows) {
-      _errorMessage = 'Camera is not supported on Windows. Use a phone for scanning.';
+      _isWindowsDesktop = true;
+      _isInitialized = true;
       notifyListeners();
       return;
     }
@@ -143,6 +146,7 @@ class CameraProvider extends ChangeNotifier {
   }
 
   Future<XFile?> captureImage() async {
+    if (_isWindowsDesktop) return pickImageFromGallery();
     if (!_isInitialized || _cameraController == null) {
       _errorMessage = 'Camera not initialized';
       notifyListeners();
@@ -150,7 +154,7 @@ class CameraProvider extends ChangeNotifier {
     }
 
     _isCapturing = true;
-    notifyListeners();
+    Future.microtask(notifyListeners);
     _performanceMonitor.startTimer(PerformanceOperation.imageCapture);
 
     try {
@@ -216,7 +220,7 @@ class CameraProvider extends ChangeNotifier {
     print("🔍 [CameraProvider] processImageForAI() called");
     print("   Image data: ${imageData.length} bytes");
     _isClassifying = true;
-    notifyListeners();
+    Future.microtask(notifyListeners);
     _performanceMonitor.startTimer(PerformanceOperation.aiInference);
 
     try {
@@ -264,7 +268,7 @@ class CameraProvider extends ChangeNotifier {
       }) async {
     _isClassifying = true;
     _errorMessage = null;
-    notifyListeners();
+    Future.microtask(notifyListeners);
     _performanceMonitor.startTimer(PerformanceOperation.aiInference);
 
     try {

@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:herbascan/core/models/plant.dart';
 import 'package:herbascan/core/models/plant_metadata_override.dart';
 import 'package:herbascan/core/services/catalog_plant_admin_service.dart';
+import 'package:herbascan/core/services/database_service.dart';
 import 'package:herbascan/core/services/plant_data_service.dart';
 import 'package:herbascan/core/services/plant_metadata_service.dart';
 import 'package:herbascan/core/services/training_dataset_service.dart';
@@ -387,6 +388,55 @@ class _AdminPlantMetadataScreenState extends State<AdminPlantMetadataScreen> {
     textController.dispose();
   }
 
+  Future<void> _deletePlant(Plant plant) async {
+    final theme = Theme.of(context);
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove Plant?'),
+        content: Text(
+          'This will permanently delete "${plant.commonName}" from Supabase and your local database. '
+          'Connected users will see the plant disappear immediately.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+                backgroundColor: theme.colorScheme.error),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+
+    setState(() => _resetting = true);
+    final ok = await CatalogPlantAdminService().deletePlant(plant.id);
+    if (ok) {
+      try {
+        await DatabaseService().deletePlantFromLocal(plant.id);
+      } catch (e) {
+        debugPrint('[AdminPlantMetadata] Local delete failed: $e');
+      }
+    }
+    if (!mounted) return;
+    setState(() => _resetting = false);
+    if (ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('"${plant.commonName}" removed.')),
+      );
+      _load();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Remove failed. Check connection and try again.')),
+      );
+    }
+  }
+
   Future<void> _factoryReset() async {
     final theme = Theme.of(context);
     final confirmController = TextEditingController();
@@ -696,6 +746,8 @@ class _AdminPlantMetadataScreenState extends State<AdminPlantMetadataScreen> {
                               _openTrainingImages(plant);
                             case 'toggle_status':
                               _toggleStatus(plant);
+                            case 'delete':
+                              _deletePlant(plant);
                           }
                         },
                         itemBuilder: (ctx) => [
@@ -743,6 +795,20 @@ class _AdminPlantMetadataScreenState extends State<AdminPlantMetadataScreen> {
                                       ? AppTheme.warningAmber
                                       : AppTheme.botanicalPrimary,
                                 ),
+                              ),
+                            ]),
+                          ),
+                          PopupMenuItem(
+                            value: 'delete',
+                            child: Row(children: [
+                              Icon(Icons.delete_forever_rounded,
+                                  size: 18,
+                                  color: Theme.of(ctx).colorScheme.error),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Remove Plant',
+                                style: TextStyle(
+                                    color: Theme.of(ctx).colorScheme.error),
                               ),
                             ]),
                           ),

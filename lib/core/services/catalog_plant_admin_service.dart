@@ -901,4 +901,28 @@ class CatalogPlantAdminService {
       return false;
     }
   }
+
+  /// Permanently delete a plant from Supabase (all related tables + catalog_plants).
+  /// The Realtime DELETE event on catalog_plants will automatically remove it from
+  /// connected end-users' in-memory state via PlantProvider._onCatalogPlantDeleted.
+  Future<bool> deletePlant(String plantId) async {
+    if (!isAvailable || plantId.isEmpty) return false;
+    try {
+      await _client.from('catalog_condition_plants').delete().eq('plant_id', plantId);
+      await _client.from('catalog_plant_anatomy').delete().eq('plant_id', plantId);
+      await _client.from('catalog_safety').delete().eq('plant_id', plantId);
+      await _client.from('catalog_habitat').delete().eq('plant_id', plantId);
+      await _client.from('catalog_medicinal_uses').delete().eq('plant_id', plantId);
+      await _client.from('catalog_preparation_methods').delete().eq('plant_id', plantId);
+      await _client.from('catalog_plants').delete().eq('id', plantId);
+      if (kDebugMode) debugPrint('[CatalogPlantAdminService] Deleted plant $plantId from Supabase.');
+      return true;
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('[CatalogPlantAdminService] deletePlant: $e');
+        debugPrint(st.toString());
+      }
+      return false;
+    }
+  }
 }

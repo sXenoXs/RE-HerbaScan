@@ -317,6 +317,9 @@ class _ScanScreenState extends State<ScanScreen>
       ),
       body: Consumer<CameraProvider>(
         builder: (context, cameraProvider, child) {
+          if (cameraProvider.isWindowsDesktop) {
+            return _buildDesktopView(context, theme, cameraProvider);
+          }
           if (cameraProvider.hasError) {
             return _buildErrorState(context, theme, cameraProvider);
           }
@@ -329,6 +332,156 @@ class _ScanScreenState extends State<ScanScreen>
           }
           return _buildCameraView(context, theme, cameraProvider);
         },
+      ),
+    );
+  }
+
+  Widget _buildDesktopView(
+      BuildContext context, ThemeData theme, CameraProvider cameraProvider) {
+    final padding = MediaQuery.of(context).padding;
+    final isProcessing =
+        cameraProvider.isCapturing || cameraProvider.isClassifying;
+    final hasImage = cameraProvider.lastCapturedImageData != null;
+
+    return Container(
+      color: Colors.black,
+      child: Stack(
+        children: [
+          // Background image preview
+          if (hasImage)
+            Positioned.fill(
+              child: Image.memory(
+                cameraProvider.lastCapturedImageData!,
+                fit: BoxFit.contain,
+              ),
+            ),
+
+          // Dimming overlay
+          if (!hasImage)
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(28),
+                    ),
+                    child: const Icon(
+                      Icons.eco_rounded,
+                      color: AppTheme.botanicalPrimary,
+                      size: 60,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Select a plant image to identify',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Camera is not available on Windows desktop',
+                    style: TextStyle(color: Colors.white54, fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+
+          // Processing overlay
+          if (isProcessing)
+            Center(
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.6),
+                  borderRadius: BorderRadius.circular(100),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                            AppTheme.botanicalPrimary),
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    Text(
+                      'Analyzing...',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          // Top bar: close button
+          Positioned(
+            top: padding.top + 12,
+            left: 16,
+            child: _GlassPill(
+              onTap: () => Navigator.of(context).pop(),
+              child: const Icon(Icons.close, color: Colors.white, size: 20),
+            ),
+          ),
+
+          // Bottom bar: browse button
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              padding: EdgeInsets.only(
+                left: 24,
+                right: 24,
+                bottom: padding.bottom + 20,
+                top: 20,
+              ),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.75),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 220,
+                    child: FilledButton.icon(
+                      onPressed: isProcessing ? null : _pickFromGallery,
+                      icon: const Icon(Icons.folder_open_rounded),
+                      label: Text(
+                          hasImage ? 'Choose Different Image' : 'Browse Image'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppTheme.botanicalPrimary,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

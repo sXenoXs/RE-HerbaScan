@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/core/services/performance_monitor.dart';
 import 'package:herbascan/core/services/usage_analytics.dart';
 import 'package:herbascan/core/services/error_logger.dart';
 import 'package:herbascan/core/services/ai_metrics_service.dart';
+import 'package:herbascan/core/services/ota_model_service.dart';
 
 /// Admin-only System Health: AI metrics, live usage, and error logs.
 /// Merges former Performance Metrics and Performance Dashboard.
@@ -26,6 +28,10 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
   AiMetrics _aiMetrics = AiMetricsService.defaults;
   bool _isLoading = true;
 
+  // OTA model status
+  bool _otaActive = false;
+  String _otaVersion = '';
+
   @override
   void initState() {
     super.initState();
@@ -42,6 +48,8 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
       final allErrors = await _errorLogger.getAllErrors();
       final recentErrors = allErrors.reversed.take(50).toList();
       final aiMetrics = await _aiMetricsService.loadMetrics();
+      final prefs = await SharedPreferences.getInstance();
+      final otaVersion = prefs.getString('ota_model_version') ?? '';
 
       if (!mounted) return;
       setState(() {
@@ -49,6 +57,8 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
         _usageStats = usageStats;
         _recentErrors = recentErrors;
         _aiMetrics = aiMetrics;
+        _otaActive = OtaModelService.instance.isOtaAvailable;
+        _otaVersion = otaVersion;
         _isLoading = false;
       });
     } catch (e) {
@@ -196,7 +206,74 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
+        const SizedBox(height: 12),
+        _buildModelSourceCard(theme),
       ],
+    );
+  }
+
+  Widget _buildModelSourceCard(ThemeData theme) {
+    final color = _otaActive ? AppTheme.botanicalPrimary : Colors.orange.shade700;
+    final icon = _otaActive ? Icons.cloud_done_rounded : Icons.inventory_2_outlined;
+    final label = _otaActive ? 'Live Model (Supabase)' : 'Bundled Asset Model';
+    final subtitle = _otaActive
+        ? 'Version: $_otaVersion'
+        : 'No OTA model downloaded yet';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                if (_otaActive && OtaModelService.instance.tflitePath != null)
+                  Text(
+                    OtaModelService.instance.tflitePath!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontSize: 10,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
+            ),
+          ),
+          if (!_otaActive)
+            TextButton(
+              onPressed: () async {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Checking for model update…')),
+                );
+                await OtaModelService.instance.initialize();
+                _loadData();
+              },
+              child: const Text('Check now'),
+            ),
+        ],
+      ),
     );
   }
 

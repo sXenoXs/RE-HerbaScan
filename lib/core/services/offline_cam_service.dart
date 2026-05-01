@@ -7,6 +7,9 @@ import 'package:image/image.dart' as img;
 import 'package:logger/logger.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 import 'package:herbascan/core/services/ota_model_service.dart';
+import 'package:herbascan/core/platform_utils_stub.dart'
+    if (dart.library.io) 'package:herbascan/core/platform_utils_io.dart'
+    as platform_utils;
 
 /// Service for offline CAM (Class Activation Mapping) computation
 /// Uses pre-extracted weights and TFLite model for on-device visualization
@@ -51,6 +54,11 @@ class OfflineCAMService {
     print('🚀 [OfflineCAMService] initialize() called');
     print('   Current _isInitialized: $_isInitialized');
     print('═══════════════════════════════════════════════════════');
+
+    if (platform_utils.isDesktop()) {
+      print('⚠️ [OfflineCAMService] Skipping TFLite init on desktop platform');
+      return;
+    }
 
     if (_isInitialized) {
       _logger.i('OfflineCAMService already initialized');

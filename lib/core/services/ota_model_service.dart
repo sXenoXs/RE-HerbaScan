@@ -6,79 +6,64 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Handles OTA version checking and downloading of ML model files from Supabase.
+/// Handles OTA version checking and downloading of ML model files.
 ///
-/// Requires a `model_versions` table in Supabase:
+/// Resolution order (first source that returns data wins):
+///   1. `model_versions` Supabase table — versioned admin-controlled releases.
+///      Columns: version, tflite_url, class_indices_url, cam_weights_url, is_active.
+///   2. `live-models` Supabase Storage bucket — direct upload fallback.
+///      Files: mobilenetv2_multi_output.tflite, class_indices.json,
+///             mobilenetv2_cam_weights.json.
+///      Version is derived from the tflite file's updatedAt timestamp, so
+///      re-uploading to the bucket automatically triggers a re-download.
 ///
-///   CREATE TABLE model_versions (
-///     id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-///     version       text NOT NULL,
-///     is_active     boolean NOT NULL DEFAULT true,
-///     model_url     text NOT NULL,           -- mobilenetv2_multi_output.tflite
-///     class_indices_url text NOT NULL,       -- class_indices.json
-///     cam_weights_url   text NOT NULL,       -- mobilenetv2_cam_weights.json
-///     created_at    timestamptz NOT NULL DEFAULT now()
-///   );
-///
-/// Usage in consuming services:
-///   - [TflitePlantService]: use [tflitePath] / [classIndicesPath] when non-null
-///     instead of loading from rootBundle assets.
-///   - [OfflineCAMService]: use [tflitePath] / [camWeightsPath] when non-null.
-///   - Always fall back to bundled assets when [isOtaAvailable] is false.
+/// Always falls back silently to bundled APK assets if both sources fail.
 class OtaModelService {
   static final OtaModelService instance = OtaModelService._internal();
   OtaModelService._internal();
 
-  // ── SharedPreferences key ────────────────────────────────────────────────
   static const String _prefKey = 'ota_model_version';
 
-  // ── Downloaded file names (must match what existing services expect) ──────
   static const String _tfliteFileName = 'mobilenetv2_multi_output.tflite';
   static const String _classIndicesFileName = 'class_indices.json';
   static const String _camWeightsFileName = 'mobilenetv2_cam_weights.json';
+
+  // The Supabase Storage bucket that holds the live model files.
+  static const String _liveModelsBucket = 'live-models';
 
   Directory? _modelsDir;
   bool _otaAvailable = false;
 
   // ── Public API ────────────────────────────────────────────────────────────
 
-  /// True once all three OTA files are confirmed present on disk.
   bool get isOtaAvailable => _otaAvailable;
 
-  /// Absolute path to the OTA `.tflite` file; null → use bundled asset.
   String? get tflitePath =>
       _otaAvailable ? '${_modelsDir!.path}/$_tfliteFileName' : null;
 
-  /// Absolute path to the OTA `class_indices.json`; null → use bundled asset.
   String? get classIndicesPath =>
       _otaAvailable ? '${_modelsDir!.path}/$_classIndicesFileName' : null;
 
-  /// Absolute path to the OTA `mobilenetv2_cam_weights.json`; null → use bundled asset.
   String? get camWeightsPath =>
       _otaAvailable ? '${_modelsDir!.path}/$_camWeightsFileName' : null;
 
   // ── Initialization ────────────────────────────────────────────────────────
 
-  /// Call this in `main()` before `runApp()`. Never throws — any failure
-  /// silently falls back to the bundled APK assets.
+  /// Call this in `main()` before `runApp()`. Never throws.
   Future<void> initialize() async {
-    if (kIsWeb) return; // OTA model files are not applicable on web.
+    if (kIsWeb) return;
 
     try {
       final docsDir = await getApplicationDocumentsDirectory();
       _modelsDir = Directory('${docsDir.path}/models');
 
-      // If all three files already exist from a prior download, mark them
-      // available immediately so the rest of the app can use them right away.
       if (await _allFilesExist()) {
         _otaAvailable = true;
         debugPrint('✅ [OtaModelService] Cached OTA model files found.');
       }
 
-      // Check Supabase for a newer version (async — does not block startup).
       await _checkAndUpdate();
     } catch (e) {
-      // Non-fatal: bundled assets remain in use.
       debugPrint('⚠️ [OtaModelService] initialize() non-fatal error: $e');
     }
   }
@@ -86,8 +71,15 @@ class OtaModelService {
   // ── Private helpers ───────────────────────────────────────────────────────
 
   Future<void> _checkAndUpdate() async {
-    final Map<String, dynamic>? remote = await _fetchRemoteVersion();
-    if (remote == null) return; // No network or table missing.
+    // 1. Try model_versions table first (versioned releases).
+    // 2. Fall back to live-models bucket (direct upload workflow).
+    final Map<String, dynamic>? remote =
+        await _fetchFromVersionsTable() ?? await _fetchFromLiveModelsBucket();
+
+    if (remote == null) {
+      debugPrint('ℹ️ [OtaModelService] No remote model source found.');
+      return;
+    }
 
     final String remoteVersion = remote['version'] as String;
 
@@ -100,12 +92,11 @@ class OtaModelService {
       return;
     }
 
-    debugPrint(
-        '⬇️  [OtaModelService] Newer model found: $remoteVersion '
+    debugPrint('⬇️  [OtaModelService] Newer model found: $remoteVersion '
         '(local: ${localVersion.isEmpty ? "none" : localVersion})');
 
     final bool success = await _downloadAll(
-      tfliteUrl: remote['model_url'] as String,
+      tfliteUrl: remote['tflite_url'] as String,
       classIndicesUrl: remote['class_indices_url'] as String,
       camWeightsUrl: remote['cam_weights_url'] as String,
     );
@@ -116,35 +107,94 @@ class OtaModelService {
       debugPrint(
           '✅ [OtaModelService] Model updated to version $remoteVersion.');
     }
-    // On failure _otaAvailable stays as it was; bundled assets are the fallback.
   }
 
-  /// Queries `model_versions` for the latest active row.
-  /// Returns null on any error (network unavailable, table missing, etc.).
-  Future<Map<String, dynamic>?> _fetchRemoteVersion() async {
+  // ── Source 1: model_versions table ───────────────────────────────────────
+
+  Future<Map<String, dynamic>?> _fetchFromVersionsTable() async {
     try {
       final response = await Supabase.instance.client
           .from('model_versions')
-          .select('version, model_url, class_indices_url, cam_weights_url')
+          .select('version, tflite_url, class_indices_url, cam_weights_url')
           .eq('is_active', true)
           .order('created_at', ascending: false)
           .limit(1)
           .maybeSingle();
 
+      if (response == null) return null;
+      debugPrint('📋 [OtaModelService] Found model_versions row '
+          '(version: ${response['version']})');
       return response;
     } catch (e) {
       debugPrint(
-          '⚠️ [OtaModelService] Could not reach model_versions table: $e');
+          '⚠️ [OtaModelService] model_versions table not available: $e');
       return null;
     }
   }
 
-  /// Returns true if [remote] is strictly newer than [local].
-  /// Supports semver (e.g. "1.2.3") and simple integers (e.g. "5").
-  /// Unknown formats: any difference is treated as newer.
+  // ── Source 2: live-models bucket ─────────────────────────────────────────
+
+  /// Reads public URLs directly from the `live-models` Storage bucket.
+  /// Uses the tflite file's `updatedAt` timestamp as the version string so
+  /// re-uploading a new model to the bucket triggers an automatic re-download.
+  Future<Map<String, dynamic>?> _fetchFromLiveModelsBucket() async {
+    try {
+      final storage = Supabase.instance.client.storage;
+
+      // List the bucket to get file metadata (updatedAt timestamp).
+      final files = await storage.from(_liveModelsBucket).list();
+
+      // Find the tflite file entry to use its timestamp as version.
+      final tfliteEntry = files
+          .where((f) => f.name == _tfliteFileName)
+          .firstOrNull;
+
+      if (tfliteEntry == null) {
+        debugPrint(
+            '⚠️ [OtaModelService] $_tfliteFileName not found in '
+            '$_liveModelsBucket bucket.');
+        return null;
+      }
+
+      // Use updatedAt as version — changes whenever the file is re-uploaded.
+      final version = tfliteEntry.updatedAt ?? tfliteEntry.createdAt ?? 'live';
+
+      final tfliteUrl =
+          storage.from(_liveModelsBucket).getPublicUrl(_tfliteFileName);
+      final classIndicesUrl =
+          storage.from(_liveModelsBucket).getPublicUrl(_classIndicesFileName);
+      final camWeightsUrl =
+          storage.from(_liveModelsBucket).getPublicUrl(_camWeightsFileName);
+
+      debugPrint('📦 [OtaModelService] Using live-models bucket '
+          '(version: $version)');
+      return {
+        'version': version,
+        'tflite_url': tfliteUrl,
+        'class_indices_url': classIndicesUrl,
+        'cam_weights_url': camWeightsUrl,
+      };
+    } catch (e) {
+      debugPrint(
+          '⚠️ [OtaModelService] Could not access live-models bucket: $e');
+      return null;
+    }
+  }
+
+  // ── Version comparison ────────────────────────────────────────────────────
+
   bool _isNewer(String remote, String local) {
     if (local.isEmpty) return true;
     if (remote == local) return false;
+
+    // Try ISO 8601 datetime comparison (used by bucket updatedAt timestamps).
+    try {
+      final r = DateTime.parse(remote);
+      final l = DateTime.parse(local);
+      return r.isAfter(l);
+    } catch (_) {}
+
+    // Try semver / integer comparison.
     try {
       final r = _parseSemver(remote);
       final l = _parseSemver(local);
@@ -165,8 +215,8 @@ class OtaModelService {
       .map(int.parse)
       .toList();
 
-  /// Downloads all three model files atomically (tmp → rename).
-  /// Returns false if any download fails; partial files are cleaned up.
+  // ── Download helpers ──────────────────────────────────────────────────────
+
   Future<bool> _downloadAll({
     required String tfliteUrl,
     required String classIndicesUrl,
@@ -187,8 +237,6 @@ class OtaModelService {
     }
   }
 
-  /// Downloads [url] and writes it to `<modelsDir>/<fileName>` via a `.tmp`
-  /// staging file so a partial write never replaces a good existing file.
   Future<void> _downloadFile(String url, String fileName) async {
     final dest = File('${_modelsDir!.path}/$fileName');
     final tmp = File('${_modelsDir!.path}/$fileName.tmp');
@@ -202,7 +250,6 @@ class OtaModelService {
 
     await tmp.writeAsBytes(response.bodyBytes, flush: true);
 
-    // Atomic rename: the destination is only replaced once the write is done.
     if (await dest.exists()) await dest.delete();
     await tmp.rename(dest.path);
 

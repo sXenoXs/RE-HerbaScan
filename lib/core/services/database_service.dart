@@ -931,6 +931,20 @@ class DatabaseService {
     await db.delete(_scanHistoryTable);
   }
 
+  /// Remove a plant and all its related rows from local SQLite.
+  Future<void> deletePlantFromLocal(String plantId) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete(_conditionPlantsTable, where: 'plant_id = ?', whereArgs: [plantId]);
+      await txn.delete(_anatomyTable, where: 'plant_id = ?', whereArgs: [plantId]);
+      await txn.delete(_safetyProfilesTable, where: 'plant_id = ?', whereArgs: [plantId]);
+      await txn.delete(_plantHabitatsTable, where: 'plant_id = ?', whereArgs: [plantId]);
+      await txn.delete(_medicinalUsesTable, where: 'plant_id = ?', whereArgs: [plantId]);
+      await txn.delete(_preparationMethodsTable, where: 'plant_id = ?', whereArgs: [plantId]);
+      await txn.delete(_plantsTable, where: 'id = ?', whereArgs: [plantId]);
+    });
+  }
+
   // Utility methods
   Future<void> close() async {
     final db = await database;

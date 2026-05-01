@@ -9,6 +9,7 @@ import 'package:herbascan/features/admin/admin_plant_metadata_screen.dart';
 import 'package:herbascan/features/admin/admin_user_management_screen.dart';
 import 'package:herbascan/features/admin/admin_system_health_screen.dart';
 import 'package:herbascan/features/admin/admin_feedback_screen.dart';
+import 'package:herbascan/features/admin/admin_toxic_plants_screen.dart';
 
 /// Admin web dashboard: desktop layout with NavigationRail and three modules.
 /// RBAC guard ensures only admins reach this screen.
@@ -30,6 +31,7 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
   static const int _systemHealthIndex = 4;
   static const int _feedbackIndex = 5;
   static const int _submissionTriageIndex = 6;
+  static const int _toxicPlantsIndex = 7;
 
   static const _destinations = [
     (
@@ -66,6 +68,11 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
       icon: Icons.inbox_outlined,
       selectedIcon: Icons.inbox_rounded,
       label: 'Submissions',
+    ),
+    (
+      icon: Icons.warning_amber_outlined,
+      selectedIcon: Icons.warning_amber_rounded,
+      label: 'Toxic Plants',
     ),
   ];
 
@@ -380,6 +387,8 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
         return const AdminFeedbackScreen();
       case _submissionTriageIndex:
         return const AdminDashboardScreen();
+      case _toxicPlantsIndex:
+        return const AdminToxicPlantsScreen();
       default:
         return const Center(child: Text('Select a module'));
     }

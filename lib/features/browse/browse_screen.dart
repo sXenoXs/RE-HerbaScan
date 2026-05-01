@@ -1,15 +1,159 @@
 import 'dart:ui';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:herbascan/core/providers/plant_provider.dart';
 import 'package:herbascan/core/models/plant.dart';
+import 'package:herbascan/core/services/toxic_plant_image_service.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/core/widgets/plant_image.dart';
 import 'package:herbascan/features/scan/plant_detail_screen.dart';
 import 'package:herbascan/features/browse/condition_search_screen.dart';
 import 'package:herbascan/core/services/usage_analytics.dart';
 
-enum BrowseFilter { all, doh }
+enum BrowseFilter { all, doh, toxic }
+
+// ---------------------------------------------------------------------------
+// Static toxic / harmful plant data
+// ---------------------------------------------------------------------------
+class _ToxicPlantEntry {
+  final String slug;
+  final String commonName;
+  final String scientificName;
+  final String localName;
+  final String harm;
+  final String toxin;
+  final String symptoms;
+  const _ToxicPlantEntry({
+    required this.slug,
+    required this.commonName,
+    required this.scientificName,
+    this.localName = '',
+    required this.harm,
+    required this.toxin,
+    required this.symptoms,
+  });
+}
+
+const _toxicPlants = [
+  _ToxicPlantEntry(
+    slug: 'dumb-cane',
+    commonName: 'Dumb Cane',
+    scientificName: 'Dieffenbachia picta',
+    harm: 'Heavy toxins',
+    toxin: 'Calcium oxalate crystals',
+    symptoms:
+        'Intense oral burning, swollen tongue and throat, impaired speech, difficulty swallowing',
+  ),
+  _ToxicPlantEntry(
+    slug: 'physic-nut-tuba-tuba',
+    commonName: 'Physic Nut / Tuba-tuba',
+    scientificName: 'Jatropha curcas',
+    localName: 'Tuba-tuba',
+    harm: 'Poisoning in children',
+    toxin: 'Curcin (toxalbumin), phorbol esters',
+    symptoms:
+        'Nausea, vomiting, severe diarrhea, abdominal pain; potentially fatal in children',
+  ),
+  _ToxicPlantEntry(
+    slug: 'snake-plant',
+    commonName: 'Snake Plant',
+    scientificName: 'Dracaena trifasciata',
+    localName: 'Espada',
+    harm: 'Mild toxins',
+    toxin: 'Steroidal saponins',
+    symptoms: 'Nausea, vomiting, excessive salivation, mild mouth irritation',
+  ),
+  _ToxicPlantEntry(
+    slug: 'cycads',
+    commonName: 'Cycads',
+    scientificName: 'Cycadophyta',
+    localName: 'Pitogo',
+    harm: 'Heavy toxins',
+    toxin: 'Cycasin, BMAA neurotoxin',
+    symptoms:
+        'Vomiting, liver damage, neurological deterioration; potentially fatal',
+  ),
+  _ToxicPlantEntry(
+    slug: 'daphne',
+    commonName: 'Daphne',
+    scientificName: 'Daphne laureola',
+    harm: 'Blistering, irritation',
+    toxin: 'Daphnetoxin, mezerein',
+    symptoms:
+        'Severe mouth and skin blistering, vomiting; convulsions in large doses',
+  ),
+  _ToxicPlantEntry(
+    slug: 'angels-trumpet',
+    commonName: "Angel's Trumpet",
+    scientificName: 'Brugmansia spp.',
+    localName: 'Kampanilya',
+    harm: 'Toxic',
+    toxin: 'Scopolamine, atropine, hyoscyamine',
+    symptoms:
+        'Hallucinations, delirium, rapid heartbeat, dilated pupils, respiratory failure',
+  ),
+  _ToxicPlantEntry(
+    slug: 'lantana',
+    commonName: 'Lantana',
+    scientificName: 'Lantana camara',
+    localName: 'Kambantiling',
+    harm: 'Toxic berries',
+    toxin: 'Lantadene A & B',
+    symptoms:
+        'Vomiting, diarrhea, liver damage from unripe berries; photosensitization',
+  ),
+  _ToxicPlantEntry(
+    slug: 'calla-lily',
+    commonName: 'Calla Lily',
+    scientificName: 'Zantedeschia spp.',
+    localName: 'Calla',
+    harm: 'Toxic',
+    toxin: 'Calcium oxalate crystals',
+    symptoms:
+        'Intense oral burning, lip and tongue swelling, difficulty swallowing',
+  ),
+  _ToxicPlantEntry(
+    slug: 'poinsettia',
+    commonName: 'Poinsettia',
+    scientificName: 'Euphorbia pulcherrima',
+    localName: 'Pascua',
+    harm: 'Irritant sap',
+    toxin: 'Euphorbol esters, saponins',
+    symptoms: 'Skin and eye irritation; mild nausea and vomiting if ingested',
+  ),
+  _ToxicPlantEntry(
+    slug: 'cacti-and-succulents',
+    commonName: 'Cacti and Succulents',
+    scientificName: 'Various',
+    localName: 'Kaktus',
+    harm: 'Physical harm (thorns)',
+    toxin: 'Spines; alkaloids in select species',
+    symptoms: 'Puncture wounds; certain species cause nausea or hallucinations',
+  ),
+  _ToxicPlantEntry(
+    slug: 'rhus-wax-tree',
+    commonName: 'Rhus / Wax Tree',
+    scientificName: 'Toxicodendron spp.',
+    harm: 'Allergic reactions',
+    toxin: 'Urushiol (phenolic resin)',
+    symptoms:
+        'Severe allergic contact dermatitis, intense itching, fluid-filled blisters',
+  ),
+];
+
+Color _harmColor(String harm) {
+  final h = harm.toLowerCase();
+  if (h.contains('heavy') || h.contains('poison') || h.contains('toxic')) {
+    return Colors.red.shade700;
+  }
+  if (h.contains('mild') || h.contains('irritant') || h.contains('blister')) {
+    return Colors.orange.shade700;
+  }
+  return Colors.orange.shade700;
+}
+
+// ---------------------------------------------------------------------------
 
 class BrowseScreen extends StatefulWidget {
   final BrowseFilter initialFilter;
@@ -24,9 +168,14 @@ class _BrowseScreenState extends State<BrowseScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   final UsageAnalytics _analytics = UsageAnalytics();
+  final ToxicPlantImageService _toxicImageService = ToxicPlantImageService();
+
   late BrowseFilter _selectedFilter;
   String _searchQuery = '';
   bool _isGridView = true;
+
+  // slug → imageUrl, loaded from Supabase
+  Map<String, String> _toxicPlantImages = {};
 
   @override
   void initState() {
@@ -37,6 +186,12 @@ class _BrowseScreenState extends State<BrowseScreen> {
       final plantProvider = Provider.of<PlantProvider>(context, listen: false);
       plantProvider.refreshPlants();
     });
+    _loadToxicPlantImages();
+  }
+
+  Future<void> _loadToxicPlantImages() async {
+    final images = await _toxicImageService.getImageUrls();
+    if (mounted) setState(() => _toxicPlantImages = images);
   }
 
   @override
@@ -67,18 +222,39 @@ class _BrowseScreenState extends State<BrowseScreen> {
     return filtered;
   }
 
+  List<_ToxicPlantEntry> _filterToxicPlants() {
+    if (_searchQuery.isEmpty) return _toxicPlants;
+    final query = _searchQuery.toLowerCase();
+    return _toxicPlants.where((p) {
+      return p.commonName.toLowerCase().contains(query) ||
+          p.scientificName.toLowerCase().contains(query) ||
+          p.localName.toLowerCase().contains(query) ||
+          p.harm.toLowerCase().contains(query) ||
+          p.toxin.toLowerCase().contains(query) ||
+          p.symptoms.toLowerCase().contains(query);
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final plantProvider = Provider.of<PlantProvider>(context);
     final filteredPlants = _filterPlants(plantProvider.plants);
+    final filteredToxic = _filterToxicPlants();
+
+    final isToxic = _selectedFilter == BrowseFilter.toxic;
+    final showingCount = isToxic ? filteredToxic.length : filteredPlants.length;
 
     return GestureDetector(
       onTap: () => _searchFocusNode.unfocus(),
       child: Scaffold(
         body: RefreshIndicator(
           onRefresh: () async {
-            await context.read<PlantProvider>().refreshPlants();
+            if (isToxic) {
+              await _loadToxicPlantImages();
+            } else {
+              await context.read<PlantProvider>().refreshPlants();
+            }
           },
           child: CustomScrollView(
             slivers: [
@@ -96,7 +272,9 @@ class _BrowseScreenState extends State<BrowseScreen> {
                   child: SearchBar(
                     controller: _searchController,
                     focusNode: _searchFocusNode,
-                    hintText: 'Search ${plantProvider.plants.length} Plants',
+                    hintText: isToxic
+                        ? 'Search ${_toxicPlants.length} Toxic Plants'
+                        : 'Search ${plantProvider.plants.length} Plants',
                     leading: Icon(
                       Icons.search_rounded,
                       color: theme.colorScheme.onSurface.withOpacity(0.5),
@@ -158,6 +336,11 @@ class _BrowseScreenState extends State<BrowseScreen> {
                       label: Text('DOH Approved'),
                       icon: Icon(Icons.verified_rounded),
                     ),
+                    ButtonSegment(
+                      value: BrowseFilter.toxic,
+                      label: Text('Toxic Plants'),
+                      icon: Icon(Icons.warning_amber_rounded),
+                    ),
                   ],
                   selected: {_selectedFilter},
                   onSelectionChanged: (selection) {
@@ -169,7 +352,9 @@ class _BrowseScreenState extends State<BrowseScreen> {
                     backgroundColor: WidgetStateProperty.resolveWith(
                       (states) {
                         if (states.contains(WidgetState.selected)) {
-                          return AppTheme.botanicalPrimary;
+                          return _selectedFilter == BrowseFilter.toxic
+                              ? Colors.red.shade700
+                              : AppTheme.botanicalPrimary;
                         }
                         return null;
                       },
@@ -187,67 +372,104 @@ class _BrowseScreenState extends State<BrowseScreen> {
               ),
             ),
 
-            // Medical Conditions Banner
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const ConditionSearchScreen(),
-                        ),
-                      );
-                    },
-                    borderRadius: BorderRadius.circular(12),
-                    child: Ink(
-                      decoration: BoxDecoration(
-                        color: theme.brightness == Brightness.dark
-                            ? AppTheme.darkCard
-                            : AppTheme.safeBgLight,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppTheme.botanicalPrimary.withOpacity(
-                            theme.brightness == Brightness.dark ? 0.4 : 0.5,
+            // Medical Conditions Banner (hidden on toxic tab)
+            if (!isToxic)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const ConditionSearchScreen(),
                           ),
-                          width: 1.5,
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Ink(
+                        decoration: BoxDecoration(
+                          color: theme.brightness == Brightness.dark
+                              ? AppTheme.darkCard
+                              : AppTheme.safeBgLight,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppTheme.botanicalPrimary.withOpacity(
+                              theme.brightness == Brightness.dark ? 0.4 : 0.5,
+                            ),
+                            width: 1.5,
+                          ),
                         ),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 11),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.medical_services_outlined,
-                              color: AppTheme.botanicalPrimary,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Search by Medical Condition',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: theme.colorScheme.onSurface,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 11),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.medical_services_outlined,
+                                color: AppTheme.botanicalPrimary,
+                                size: 20,
                               ),
-                            ),
-                            const Spacer(),
-                            Icon(
-                              Icons.arrow_forward_ios_rounded,
-                              size: 13,
-                              color:
-                                  theme.colorScheme.onSurface.withOpacity(0.4),
-                            ),
-                          ],
+                              const SizedBox(width: 12),
+                              Text(
+                                'Search by Medical Condition',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: theme.colorScheme.onSurface,
+                                ),
+                              ),
+                              const Spacer(),
+                              Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                size: 13,
+                                color: theme.colorScheme.onSurface
+                                    .withOpacity(0.4),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
+
+            // Toxic Plants info banner
+            if (isToxic)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 11),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.red.shade300,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.warning_amber_rounded,
+                            color: Colors.red.shade700, size: 20),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'These plants are harmful or toxic. Avoid contact or ingestion.',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.red.shade800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
 
             // Toolbar row: count + grid/list toggle
             SliverToBoxAdapter(
@@ -257,7 +479,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
                 child: Row(
                   children: [
                     Text(
-                      'Showing ${filteredPlants.length} Plants',
+                      'Showing $showingCount ${isToxic ? 'Toxic Plants' : 'Plants'}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: AppTheme.textSecondary,
                       ),
@@ -284,44 +506,82 @@ class _BrowseScreenState extends State<BrowseScreen> {
               ),
             ),
 
-            // Plant content
-            if (plantProvider.isLoading)
-              const SliverFillRemaining(
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else if (filteredPlants.isEmpty)
-              SliverFillRemaining(
-                child: _buildEmptyState(context, theme),
-              )
-            else if (_isGridView)
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                sliver: SliverGrid(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) =>
-                        _buildPlantGridCard(filteredPlants[index], theme),
-                    childCount: filteredPlants.length,
+            // Plant content — toxic tab
+            if (isToxic) ...[
+              if (filteredToxic.isEmpty)
+                SliverFillRemaining(
+                  child: _buildEmptyState(context, theme),
+                )
+              else if (_isGridView)
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                  sliver: SliverGrid(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) =>
+                          _buildToxicGridCard(filteredToxic[index], theme),
+                      childCount: filteredToxic.length,
+                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 0.82,
+                    ),
                   ),
-                  gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 1.0,
-                  ),
-                ),
-              )
-            else
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) =>
-                        _buildPlantListCard(filteredPlants[index], theme),
-                    childCount: filteredPlants.length,
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) =>
+                          _buildToxicListCard(filteredToxic[index], theme),
+                      childCount: filteredToxic.length,
+                    ),
                   ),
                 ),
-              ),
+            ]
+            // Plant content — all / doh tabs
+            else ...[
+              if (plantProvider.isLoading)
+                const SliverFillRemaining(
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (filteredPlants.isEmpty)
+                SliverFillRemaining(
+                  child: _buildEmptyState(context, theme),
+                )
+              else if (_isGridView)
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                  sliver: SliverGrid(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) =>
+                          _buildPlantGridCard(filteredPlants[index], theme),
+                      childCount: filteredPlants.length,
+                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 1.0,
+                    ),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) =>
+                          _buildPlantListCard(filteredPlants[index], theme),
+                      childCount: filteredPlants.length,
+                    ),
+                  ),
+                ),
+            ],
             ],
           ),
         ),
@@ -358,6 +618,343 @@ class _BrowseScreenState extends State<BrowseScreen> {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Toxic plant cards
+  // ---------------------------------------------------------------------------
+
+  Widget _buildToxicGridCard(_ToxicPlantEntry plant, ThemeData theme) {
+    final color = _harmColor(plant.harm);
+    final imageUrl = _toxicPlantImages[plant.slug];
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color ?? AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Image area (58%)
+              Expanded(
+                flex: 58,
+                child: imageUrl != null && imageUrl.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: imageUrl,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        placeholder: (_, __) => Container(
+                          color: color.withOpacity(0.08),
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: color,
+                            ),
+                          ),
+                        ),
+                        errorWidget: (_, __, ___) => Container(
+                          color: color.withOpacity(0.08),
+                          child: Center(
+                            child: Icon(
+                              Icons.warning_amber_rounded,
+                              size: 44,
+                              color: color.withOpacity(0.6),
+                            ),
+                          ),
+                        ),
+                      )
+                    : Container(
+                        color: color.withOpacity(0.08),
+                        child: Center(
+                          child: Icon(
+                            Icons.warning_amber_rounded,
+                            size: 44,
+                            color: color.withOpacity(0.6),
+                          ),
+                        ),
+                      ),
+              ),
+              // Text area (42%)
+              Expanded(
+                flex: 42,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Text(
+                        plant.commonName,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        plant.scientificName,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontStyle: FontStyle.italic,
+                          color: AppTheme.textSecondary,
+                          fontSize: 11,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (plant.localName.isNotEmpty) ...[
+                        const SizedBox(height: 1),
+                        Text(
+                          plant.localName,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppTheme.textTertiary,
+                            fontSize: 10,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      const SizedBox(height: 4),
+                      Text(
+                        plant.symptoms,
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: color.withOpacity(0.85),
+                          height: 1.3,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          // Harm badge — top-right glassmorphic pill
+          Positioned(
+            top: 8,
+            right: 8,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(100),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.85),
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.warning_amber_rounded,
+                          size: 11, color: Colors.white),
+                      const SizedBox(width: 3),
+                      Text(
+                        plant.harm,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: 'Inter',
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToxicListCard(_ToxicPlantEntry plant, ThemeData theme) {
+    final color = _harmColor(plant.harm);
+    final imageUrl = _toxicPlantImages[plant.slug];
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color ?? AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Plant image or warning icon circle
+            ClipOval(
+              child: SizedBox(
+                width: 56,
+                height: 56,
+                child: imageUrl != null && imageUrl.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: imageUrl,
+                        fit: BoxFit.cover,
+                        width: 56,
+                        height: 56,
+                        placeholder: (_, __) => Container(
+                          color: color.withOpacity(0.1),
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: color,
+                            ),
+                          ),
+                        ),
+                        errorWidget: (_, __, ___) => Container(
+                          color: color.withOpacity(0.1),
+                          child: Icon(Icons.warning_amber_rounded,
+                              size: 28, color: color),
+                        ),
+                      )
+                    : Container(
+                        color: color.withOpacity(0.1),
+                        child: Icon(
+                          Icons.warning_amber_rounded,
+                          size: 28,
+                          color: color,
+                        ),
+                      ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          plant.commonName,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Icon(Icons.warning_amber_rounded,
+                          color: color, size: 16),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    plant.scientificName,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontStyle: FontStyle.italic,
+                      color: AppTheme.textSecondary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (plant.localName.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      plant.localName,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppTheme.textTertiary,
+                        fontSize: 11,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: Text(
+                      plant.harm,
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.science_rounded,
+                          size: 12, color: color.withOpacity(0.75)),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          'Toxin: ${plant.toxin}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontSize: 11,
+                            color: AppTheme.textSecondary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.sick_rounded,
+                          size: 12, color: color.withOpacity(0.75)),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          plant.symptoms,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontSize: 11,
+                            color: AppTheme.textSecondary,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Safe-plant cards (unchanged)
+  // ---------------------------------------------------------------------------
+
   Widget _buildPlantGridCard(Plant plant, ThemeData theme) {
     return Container(
       decoration: BoxDecoration(
@@ -383,7 +980,6 @@ class _BrowseScreenState extends State<BrowseScreen> {
         },
         child: Stack(
           children: [
-            // Image fills 65% of card height
             Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -429,7 +1025,6 @@ class _BrowseScreenState extends State<BrowseScreen> {
               ],
             ),
 
-            // DOH badge: glassmorphic pill top-right
             if (plant.isDOHApproved)
               Positioned(
                 top: 8,
@@ -448,11 +1043,8 @@ class _BrowseScreenState extends State<BrowseScreen> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
-                            Icons.verified_rounded,
-                            size: 11,
-                            color: Colors.white,
-                          ),
+                          const Icon(Icons.verified_rounded,
+                              size: 11, color: Colors.white),
                           const SizedBox(width: 3),
                           const Text(
                             'DOH',
@@ -506,7 +1098,6 @@ class _BrowseScreenState extends State<BrowseScreen> {
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              // Circular plant image 56x56
               Container(
                 width: 56,
                 height: 56,
