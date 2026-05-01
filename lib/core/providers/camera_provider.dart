@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart'; // REQUIRED: To create temp f
 
 // --- NEW IMPORT: Your TFLite Service ---
 import 'package:herbascan/core/services/tflite_plant_service.dart';
+import 'package:herbascan/core/services/botanic_verification_engine.dart';
 
 import 'package:herbascan/core/providers/offline_provider.dart';
 import 'package:herbascan/core/services/performance_monitor.dart';
@@ -30,6 +31,8 @@ class CameraProvider extends ChangeNotifier {
 
   // Keep this if you still want online capabilities as backup
   final AdaptiveGradCAMService _adaptiveGradCAM = AdaptiveGradCAMService();
+
+  final BotanicVerificationEngine _botanicEngine = BotanicVerificationEngine();
 
   List<Map<String, dynamic>> _lastPredictions = [];
   bool _isClassifying = false;
@@ -280,7 +283,41 @@ class CameraProvider extends ChangeNotifier {
       
       print('   📁 Image saved to: $imagePath');
       print('   📊 Image bytes: ${imageData.length} bytes');
-      
+
+      // ── Botanical Verification ──────────────────────────────────────────
+      print('🔬 [CameraProvider] Running botanical verification...');
+      final verif = await _botanicEngine.analyze(imageFile);
+
+      if (!verif.hasPlant) {
+        _isClassifying = false;
+        await _performanceMonitor.stopTimer(PerformanceOperation.aiInference);
+        notifyListeners();
+        return {
+          'validation_failed': true,
+          'failure_reason': 'No plant present in the image.',
+          'stage': 2,
+        };
+      }
+
+      if (!verif.isRegistered) {
+        _lastPredictions = verif.predictions;
+        await _performanceMonitor.stopTimer(PerformanceOperation.aiInference);
+        await _usageAnalytics.trackFailedScan();
+        _isClassifying = false;
+        notifyListeners();
+        return {
+          'predictions': verif.predictions,
+          'gradcam_image': null,
+          'method': 'cam',
+          'fallback_used': true,
+          'processing_time_ms': 0.0,
+          'gradCAMPath': null,
+          'summaryGradCAMPath': null,
+          'validation_failed': false,
+        };
+      }
+      // ───────────────────────────────────────────────────────────────────
+
       // Get model name from TFLite service (for matching CAM with prediction)
       // Note: We'll get this after the first prediction, but for now try online first
       String? modelName;
@@ -307,8 +344,9 @@ class CameraProvider extends ChangeNotifier {
           throw Exception("Model could not identify image.");
         }
 
-        // Hard-reject for OOD / Not_Plant in fallback
-        if (tfliteResult.label == 'Not_Plant') {
+        // Hard-reject for OOD / Not_Plant only when botanical verification
+        // did not already confirm a registered plant.
+        if (tfliteResult.label == 'Not_Plant' && verif.resolvedClass == null) {
           print('🚫 [CameraProvider] Fallback TFLite Stage 2 OOD failure');
           _isClassifying = false;
           notifyListeners();
@@ -320,20 +358,24 @@ class CameraProvider extends ChangeNotifier {
         }
 
         
-        final predictions = [{
-          'label': tfliteResult.label,
-          'plantName': tfliteResult.label,
-          'scientificName': tfliteResult.label,
-          'confidence': tfliteResult.confidence,
-          'index': 0,
-          'isDOHApproved': false,
-        }];
-        
+        final predictions = (verif.resolvedClass != null && verif.predictions.isNotEmpty)
+            ? verif.predictions
+            : [{
+                'label': tfliteResult.label,
+                'plantName': tfliteResult.label,
+                'scientificName': tfliteResult.label,
+                'confidence': tfliteResult.confidence,
+                'index': 0,
+                'isDOHApproved': false,
+              }];
+
         _lastPredictions = predictions;
         await _performanceMonitor.stopTimer(PerformanceOperation.aiInference);
-        
-        if (tfliteResult.confidence > 0.5) {
-          await _usageAnalytics.trackSuccessfulScan(tfliteResult.label);
+
+        final topConf = predictions.first['confidence'] as double? ?? 0.0;
+        final topLabel = predictions.first['plantName'] as String? ?? tfliteResult.label;
+        if (topConf > 0.5) {
+          await _usageAnalytics.trackSuccessfulScan(topLabel);
         } else {
           await _usageAnalytics.trackFailedScan();
         }
@@ -352,17 +394,25 @@ class CameraProvider extends ChangeNotifier {
         };
       }
 
-      // If validation failed inside AdaptiveGradCAMService, propagate it immediately
+      // Only respect image quality failures (stage 1).
+      // Stage 2 OOD rejections are overridden by botanical verification.
       if (result['validation_failed'] == true) {
-        _isClassifying = false;
-        notifyListeners();
-        return result;
+        final stage = result['stage'] as int? ?? 2;
+        if (stage == 1) {
+          _isClassifying = false;
+          notifyListeners();
+          return result;
+        }
       }
 
-      // Extract predictions from result
-      final predictions = (result['predictions'] as List<dynamic>?)
-          ?.map((p) => p as Map<String, dynamic>)
-          .toList() ?? [];
+      // Use verification predictions when a registered plant was identified;
+      // fall back to pipeline predictions when verification was unavailable.
+      final predictions = (verif.resolvedClass != null && verif.predictions.isNotEmpty)
+          ? verif.predictions
+          : (result['predictions'] as List<dynamic>?)
+                ?.map((p) => p as Map<String, dynamic>)
+                .toList() ??
+            [];
       
       _lastPredictions = predictions;
       await _performanceMonitor.stopTimer(PerformanceOperation.aiInference);
