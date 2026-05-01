@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter analyze *)",
+      "Bash(dart --version)",
+      "Bash(/mnt/c/flutter/flutter/bin/flutter analyze *)",
+      "Bash(bash *)"
+    ]
+  }
+}

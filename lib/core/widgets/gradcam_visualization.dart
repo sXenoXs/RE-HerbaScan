@@ -2,6 +2,13 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:herbascan/core/models/plant.dart';
+import 'package:herbascan/core/services/xai_explanation_service.dart';
+import 'package:herbascan/core/providers/offline_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:herbascan/core/theme/app_theme.dart';
+import 'package:herbascan/core/services/plant_metadata_service.dart';
 
 class GradCAMVisualization extends StatefulWidget {
   final String? gradCAMPath; // Legacy: file path (deprecated)
@@ -9,22 +16,32 @@ class GradCAMVisualization extends StatefulWidget {
   final Uint8List? gradcamImageBytes; // New: image bytes
   final String originalImagePath;
   final String plantName;
+  final String? scientificName;
   final double confidence;
+  final List<Map<String, dynamic>>? predictions;
   final String? method; // 'grad-cam' or 'cam'
-  final bool? fallbackUsed; // True if offline was fallback
+  final bool? fallbackUsed;
   final VoidCallback? onRefresh;
+  final Function(bool showOverlay, double opacity,
+          Function(bool) onOverlayChanged, Function(double) onOpacityChanged)?
+      onHeatmapTap;
+  final Plant? plant;
 
   const GradCAMVisualization({
     super.key,
-    this.gradCAMPath, // Legacy support
-    this.summaryGradCAMPath, // Legacy support
-    this.gradcamImageBytes, // New format
+    this.gradCAMPath,
+    this.summaryGradCAMPath,
+    this.gradcamImageBytes,
     required this.originalImagePath,
     required this.plantName,
+    this.scientificName,
     required this.confidence,
+    this.predictions,
     this.method,
     this.fallbackUsed,
     this.onRefresh,
+    this.onHeatmapTap,
+    this.plant,
   });
 
   @override
@@ -33,598 +50,240 @@ class GradCAMVisualization extends StatefulWidget {
 
 class _GradCAMVisualizationState extends State<GradCAMVisualization>
     with TickerProviderStateMixin {
-  late TabController _tabController;
   bool _showHeatmap = true;
   double _opacity = 0.6;
+
+  // Explanation state
+  final XAIExplanationService _explanationService = XAIExplanationService();
+  String? _explanationText;
+  bool _isLoadingExplanation = false;
+  String? _explanationError;
+  String? _explanationSource;
+  bool _shouldForceOnline = false;
+  bool _isReadMoreExpanded = false;
+  
+  String? _aiVisionSummary;
+
+  static const int _collapsedMaxLines = 4;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadExplanation(forceOnline: false);
+      }
+    });
   }
 
   @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
+  void didUpdateWidget(GradCAMVisualization oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final heatmapChanged =
+        oldWidget.gradcamImageBytes != widget.gradcamImageBytes ||
+            oldWidget.gradCAMPath != widget.gradCAMPath;
+
+    if (oldWidget.scientificName != widget.scientificName ||
+        oldWidget.plantName != widget.plantName ||
+        oldWidget.confidence != widget.confidence ||
+        heatmapChanged) {
+      if (heatmapChanged && _shouldForceOnline) {
+        _loadExplanation(forceOnline: true);
+        _shouldForceOnline = false;
+      } else {
+        _loadExplanation(forceOnline: false);
+      }
+    }
+  }
+
+  Future<void> _loadExplanation({bool forceOnline = false}) async {
+    final effectiveScientificName =
+        widget.scientificName?.trim().isEmpty == true
+            ? null
+            : (widget.scientificName ?? widget.plantName);
+    if (effectiveScientificName == null || effectiveScientificName.isEmpty) {
+      setState(() {
+        _explanationError = 'Plant name not available';
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoadingExplanation = true;
+      _explanationError = null;
+      _explanationSource = null;
+    });
+
+    if (widget.plant != null) {
+      try {
+        final overrideMetadata = await PlantMetadataService().get(widget.plant!.id);
+        if (mounted && overrideMetadata != null && overrideMetadata.aiVisionSummary != null) {
+          setState(() {
+            _aiVisionSummary = overrideMetadata.aiVisionSummary;
+          });
+        }
+      } catch (_) {}
+    }
+
+    try {
+      final offlineProvider =
+          Provider.of<OfflineProvider>(context, listen: false);
+      final isOnline = offlineProvider.isOnline;
+
+      Uint8List? originalImageBytes;
+      Uint8List? heatmapImageBytes;
+
+      try {
+        final originalFile = File(widget.originalImagePath);
+        if (await originalFile.exists()) {
+          originalImageBytes = await originalFile.readAsBytes();
+        }
+      } catch (e) {
+        debugPrint('⚠️ Error loading original image: $e');
+      }
+
+      heatmapImageBytes = widget.gradcamImageBytes;
+      if (heatmapImageBytes == null && widget.gradCAMPath != null) {
+        try {
+          final heatmapFile = File(widget.gradCAMPath!);
+          if (await heatmapFile.exists()) {
+            heatmapImageBytes = await heatmapFile.readAsBytes();
+          }
+        } catch (e) {
+          debugPrint('⚠️ Error loading heatmap image: $e');
+        }
+      }
+
+      final shouldTryOnline = forceOnline ||
+          (widget.method == 'grad-cam' &&
+              !(widget.fallbackUsed == true) &&
+              isOnline);
+
+      final explanation = await _explanationService.generateExplanation(
+        plantName: widget.plantName,
+        scientificName: effectiveScientificName,
+        confidence: widget.confidence,
+        predictions: widget.predictions ?? [],
+        imagePath: widget.originalImagePath,
+        originalImageBytes: originalImageBytes,
+        heatmapImagePath: widget.gradCAMPath,
+        heatmapImageBytes: heatmapImageBytes,
+        isOnline: shouldTryOnline ? isOnline : false,
+        forceOnline: shouldTryOnline,
+      );
+
+      if (mounted) {
+        setState(() {
+          _explanationText = explanation;
+          final serviceSource = _explanationService.getLastExplanationSource();
+          if (widget.method == 'grad-cam' && !(widget.fallbackUsed == true)) {
+            _explanationSource = 'online';
+          } else {
+            _explanationSource = serviceSource;
+          }
+          _isLoadingExplanation = false;
+          if (explanation == null) {
+            _explanationError = 'Unable to generate explanation';
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingExplanation = false;
+          _explanationError = 'Error loading explanation: $e';
+          _explanationSource = null;
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final hasHeatmap = widget.gradcamImageBytes != null || widget.gradCAMPath != null;
-    
-    return Card(
-      elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        // CRITICAL FIX: Use SingleChildScrollView to prevent overflow
-        // Especially important when heatmap is missing and error widget is shown
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min, // Use min to prevent overflow
-            children: [
-              // Header
-              Row(
-                children: [
-                  Icon(
-                    Icons.visibility,
-                    color: theme.primaryColor,
-                    size: 24,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Explainable AI - ${widget.method == 'grad-cam' ? 'Grad-CAM' : 'CAM'}',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        if (widget.method != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: _buildMethodBadge(theme),
-                          ),
-                      ],
-                    ),
-                  ),
-                  if (widget.onRefresh != null)
-                    IconButton(
-                      onPressed: widget.onRefresh,
-                      icon: const Icon(Icons.refresh),
-                      tooltip: 'Regenerate GradCAM',
-                    ),
-                ],
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Plant info
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: theme.primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.local_florist,
-                      color: theme.primaryColor,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.plantName,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            'Confidence: ${(widget.confidence.clamp(0.0, 1.0) * 100).toStringAsFixed(1)}%',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.primaryColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Tab bar
-              TabBar(
-                controller: _tabController,
-                tabs: const [
-                  Tab(
-                    icon: Icon(Icons.image),
-                    text: 'Original',
-                  ),
-                  Tab(
-                    icon: Icon(Icons.thermostat),
-                    text: 'Heatmap',
-                  ),
-                  Tab(
-                    icon: Icon(Icons.analytics),
-                    text: 'Summary',
-                  ),
-                ],
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Tab content - use SizedBox with explicit height
-              // CRITICAL: TabBarView requires explicit height, use smaller when heatmap missing
-              SizedBox(
-                height: hasHeatmap ? 280 : 220, // Reduced further to prevent overflow
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildOriginalImage(),
-                    _buildHeatmapImage(),
-                    _buildSummaryImage(),
-                  ],
-                ),
-              ),
-              
-              // Only show spacing if controls/legend will be shown
-              if (hasHeatmap) const SizedBox(height: 16),
-              
-              // Controls - only show if heatmap is available
-              _buildControls(),
-              
-              // Only show spacing if legend will be shown
-              if (hasHeatmap) const SizedBox(height: 8),
-              
-              // Legend - only show if heatmap is available
-              if (hasHeatmap) _buildLegend(),
-            ],
+    final hasHeatmap =
+        widget.gradcamImageBytes != null || widget.gradCAMPath != null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Method banner
+        _buildMethodBanner(theme),
+        const SizedBox(height: 12),
+        // ROADMAP B 3.2: Plain-language label above heatmap
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            (_aiVisionSummary != null && _aiVisionSummary!.isNotEmpty)
+                ? _aiVisionSummary!
+                : 'The highlighted areas show what the AI examined to identify this plant. Brighter areas were most important to the decision.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              height: 1.4,
+            ),
           ),
         ),
-      ),
-    );
-  }
+        // Heatmap image
+        _buildHeatmapContainer(theme, hasHeatmap),
+        const SizedBox(height: 16),
 
-  Widget _buildOriginalImage() {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Image.file(
-          File(widget.originalImagePath),
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: double.infinity,
-          errorBuilder: (context, error, stackTrace) {
-            return _buildErrorWidget('Original image not found');
-          },
-        ),
-      ),
-    );
-  }
+        // Opacity slider only (slider 0 = off, replaces separate toggle)
+        if (hasHeatmap) ...[
+          _buildOpacitySlider(theme),
+          const SizedBox(height: 16),
 
-  Widget _buildHeatmapImage() {
-    // Check if we have image bytes (new format)
-    final hasImageBytes = widget.gradcamImageBytes != null;
-    // Check if we have file path (legacy format)
-    final hasFilePath = widget.gradCAMPath != null;
+          // Color legend: horizontal gradient bar
+          _buildColorLegend(theme),
+          const SizedBox(height: 16),
+        ],
 
-    // Debug logging
-    print('🔍 [GradCAMVisualization] _buildHeatmapImage:');
-    print('   method: ${widget.method}');
-    print('   hasImageBytes: $hasImageBytes');
-    print('   hasFilePath: $hasFilePath');
-    if (hasImageBytes) {
-      print('   imageBytes size: ${widget.gradcamImageBytes!.length} bytes');
-    }
-
-    if (!hasImageBytes && !hasFilePath) {
-      final methodName = widget.method == 'cam' ? 'CAM' : 'Grad-CAM';
-      print('   ⚠️ WARNING: No heatmap available for $methodName');
-      // CRITICAL FIX: Use LayoutBuilder to respect parent constraints
-      // TabBarView provides fixed constraints (220px), we must fit exactly
-      return LayoutBuilder(
-        builder: (context, constraints) {
-          final padding = 8.0; // Minimal padding
-          
-          // Fixed sizes that fit within 220px: icon(28) + spacing(4) + title(32) + spacing(4) + desc(40) + spacing(4) + image(70) + padding(16) = ~198px
-          final iconSize = 28.0;
-          final titleFontSize = 11.0;
-          final descFontSize = 9.0;
-          final spacing = 4.0;
-          final imageMaxHeight = 70.0; // Fixed size to prevent overflow
-          
-          return Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey.shade300),
-              color: Colors.grey.shade100,
-            ),
-            // CRITICAL: Use SizedBox.expand to fill TabBarView constraints exactly
-            // Then use Center to center the content
-            child: SizedBox.expand(
-              child: Padding(
-                padding: EdgeInsets.all(padding),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min, // Critical: use min
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Icon - fixed size
-                    SizedBox(
-                      height: iconSize,
-                      child: Icon(
-                        Icons.warning_amber_rounded,
-                        size: iconSize,
-                        color: Colors.orange.shade300,
-                      ),
-                    ),
-                    SizedBox(height: spacing),
-                    // Title - fixed height
-                    SizedBox(
-                      height: 32, // Enough for 2 lines
-                      child: Text(
-                        '$methodName Heatmap Not Available',
-                        style: TextStyle(
-                          fontSize: titleFontSize,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey.shade700,
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    SizedBox(height: spacing),
-                    // Description - fixed height
-                    SizedBox(
-                      height: 40, // Enough for 3 lines of 9px font
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: Text(
-                          widget.method == 'cam'
-                              ? 'Offline CAM heatmap generation failed. This may be due to model initialization issues or image processing errors.'
-                              : 'Grad-CAM heatmap generation failed. Please check your internet connection or try again.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: descFontSize,
-                            color: Colors.grey.shade600,
-                          ),
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: spacing),
-                    // Image - fixed size
-                    SizedBox(
-                      height: imageMaxHeight,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.file(
-                            File(widget.originalImagePath),
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Center(
-                                child: Icon(
-                                  Icons.image_not_supported,
-                                  size: 24,
-                                  color: Colors.grey.shade400,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      );
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: _showHeatmap
-            ? Stack(
-                children: [
-                  // Original image
-                  Image.file(
-                    File(widget.originalImagePath),
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: double.infinity,
-                    errorBuilder: (context, error, stackTrace) {
-                      return _buildErrorWidget('Original image not found');
-                    },
-                  ),
-                  // Heatmap overlay
-                  Opacity(
-                    opacity: _opacity,
-                    child: hasImageBytes
-                        ? Image.memory(
-                            widget.gradcamImageBytes!,
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: double.infinity,
-                            errorBuilder: (context, error, stackTrace) {
-                              final methodName =
-                                  widget.method == 'cam' ? 'CAM' : 'Grad-CAM';
-                              return _buildErrorWidget(
-                                  'Failed to decode $methodName heatmap image');
-                            },
-                          )
-                        : Image.file(
-                            File(widget.gradCAMPath!),
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: double.infinity,
-                            errorBuilder: (context, error, stackTrace) {
-                              final methodName =
-                                  widget.method == 'cam' ? 'CAM' : 'Grad-CAM';
-                              return _buildErrorWidget(
-                                  '$methodName heatmap not found');
-                            },
-                          ),
-                  ),
-                ],
-              )
-            : Image.file(
-                File(widget.originalImagePath),
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
-                errorBuilder: (context, error, stackTrace) {
-                  return _buildErrorWidget('Original image not found');
-                },
-              ),
-      ),
-    );
-  }
-
-  Widget _buildSummaryImage() {
-    if (widget.summaryGradCAMPath == null) {
-      return _buildErrorWidget('Summary GradCAM not available');
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: _showHeatmap
-            ? Stack(
-                children: [
-                  // Original image
-                  Image.file(
-                    File(widget.originalImagePath),
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: double.infinity,
-                    errorBuilder: (context, error, stackTrace) {
-                      return _buildErrorWidget('Original image not found');
-                    },
-                  ),
-                  // Summary heatmap overlay
-                  Opacity(
-                    opacity: _opacity,
-                    child: Image.file(
-                      File(widget.summaryGradCAMPath!),
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: double.infinity,
-                      errorBuilder: (context, error, stackTrace) {
-                        return _buildErrorWidget('Summary GradCAM not found');
-                      },
-                    ),
-                  ),
-                ],
-              )
-            : Image.file(
-                File(widget.originalImagePath),
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
-                errorBuilder: (context, error, stackTrace) {
-                  return _buildErrorWidget('Original image not found');
-                },
-              ),
-      ),
-    );
-  }
-
-  Widget _buildErrorWidget(String message) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 48,
-              color: Colors.grey.shade400,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 14,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildControls() {
-    // CRITICAL FIX: Only show controls if heatmap is available
-    // Don't show toggle when heatmap is missing (causes confusion)
-    final hasHeatmap = widget.gradcamImageBytes != null || widget.gradCAMPath != null;
-    
-    if (!hasHeatmap) {
-      // Don't show controls when heatmap is not available
-      return const SizedBox.shrink();
-    }
-    
-    return Column(
-      children: [
-        // Show heatmap toggle - only when heatmap is available
-        Row(
-          children: [
-            Icon(
-              Icons.visibility,
-              size: 20,
-              color: Colors.grey.shade600,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'Show Heatmap Overlay',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade700,
-              ),
-            ),
-            const Spacer(),
-            Switch(
-              value: _showHeatmap,
-              onChanged: (value) {
-                setState(() {
-                  _showHeatmap = value;
-                });
-              },
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 12),
-
-        // Opacity slider
-        Row(
-          children: [
-            Icon(
-              Icons.opacity,
-              size: 20,
-              color: Colors.grey.shade600,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'Heatmap Opacity',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade700,
-              ),
-            ),
-            const Spacer(),
-            Text(
-              '${(_opacity * 100).round()}%',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey.shade600,
-              ),
-            ),
-          ],
-        ),
-
-        Slider(
-          value: _opacity,
-          min: 0.0,
-          max: 1.0,
-          divisions: 20,
-          onChanged: (value) {
-            setState(() {
-              _opacity = value;
-            });
-          },
-        ),
+        // AI explanation with inline Read More / Show Less
+        _buildExplanationSection(theme),
       ],
     );
   }
 
-  Widget _buildLegend() {
+  Widget _buildMethodBanner(ThemeData theme) {
+    if (widget.method == null) return const SizedBox.shrink();
+
+    final isOnline = widget.method == 'grad-cam' && widget.fallbackUsed != true;
+    final isFallback = widget.fallbackUsed == true;
+
+    final Color bannerColor;
+    final String bannerText;
+    final IconData bannerIcon;
+
+    if (isOnline) {
+      bannerColor = AppTheme.safeGreen;
+      bannerText = 'Cloud AI Reasoning Heatmap';
+      bannerIcon = Icons.cloud_done_rounded;
+    } else if (isFallback) {
+      bannerColor = AppTheme.warningAmber;
+      bannerText = 'Offline CAM (Fallback)';
+      bannerIcon = Icons.sync_problem_rounded;
+    } else {
+      bannerColor = AppTheme.warningAmber;
+      bannerText = 'Offline CAM';
+      bannerIcon = Icons.offline_bolt_rounded;
+    }
+
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: bannerColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: bannerColor.withOpacity(0.3)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              Icon(
-                Icons.info_outline,
-                size: 16,
-                color: Colors.grey.shade600,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Heatmap Legend',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade700,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 8),
-
-          // Use Wrap to prevent overflow
-          Wrap(
-            spacing: 16,
-            runSpacing: 8,
-            children: [
-              _buildLegendItem(Colors.blue, 'Low Attention'),
-              _buildLegendItem(Colors.green, 'Medium Attention'),
-              _buildLegendItem(Colors.red, 'High Attention'),
-            ],
-          ),
-
-          const SizedBox(height: 8),
-
+          Icon(bannerIcon, size: 16, color: bannerColor),
+          const SizedBox(width: 8),
           Text(
-            'The heatmap shows which parts of the image the AI model focused on when making its prediction. Red areas indicate high attention, while blue areas indicate low attention.',
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey.shade600,
+            bannerText,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: bannerColor,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -632,77 +291,444 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
     );
   }
 
-  Widget _buildLegendItem(Color color, String label) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(2),
-          ),
+  Widget _buildHeatmapContainer(ThemeData theme, bool hasHeatmap) {
+    final height = hasHeatmap ? 280.0 : 180.0;
+
+    return GestureDetector(
+      onTap: hasHeatmap && widget.onHeatmapTap != null
+          ? () {
+              widget.onHeatmapTap!(
+                _showHeatmap,
+                _opacity,
+                (bool val) => setState(() => _showHeatmap = val),
+                (double val) => setState(() => _opacity = val),
+              );
+            }
+          : null,
+      child: Container(
+        height: height,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 10,
-            color: Colors.grey.shade600,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: hasHeatmap
+              ? Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.file(
+                      File(widget.originalImagePath),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) =>
+                          _buildImageErrorPlaceholder(theme),
+                    ),
+                    if (_showHeatmap && _opacity > 0)
+                      Opacity(
+                        opacity: _opacity,
+                        child: widget.gradcamImageBytes != null
+                            ? Image.memory(
+                                widget.gradcamImageBytes!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) =>
+                                    const SizedBox.shrink(),
+                              )
+                            : Image.file(
+                                File(widget.gradCAMPath!),
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) =>
+                                    const SizedBox.shrink(),
+                              ),
+                      ),
+                    // Tap to expand hint
+                    Positioned(
+                      bottom: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.fullscreen_rounded,
+                                color: Colors.white, size: 14),
+                            SizedBox(width: 4),
+                            Text(
+                              'Expand',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : _buildNoHeatmapPlaceholder(theme),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoHeatmapPlaceholder(ThemeData theme) {
+    final methodName = widget.method == 'cam' ? 'CAM' : 'AI Reasoning Heatmap';
+    return Container(
+      color: theme.colorScheme.surfaceContainerHighest,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.warning_amber_rounded,
+              size: 40,
+              color: AppTheme.warningAmber,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '$methodName Not Available',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 4),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                widget.method == 'cam'
+                    ? 'Offline CAM heatmap generation failed.'
+                    : 'AI heatmap generation failed. Check your connection.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageErrorPlaceholder(ThemeData theme) {
+    return Container(
+      color: theme.colorScheme.surfaceContainerHighest,
+      child: Center(
+        child: Icon(
+          Icons.broken_image_outlined,
+          size: 48,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOpacitySlider(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.layers_rounded,
+              size: 16,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Heatmap Opacity',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const Spacer(),
+            Text(
+              '${(_opacity * 100).round()}%',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+        SliderTheme(
+          data: SliderThemeData(
+            trackHeight: 3,
+            thumbShape:
+                const RoundSliderThumbShape(enabledThumbRadius: 7),
+            overlayShape:
+                const RoundSliderOverlayShape(overlayRadius: 14),
+            activeTrackColor: AppTheme.botanicalPrimary,
+            inactiveTrackColor:
+                AppTheme.botanicalPrimary.withOpacity(0.2),
+            thumbColor: AppTheme.botanicalPrimary,
+            overlayColor: AppTheme.botanicalPrimary.withOpacity(0.12),
+          ),
+          child: Slider(
+            value: _opacity,
+            min: 0.0,
+            max: 1.0,
+            divisions: 20,
+            onChanged: (value) {
+              setState(() {
+                _opacity = value;
+                _showHeatmap = value > 0;
+              });
+            },
           ),
         ),
       ],
     );
   }
 
-  Widget _buildMethodBadge(ThemeData theme) {
-    if (widget.method == null) return const SizedBox.shrink();
+  Widget _buildColorLegend(ThemeData theme) {
+    return Row(
+      children: [
+        Text(
+          'Low',
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Container(
+            height: 8,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(4),
+              gradient: const LinearGradient(
+                colors: [Colors.blue, Colors.green, Colors.red],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          'High',
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
 
-    final isOnline = widget.method == 'grad-cam';
-    final isFallback = widget.fallbackUsed == true;
+  Widget _buildExplanationSection(ThemeData theme) {
+    if (_isLoadingExplanation) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                    AppTheme.botanicalPrimary),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Generating explanation…',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
-    Color badgeColor;
-    IconData badgeIcon;
-    String badgeText;
+    if (_explanationError != null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          children: [
+            Text(
+              _explanationError!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: () => _loadExplanation(),
+              icon: const Icon(Icons.refresh_rounded, size: 16),
+              label: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
 
-    if (isOnline && !isFallback) {
-      badgeColor = Colors.green;
-      badgeIcon = Icons.cloud;
-      badgeText = 'Online (Grad-CAM)';
-    } else if (isFallback) {
-      badgeColor = Colors.orange;
-      badgeIcon = Icons.sync_problem;
-      badgeText = 'Offline (Fallback)';
-    } else {
-      badgeColor = Colors.blue;
-      badgeIcon = Icons.offline_bolt;
-      badgeText = 'Offline (CAM)';
+    if (_explanationText == null || _explanationText!.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.info_outline_rounded,
+              size: 16,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Explanation not available.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header row with source badge
+        Row(
+          children: [
+            Icon(
+              Icons.psychology_rounded,
+              size: 18,
+              color: AppTheme.botanicalPrimary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'AI Explanation',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const Spacer(),
+            if (_explanationSource != null)
+              _buildSourceBadge(theme, _explanationSource!),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // Inline Read More / Show Less with AnimatedSize
+        AnimatedSize(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOutCubic,
+          child: _isReadMoreExpanded
+              ? MarkdownBody(
+                  data: _explanationText!,
+                  styleSheet: _buildMarkdownStyle(theme),
+                )
+              : _buildCollapsedText(theme),
+        ),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: () {
+            setState(() {
+              _isReadMoreExpanded = !_isReadMoreExpanded;
+            });
+          },
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _isReadMoreExpanded ? 'Show Less' : 'Read More',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: AppTheme.botanicalPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(
+                _isReadMoreExpanded
+                    ? Icons.expand_less_rounded
+                    : Icons.expand_more_rounded,
+                size: 16,
+                color: AppTheme.botanicalPrimary,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCollapsedText(ThemeData theme) {
+    // Strip markdown for the collapsed preview using replaceAllMapped so the
+    // captured group content is preserved (replaceAll with r'$1' is a literal
+    // string in Dart, not a backreference, which caused "$1" to appear).
+    final plainText = _explanationText!
+        .replaceAll(RegExp(r'#{1,6}\s'), '')
+        .replaceAllMapped(RegExp(r'\*\*([^*]+)\*\*'), (m) => m.group(1) ?? '')
+        .replaceAllMapped(RegExp(r'\*([^*]+)\*'), (m) => m.group(1) ?? '')
+        .replaceAllMapped(RegExp(r'`([^`]+)`'), (m) => m.group(1) ?? '');
+
+    return Text(
+      plainText,
+      maxLines: _collapsedMaxLines,
+      overflow: TextOverflow.fade,
+      style: theme.textTheme.bodyMedium?.copyWith(
+        height: 1.6,
+        color: theme.colorScheme.onSurface.withOpacity(0.87),
+      ),
+    );
+  }
+
+  Widget _buildSourceBadge(ThemeData theme, String source) {
+    final Color badgeColor;
+    final IconData badgeIcon;
+    final String badgeLabel;
+
+    switch (source) {
+      case 'online':
+        badgeColor = AppTheme.safeGreen;
+        badgeIcon = Icons.auto_awesome_rounded;
+        badgeLabel = 'Online';
+      case 'cache':
+        badgeColor = AppTheme.warningAmber;
+        badgeIcon = Icons.cached_rounded;
+        badgeLabel = 'Cached';
+      case 'fallback':
+        badgeColor = AppTheme.warningAmber;
+        badgeIcon = Icons.info_outline_rounded;
+        badgeLabel = 'Fallback';
+      default:
+        badgeColor = Colors.blue;
+        badgeIcon = Icons.storage_rounded;
+        badgeLabel = 'Offline';
     }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: badgeColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: badgeColor.withOpacity(0.3),
-          width: 1,
-        ),
+        borderRadius: BorderRadius.circular(100),
+        border: Border.all(color: badgeColor.withOpacity(0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            badgeIcon,
-            size: 14,
-            color: badgeColor,
-          ),
+          Icon(badgeIcon, size: 11, color: badgeColor),
           const SizedBox(width: 4),
           Text(
-            badgeText,
+            badgeLabel,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: FontWeight.w600,
               color: badgeColor,
             ),
@@ -711,6 +737,102 @@ class _GradCAMVisualizationState extends State<GradCAMVisualization>
       ),
     );
   }
+
+  MarkdownStyleSheet _buildMarkdownStyle(ThemeData theme) {
+    return MarkdownStyleSheet(
+      h1: theme.textTheme.headlineSmall?.copyWith(
+        fontWeight: FontWeight.bold,
+        color: theme.colorScheme.onSurface,
+        fontSize: 22,
+        height: 1.3,
+      ),
+      h1Padding: const EdgeInsets.only(bottom: 4, top: 8),
+      h2: theme.textTheme.titleLarge?.copyWith(
+        fontWeight: FontWeight.bold,
+        color: theme.colorScheme.onSurface,
+        fontSize: 20,
+        height: 1.3,
+      ),
+      h2Padding: const EdgeInsets.only(bottom: 4, top: 8),
+      h3: theme.textTheme.titleMedium?.copyWith(
+        fontWeight: FontWeight.bold,
+        color: theme.colorScheme.onSurface,
+        fontSize: 18,
+        height: 1.3,
+      ),
+      h3Padding: const EdgeInsets.only(bottom: 4, top: 8),
+      p: theme.textTheme.bodyMedium?.copyWith(
+        height: 1.7,
+        color: theme.colorScheme.onSurface.withOpacity(0.87),
+        fontSize: 14,
+      ),
+      pPadding: const EdgeInsets.only(bottom: 8, top: 2),
+      strong: theme.textTheme.bodyMedium?.copyWith(
+        fontWeight: FontWeight.bold,
+        color: theme.colorScheme.onSurface,
+        fontSize: 16,
+        height: 1.4,
+      ),
+      em: theme.textTheme.bodyMedium?.copyWith(
+        fontStyle: FontStyle.italic,
+        color: theme.colorScheme.onSurface.withOpacity(0.7),
+      ),
+      listBullet: theme.textTheme.bodyMedium?.copyWith(
+        color: AppTheme.botanicalPrimary,
+        fontSize: 16,
+      ),
+      listIndent: 24.0,
+      listBulletPadding: const EdgeInsets.only(right: 8),
+      blockquote: theme.textTheme.bodyMedium?.copyWith(
+        color: theme.colorScheme.onSurface.withOpacity(0.7),
+        fontStyle: FontStyle.italic,
+        backgroundColor:
+            theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+      ),
+      blockquotePadding: const EdgeInsets.all(12),
+      blockquoteDecoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(4),
+        border: Border(
+          left: BorderSide(color: AppTheme.botanicalPrimary, width: 4),
+        ),
+      ),
+      code: theme.textTheme.bodySmall?.copyWith(
+        backgroundColor: theme.colorScheme.surfaceContainerHighest,
+        fontFamily: 'monospace',
+        color: theme.colorScheme.onSurface,
+      ),
+      codeblockPadding: const EdgeInsets.all(12),
+      codeblockDecoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      horizontalRuleDecoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: theme.dividerColor, width: 1),
+        ),
+      ),
+      a: theme.textTheme.bodyMedium?.copyWith(
+        color: AppTheme.botanicalPrimary,
+        decoration: TextDecoration.underline,
+      ),
+      tableHead: theme.textTheme.bodyMedium?.copyWith(
+        fontWeight: FontWeight.bold,
+        color: theme.colorScheme.onSurface,
+        backgroundColor:
+            theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+      ),
+      tableBody: theme.textTheme.bodyMedium?.copyWith(
+        color: theme.colorScheme.onSurface.withOpacity(0.87),
+      ),
+      tableBorder: TableBorder.all(color: theme.dividerColor, width: 1),
+      tableHeadAlign: TextAlign.center,
+      tableCellsPadding: const EdgeInsets.all(8),
+      blockSpacing: 12.0,
+      textScaleFactor: 1.0,
+    );
+  }
+
 }
 
 /// Simple GradCAM preview widget for quick display
@@ -758,17 +880,10 @@ class GradCAMPreview extends StatelessWidget {
                   ),
                   const Spacer(),
                   if (gradCAMPath != null)
-                    Icon(
-                      Icons.check_circle,
-                      color: Colors.green,
-                      size: 16,
-                    )
+                    const Icon(Icons.check_circle, color: Colors.green, size: 16)
                   else
-                    Icon(
-                      Icons.error_outline,
-                      color: Colors.orange,
-                      size: 16,
-                    ),
+                    const Icon(Icons.error_outline,
+                        color: Colors.orange, size: 16),
                 ],
               ),
               const SizedBox(height: 8),
@@ -827,7 +942,7 @@ class GradCAMPreview extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'GradCAM not available',
+                          'AI Reasoning Heatmap not available',
                           style: TextStyle(
                             color: Colors.grey.shade600,
                             fontSize: 12,

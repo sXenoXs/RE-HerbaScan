@@ -1,0 +1,18 @@
+# requirements.txt
+httpx
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+python-multipart>=0.0.12
+gunicorn>=21.2.0
+
+# USE THE CPU VERSION
+tensorflow>=2.16.0
+keras>=3.13.0
+numpy>=1.26.0,<2.0.0
+
+pillow>=11.0.0
+opencv-python-headless>=4.9.0  # Use headless to avoid libGL container errors
+python-dotenv>=1.0.0
+requests>=2.32.0
+PyJWT>=2.8.0
+loguru>=0.7.2
