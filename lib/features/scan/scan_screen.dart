@@ -9,6 +9,7 @@ import 'dart:io';
 import 'package:herbascan/core/constants/toxic_plant_blacklist.dart';
 import 'package:herbascan/core/providers/camera_provider.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
+import 'package:herbascan/core/widgets/contraindication_engine_widget.dart';
 import 'package:herbascan/features/scan/no_match_found_screen.dart';
 import 'package:herbascan/features/scan/plant_result_screen.dart';
 import 'package:herbascan/features/scan/poor_image_quality_screen.dart';
@@ -111,6 +112,28 @@ class _ScanScreenState extends State<ScanScreen>
     });
   }
 
+  bool _isNoMatchOrUnknown(List<Map<String, dynamic>> predictions) {
+    if (predictions.isEmpty) return true;
+    final top = predictions.first;
+    final confidence = (top['confidence'] as num?)?.toDouble() ?? 0.0;
+    return _isUnknownLabel(top) || confidence < kLowConfidenceThreshold;
+  }
+
+  /// True when the top prediction's label itself signals "not a known plant"
+  /// (UnknownPlant / Not_Plant / empty), independent of confidence.
+  /// Used to distinguish "Low Confidence Match" (real guess, low score) from
+  /// "No Plant Match Found" (model explicitly said unknown).
+  bool _isUnknownLabel(Map<String, dynamic> top) {
+    final label = (top['plantName'] as String? ?? top['label'] as String? ?? '')
+        .toLowerCase()
+        .trim();
+    final normalized = label.replaceAll(RegExp(r'[_\s]'), '');
+    return normalized.isEmpty ||
+        normalized == 'unknown' ||
+        normalized == 'unknownplant' ||
+        normalized == 'notplant';
+  }
+
   Future<void> _captureImage() async {
     final cameraProvider = Provider.of<CameraProvider>(context, listen: false);
     try {
@@ -165,6 +188,19 @@ class _ScanScreenState extends State<ScanScreen>
                   imagePath: image.path,
                   isToxicPlant: true,
                   detectedToxicPlantName: toxicPlantDisplayName(topLabel),
+                ),
+              ),
+            );
+          } else if (_isNoMatchOrUnknown(predictions)) {
+            if (!mounted) return;
+            final unknownLabel =
+                predictions.isEmpty ? true : _isUnknownLabel(predictions.first);
+            await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => NoMatchFoundScreen(
+                  imagePath: image.path,
+                  lookalikePredictions: predictions,
+                  isLowConfidence: !unknownLabel,
                 ),
               ),
             );
@@ -256,6 +292,19 @@ class _ScanScreenState extends State<ScanScreen>
                   imagePath: image.path,
                   isToxicPlant: true,
                   detectedToxicPlantName: toxicPlantDisplayName(topLabel),
+                ),
+              ),
+            );
+          } else if (_isNoMatchOrUnknown(predictions)) {
+            if (!mounted) return;
+            final unknownLabel =
+                predictions.isEmpty ? true : _isUnknownLabel(predictions.first);
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => NoMatchFoundScreen(
+                  imagePath: image.path,
+                  lookalikePredictions: predictions,
+                  isLowConfidence: !unknownLabel,
                 ),
               ),
             );

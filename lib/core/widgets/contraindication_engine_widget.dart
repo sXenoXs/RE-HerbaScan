@@ -43,8 +43,9 @@ class SafetyDisclaimerWidget extends StatelessWidget {
   }
 }
 
-/// Confidence threshold below which safety info is suppressed (ROADMAP B).
-const double kLowConfidenceThreshold = 0.60;
+/// Confidence threshold below which a prediction is treated as a no-match
+/// (routed to NoMatchFoundScreen) and safety info is suppressed.
+const double kLowConfidenceThreshold = 0.90;
 
 /// Deterministic Contraindication Engine: color-coded safety cards from
 /// structured SafetyProfile only (no LLM). Always shows disclaimer below.

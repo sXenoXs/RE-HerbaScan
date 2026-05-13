@@ -51,21 +51,11 @@ class OtaModelService {
 
   /// Call this in `main()` before `runApp()`. Never throws.
   Future<void> initialize() async {
-    if (kIsWeb) return;
-
-    try {
-      final docsDir = await getApplicationDocumentsDirectory();
-      _modelsDir = Directory('${docsDir.path}/models');
-
-      if (await _allFilesExist()) {
-        _otaAvailable = true;
-        debugPrint('✅ [OtaModelService] Cached OTA model files found.');
-      }
-
-      await _checkAndUpdate();
-    } catch (e) {
-      debugPrint('⚠️ [OtaModelService] initialize() non-fatal error: $e');
-    }
+    // OTA temporarily disabled: Supabase live-models holds a model whose
+    // class index order does not match the bundled class_indices.json,
+    // so we force the app to use bundled assets.
+    debugPrint('🚫 [OtaModelService] OTA disabled — using bundled assets.');
+    return;
   }
 
   // ── Private helpers ───────────────────────────────────────────────────────

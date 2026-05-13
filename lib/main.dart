@@ -43,9 +43,10 @@ void main() async {
     );
   }
 
-  // Check for updated ML model files from Supabase; falls back to bundled
-  // assets silently if there is no network or the download fails.
-  await OtaModelService.instance.initialize();
+  // OTA disabled — Supabase live-models bucket holds a stale model whose
+  // class index order does not match the bundled class_indices.json.
+  // Force the app to use the bundled assets until Supabase is updated.
+  // await OtaModelService.instance.initialize();
 
   // Start tracking app start time
   final performanceMonitor = PerformanceMonitor();

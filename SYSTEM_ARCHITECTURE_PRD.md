@@ -4,7 +4,7 @@
 > **Revised** to reflect CHANGELOG through v0.9.6 (April 4, 2026). Covers v0.9.4 (March 10), v0.9.5 (March 16), and v0.9.6 (April 4) releases.
 >
 > **Source of Truth Hierarchy:** This document is derived from `CHANGELOG.md` as the absolute authority.
-> Any README or setup guide that contradicts the Changelog (e.g., mentions of the Gemini live LLM or the
+> Any README or setup guide that contradicts the Changelog (e.g., mentions of a live LLM or the
 > deprecated HerbaScan custom model) has been resolved in favour of the Changelog.
 
 ---
@@ -51,7 +51,7 @@ The application serves communities—particularly in rural areas with limited co
 | -------------------- | --------------------------------------------------------------------------------- |
 | **Overall progress** | ~90% — all core features implemented; beta testing pending                        |
 | **AI Model**         | MobileNetV2-only (HerbaScan custom model deprecated in Phase 34)                  |
-| **XAI Explanations** | Fully deterministic — no live LLM at runtime (Gemini removed in CHANGELOG)        |
+| **XAI Explanations** | Fully deterministic — no live LLM at runtime                                      |
 | **Plant Database**   | 42 medicinal plants + 1 OOD class, all migrated to structured 4-section format (Phase 35)       |
 | **Cloud Backend**    | FastAPI on Railway (`re-herbascan-production.up.railway.app`) — Grad-CAM provider |
 | **Auth & Cloud DB**  | Supabase (Auth, PostgreSQL, Storage, Edge Functions)                              |
@@ -218,7 +218,7 @@ App Launch (PlantProvider._initializeData)
 
 ### 2.3 Hybrid XAI Explanation System (No-LLM)
 
-> **CRITICAL:** The Gemini API live LLM was **completely removed** from the system (CHANGELOG, "No live LLM – thesis defensibility"). No generative AI runs at runtime. `gemini_api_service.dart` and `gemini_plant_service.dart` no longer exist. `ConfigService` retains no Gemini key methods.
+> **Note:** No live LLM runs at runtime. All explanations are deterministic (offline JSON or cached). `ConfigService` retains no external AI key methods.
 
 #### Explanation Resolution Chain (`XAIExplanationService`)
 
@@ -1043,7 +1043,7 @@ flutter clean && flutter pub get && flutter run
 | Railway cold start latency                | ⚠️ Acceptable | 10–30s cold; 2–4s warm; no always-on plan             |
 | Supabase built-in email rate limit        | ⚠️ Dev only   | 2 emails/hour; use custom SMTP for production         |
 | `SUPABASE_JWT_SECRET` on Railway          | ✅ Resolved    | Recommended unset (all users can scan without 401)    |
-| Live LLM / Gemini API                     | ✅ Removed     | Thesis-defensible; all explanations deterministic     |
+| Live LLM                                  | ✅ Removed     | Thesis-defensible; all explanations deterministic     |
 | HerbaScan custom model                    | ✅ Deprecated  | MobileNetV2-only for online/offline consistency       |
 | RLS recursion on profiles                 | ✅ Fixed       | `is_admin()` SECURITY DEFINER function applied        |
 | Delete-user 401 (JWKS)                    | ✅ Fixed       | `verify_jwt = false` in `config.toml` + JWKS internal |

@@ -7,19 +7,35 @@ import 'package:herbascan/features/browse/browse_screen.dart';
 
 class NoMatchFoundScreen extends StatelessWidget {
   final String imagePath;
-  final double? lowConfidence;
-  /// When true, shows toxic-plant warning (title/body) instead of "Plant Not Recognized".
   final bool isToxicPlant;
-  /// Display name for the detected toxic plant (e.g. "Adelfa (Nerium oleander)").
   final String? detectedToxicPlantName;
+  /// Low-confidence predictions to show in the "Look-alike Plants" sheet.
+  final List<Map<String, dynamic>> lookalikePredictions;
+  /// True when we landed here because the top prediction was a real plant
+  /// below the confidence threshold (show "Low Confidence Match" + best guess).
+  /// False when the model actually returned UnknownPlant/Not_Plant/empty
+  /// (show "No Plant Match Found" with no best guess).
+  final bool isLowConfidence;
 
   const NoMatchFoundScreen({
     super.key,
     required this.imagePath,
-    this.lowConfidence,
     this.isToxicPlant = false,
     this.detectedToxicPlantName,
+    this.lookalikePredictions = const [],
+    this.isLowConfidence = false,
   });
+
+  void _showLookalikeSheet(BuildContext context, ThemeData theme) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _LookalikeSheet(
+        predictions: lookalikePredictions,
+        theme: theme,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -105,7 +121,9 @@ class NoMatchFoundScreen extends StatelessWidget {
                         Text(
                           isToxic
                               ? l10n.toxicPlantDetected
-                              : 'Plant Not Recognized',
+                              : isLowConfidence
+                                  ? 'Low Confidence Match'
+                                  : 'No Plant Match Found',
                           style: theme.textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
@@ -119,28 +137,54 @@ class NoMatchFoundScreen extends StatelessWidget {
                         Text(
                           isToxic
                               ? l10n.toxicPlantBody.replaceFirst('%s', toxicName)
-                              : "We don't recognize this plant. Ensure it's a clear single leaf.",
+                              : isLowConfidence
+                                  ? "We're not confident enough to confirm this as a match. Please retake a clearer photo or browse the catalog manually."
+                                  : "We don't recognize this plant. Ensure it's a clear single leaf.",
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: Colors.white.withOpacity(0.80),
                           ),
                           textAlign: TextAlign.center,
                         ),
 
-                        if (lowConfidence != null) ...[
-                          const SizedBox(height: 10),
+                        // Best-guess tile: show what the model thought it was
+                        // and the confidence %, so the user understands *why*
+                        // it was rejected (e.g. "Gumamela @ 73% — below 90%").
+                        // Only shown for low-confidence matches, not for true
+                        // unknowns (UnknownPlant/Not_Plant) where the guess is
+                        // not meaningful.
+                        if (!isToxic &&
+                            isLowConfidence &&
+                            lookalikePredictions.isNotEmpty) ...[
+                          const SizedBox(height: 16),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 4),
+                                horizontal: 14, vertical: 10),
                             decoration: BoxDecoration(
-                              color: AppTheme.warningAmber.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(100),
-                            ),
-                            child: Text(
-                              'Confidence: ${(lowConfidence! * 100).toStringAsFixed(1)}%',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: AppTheme.warningAmber,
-                                fontWeight: FontWeight.w600,
+                              color: Colors.white.withOpacity(0.10),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.18),
                               ),
+                            ),
+                            child: Builder(
+                              builder: (_) {
+                                final top = lookalikePredictions.first;
+                                final name = (top['plantName'] as String?) ??
+                                    (top['label'] as String?) ??
+                                    'Unknown';
+                                final conf =
+                                    (top['confidence'] as num?)?.toDouble() ??
+                                        0.0;
+                                final pct = (conf * 100).toStringAsFixed(1);
+                                return Text(
+                                  'Best guess: $name  ·  $pct%',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: Colors.white.withOpacity(0.92),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                );
+                              },
                             ),
                           ),
                         ],
@@ -159,6 +203,24 @@ class NoMatchFoundScreen extends StatelessWidget {
                             ),
                           ),
                         ),
+
+                        if (isLowConfidence &&
+                            lookalikePredictions.isNotEmpty) ...[
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: () => _showLookalikeSheet(context, theme),
+                              icon: const Icon(Icons.search_rounded, size: 18),
+                              label: const Text('Look-alike Plants'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.white,
+                                side: BorderSide(
+                                    color: Colors.white.withOpacity(0.5)),
+                              ),
+                            ),
+                          ),
+                        ],
 
                         const SizedBox(height: 10),
 
@@ -188,6 +250,153 @@ class NoMatchFoundScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _LookalikeSheet extends StatelessWidget {
+  final List<Map<String, dynamic>> predictions;
+  final ThemeData theme;
+
+  const _LookalikeSheet({required this.predictions, required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      child: Container(
+        color: theme.colorScheme.surface,
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.onSurface.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: AppTheme.botanicalPrimary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.search_rounded,
+                        color: AppTheme.botanicalPrimary,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Look-alike Plants',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Text(
+                            'These are possible but uncertain matches',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              ...predictions.take(3).toList().asMap().entries.map((entry) {
+                final i = entry.key;
+                final p = entry.value;
+                final name = p['plantName'] as String? ??
+                    p['label'] as String? ??
+                    'Unknown';
+                return Column(
+                  children: [
+                    if (i > 0)
+                      Divider(
+                        height: 1,
+                        indent: 20,
+                        endIndent: 20,
+                        color: theme.colorScheme.onSurface.withOpacity(0.08),
+                      ),
+                    ListTile(
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                      leading: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: AppTheme.botanicalPrimary.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${i + 1}',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              color: AppTheme.botanicalPrimary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                      title: Text(
+                        name,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      subtitle: Text(
+                        () {
+                          final conf =
+                              (p['confidence'] as num?)?.toDouble() ?? 0.0;
+                          return '${(conf * 100).toStringAsFixed(1)}% confidence';
+                        }(),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppTheme.botanicalPrimary,
+                    ),
+                    child: const Text('Got it'),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

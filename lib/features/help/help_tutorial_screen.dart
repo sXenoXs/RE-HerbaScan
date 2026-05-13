@@ -403,11 +403,11 @@ class _OODExplanationTile extends StatelessWidget {
   static const String _title =
       'Why did the app say it cannot identify my plant?';
   static const String _body =
-      'HerbaScan identifies only the 43 Philippine medicinal plants in its database. '
+      'HerbaScan identifies only the 31 Philippine medicinal plants in its database. '
       'When the identification confidence is too low (below 60%), the app does not show '
       'safety information or preparation guides for your safety—using the wrong plant can be harmful.\n\n'
       'Tips: use a clear, single leaf; avoid shadows and blur; ensure the plant is one of the '
-      '43 supported species. You can browse the plant list in the app to see which plants are supported.';
+      '31 supported species. You can browse the plant list in the app to see which plants are supported.';
 
   @override
   Widget build(BuildContext context) {

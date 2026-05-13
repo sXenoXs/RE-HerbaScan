@@ -1,5 +1,5 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:herbascan/core/config/supabase_config.dart';
 
@@ -64,20 +64,30 @@ class ToxicPlantImageService {
     }
   }
 
-  /// Uploads [imageFile] to Storage and saves the public URL to the table.
-  /// Returns the public URL on success, or null on failure.
-  Future<String?> uploadAndSave(
-      String slug, String commonName, File imageFile) async {
-    if (!_canWrite) return null;
+  /// Uploads [xfile] to Storage and saves the public URL to the table.
+  /// Returns the public URL on success. Throws on failure so callers can
+  /// surface the real error message to the user.
+  Future<String> uploadAndSave(
+      String slug, String commonName, XFile xfile) async {
+    if (!_canWrite) throw Exception('Not signed in or Supabase not configured');
     try {
-      final ext = imageFile.path.split('.').last.toLowerCase();
-      if (!{'jpg', 'jpeg', 'png'}.contains(ext)) return null;
+      // Use xfile.name (not xfile.path) so extension works on web (blob URLs).
+      final name = xfile.name.toLowerCase();
+      final dotIndex = name.lastIndexOf('.');
+      final ext = dotIndex >= 0 ? name.substring(dotIndex + 1) : '';
+      if (!{'jpg', 'jpeg', 'png'}.contains(ext)) {
+        throw Exception('Unsupported file type "$ext". Use jpg or png.');
+      }
 
+      final bytes = await xfile.readAsBytes();
       final path = '$_folder/$slug.$ext';
-      await _client.storage.from(_bucket).upload(
+      await _client.storage.from(_bucket).uploadBinary(
             path,
-            imageFile,
-            fileOptions: const FileOptions(upsert: true),
+            bytes,
+            fileOptions: FileOptions(
+              upsert: true,
+              contentType: xfile.mimeType ?? 'image/$ext',
+            ),
           );
       final url = _client.storage.from(_bucket).getPublicUrl(path);
 
@@ -93,8 +103,8 @@ class ToxicPlantImageService {
       }
       return url;
     } catch (e) {
-      if (kDebugMode) debugPrint('[ToxicPlantImageService] uploadAndSave: $e');
-      return null;
+      debugPrint('[ToxicPlantImageService] uploadAndSave: $e');
+      rethrow;
     }
   }
 

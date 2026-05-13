@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -84,21 +83,16 @@ class _AdminToxicPlantsScreenState extends State<AdminToxicPlantsScreen> {
 
     setState(() => _uploading[slug] = true);
 
-    final url =
-        await _service.uploadAndSave(slug, commonName, File(xfile.path));
+    try {
+      final url = await _service.uploadAndSave(slug, commonName, xfile);
 
-    if (!mounted) return;
-    setState(() {
-      _uploading[slug] = false;
-      if (url != null) {
-        _entries[slug] = (_entries[slug] ?? ToxicPlantImageEntry(
-          slug: slug,
-          commonName: commonName,
-        )).copyWith(imageUrl: url);
-      }
-    });
-
-    if (url != null) {
+      if (!mounted) return;
+      setState(() {
+        _uploading[slug] = false;
+        _entries[slug] = (_entries[slug] ??
+                ToxicPlantImageEntry(slug: slug, commonName: commonName))
+            .copyWith(imageUrl: url);
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Photo uploaded successfully.'),
@@ -106,12 +100,15 @@ class _AdminToxicPlantsScreenState extends State<AdminToxicPlantsScreen> {
           behavior: SnackBarBehavior.floating,
         ),
       );
-    } else {
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _uploading[slug] = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Upload failed. Check connection and try again.'),
+        SnackBar(
+          content: Text('Upload failed: $e'),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 8),
         ),
       );
     }

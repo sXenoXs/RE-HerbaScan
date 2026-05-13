@@ -1097,7 +1097,7 @@ curl -X POST https://YOUR-RAILWAY-URL.railway.app/identify -F "file=@image.jpg"
   - Upload to cloud storage (S3, GCS) and download on startup
   - Include in Docker image if < 100MB
 - **Model Standardization (Phase 34):** Backend uses only `MobileNetV2_model.keras`. HerbaScan custom model is deprecated for prediction consistency between offline CAM and online GradCAM.
-- **AI Explanation Standardization (Phase 35):** Flutter app (v0.9.7) now uses standardized structured format for all 42 plants with identical data depth (taxonomy, ecology, medicinal_preparation, safety_consideration) for both online (Gemini API) and offline (JSON) explanations.
+- **AI Explanation Standardization (Phase 35):** Flutter app (v0.9.7) now uses standardized structured format for all 42 plants with identical data depth (taxonomy, ecology, medicinal_preparation, safety_consideration) for both online and offline (JSON) explanations.
 
 ### TensorFlow Compatibility
 

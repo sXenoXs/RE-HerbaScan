@@ -156,7 +156,7 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
       children: [
         _buildStatCard(
           context,
-          value: '$totalPlants / 43 Plants',
+          value: '$totalPlants / 31 Plants',
           subtitle: 'Secured in local cache',
           icon: Icons.local_florist_rounded,
           iconColor: AppTheme.botanicalPrimary,

@@ -459,7 +459,7 @@ class _AdminPlantMetadataScreenState extends State<AdminPlantMetadataScreen> {
                     children: [
                       const Text(
                         'Restore the entire Supabase catalog to bundled defaults. '
-                        'This will overwrite all 43 plants, safety, habitat, and conditions. '
+                        'This will overwrite all 31 plants, safety, habitat, and conditions. '
                         'Uploaded plant images in Storage will be removed.',
                       ),
                       const SizedBox(height: 16),

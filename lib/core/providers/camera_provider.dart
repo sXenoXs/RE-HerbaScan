@@ -363,7 +363,31 @@ class CameraProvider extends ChangeNotifier {
       final predictions = (result['predictions'] as List<dynamic>?)
           ?.map((p) => p as Map<String, dynamic>)
           .toList() ?? [];
-      
+
+      // FALLBACK: AdaptiveGradCAM returned no predictions (e.g., offline CAM
+      // service couldn't initialize because the bundled model isn't multi-output).
+      // Use TflitePlantService for plain top-3 predictions without CAM.
+      if (predictions.isEmpty) {
+        print('⚠️ [CameraProvider] AdaptiveGradCAM returned 0 predictions; '
+            'falling back to TFLite top-K (no CAM)...');
+        try {
+          final topK = await _tfliteService.predictTopK(imageFile, k: 3);
+          for (int i = 0; i < topK.length; i++) {
+            predictions.add({
+              'label': topK[i].label,
+              'plantName': topK[i].label,
+              'scientificName': topK[i].label,
+              'confidence': topK[i].confidence,
+              'index': i,
+              'isDOHApproved': false,
+            });
+          }
+          print('   ✅ TFLite top-K fallback produced ${predictions.length} predictions');
+        } catch (e) {
+          print('   ❌ TFLite top-K fallback failed: $e');
+        }
+      }
+
       _lastPredictions = predictions;
       await _performanceMonitor.stopTimer(PerformanceOperation.aiInference);
 

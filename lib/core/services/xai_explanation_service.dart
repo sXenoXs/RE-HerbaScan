@@ -108,7 +108,7 @@ class XAIExplanationService {
   Map<String, PlantExplanation>? _offlineExplanationsCache;
 
   // Cache for online API responses (JSON file)
-  Map<String, Map<String, dynamic>>? _geminiCache;
+  Map<String, Map<String, dynamic>>? _explanationFileCache;
 
   // Source tracking
   String? _lastExplanationSource; // "cache", "offline", "fallback"
@@ -146,7 +146,7 @@ class XAIExplanationService {
         final cachedText = await _getCachedExplanation(scientificName);
         if (cachedText != null && cachedText.isNotEmpty) {
           final cacheSource = await _getCacheSource(scientificName);
-          if (cacheSource == 'online' || cacheSource == 'gemini') {
+          if (cacheSource == 'online') {
             _logger.d(
                 'Using cached online explanation from SharedPreferences for $scientificName');
             _lastExplanationSource = 'online';
@@ -160,7 +160,7 @@ class XAIExplanationService {
         final fileCachedText = await _getCachedFromFile(scientificName);
         if (fileCachedText != null && fileCachedText.isNotEmpty) {
           final fileCacheSource = await _getFileCacheSource(scientificName);
-          if (fileCacheSource == 'online' || fileCacheSource == 'gemini') {
+          if (fileCacheSource == 'online') {
             _logger.d(
                 'Using cached online explanation from JSON file for $scientificName');
             _lastExplanationSource = 'online';
@@ -596,26 +596,26 @@ class XAIExplanationService {
       final appDir = await getApplicationDocumentsDirectory();
       final cacheDir = Directory('${appDir.path}/xai_cache');
       if (!await cacheDir.exists()) {
-        _geminiCache = {};
+        _explanationFileCache = {};
         return;
       }
 
       final cacheFile = File('${cacheDir.path}/plant_explanations_cache.json');
       if (!await cacheFile.exists()) {
-        _geminiCache = {};
+        _explanationFileCache = {};
         return;
       }
 
       final jsonString = await cacheFile.readAsString();
       final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
-      _geminiCache = jsonData.map((key, value) => MapEntry(
+      _explanationFileCache = jsonData.map((key, value) => MapEntry(
             key,
             value as Map<String, dynamic>,
           ));
-      _logger.d('Loaded ${_geminiCache!.length} cached explanations from file');
+      _logger.d('Loaded ${_explanationFileCache!.length} cached explanations from file');
     } catch (e) {
       _logger.w('Error loading cache from file: $e');
-      _geminiCache = {};
+      _explanationFileCache = {};
     }
   }
 
@@ -627,12 +627,12 @@ class XAIExplanationService {
     String plantName,
   ) async {
     try {
-      if (_geminiCache == null) {
+      if (_explanationFileCache == null) {
         await _loadCacheFromFile();
       }
 
-      _geminiCache ??= {};
-      _geminiCache![_normalizeKey(scientificName)] = {
+      _explanationFileCache ??= {};
+      _explanationFileCache![_normalizeKey(scientificName)] = {
         'text': text,
         'source': source,
         'plantName': plantName,
@@ -646,7 +646,7 @@ class XAIExplanationService {
       }
 
       final cacheFile = File('${cacheDir.path}/plant_explanations_cache.json');
-      await cacheFile.writeAsString(jsonEncode(_geminiCache));
+      await cacheFile.writeAsString(jsonEncode(_explanationFileCache));
     } catch (e) {
       _logger.w('Error saving to JSON cache file: $e');
     }
@@ -656,12 +656,12 @@ class XAIExplanationService {
   /// Returns the cached text and sets the source based on cache metadata
   Future<String?> _getCachedFromFile(String scientificName) async {
     try {
-      if (_geminiCache == null) {
+      if (_explanationFileCache == null) {
         await _loadCacheFromFile();
       }
 
       final key = _normalizeKey(scientificName);
-      final cached = _geminiCache?[key];
+      final cached = _explanationFileCache?[key];
       if (cached != null && cached['text'] != null) {
         // Check the source of the cache
         final cacheSource = cached['source'] as String?;
@@ -679,12 +679,12 @@ class XAIExplanationService {
   /// Get file cache source
   Future<String?> _getFileCacheSource(String scientificName) async {
     try {
-      if (_geminiCache == null) {
+      if (_explanationFileCache == null) {
         await _loadCacheFromFile();
       }
 
       final key = _normalizeKey(scientificName);
-      final cached = _geminiCache?[key];
+      final cached = _explanationFileCache?[key];
       if (cached != null) {
         return cached['source'] as String?;
       }

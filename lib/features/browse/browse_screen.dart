@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:herbascan/core/providers/plant_provider.dart';
 import 'package:herbascan/core/models/plant.dart';
+import 'package:herbascan/core/models/toxic_plant_entry.dart';
 import 'package:herbascan/core/services/toxic_plant_image_service.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/core/widgets/plant_image.dart';
 import 'package:herbascan/features/scan/plant_detail_screen.dart';
 import 'package:herbascan/features/browse/condition_search_screen.dart';
+import 'package:herbascan/features/browse/toxic_plant_detail_screen.dart';
 import 'package:herbascan/core/services/usage_analytics.dart';
 
 enum BrowseFilter { all, doh, toxic }
@@ -16,27 +18,8 @@ enum BrowseFilter { all, doh, toxic }
 // ---------------------------------------------------------------------------
 // Static toxic / harmful plant data
 // ---------------------------------------------------------------------------
-class _ToxicPlantEntry {
-  final String slug;
-  final String commonName;
-  final String scientificName;
-  final String localName;
-  final String harm;
-  final String toxin;
-  final String symptoms;
-  const _ToxicPlantEntry({
-    required this.slug,
-    required this.commonName,
-    required this.scientificName,
-    this.localName = '',
-    required this.harm,
-    required this.toxin,
-    required this.symptoms,
-  });
-}
-
 const _toxicPlants = [
-  _ToxicPlantEntry(
+  ToxicPlantEntry(
     slug: 'dumb-cane',
     commonName: 'Dumb Cane',
     scientificName: 'Dieffenbachia picta',
@@ -44,8 +27,12 @@ const _toxicPlants = [
     toxin: 'Calcium oxalate crystals',
     symptoms:
         'Intense oral burning, swollen tongue and throat, impaired speech, difficulty swallowing',
+    appearance:
+        'Large tropical shrub with broad, glossy leaves patterned in green and white or yellow. Stems are thick and cane-like, reaching up to 1.5 m indoors.',
+    habitat:
+        'Native to tropical Americas; widely cultivated as an indoor ornamental plant in the Philippines and worldwide.',
   ),
-  _ToxicPlantEntry(
+  ToxicPlantEntry(
     slug: 'physic-nut-tuba-tuba',
     commonName: 'Physic Nut / Tuba-tuba',
     scientificName: 'Jatropha curcas',
@@ -54,8 +41,12 @@ const _toxicPlants = [
     toxin: 'Curcin (toxalbumin), phorbol esters',
     symptoms:
         'Nausea, vomiting, severe diarrhea, abdominal pain; potentially fatal in children',
+    appearance:
+        'Small deciduous tree or large shrub with smooth, pale-grey bark. Leaves are broadly ovate with 3–5 lobes; flowers are small and yellowish-green. Seeds resemble edible nuts.',
+    habitat:
+        'Thrives in tropical and subtropical areas. Found along roadsides, farm borders, and abandoned lots throughout the Philippines.',
   ),
-  _ToxicPlantEntry(
+  ToxicPlantEntry(
     slug: 'snake-plant',
     commonName: 'Snake Plant',
     scientificName: 'Dracaena trifasciata',
@@ -63,8 +54,12 @@ const _toxicPlants = [
     harm: 'Mild toxins',
     toxin: 'Steroidal saponins',
     symptoms: 'Nausea, vomiting, excessive salivation, mild mouth irritation',
+    appearance:
+        'Stiff, upright sword-shaped leaves with dark green banding and yellow margins. Grows in rosette clumps up to 1 m tall.',
+    habitat:
+        'Native to West Africa; extremely common as a low-maintenance indoor and outdoor ornamental plant in Filipino homes and offices.',
   ),
-  _ToxicPlantEntry(
+  ToxicPlantEntry(
     slug: 'cycads',
     commonName: 'Cycads',
     scientificName: 'Cycadophyta',
@@ -73,8 +68,12 @@ const _toxicPlants = [
     toxin: 'Cycasin, BMAA neurotoxin',
     symptoms:
         'Vomiting, liver damage, neurological deterioration; potentially fatal',
+    appearance:
+        'Palm-like plants with a stout trunk topped by a crown of stiff, pinnate fronds. Seeds are large, orange-red, and nut-like in appearance.',
+    habitat:
+        'Found in tropical and subtropical forests, coastal areas, and rocky slopes. Several species are native to the Philippines (e.g., Cycas riuminiana).',
   ),
-  _ToxicPlantEntry(
+  ToxicPlantEntry(
     slug: 'daphne',
     commonName: 'Daphne',
     scientificName: 'Daphne laureola',
@@ -82,8 +81,12 @@ const _toxicPlants = [
     toxin: 'Daphnetoxin, mezerein',
     symptoms:
         'Severe mouth and skin blistering, vomiting; convulsions in large doses',
+    appearance:
+        'Evergreen shrub with glossy, dark-green leathery leaves. Produces small tubular flowers (white, pink, or yellow) and bright red or black berries.',
+    habitat:
+        'Native to Europe and Asia; grown as an ornamental shrub in gardens. Prefers cool, well-drained soils in partial shade.',
   ),
-  _ToxicPlantEntry(
+  ToxicPlantEntry(
     slug: 'angels-trumpet',
     commonName: "Angel's Trumpet",
     scientificName: 'Brugmansia spp.',
@@ -92,8 +95,12 @@ const _toxicPlants = [
     toxin: 'Scopolamine, atropine, hyoscyamine',
     symptoms:
         'Hallucinations, delirium, rapid heartbeat, dilated pupils, respiratory failure',
+    appearance:
+        'Large woody shrub or small tree with pendulous, trumpet-shaped flowers up to 50 cm long in white, yellow, pink, or orange. Large, oval, softly hairy leaves.',
+    habitat:
+        'Grown as an ornamental in Philippine gardens and parks. Prefers warm, humid climates with well-drained soil.',
   ),
-  _ToxicPlantEntry(
+  ToxicPlantEntry(
     slug: 'lantana',
     commonName: 'Lantana',
     scientificName: 'Lantana camara',
@@ -102,8 +109,12 @@ const _toxicPlants = [
     toxin: 'Lantadene A & B',
     symptoms:
         'Vomiting, diarrhea, liver damage from unripe berries; photosensitization',
+    appearance:
+        'Woody shrub with rough, aromatic leaves. Bears small clustered flowers that change colour as they mature (yellow to orange to red). Unripe berries are green, ripening to black.',
+    habitat:
+        'Invasive weed throughout the Philippines; common along roadsides, forest edges, and disturbed lands in tropical lowland areas.',
   ),
-  _ToxicPlantEntry(
+  ToxicPlantEntry(
     slug: 'calla-lily',
     commonName: 'Calla Lily',
     scientificName: 'Zantedeschia spp.',
@@ -112,8 +123,12 @@ const _toxicPlants = [
     toxin: 'Calcium oxalate crystals',
     symptoms:
         'Intense oral burning, lip and tongue swelling, difficulty swallowing',
+    appearance:
+        'Elegant perennial with large, arrow-shaped glossy leaves and a distinctive funnel-shaped spathe (usually white) surrounding a yellow spike (spadix).',
+    habitat:
+        'Native to southern Africa; commonly grown as a garden and cut-flower ornamental in the Philippines, preferring moist, fertile soils.',
   ),
-  _ToxicPlantEntry(
+  ToxicPlantEntry(
     slug: 'poinsettia',
     commonName: 'Poinsettia',
     scientificName: 'Euphorbia pulcherrima',
@@ -121,8 +136,12 @@ const _toxicPlants = [
     harm: 'Irritant sap',
     toxin: 'Euphorbol esters, saponins',
     symptoms: 'Skin and eye irritation; mild nausea and vomiting if ingested',
+    appearance:
+        'Shrub with dark green leaves and vivid red (or pink/white) bracts surrounding small yellow flowers. White milky sap is released when stems are cut.',
+    habitat:
+        'Native to Mexico; popular Christmas ornamental widely sold and planted in Philippine homes and gardens throughout the holiday season.',
   ),
-  _ToxicPlantEntry(
+  ToxicPlantEntry(
     slug: 'cacti-and-succulents',
     commonName: 'Cacti and Succulents',
     scientificName: 'Various',
@@ -130,8 +149,12 @@ const _toxicPlants = [
     harm: 'Physical harm (thorns)',
     toxin: 'Spines; alkaloids in select species',
     symptoms: 'Puncture wounds; certain species cause nausea or hallucinations',
+    appearance:
+        'Highly variable; typically thick, fleshy stems or leaves adapted to store water. Spines replace leaves in true cacti. Shapes range from globular to columnar to paddle-like.',
+    habitat:
+        'Popular pot plants and garden ornamentals across the Philippines. In the wild, cacti are native to the Americas; succulents occur globally in arid and semi-arid regions.',
   ),
-  _ToxicPlantEntry(
+  ToxicPlantEntry(
     slug: 'rhus-wax-tree',
     commonName: 'Rhus / Wax Tree',
     scientificName: 'Toxicodendron spp.',
@@ -139,6 +162,10 @@ const _toxicPlants = [
     toxin: 'Urushiol (phenolic resin)',
     symptoms:
         'Severe allergic contact dermatitis, intense itching, fluid-filled blisters',
+    appearance:
+        'Deciduous shrubs or small trees with compound leaves of 3–13 leaflets. Produces small whitish-green flowers and waxy, pale berries. Leaves turn vivid red in autumn.',
+    habitat:
+        'Native to temperate North America and East Asia. Occasionally encountered as an ornamental or naturalized plant; all plant parts exude urushiol sap.',
   ),
 ];
 
@@ -222,7 +249,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
     return filtered;
   }
 
-  List<_ToxicPlantEntry> _filterToxicPlants() {
+  List<ToxicPlantEntry> _filterToxicPlants() {
     if (_searchQuery.isEmpty) return _toxicPlants;
     final query = _searchQuery.toLowerCase();
     return _toxicPlants.where((p) {
@@ -622,10 +649,12 @@ class _BrowseScreenState extends State<BrowseScreen> {
   // Toxic plant cards
   // ---------------------------------------------------------------------------
 
-  Widget _buildToxicGridCard(_ToxicPlantEntry plant, ThemeData theme) {
+  Widget _buildToxicGridCard(ToxicPlantEntry plant, ThemeData theme) {
     final color = _harmColor(plant.harm);
     final imageUrl = _toxicPlantImages[plant.slug];
-    return Container(
+    return GestureDetector(
+      onTap: () => _openToxicDetail(plant),
+      child: Container(
       decoration: BoxDecoration(
         color: theme.cardTheme.color ?? AppTheme.cardColor,
         borderRadius: BorderRadius.circular(16),
@@ -780,13 +809,51 @@ class _BrowseScreenState extends State<BrowseScreen> {
           ),
         ],
       ),
+    ),
     );
   }
 
-  Widget _buildToxicListCard(_ToxicPlantEntry plant, ThemeData theme) {
+  void _openToxicDetail(ToxicPlantEntry plant) {
+    final imageUrl = _toxicPlantImages[plant.slug];
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ToxicPlantDetailScreen(
+          plant: plant,
+          imageBuilder: (p, accent) => imageUrl != null && imageUrl.isNotEmpty
+              ? CachedNetworkImage(
+                  imageUrl: imageUrl,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                  placeholder: (_, __) => Container(
+                    color: accent.withOpacity(0.08),
+                    child: Center(
+                        child: CircularProgressIndicator(color: accent)),
+                  ),
+                  errorWidget: (_, __, ___) => Container(
+                    color: accent.withOpacity(0.08),
+                    child: Center(
+                        child: Icon(Icons.warning_amber_rounded,
+                            size: 64, color: accent.withOpacity(0.5))),
+                  ),
+                )
+              : Container(
+                  color: accent.withOpacity(0.08),
+                  child: Center(
+                      child: Icon(Icons.warning_amber_rounded,
+                          size: 64, color: accent.withOpacity(0.5))),
+                ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildToxicListCard(ToxicPlantEntry plant, ThemeData theme) {
     final color = _harmColor(plant.harm);
     final imageUrl = _toxicPlantImages[plant.slug];
-    return Container(
+    return GestureDetector(
+      onTap: () => _openToxicDetail(plant),
+      child: Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: theme.cardTheme.color ?? AppTheme.cardColor,
@@ -948,6 +1015,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 
