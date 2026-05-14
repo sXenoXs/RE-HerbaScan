@@ -1,8 +1,10 @@
 // lib/core/services/online_gradcam_service.dart
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:logger/logger.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Service for communicating with the Python Grad-CAM backend API
 class OnlineGradCAMService {
@@ -13,9 +15,8 @@ class OnlineGradCAMService {
 
   final Logger _logger = Logger();
 
-  // Railway backend URL
-  static const String serverUrl =
-      'https://herbascan-backend-production.up.railway.app';
+  // Railway backend URL (must include scheme for Uri.parse)
+  static const String serverUrl = 'https://re-herbascan-production.up.railway.app';
   static const Duration timeout = Duration(seconds: 30);
 
   /// Check if the backend server is healthy and ready
@@ -79,6 +80,12 @@ class OnlineGradCAMService {
           Uri.parse('$serverUrl/identify'),
         );
 
+        // Attach Supabase JWT when signed in (for Railway backend verification)
+        final token = Supabase.instance.client.auth.currentSession?.accessToken;
+        if (token != null && token.isNotEmpty) {
+          request.headers['Authorization'] = 'Bearer $token';
+        }
+
         // Attach image file
         request.files.add(
           await http.MultipartFile.fromPath(
@@ -94,12 +101,35 @@ class OnlineGradCAMService {
 
         // Parse response
         if (response.statusCode == 200) {
+          // ── success path (unchanged) ──────────────────────────────────
           final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+          // Debug logging
+          print('🔍 [OnlineGradCAM] Backend response received:');
+          print('   Response keys: ${data.keys.toList()}');
+          print('   gradcam_image present: ${data['gradcam_image'] != null}');
+          if (data['gradcam_image'] != null) {
+            final gradcamBase64 = data['gradcam_image'] as String;
+            print('   gradcam_image type: ${gradcamBase64.runtimeType}');
+            print('   gradcam_image length: ${gradcamBase64.length} chars');
+          }
 
           // Decode base64 gradcam image (backend returns base64-encoded PNG)
           if (data['gradcam_image'] != null) {
-            data['gradcam_image'] =
-                base64Decode(data['gradcam_image'] as String);
+            try {
+              final gradcamBase64 = data['gradcam_image'] as String;
+              print('   Decoding base64 gradcam image...');
+              data['gradcam_image'] = base64Decode(gradcamBase64);
+              final decodedBytes = data['gradcam_image'] as Uint8List;
+              print('   ✅ Decoded successfully: ${decodedBytes.length} bytes');
+            } catch (e) {
+              print('   ❌ Error decoding base64: $e');
+              _logger.e('Failed to decode base64 gradcam image: $e');
+              data['gradcam_image'] = null;
+            }
+          } else {
+            print('   ⚠️ WARNING: gradcam_image is null in backend response!');
+            _logger.w('Backend response does not contain gradcam_image');
           }
 
           _logger.i('Plant identified: ${data['plant_name']} '
@@ -108,8 +138,22 @@ class OnlineGradCAMService {
           _logger.i('Method used: ${data['method']}');
 
           return data;
+        } else if (response.statusCode == 422) {
+          // Validation failure from backend Stage 1 (blur/dark) or Stage 2 (OOD).
+          // Do NOT retry and do NOT fall back to offline — it's a hard rejection.
+          String detail =
+              'Validation Failed: Subject unrecognized or not a plant.';
+          try {
+            final body = jsonDecode(response.body) as Map<String, dynamic>;
+            detail = body['detail'] as String? ?? detail;
+          } catch (_) {}
+          _logger.w('Backend validation failure (422): $detail');
+          return {
+            'validation_failed': true,
+            'failure_reason': detail,
+          };
         } else {
-          // Server error - log but don't retry (server issue, not network)
+          // 5xx or other server error — return null (triggers offline fallback).
           _logger.e('Server error: ${response.statusCode} - ${response.body}');
           return null;
         }

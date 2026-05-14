@@ -1,0 +1,16 @@
+{
+  "generated_at": "2026-04-09T00:00:00.000Z",
+  "model_architecture": "MobileNetV2",
+  "num_classes": 43,
+  "not_plant_class": "Not_Plant",
+  "not_plant_class_index": 28,
+  "confidence_threshold_accept": 0.55,
+  "confidence_threshold_ood": 0.4,
+  "ood_darkness_threshold": 40.0,
+  "ood_blur_threshold": 100.0,
+  "toxic_blacklist": [
+    "Adelfa",
+    "IpilIpil",
+    "TubaTuba"
+  ]
+}
