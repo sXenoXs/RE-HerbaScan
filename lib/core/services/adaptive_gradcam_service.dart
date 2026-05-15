@@ -497,7 +497,11 @@ class AdaptiveGradCAMService {
   /// Derive the validation stage (1 = image quality, 2 = OOD/unrecognized)
   /// from the failure_reason string so the UI can route to the correct screen.
   int _stageFromReason(String reason) {
-    if (reason.contains('too blurry') || reason.contains('too dark')) return 1;
+    if (reason.contains('too blurry') ||
+        reason.contains('too dark') ||
+        reason.contains('lacks sufficient structure')) {
+      return 1;
+    }
     return 2;
   }
 

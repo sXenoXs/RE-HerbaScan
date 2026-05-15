@@ -1,4 +1,5 @@
 // lib/core/services/image_quality_service.dart
+import 'dart:math';
 import 'dart:typed_data';
 import 'package:image/image.dart' as img;
 import 'package:herbascan/core/services/ood_config_service.dart';
@@ -32,6 +33,8 @@ class ImageQualityService {
   // Canonical rejection strings — must match Python backend exactly.
   static const String _tooBlurry = 'Validation Failed: Image is too blurry.';
   static const String _tooDark = 'Validation Failed: Image is too dark.';
+  static const String _lacksStructure =
+      'Validation Failed: Image lacks sufficient structure.';
 
   /// Check image quality.  Returns [ImageQualityResult.passed] == true when
   /// both the darkness and blur gates pass.
@@ -84,7 +87,36 @@ class ImageQualityService {
         return const ImageQualityResult(passed: false, failureReason: _tooBlurry);
       }
 
-      print('✅ [ImageQualityService] PASSED (dark=$mean  blur=$blurScore)');
+      // ── Edge density check (Sobel magnitude > 50) ────────────────────────
+      // Count pixels where the Sobel gradient magnitude exceeds 50.
+      // A very low ratio means the image is a blank or featureless surface.
+      int edgePixels = 0;
+      final interior = (gray.width - 2) * (gray.height - 2);
+      for (int y = 1; y < gray.height - 1; y++) {
+        for (int x = 1; x < gray.width - 1; x++) {
+          final tl = gray.getPixel(x - 1, y - 1).r.toDouble();
+          final tm = gray.getPixel(x,     y - 1).r.toDouble();
+          final tr = gray.getPixel(x + 1, y - 1).r.toDouble();
+          final ml = gray.getPixel(x - 1, y    ).r.toDouble();
+          final mr = gray.getPixel(x + 1, y    ).r.toDouble();
+          final bl = gray.getPixel(x - 1, y + 1).r.toDouble();
+          final bm = gray.getPixel(x,     y + 1).r.toDouble();
+          final br = gray.getPixel(x + 1, y + 1).r.toDouble();
+          final gx = -tl + tr - 2.0 * ml + 2.0 * mr - bl + br;
+          final gy = -tl - 2.0 * tm - tr + bl + 2.0 * bm + br;
+          if (sqrt(gx * gx + gy * gy) > 50.0) edgePixels++;
+        }
+      }
+      final edgeDensity = interior > 0 ? edgePixels / interior : 0.0;
+
+      print('🔍 [ImageQualityService] edge density=$edgeDensity  threshold=${_oodConfig.edgeDensityMin}');
+
+      if (edgeDensity < _oodConfig.edgeDensityMin) {
+        print('🚫 [ImageQualityService] FEATURELESS — edge density $edgeDensity < ${_oodConfig.edgeDensityMin}');
+        return const ImageQualityResult(passed: false, failureReason: _lacksStructure);
+      }
+
+      print('✅ [ImageQualityService] PASSED (dark=$mean  blur=$blurScore  edge=$edgeDensity)');
       return const ImageQualityResult(passed: true);
     } catch (e) {
       // Any decode / processing error → fail as blurry so we show tips screen.

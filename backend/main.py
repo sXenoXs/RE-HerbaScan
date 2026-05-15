@@ -33,8 +33,9 @@ SUPABASE_URL        = os.environ.get("SUPABASE_URL")
 SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
 MODAL_TRAINING_URL  = os.environ.get("MODAL_TRAINING_URL")
 
-# Toxic plant class indices (Adelfa=0, IpilIpil=14, TubaTuba=39 per class_indices.json)
-TOXIC_CLASS_INDICES = {0, 14, 39}
+# Toxic plant routing is handled by name via toxic_blacklist in ood_safety_config.json.
+# Adelfa, IpilIpil, TubaTuba are not output classes in the 31-class model.
+TOXIC_CLASS_INDICES: set = set()
 
 
 @asynccontextmanager

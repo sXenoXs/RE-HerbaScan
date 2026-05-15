@@ -118,7 +118,6 @@ After successful setup:
 1. **Test the app**: Run `flutter run` and test all functionality
 2. **Test AI Features**: 
    - Test plant identification with camera and gallery
-   - Verify GradCAM visualization and overlay controls
    - Check confidence scores and predictions
 3. **Test Offline Mode**: Toggle offline mode in settings and verify functionality
 4. **Test Multi-language**: Switch between English and Filipino
@@ -126,8 +125,7 @@ After successful setup:
 
 **Current Features Ready for Testing** (v0.9.7 – March 2026). For full detail see **CHANGELOG.md**.
 
-- ✅ Plant identification (camera + gallery)
-- ✅ GradCAM visualization with working overlay controls
+- ✅ Plant identification (camera + gallery) — fully offline via TFLite on-device
 - ✅ XAI explanations from cache/offline/fallback only (no live LLM)
 - ✅ Contraindication Engine (safety_profiles.json) and structured safety
 - ✅ Offline processing and offline CAM heatmap generation; labels from `class_indices.json`
@@ -164,7 +162,6 @@ After successful setup:
 - ✅ Auto-save scans toggle in Settings; when OFF, new scans not auto-saved until user saves from Plant Result or History
 - ✅ Signup 6-digit email confirmation; duplicate email handling; stronger password rules; delete account
 - ✅ Preparation Guide (renamed from Instructions); interactive checklist, contextual timers, Focus Mode, calendar; save/export from Plant Result only
-- ✅ Heatmap in cloud sync (upload/download gradcam image; metadata `gradcam_url`)
 - ✅ Admin instant local sync after catalog/condition/plant save; condition count 1:1 with browse
 - ✅ System Diagnostics (renamed from Offline Demo); design system (botanical green / Emerald, app_theme.dart)
 - ✅ Contraindication Engine; no live LLM (thesis-defensible)
@@ -226,17 +223,17 @@ The app uses the following for offline inference:
 
 **Model Files Location**: `assets/models/`
 
-### Backend Setup (Python FastAPI)
+### Backend Setup (Python FastAPI — Model Retraining Only)
 
-HerbaScan includes a Python backend API for true Grad-CAM computation:
+HerbaScan includes a Python backend for model retraining via the Modal GPU pipeline. Plant identification runs fully offline on-device via TFLite.
 
 **Location**: `backend/` directory
 
 #### Prerequisites
 - Python 3.8+ installed
 - Virtual environment (recommended)
-- Model files: `backend/models/MobileNetV2_model.keras` (required) and `backend/models/labels.json` (optional)
-- Railway account (for deployment) - Optional but recommended
+- Model files: `backend/models/MobileNetV2_model.keras` (required for retraining) and `backend/models/labels.json` (optional)
+- Railway account (for deployment) — Optional but recommended
 
 #### Setup Steps
 
@@ -331,16 +328,15 @@ For Admin **Feedback** tab (Option B: store feedback in Supabase and allow admin
 - **Format**: JSON with taxonomy, ecology, medicinal uses, safety; structured safety profiles
 - **Status**: ✅ Automatically included in app assets
 
-### Online Explanations (No Live LLM in v0.9.7)
-- **Behavior**: As of v0.9.7, the app does **not** use live generative AI at runtime. Explanations come only from: SharedPreferences/file cache (read-only), offline `plant_explanations.json`, and fallback text. Safety is fully deterministic via the Contraindication Engine (`safety_profiles.json`).
-- **Offline data**: `assets/data/plant_explanations.json` and `assets/data/safety_profiles.json`.
+### XAI Explanation Behavior
+
+- The app does **not** use live generative AI at runtime. Explanations come from: SharedPreferences/file cache (read-only), offline `plant_explanations.json`, and fallback text. Safety is fully deterministic via the Contraindication Engine (`safety_profiles.json`).
 - **Fallback**: If no cached or offline explanation is found, a fallback message is shown.
 
 ### Explanation Features
 - **Markdown Formatting**: Rich text with bold, italic, headers, lists
 - **Usability Assessment**: Clear status (USABLE/USE WITH CAUTION/NOT RECOMMENDED)
-- **Heatmap Integration**: Explanations reference GradCAM/CAM patterns
-- **Refresh Functionality**: Regenerate both heatmap and explanation
+- **Refresh Functionality**: Regenerate AI explanation
 
 
 ## Development Tips
@@ -370,8 +366,9 @@ For Admin **Feedback** tab (Option B: store feedback in Supabase and allow admin
 ## Key Configuration Files
 
 ### API Configuration
-- **Backend (GradCAM)**: `lib/core/services/online_gradcam_service.dart` – set base URL to your Railway deployment. Default production URL: `https://re-herbascan-production.up.railway.app`. Optional JWT: see `supabase/README.md` (Step 3 – recommend leaving unset) and `backend/README.md`.
-- **No live LLM in v0.9.7**: Explanations use cache/offline JSON and fallback only.
+
+- **Backend (Model Retraining)**: The Railway backend is used only for model retraining (`POST /admin/trigger-training` → Modal GPU pipeline) and model reload (`POST /admin/reload-model`). Default production URL: `https://re-herbascan-production.up.railway.app`. Plant identification runs fully offline on-device via TFLite — no backend call is made during scanning.
+- **No live LLM**: Explanations use cache/offline JSON and fallback only.
 
 ### Backend API URL
 - **Location**: `lib/core/services/online_gradcam_service.dart`
@@ -391,10 +388,6 @@ For Admin **Feedback** tab (Option B: store feedback in Supabase and allow admin
 - Check `assets/data/plant_explanations.json` exists
 - Verify JSON format is valid
 - Check `pubspec.yaml` includes `assets/data/` in assets list
-
-**Online GradCAM not working:**
-- Check backend URL in `online_gradcam_service.dart` and network connectivity
-- If using JWT on Railway, see `supabase/README.md` (optional JWT); unset `SUPABASE_JWT_SECRET` to allow unauthenticated /identify
 
 **Markdown not rendering:**
 - Verify `flutter_markdown: ^0.6.18` in `pubspec.yaml`

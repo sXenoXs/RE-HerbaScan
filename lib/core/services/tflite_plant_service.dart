@@ -6,6 +6,7 @@ import 'package:tflite_flutter/tflite_flutter.dart';
 import 'package:image/image.dart' as img;
 import 'package:herbascan/core/platform_utils_stub.dart' if (dart.library.io) 'package:herbascan/core/platform_utils_io.dart' as platform_utils;
 import 'package:herbascan/core/services/ota_model_service.dart';
+import 'package:herbascan/core/services/ood_config_service.dart';
 
 class
 PlantPrediction {
@@ -198,13 +199,13 @@ class TflitePlantService {
           inputSize,
           (w) => List.generate(3, (c) {
             final pixel = resizedImage.getPixel(w, h);
-            // Normalize to [0, 1] range (matching backend preprocessing)
-            return (c == 0
-                    ? pixel.r.toDouble()
-                    : c == 1
-                        ? pixel.g.toDouble()
-                        : pixel.b.toDouble()) /
-                255.0;
+            // Normalize to [-1, 1] matching MobileNetV2 training convention.
+            final raw = c == 0
+                ? pixel.r.toDouble()
+                : c == 1
+                    ? pixel.g.toDouble()
+                    : pixel.b.toDouble();
+            return (raw / 255.0) * 2.0 - 1.0;
           }),
         ),
       ),
@@ -321,13 +322,15 @@ class TflitePlantService {
       print(
           "Best result from $modelUsed: ${bestPrediction.label} (${(bestPrediction.confidence * 100).toStringAsFixed(2)}%)");
 
-      // Lower threshold to ensure you see results
-      if (bestPrediction.confidence > 0.1) {
-        print("    Returning prediction (confidence > 0.1)");
+      // Use OodConfigService threshold (0.85 from config) to unify OOD gate.
+      await OodConfigService().load();
+      final oodThreshold = OodConfigService().confidenceThresholdAccept;
+      if (bestPrediction.confidence > oodThreshold) {
+        print("    Returning prediction (confidence > $oodThreshold)");
         return bestPrediction;
       } else {
         print(
-            "    Prediction confidence too low: ${bestPrediction.confidence} (threshold: 0.1)");
+            "    Prediction confidence too low: ${bestPrediction.confidence} (threshold: $oodThreshold)");
       }
     } else {
       print("    No valid prediction found!");
@@ -455,12 +458,10 @@ class TflitePlantService {
       for (var j = 0; j < size; j++) {
         final pixel = image.getPixel(j, i);
 
-        // EXPLICIT RGB EXTRACTION
-        // We explicitly cast to double then divide.
-        // This ensures compatibility with different versions of the 'image' package
-        double r = pixel.r.toDouble() / 255.0;
-        double g = pixel.g.toDouble() / 255.0;
-        double b = pixel.b.toDouble() / 255.0;
+        // Normalize to [-1, 1] matching MobileNetV2 training convention.
+        double r = (pixel.r.toDouble() / 255.0) * 2.0 - 1.0;
+        double g = (pixel.g.toDouble() / 255.0) * 2.0 - 1.0;
+        double b = (pixel.b.toDouble() / 255.0) * 2.0 - 1.0;
 
         buffer[pixelIndex++] = r;
         buffer[pixelIndex++] = g;

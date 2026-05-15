@@ -82,12 +82,15 @@ class CameraProvider extends ChangeNotifier {
         await _initializeCameraController();
       } else {
         _errorMessage = 'No cameras available';
-        await _errorLogger.logError(ErrorType.cameraError, 'No cameras available', context: {'method': '_initializeCamera'});
+        await _errorLogger.logError(
+            ErrorType.cameraError, 'No cameras available',
+            context: {'method': '_initializeCamera'});
         notifyListeners();
       }
     } catch (e, stackTrace) {
       _errorMessage = 'Failed to initialize camera: $e';
-      await _errorLogger.logError(ErrorType.cameraError, _errorMessage!, stackTrace: stackTrace.toString());
+      await _errorLogger.logError(ErrorType.cameraError, _errorMessage!,
+          stackTrace: stackTrace.toString());
       notifyListeners();
     }
   }
@@ -119,7 +122,8 @@ class CameraProvider extends ChangeNotifier {
     } catch (e, stackTrace) {
       _errorMessage = 'Failed to initialize camera controller: $e';
       _isInitialized = false;
-      await _errorLogger.logError(ErrorType.cameraError, _errorMessage!, stackTrace: stackTrace.toString());
+      await _errorLogger.logError(ErrorType.cameraError, _errorMessage!,
+          stackTrace: stackTrace.toString());
       notifyListeners();
     }
   }
@@ -127,20 +131,22 @@ class CameraProvider extends ChangeNotifier {
   // --- CHANGED: Initialize TFLite Model ---
   Future<void> initializeClassifier() async {
     try {
-      print("🚀 Loading TFLite Model...");
+      print(" Loading TFLite Model...");
       await _tfliteService.loadModel();
 
       _errorMessage = null;
 
       // Initialize AdaptiveGradCAMService asynchronously (optional)
       _adaptiveGradCAM.initialize().catchError((e) {
-        print('⚠️ Warning: Failed to initialize Online Service (that is okay, using Offline TFLite): $e');
+        print(
+            ' Warning: Failed to initialize Online Service (that is okay, using Offline TFLite): $e');
       });
 
       notifyListeners();
     } catch (e, stackTrace) {
       _errorMessage = 'Failed to load AI models: $e';
-      await _errorLogger.logError(ErrorType.aiInferenceError, _errorMessage!, stackTrace: stackTrace.toString());
+      await _errorLogger.logError(ErrorType.aiInferenceError, _errorMessage!,
+          stackTrace: stackTrace.toString());
       notifyListeners();
     }
   }
@@ -173,7 +179,8 @@ class CameraProvider extends ChangeNotifier {
     } catch (e, stackTrace) {
       _isCapturing = false;
       _errorMessage = 'Failed to capture image: $e';
-      await _errorLogger.logError(ErrorType.cameraError, _errorMessage!, stackTrace: stackTrace.toString());
+      await _errorLogger.logError(ErrorType.cameraError, _errorMessage!,
+          stackTrace: stackTrace.toString());
       notifyListeners();
       return null;
     }
@@ -198,7 +205,9 @@ class CameraProvider extends ChangeNotifier {
       return image;
     } catch (e, stackTrace) {
       _errorMessage = 'Failed to pick image: $e';
-      await _errorLogger.logError(ErrorType.imageProcessingError, _errorMessage!, stackTrace: stackTrace.toString());
+      await _errorLogger.logError(
+          ErrorType.imageProcessingError, _errorMessage!,
+          stackTrace: stackTrace.toString());
       notifyListeners();
       return null;
     }
@@ -210,13 +219,15 @@ class CameraProvider extends ChangeNotifier {
       return File(_lastCapturedImagePath!);
     }
     final tempDir = await getTemporaryDirectory();
-    final tempFile = File('${tempDir.path}/temp_scan_${DateTime.now().millisecondsSinceEpoch}.jpg');
+    final tempFile = File(
+        '${tempDir.path}/temp_scan_${DateTime.now().millisecondsSinceEpoch}.jpg');
     await tempFile.writeAsBytes(imageData);
     return tempFile;
   }
 
   // --- CHANGED: Unified AI Processing Logic using TFLite ---
-  Future<List<Map<String, dynamic>>> processImageForAI(Uint8List imageData) async {
+  Future<List<Map<String, dynamic>>> processImageForAI(
+      Uint8List imageData) async {
     print("🔍 [CameraProvider] processImageForAI() called");
     print("   Image data: ${imageData.length} bytes");
     _isClassifying = true;
@@ -230,7 +241,8 @@ class CameraProvider extends ChangeNotifier {
       // CALL YOUR TFLITE SERVICE
       print("   🚀 Calling TFLite service predict()...");
       final prediction = await _tfliteService.predict(imageFile);
-      print("   📊 Prediction result: ${prediction != null ? "${prediction.label} (${(prediction.confidence * 100).toStringAsFixed(2)}%)" : "null"}");
+      print(
+          "   📊 Prediction result: ${prediction != null ? "${prediction.label} (${(prediction.confidence * 100).toStringAsFixed(2)}%)" : "null"}");
 
       List<Map<String, dynamic>> resultList = [];
       if (prediction != null) {
@@ -250,11 +262,11 @@ class CameraProvider extends ChangeNotifier {
       _isClassifying = false;
       notifyListeners();
       return resultList;
-
     } catch (e, stackTrace) {
       _isClassifying = false;
       _errorMessage = 'Classification failed: $e';
-      await _errorLogger.logError(ErrorType.aiInferenceError, _errorMessage!, stackTrace: stackTrace.toString());
+      await _errorLogger.logError(ErrorType.aiInferenceError, _errorMessage!,
+          stackTrace: stackTrace.toString());
       notifyListeners();
       return [];
     }
@@ -263,9 +275,9 @@ class CameraProvider extends ChangeNotifier {
   // --- CHANGED: Main method called by UI ---
   // Uses AdaptiveGradCAMService which tries online first, then falls back to offline
   Future<Map<String, dynamic>> processPlantIdentificationWithGradCAM(
-      Uint8List imageData, {
-        OfflineProvider? offlineProvider,
-      }) async {
+    Uint8List imageData, {
+    OfflineProvider? offlineProvider,
+  }) async {
     _isClassifying = true;
     _errorMessage = null;
     Future.microtask(notifyListeners);
@@ -273,14 +285,14 @@ class CameraProvider extends ChangeNotifier {
 
     try {
       print('🌿 [CameraProvider] Processing with AdaptiveGradCAM...');
-      
+
       // Save image to temp file for AdaptiveGradCAMService (needs file path for online)
       final imageFile = await _getImageFileForTflite(imageData);
       final imagePath = imageFile.path;
-      
+
       print('   📁 Image saved to: $imagePath');
       print('   📊 Image bytes: ${imageData.length} bytes');
-      
+
       // Get model name from TFLite service (for matching CAM with prediction)
       // Note: We'll get this after the first prediction, but for now try online first
       String? modelName;
@@ -291,16 +303,18 @@ class CameraProvider extends ChangeNotifier {
         print('   ⚠️ Could not get model name: $e');
         modelName = null;
       }
-      
+
       // Use AdaptiveGradCAMService - it will try online first, then offline
       final result = await _adaptiveGradCAM.identifyPlant(
         imagePath: imagePath,
         imageBytes: imageData,
-        modelName: modelName, // Pass model name to ensure CAM matches prediction
+        modelName:
+            modelName, // Pass model name to ensure CAM matches prediction
       );
 
       if (result == null) {
-        print('   ❌ AdaptiveGradCAM returned null, falling back to TFLite only...');
+        print(
+            '   ❌ AdaptiveGradCAM returned null, falling back to TFLite only...');
         // Fallback to TFLite only
         final tfliteResult = await _tfliteService.predict(imageFile);
         if (tfliteResult == null) {
@@ -314,33 +328,35 @@ class CameraProvider extends ChangeNotifier {
           notifyListeners();
           return {
             'validation_failed': true,
-            'failure_reason': 'Validation Failed: Subject unrecognized or not a plant.',
+            'failure_reason':
+                'Validation Failed: Subject unrecognized or not a plant.',
             'stage': 2,
           };
         }
 
-        
-        final predictions = [{
-          'label': tfliteResult.label,
-          'plantName': tfliteResult.label,
-          'scientificName': tfliteResult.label,
-          'confidence': tfliteResult.confidence,
-          'index': 0,
-          'isDOHApproved': false,
-        }];
-        
+        final predictions = [
+          {
+            'label': tfliteResult.label,
+            'plantName': tfliteResult.label,
+            'scientificName': tfliteResult.label,
+            'confidence': tfliteResult.confidence,
+            'index': 0,
+            'isDOHApproved': false,
+          }
+        ];
+
         _lastPredictions = predictions;
         await _performanceMonitor.stopTimer(PerformanceOperation.aiInference);
-        
+
         if (tfliteResult.confidence > 0.5) {
           await _usageAnalytics.trackSuccessfulScan(tfliteResult.label);
         } else {
           await _usageAnalytics.trackFailedScan();
         }
-        
+
         _isClassifying = false;
         notifyListeners();
-        
+
         return {
           'predictions': predictions,
           'gradcam_image': null,
@@ -361,8 +377,9 @@ class CameraProvider extends ChangeNotifier {
 
       // Extract predictions from result
       final predictions = (result['predictions'] as List<dynamic>?)
-          ?.map((p) => p as Map<String, dynamic>)
-          .toList() ?? [];
+              ?.map((p) => p as Map<String, dynamic>)
+              .toList() ??
+          [];
 
       // FALLBACK: AdaptiveGradCAM returned no predictions (e.g., offline CAM
       // service couldn't initialize because the bundled model isn't multi-output).
@@ -382,7 +399,8 @@ class CameraProvider extends ChangeNotifier {
               'isDOHApproved': false,
             });
           }
-          print('   ✅ TFLite top-K fallback produced ${predictions.length} predictions');
+          print(
+              '   ✅ TFLite top-K fallback produced ${predictions.length} predictions');
         } catch (e) {
           print('   ❌ TFLite top-K fallback failed: $e');
         }
@@ -393,7 +411,9 @@ class CameraProvider extends ChangeNotifier {
 
       if (predictions.isNotEmpty && predictions[0]['confidence'] != null) {
         final confidence = predictions[0]['confidence'] as double;
-        final plantName = predictions[0]['plantName'] as String? ?? predictions[0]['label'] as String? ?? 'Unknown';
+        final plantName = predictions[0]['plantName'] as String? ??
+            predictions[0]['label'] as String? ??
+            'Unknown';
         if (confidence > 0.5) {
           await _usageAnalytics.trackSuccessfulScan(plantName);
         } else {
@@ -404,8 +424,9 @@ class CameraProvider extends ChangeNotifier {
       _isClassifying = false;
       notifyListeners();
 
-      print('   ✅ Result: method=${result['method']}, fallback=${result['fallback_used']}, predictions=${predictions.length}');
-      
+      print(
+          '   ✅ Result: method=${result['method']}, fallback=${result['fallback_used']}, predictions=${predictions.length}');
+
       // Return result from AdaptiveGradCAMService
       return {
         'predictions': predictions,
@@ -417,11 +438,11 @@ class CameraProvider extends ChangeNotifier {
         'summaryGradCAMPath': result['summaryGradCAMPath'] as String?,
         'validation_failed': false,
       };
-
     } catch (e, stackTrace) {
       _isClassifying = false;
       _errorMessage = 'Error processing: $e';
-      await _errorLogger.logError(ErrorType.aiInferenceError, _errorMessage!, stackTrace: stackTrace.toString());
+      await _errorLogger.logError(ErrorType.aiInferenceError, _errorMessage!,
+          stackTrace: stackTrace.toString());
       notifyListeners();
       rethrow;
     }
@@ -429,9 +450,9 @@ class CameraProvider extends ChangeNotifier {
 
   // Wrapper for consistency
   Future<List<Map<String, dynamic>>> processPlantIdentification(
-      Uint8List imageData, {
-        OfflineProvider? offlineProvider,
-      }) async {
+    Uint8List imageData, {
+    OfflineProvider? offlineProvider,
+  }) async {
     return processImageForAI(imageData);
   }
 
@@ -456,7 +477,9 @@ class CameraProvider extends ChangeNotifier {
       try {
         await _cameraController!.setFlashMode(mode);
         notifyListeners();
-      } catch (e) { print(e); }
+      } catch (e) {
+        print(e);
+      }
     }
   }
 
@@ -513,7 +536,9 @@ class CameraProvider extends ChangeNotifier {
       try {
         await _cameraController!.setFocusPoint(point);
         await _cameraController!.setExposurePoint(point);
-      } catch (e) { print(e); }
+      } catch (e) {
+        print(e);
+      }
     }
   }
 

@@ -864,9 +864,12 @@ class OfflineCAMService {
       throw Exception('Failed to decode image');
     }
 
+    // Fix EXIF orientation before resize so portrait gallery images are not fed rotated.
+    final oriented = img.bakeOrientation(image);
+
     // Resize to 224x224
     final resized = img.copyResize(
-      image,
+      oriented,
       width: inputSize,
       height: inputSize,
       interpolation: img.Interpolation.cubic,

@@ -4,7 +4,7 @@
 > **Revised** to reflect CHANGELOG through v0.9.6 (April 4, 2026). Covers v0.9.4 (March 10), v0.9.5 (March 16), and v0.9.6 (April 4) releases.
 >
 > **Source of Truth Hierarchy:** This document is derived from `CHANGELOG.md` as the absolute authority.
-> Any README or setup guide that contradicts the Changelog (e.g., mentions of a live LLM or the
+> Any README or setup guide that contradicts the Changelog (e.g., mentions of the Gemini live LLM or the
 > deprecated HerbaScan custom model) has been resolved in favour of the Changelog.
 
 ---
@@ -39,8 +39,8 @@
 
 The application serves communities—particularly in rural areas with limited connectivity—by:
 
-- **Identifying** 43 classes (42 medicinal plants + 1 OOD rejection class) from a camera or gallery image.
-- **Explaining** the AI's reasoning through Explainable AI (XAI) heatmaps (Grad-CAM online / CAM offline).
+- **Identifying** 31 classes (29 medicinal plants + `Not_Plant` + `UnknownPlant`) from a camera or gallery image, fully offline via TFLite.
+- **Explaining** the AI's reasoning through deterministic XAI text explanations (taxonomy, ecology, medicinal uses, safety) — no live LLM.
 - **Informing** users with structured, deterministic plant knowledge (taxonomy, ecology, medicinal preparation, safety profile).
 - **Empowering** researchers and administrators through a cloud-backed admin portal for dataset building and plant catalog management.
 
@@ -49,13 +49,14 @@ The application serves communities—particularly in rural areas with limited co
 
 | Dimension            | State                                                                             |
 | -------------------- | --------------------------------------------------------------------------------- |
-| **Overall progress** | ~90% — all core features implemented; beta testing pending                        |
-| **AI Model**         | MobileNetV2-only (HerbaScan custom model deprecated in Phase 34)                  |
+| **Overall progress** | ~93% — all core features implemented; beta testing pending                        |
+| **AI Model**         | MobileNetV2 TFLite — 31 classes (29 plants + `Not_Plant`@19 + `UnknownPlant`@30) |
+| **Inference**        | Fully offline on-device via TFLite; two-stage quality gate (brightness/blur/edge density) |
 | **XAI Explanations** | Fully deterministic — no live LLM at runtime                                      |
-| **Plant Database**   | 42 medicinal plants + 1 OOD class, all migrated to structured 4-section format (Phase 35)       |
-| **Cloud Backend**    | FastAPI on Railway (`re-herbascan-production.up.railway.app`) — Grad-CAM provider |
+| **Plant Database**   | 29 ML output classes; catalog DB has 42 plants for browsing; all in structured 4-section format |
+| **Cloud Backend**    | FastAPI on Railway (`re-herbascan-production.up.railway.app`) — model retraining pipeline only |
 | **Auth & Cloud DB**  | Supabase (Auth, PostgreSQL, Storage, Edge Functions)                              |
-| **Local DB**         | SQLite v8 (8 tables), offline-first with Supabase sync                            |
+| **Local DB**         | SQLite v9 (9 tables), offline-first with Supabase sync                            |
 | **Admin Portal**     | Full Flutter AdminWebScreen on all platforms via GoRouter `/admin`                |
 
 
@@ -72,16 +73,12 @@ The application serves communities—particularly in rural areas with limited co
 | ------------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------- |
 | Camera capture + pinch-to-zoom        | ✅      | Real device only                                                                                                     |
 | Gallery image selection               | ✅      |                                                                                                                      |
-| Online Grad-CAM (Railway)             | ✅      | True gradient-based heatmap                                                                                          |
-| Offline CAM (TFLite)                  | ✅      | Bicubic interpolation + Gaussian blur                                                                                |
-| Adaptive fallback (online → offline)  | ✅      | `AdaptiveGradCAMService`                                                                                             |
+| Offline TFLite inference (31-class)   | ✅      | Two-stage quality gate → MobileNetV2 on-device                                                                       |
 | Top-3 predictions with confidence %   | ✅      |                                                                                                                      |
 | Full-screen tap-to-expand plant image | ✅      | Hero animation + pinch-to-zoom                                                                                       |
-| Full-screen heatmap mode              | ✅      | Zoomable, live opacity controls                                                                                      |
 | Scan history (Device tab)             | ✅      | SQLite `scan_history`                                                                                                |
 | Scan history (Cloud tab)              | ✅      | Supabase `scans` table, swipe + pull-to-refresh                                                                      |
 | Cloud save (Personal Herbarium)       | ✅      | Opt-in when signed in, upsert on duplicate                                                                           |
-| Heatmap in cloud sync                 | ✅      | Upload stores heatmap as `{scan_id}_gradcam.jpg` in Storage; metadata `gradcam_url`; download restores `gradCAMPath` |
 | Toxic plant blacklist (app-layer)     | ✅      | When top prediction is Adelfa, Ipil-Ipil, or Tuba-Tuba, dedicated warning screen; no normal result or auto-save. Source: `toxic_plant_blacklist.dart`. |
 
 
@@ -90,7 +87,7 @@ The application serves communities—particularly in rural areas with limited co
 
 | Feature                                 | Status | Notes                                        |
 | --------------------------------------- | ------ | -------------------------------------------- |
-| 43-class database                       | ✅      | 10 DOH-approved + 32 additional              |
+| 31-class ML model (29 plants + 2 OOD)   | ✅      | 10 DOH-approved + 19 additional plant classes; catalog DB has 42 plants for browsing |
 | Plant Detail screen (4 tabs)            | ✅      | Taxonomy / Ecology / Medicinal / Safety      |
 | Interactive 2D plant silhouette         | ✅      | SVG path hit-testing, DB-backed anatomy data |
 | Static habitat heatmap (OSM)            | ✅      | `flutter_map` + curated coordinates          |
@@ -216,9 +213,9 @@ App Launch (PlantProvider._initializeData)
 
 ---
 
-### 2.3 Hybrid XAI Explanation System (No-LLM)
+### 2.3 XAI Explanation System (Offline, No-LLM)
 
-> **Note:** No live LLM runs at runtime. All explanations are deterministic (offline JSON or cached). `ConfigService` retains no external AI key methods.
+> **Note:** No generative AI or live LLM runs at runtime. `gemini_api_service.dart` and `gemini_plant_service.dart` no longer exist. Explanations are fully deterministic and offline.
 
 #### Explanation Resolution Chain (`XAIExplanationService`)
 
@@ -226,11 +223,11 @@ App Launch (PlantProvider._initializeData)
 identifyPlant() triggers explanation lookup:
 
   Priority 1 → SharedPreferences / file cache  (read-only; previously saved from old online calls)
-  Priority 2 → assets/data/plant_explanations.json  (42 medicinal plants (+1 OOD), bundled in APK)
+  Priority 2 → assets/data/plant_explanations.json  (29 plant classes, bundled in APK)
   Priority 3 → Hardcoded fallback text
 ```
 
-#### Standardized 4-Section Structure (Phase 35 – all 42 medicinal plants (+1 OOD))
+#### Standardized 4-Section Structure (all 29 plant classes)
 
 Each plant explanation in `plant_explanations.json` follows this canonical schema:
 
@@ -340,13 +337,13 @@ if (loc == '/admin') {
 │  ┌────▼───────────────────────────▼────────────────────────────┐   │
 │  │                         Core Services                        │   │
 │  │                                                              │   │
-│  │  AdaptiveGradCAMService                                      │   │
-│  │    ├─ OnlineGradCAMService  ──────────────────────────────┐ │   │
-│  │    └─ OfflineCAMService ◄─ mobilenetv2_multi_output.tflite│ │   │
-│  │                         ◄─ mobilenetv2_cam_weights.json    │ │   │
-│  │                                                            │ │   │
-│  │  XAIExplanationService ◄─ plant_explanations.json (42)    │ │   │
-│  │  SafetyProfileService  ◄─ safety_profiles.json / SQLite   │ │   │
+│  │  TFLiteInferenceService ◄─ mobilenetv2_multi_output.tflite│   │   │
+│  │    ├─ Stage 1: Quality gate (brightness/blur/edge density) │   │   │
+│  │    └─ Stage 2: 31-class inference + confidence gate        │   │   │
+│  │                         ◄─ ood_safety_config.json          │   │   │
+│  │                                                              │   │
+│  │  XAIExplanationService ◄─ plant_explanations.json (29)    │   │   │
+│  │  SafetyProfileService  ◄─ safety_profiles.json / SQLite   │   │
 │  │  HabitatService        ◄─ plant_habitats.json / SQLite    │ │   │
 │  │  ConditionService      ◄─ SQLite / defaults               │ │   │
 │  │                                                            │ │   │
@@ -385,14 +382,15 @@ if (loc == '/admin') {
                                                              │
                          ┌───────────────────────────────────▼──┐
                          │     RAILWAY (Python FastAPI)           │
+                         │   Model Retraining Pipeline Only       │
                          │                                        │
                          │  GET  /health                          │
                          │  GET  /test                            │
-                         │  POST /identify  (multipart/form-data) │
-                         │    → MobileNetV2_model.keras           │
-                         │    → TF GradientTape Grad-CAM          │
-                         │    → labels.json (index→name)          │
-                         │    → base64 heatmap PNG in response    │
+                         │  POST /admin/trigger-training          │
+                         │    → validates admin secret            │
+                         │    → calls Modal GPU training endpoint │
+                         │  POST /admin/reload-model              │
+                         │    → hot-swaps model from Supabase     │
                          └────────────────────────────────────────┘
 ```
 
@@ -1043,7 +1041,7 @@ flutter clean && flutter pub get && flutter run
 | Railway cold start latency                | ⚠️ Acceptable | 10–30s cold; 2–4s warm; no always-on plan             |
 | Supabase built-in email rate limit        | ⚠️ Dev only   | 2 emails/hour; use custom SMTP for production         |
 | `SUPABASE_JWT_SECRET` on Railway          | ✅ Resolved    | Recommended unset (all users can scan without 401)    |
-| Live LLM                                  | ✅ Removed     | Thesis-defensible; all explanations deterministic     |
+| Live LLM / Gemini API                     | ✅ Removed     | Thesis-defensible; all explanations deterministic     |
 | HerbaScan custom model                    | ✅ Deprecated  | MobileNetV2-only for online/offline consistency       |
 | RLS recursion on profiles                 | ✅ Fixed       | `is_admin()` SECURITY DEFINER function applied        |
 | Delete-user 401 (JWKS)                    | ✅ Fixed       | `verify_jwt = false` in `config.toml` + JWKS internal |

@@ -273,7 +273,8 @@ Ensure the bucket name in your policy is `herbarium-images` (the UI may add `buc
 - If you see **403 "new row violates row-level security policy"** when saving to cloud, the bucket exists but storage RLS policies are missing. Run the migration **`supabase/migrations/20260302000000_storage_herbarium_policies.sql`** in Dashboard → SQL Editor (or run `npx supabase db push`). It creates INSERT, SELECT, UPDATE, and DELETE policies so authenticated users can upload to their own folder (`user_id/scan_id.jpg`). Create the bucket first (Step 2 above) if it does not exist.
 
 **Step 4 – Save**
-- Create each policy and save (or run the migration above). After that, the app can upload to `herbarium-images/{user_id}/{scan_id}.jpg` and RLS will enforce access. Scan uploads can also store the heatmap image as `{user_id}/{scan_id}_gradcam.jpg`; the app saves the public URL in the scan row’s metadata (`gradcam_url`) so the heatmap is preserved when syncing Device ↔ Cloud.
+
+- Create each policy and save (or run the migration above). After that, the app can upload to `herbarium-images/{user_id}/{scan_id}.jpg` and RLS will enforce access.
 
 ---
 

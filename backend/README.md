@@ -1,17 +1,17 @@
 # HerbaScan Backend API
 
-**Last Updated**: April 2026  
-**Backend Version**: 0.9.8
-**Flutter App Version**: v0.9.8
+**Last Updated**: May 2026  
+**Backend Version**: 0.9.9
+**Flutter App Version**: v0.9.9
 
-> **Changelog note (v0.9.4 – v0.9.6):** No backend API or server-side changes were introduced in app versions v0.9.4, v0.9.5, or v0.9.6. All changes in those releases were Flutter-side (UI/UX, admin portal, Supabase migrations). The backend remains at v0.9.7 spec: MobileNetV2-only, 43-class output, `/identify`, `/health`, `/test` endpoints unchanged.
+> **Architecture note:** Plant identification runs **fully offline** on-device via TFLite. This backend is used exclusively for model retraining (`POST /admin/trigger-training` → Modal GPU pipeline) and model hot-reload (`POST /admin/reload-model`). The `/identify` endpoint is not called by the Flutter app during normal operation.
+>
+> **Changelog note (v0.9.4 – v0.9.6):** No backend API or server-side changes were introduced in app versions v0.9.4, v0.9.5, or v0.9.6. All changes in those releases were Flutter-side (UI/UX, admin portal, Supabase migrations).
 
-**Model Standardization**: MobileNetV2 Only (Phase 34) - HerbaScan custom model deprecated  
-**AI Explanation Standardization**: Phase 35 Complete - Structured format with 42 plants
+**Model Standardization**: MobileNetV2 Only — HerbaScan custom model deprecated  
+**Class Count**: 31 classes (29 plant classes + `Not_Plant` index 19 + `UnknownPlant` index 30)
 
-FastAPI server for true Grad-CAM (Gradient-weighted Class Activation Mapping) computation using TensorFlow.
-
-This backend provides online GradCAM computation for the HerbaScan mobile app's Hybrid XAI Explanation System. The Flutter app uses this backend for online heatmap generation when internet connectivity is available, falling back to offline CAM when offline.
+FastAPI server for model retraining pipeline management and model reload. Deployed on Railway.
 
 ## 🚂 Deploying on Railway (monorepo)
 
@@ -30,7 +30,7 @@ Build/start come from `backend/railway.json` (Dockerfile + start command). No se
 
 ## 📋 Setup Instructions
 
-> **Note**: This backend is part of the HerbaScan Hybrid XAI Explanation System. The Flutter app (v0.9.7) uses this backend for online GradCAM computation, while offline explanations use pre-written structured JSON data (42 plants with taxonomy, ecology, medicinal_preparation, and safety_consideration) and offline CAM heatmaps.
+> **Note**: This backend handles model retraining and reload only. The Flutter app performs plant identification fully offline via TFLite. Offline XAI explanations use pre-written structured JSON data (29 plant classes with taxonomy, ecology, medicinal_preparation, and safety_consideration).
 
 ### 1. Place Model Files
 
@@ -48,30 +48,31 @@ backend/models/
 
 **Note:** As of Phase 34 (Model Standardization), the backend uses **only MobileNetV2 model** for prediction consistency between offline CAM and online GradCAM. The HerbaScan custom model (`herbascan_model.keras`) is deprecated.
 
-**labels.json format example (backend format - index:name):**
+**labels.json format example (backend format - index:name, 31 classes):**
 ```json
 {
-  "0": "Adelfa",
-  "1": "Akapulko",
-  "2": "Alagaw",
-  "3": "AloeVera",
+  "0": "Akapulko",
+  "1": "AloeVera",
   ...
-  "41": "YerbaBuena"
+  "19": "Not_Plant",
+  ...
+  "30": "UnknownPlant"
 }
 ```
 
 **Frontend labels format (assets/models/class_indices.json - name:index):**
 ```json
 {
-  "Adelfa": 0,
-  "Akapulko": 1,
-  "Alagaw": 2,
+  "Akapulko": 0,
+  "AloeVera": 1,
   ...
-  "YerbaBuena": 41
+  "Not_Plant": 19,
+  ...
+  "UnknownPlant": 30
 }
 ```
 
-**Important:** The frontend uses **only** `assets/models/class_indices.json` (format `name:index`) for offline CAM and TFLite; it does **not** use `labels.txt`. The backend uses `backend/models/labels.json` (format `index:name`). Keep both in sync when updating the model (42 Philippine medicinal plant species, indices 0-41).
+**Important:** The frontend uses **only** `assets/models/class_indices.json` (format `name:index`) for offline TFLite inference; it does **not** use `labels.txt`. The backend uses `backend/models/labels.json` (format `index:name`). Keep both in sync when updating the model (31 classes: 29 plant classes + `Not_Plant` at index 19 + `UnknownPlant` at index 30).
 
 ---
 
@@ -1097,7 +1098,7 @@ curl -X POST https://YOUR-RAILWAY-URL.railway.app/identify -F "file=@image.jpg"
   - Upload to cloud storage (S3, GCS) and download on startup
   - Include in Docker image if < 100MB
 - **Model Standardization (Phase 34):** Backend uses only `MobileNetV2_model.keras`. HerbaScan custom model is deprecated for prediction consistency between offline CAM and online GradCAM.
-- **AI Explanation Standardization (Phase 35):** Flutter app (v0.9.7) now uses standardized structured format for all 42 plants with identical data depth (taxonomy, ecology, medicinal_preparation, safety_consideration) for both online and offline (JSON) explanations.
+- **AI Explanation Standardization (Phase 35):** Flutter app (v0.9.7) now uses standardized structured format for all 42 plants with identical data depth (taxonomy, ecology, medicinal_preparation, safety_consideration) for both online (Gemini API) and offline (JSON) explanations.
 
 ### TensorFlow Compatibility
 

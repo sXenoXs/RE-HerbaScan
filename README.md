@@ -24,9 +24,9 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **Multi-language Support**: ✅ English/Filipino localization system
 - **Navigation**: ✅ Bottom navigation: 4 tabs (Home, Browse, History, Settings) with center camera FAB; DOH Approved Plants via Home carousel "See All"
 - **Settings**: ✅ Comprehensive app configuration
-- **Plant Database**: ✅ **42 medicinal plants with comprehensive data** (10 DOH-approved + 32 additional)
-- **XAI Explanation Database**: ✅ **NEW** Complete offline explanations for all 42 plants stored in JSON (~150KB)
-- **Offline Data Retrieval**: ✅ **NEW** Fixed broken offline data retrieval - all 42 plants now display complete summaries
+- **Plant Database**: ✅ **29 plant classes in the ML model** (10 DOH-approved + 19 additional); catalog DB contains 42 plants total for browsing
+- **XAI Explanation Database**: ✅ **NEW** Complete offline explanations for all plant classes stored in JSON (~150KB)
+- **Offline Data Retrieval**: ✅ **NEW** Fixed broken offline data retrieval — all plants now display complete summaries
 - **Scientific Name Resolution**: ✅ **NEW** Automatic scientific name lookup from plant database in Details and History screens
 - **Confidence Score Display**: ✅ **NEW** Replaced meaningless "Features" with useful confidence percentage display
 - **History Screen Scientific Names**: ✅ **NEW** Fixed missing scientific name subtitles in scan history list
@@ -36,26 +36,18 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **Offline Processing**: ✅ Full offline functionality
 - **AI Model Integration**: ✅ **UPDATED** Standardized to MobileNetV2 model only for prediction consistency (HerbaScan custom model deprecated)
 - **Offline AI Inference**: ✅ TensorFlow Lite multi-output model works offline (MobileNetV2 only)
-- **Online/Offline Adaptive System**: ✅ **NEW** Automatically tries online GradCAM first, falls back to offline CAM gracefully
 - **Plant Name Display**: ✅ **NEW** Fixed to show correct plant names (e.g., "Mango" instead of "Plant_24")
 - **Predictions Format**: ✅ **NEW** Fixed to return predictions in correct format for UI display
 - **Connectivity Monitoring**: ✅ Real-time network status detection
 - **Offline Data Management**: ✅ Local storage with optimization and cleanup
 - **Offline Sync Management**: ✅ Automatic data synchronization when online
 - **Offline UI Components**: ✅ Status indicators and management interface
-- **GradCAM Visualization**: ✅ Explainable AI heatmap system with working overlay controls
-- **Interactive Full-Screen Heatmap Mode**: ✅ **NEW** Tap heatmap to open full-screen zoomable view with live controls
-- **Offline CAM Heatmap Rendering**: ✅ **NEW** Smooth bicubic interpolation and Gaussian blur for organic, contoured heatmaps
-- **Unified Heatmap Explanation Card**: ✅ **NEW** Merged "About GradCAM/CAM" and "Heatmap Legend" into single card with visual legend
-- **Persistent Settings System**: ✅ **NEW** User preferences saved to SharedPreferences (show_confidence, show_gradcam, show_top3)
-- **Hybrid XAI Explanation System**: ✅ **UPDATED** Standardized content structure with four sections (Taxonomy, Ecology, Medicinal Uses, Safety) - identical format for online and offline explanations
-  - ✅ **COMPLETE** All 42 plants in `plant_explanations.json` migrated to new structured format
-  - ✅ **FIXED** GradCAM (Online) source badge now correctly displays "Online" instead of "Offline"
-- **Plant Results Screen**: ✅ AI prediction results with functional GradCAM integration
-- **Interactive Heatmaps**: ✅ Working opacity controls and tabbed interface
+- **Persistent Settings System**: ✅ **NEW** User preferences saved to SharedPreferences (show_confidence, show_top3)
+- **XAI Explanation System**: ✅ **UPDATED** Standardized content structure with four sections (Taxonomy, Ecology, Medicinal Uses, Safety)
+  - ✅ **COMPLETE** All plant classes in `plant_explanations.json` migrated to new structured format
+- **Plant Results Screen**: ✅ AI prediction results with confidence scores and XAI explanation
 - **Plant Detail Screen**: ✅ **NEW** Comprehensive plant information with ecology & habitat
 - **Preparation Instructions**: ✅ **NEW** Step-by-step herbal medicine preparation guide
-- **Critical Bug Fixes**: ✅ All GradCAM-related bugs resolved
 - **Browse Screen**: ✅ Full plant browsing with search, filter (All/DOH/Condition), grid/list views
 - **DOH Approved Plants Screen**: ✅ Dedicated screen for 10 DOH-approved plants with official branding
 - **Scan History Screen**: ✅ Complete history management with sort, delete, statistics
@@ -76,19 +68,15 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **Admin Feedback tab**: ✅ **NEW** 6th admin destination; Option B stores feedback in Supabase `user_feedback`; admins can view and delete entries (RLS: INSERT all, SELECT/DELETE admins only)
 - **Contextual feedback**: ✅ **NEW** Feedback no longer linked from consumer Settings; Plant Result CTA "Did we get this right?" opens modal sheet; milestone prompt (3rd/5th save) invites rating; shared form used by full-screen Feedback and sheet
 - **Testing Guide**: ✅ **NEW** Complete user testing documentation
-- **Backend API**: ✅ **NEW** Python FastAPI server for true Grad-CAM computation
+- **Backend API**: ✅ **NEW** Python FastAPI backend on Railway for model retraining pipeline (Modal GPU) and model reload
 - **Backend Documentation**: ✅ **NEW** Comprehensive model management and deployment guides
-- **Postman Testing**: ✅ **NEW** Complete testing guide for VS Code and other IDEs
-- **GradCAM/CAM Fixes**: ✅ **NEW** Fixed all GradCAM and CAM heatmap issues, scan persistence, and UI visibility
-- **Method Labels**: ✅ **NEW** Added method indicators (CAM/GradCAM/Fallback/Online) in History and Recent Scans
 - **Resizable Text Areas**: ✅ **NEW** Made feedback form text areas vertically resizable
-- **Hybrid XAI Explanation System**: ✅ **UPDATED** Standardized structured format with four required sections: Taxonomy, Ecology & Habitat, Medicinal Uses, Safety Protocol
+- **XAI Explanation System**: ✅ **UPDATED** Standardized structured format with four required sections: Taxonomy, Ecology & Habitat, Medicinal Uses, Safety Protocol
 - **Markdown Text Formatting**: ✅ **UPDATED** Uses h3 headers (###) for structured sections, rich text with proper formatting (bold, italic, headers, lists)
-- **Usability Assessment**: ✅ **NEW** Clear status indicators (USABLE/USE WITH CAUTION/NOT RECOMMENDED) based on heatmap analysis
+- **Usability Assessment**: ✅ **NEW** Clear status indicators (USABLE/USE WITH CAUTION/NOT RECOMMENDED)
 - **Content Standardization**: ✅ **COMPLETE** Explanations use identical structure from cache, offline JSON, and fallback only (no live LLM at runtime)
-  - All 42 plants in structured format with taxonomy, ecology, medicinal_preparation, and safety_consideration
-  - Source badge displays "Online" for GradCAM (Online) mode and "Offline" for CAM (Offline) mode
-- **Refresh Functionality**: ✅ **NEW** Refresh button regenerates both GradCAM heatmap and AI explanation
+  - All plant classes in structured format with taxonomy, ecology, medicinal_preparation, and safety_consideration
+- **Refresh Functionality**: ✅ **NEW** Refresh button regenerates the AI explanation
 - **Scroll Position Persistence**: ✅ **NEW** Condition Search Screen now preserves scroll position when navigating back from selected condition
 - **Feedback Screen Text Contrast**: ✅ **NEW** Fixed poor text contrast on selected feedback chips - dark green text on light green background for optimal readability
 - **Scan Screen AppBar Title Visibility**: ✅ **NEW** Fixed invisible "Scan Plant" title - changed to white text for readability against dark camera background
@@ -173,9 +161,6 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 
 - **Feedback Bottom Sheet Keyboard Overflow**: Prevented Samsung/Android 16 bottom layout squishing by refactoring `FeedbackBottomSheetContent` using programmatic dynamic paddings over rigid Scaffolds.
 - **Not_Plant Array Shift**: Solidified all database mappings around string-based identifiers, securing them from the alphabetical model integer changes when `Not_Plant` was introduced.
-- **Online GradCAM Prediction Mapping**: Fixed "Unknown" plant names in online GradCAM predictions
-- **Backend Response Field Mapping**: Corrected mapping from backend 'class' and 'class_index' to Flutter format
-- **Label Format Parsing**: Added parsing to extract plant names from backend label format
 - **Toxic plant flow**: Dedicated warning screen when top prediction is Adelfa, Ipil-Ipil, or Tuba-Tuba; Alternative Matches filters out blacklisted plants
 - **Strict contraindication UX**: Prominent "Use with strict caution" card when `needs_strict_contraindications` is true
 - **Admin header dark mode**: Admin Console header (narrow/mobile layout) now uses theme surface/onSurface so it adapts in dark mode
@@ -617,9 +602,8 @@ HerbaScan is a Flutter-based mobile application that uses Convolutional Neural N
 - **Framework**: Flutter 3.9.2+
 - **State Management**: Provider pattern with 6 providers (App, Auth, Plant, Camera, Language, Offline)
 - **Database**: SQLite with proper relationships
-- **AI/ML**: TensorFlow Lite with offline processing, GradCAM visualization, and hybrid XAI explanations
-- **Offline Processing**: Add a offline functionality for rural areas
-- **GradCAM**: Explainable AI heatmap generation with working interactive visualization and overlay controls
+- **AI/ML**: TensorFlow Lite with fully offline on-device inference (31-class MobileNetV2)
+- **Offline Processing**: Offline-first architecture for rural areas — plant identification requires no internet
 - **XAI Explanations**: Text-based explanations from cache, offline JSON, and fallback only (no live LLM); markdown formatting and usability assessment
 - **Connectivity**: Real-time network monitoring with connectivity_plus
 - **Localization**: Flutter's built-in i18n system
@@ -834,7 +818,6 @@ HerbaScan is designed to work seamlessly in rural areas without internet connect
 - **Preparation Step Infographics** (v0.9.7): Redesigned all preparation step cards with context-aware icons and color-coded borders per step type (boil=fire/orange, leaves=eco/green, strain=filter/teal, cool=snowflake/blue, drink=café/amber, wash=drop/blue, etc.). Focus Mode shows a large animated 96 px icon above each step instruction with spring-scale entrance animation. Interactive animated icon-to-check transition on step completion.
 
 - **UI/UX Redesign**: Design system (Emerald botanical green, app_theme.dart); Splash (solid background, linear loader); Onboarding (de-jargonified); Home (BottomAppBar, center FAB, DOH carousel); Browse (SearchBar, SegmentedButton, condition banner); Scan (edge-to-edge, reticle, tips sheet); Plant Result (Insights + AI Vision tabs, glassmorphic hero); Plant Detail (SliverAppBar hero, Quick Facts); History (TabBar, device cards, select mode, swipe export/delete, batch sync/download); Settings (grouped cards, Account block); DOH and Help redesigns; Auth/OTP (botanical header, pinput 6-box); Condition Search (directory + ConditionResultsScreen); Habitat Map; Preparation Guide and Focus Mode; System Diagnostics (renamed from Offline Demo); admin polish (instant local sync, condition count sync, user management crash fix).
-- **Heatmap in cloud**: Upload stores heatmap as `{scan_id}_gradcam.jpg` in Storage; metadata `gradcam_url`; download restores `gradCAMPath`.
 - **Scan History**: Swipe between Device & Cloud tabs; pull-to-refresh on Cloud; select mode with batch sync (Device → Cloud, Cloud → Device); Select all / Deselect all; save/export from Plant Result screen only (and History device card export to gallery).
 - **Auth & Account**: Signup 6-digit confirmation; duplicate email handling; stronger password rules; change password with live requirements; delete account (Settings → Account); account deactivation by admin (sign-out with message); friendly auth error messages; 6-digit OTP password reset and auth deep links.
 - **Preparation Guide**: Renamed from Instructions; interactive checklist and contextual timers; timer notifications and persistence (SharedPreferences, flutter_local_notifications); Focus Mode; calendar add-to-device with pre-fill.
@@ -854,15 +837,12 @@ HerbaScan is designed to work seamlessly in rural areas without internet connect
 ### Known Issues
 
 - **AI Model Accuracy**: May need improvement with more training data
-- **GradCAM Visualization**: Needs refinement for better explainability (marked as "Needs Improvement" in docs)
 - **Performance Optimization**: Final mobile deployment optimization pending based on real-world usage data
 
 ### Recently Fixed
 
-- ✅ **Offline CAM Inference**: Fixed multiple output buffers shape mismatch error (v0.5.2)
 - ✅ **TFLite Multiple Outputs**: Corrected output buffer passing using `runForMultipleInputs()` with output map
 - ✅ **Feature Maps Extraction**: Verified correct extraction of `[1, 7, 7, 1280]` feature maps
-- ✅ **Predictions Extraction**: Verified correct extraction of `[1, 40]` predictions from 2D buffer
 
 ### Technical Decisions
 
@@ -877,10 +857,10 @@ HerbaScan is designed to work seamlessly in rural areas without internet connect
 
 ## Features
 
-- 🌿 **AI-Powered Plant Recognition**: Uses MobileNet V2 + Random Forest for accurate plant identification
-- 📱 **Offline Processing**: Works without internet connection
-- 🏥 **DOH Integration**: Access to 10 DOH-approved herbal medicines + 32 additional medicinal plants (42 total)
-- 🔍 **Explainable AI**: GradCAM visualization shows how the AI identifies plants with interactive heatmaps
+- 🌿 **AI-Powered Plant Recognition**: Uses MobileNetV2 TFLite (31-class model) for fully offline plant identification
+- 📱 **Offline-First**: Works completely without internet — identification, plant info, and XAI all on-device
+- 🏥 **DOH Integration**: Access to 10 DOH-approved herbal medicines + additional medicinal plants
+- 🔍 **Explainable AI**: Deterministic XAI explanations (taxonomy, ecology, medicinal uses, safety) — no live LLM
 - 🌐 **Multi-language Support**: English and Filipino language options
 - 📊 **Confidence Scoring**: Shows prediction confidence levels
 - 📚 **Comprehensive Database**: Detailed plant information including taxonomy, morphology, ecology, and medicinal uses
@@ -951,51 +931,40 @@ HerbaScan is designed to work seamlessly in rural areas without internet connect
 
 ### Current Status
 
-- ✅ MobileNet V2 + Random Forest model trained
-- ✅ Model files: `.h5` and `.pkl` formats
-- ✅ Model conversion to TensorFlow Lite (complete)
-- ✅ GradCAM visualization with working overlay controls (all bugs resolved)
+- ✅ MobileNetV2 TFLite model — 31 classes (29 plants + `Not_Plant` + `UnknownPlant`)
+- ✅ Fully offline on-device inference via `mobilenetv2_multi_output.tflite`
 - ✅ Android integration (fully functional)
-- ✅ Offline processing (complete offline AI inference)
+- ✅ Two-stage image quality gate (brightness, blur, edge density) before inference
 - ✅ Performance Metrics: Accuracy 89.23%, Precision 87.56%, Recall 88.34%, F1-Score 87.95%
-- ✅ **Backend API**: Python FastAPI server for true Grad-CAM computation (ready to deploy)
-- ✅ **Backend Documentation**: Comprehensive guides for model management, deployment, and testing
+- ✅ **Backend API**: Python FastAPI on Railway for model retraining pipeline (not for identification)
+- ✅ **Backend Documentation**: Comprehensive guides for model management and deployment
 
-### Backend API (Python FastAPI)
+### Backend API (Python FastAPI — Model Retraining Only)
 
-HerbaScan includes a Python backend API for true gradient-based Grad-CAM computation:
+HerbaScan includes a Python backend on Railway used exclusively for model retraining and model reload. Plant identification is performed fully offline on-device via TFLite.
 
 **Location**: `backend/` directory
 
+**Key Endpoints**:
+
+- `POST /admin/trigger-training` — validates admin secret, forwards to Modal GPU training pipeline
+- `POST /admin/reload-model` — hot-swaps `MobileNetV2_model.keras` from Supabase storage
+- `GET /health`, `GET /test` — health and diagnostics
+
 **Features**:
-- ✅ FastAPI server with 6 endpoints (/, /health, /test, /identify, /admin/reload-model, /admin/trigger-training)
-- ✅ True Grad-CAM implementation using TensorFlow GradientTape
-- ✅ Docker configuration for Railway deployment
+
+- ✅ FastAPI server with Docker configuration for Railway deployment
+- ✅ Modal GPU transfer-learning pipeline (`modal_train.py`) — triggered from admin panel
+- ✅ Model hot-swap without app release via `POST /admin/reload-model`
 - ✅ Comprehensive documentation (`backend/README.md`)
-- ✅ Postman collection for API testing
-- ✅ Model management guides
-- ✅ **NEW** `POST /admin/trigger-training` — forwards training requests to Modal GPU pipeline
-- ✅ **NEW** `MODAL_TRAINING_URL` environment variable support
 
 **Documentation**:
-- **Backend README**: `backend/README.md` - Complete backend documentation (1,500+ lines)
-- **Quick Start**: `backend/QUICK_START.md` - Fast deployment guide
+
+- **Backend README**: `backend/README.md` — Complete backend documentation
+- **Quick Start**: `backend/QUICK_START.md` — Fast deployment guide
 - **Deployment Guide**: See `backend/README.md` → "🚀 Deployment to Railway"
 - **Model Management**: See `backend/README.md` → "🔄 Updating Models"
 - **Phase 2 Guide**: See `backend/README.md` → "Phase 2: Model Extraction & Conversion"
-- **Postman Testing**: See `backend/README.md` → "🧪 Testing with Postman"
-
-**Key Features**:
-- **Model Management**: Complete guide for updating models in backend and Flutter assets
-- **Phase 2 Scripts**: Detailed instructions for `extract_cam_weights.py` and `create_multi_output_tflite.py`
-- **Railway Deployment**: Step-by-step deployment guide with troubleshooting
-- **Postman Testing**: Comprehensive testing guide for VS Code and other IDEs
-
-**Quick Links**:
-- Model Updates: `backend/README.md` → "🔄 Updating Models"
-- Deployment: `backend/README.md` → "🚀 Deployment to Railway"
-- Testing: `backend/README.md` → "🧪 Testing with Postman"
-- Phase 2: `backend/README.md` → "Phase 2: Model Extraction & Conversion"
 
 ### Model Conversion Steps
 

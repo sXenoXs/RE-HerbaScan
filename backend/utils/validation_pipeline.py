@@ -52,12 +52,20 @@ logger = logging.getLogger(__name__)
 # --- Stage 1 thresholds ---
 # Blur: Variance of Laplacian on grayscale image.  Images whose sharpness score
 # falls below this threshold are rejected before inference.
-BLUR_THRESHOLD: float = 100.0
+# Matches ood_safety_config.json ood_blur_threshold and algorithm spec.
+BLUR_THRESHOLD: float = 15.0
 
 # Darkness: Mean pixel intensity of the grayscale image in the raw [0, 255] scale.
-# Images with a mean below 40 (out of 255) are considered too dark and are
-# rejected before inference.  VALIDATE: mean ~10 → 10 < 40 → rejected ✓
-DARKNESS_THRESHOLD: float = 40.0
+# Images with a mean below this are considered too dark and are rejected.
+# Matches ood_safety_config.json ood_darkness_threshold and algorithm spec.
+# VALIDATE: mean ~5 → 5 < 10 → rejected ✓
+DARKNESS_THRESHOLD: float = 10.0
+
+# Edge density: Fraction of pixels with Canny edge magnitude above zero.
+# Images with fewer structural edges than this are featureless (plain background,
+# solid colour) and are rejected before inference.
+# Matches ood_safety_config.json ood_edge_density_min.
+EDGE_DENSITY_THRESHOLD: float = 0.003
 
 # --- File paths (all relative to backend/) ---
 # Location relative to project root: /backend/models/ood_safety_config.json
@@ -81,6 +89,7 @@ USE_TFLITE: bool = os.getenv("USE_TFLITE", "false").lower() == "true"
 _ERR_CORRUPT = "Validation Failed: Image could not be decoded."
 _ERR_BLUR    = "Validation Failed: Image is too blurry."
 _ERR_DARK    = "Validation Failed: Image is too dark."
+_ERR_EDGE    = "Validation Failed: Image lacks sufficient structure."
 _ERR_OOD     = "Validation Failed: Subject unrecognized or not a plant."
 
 # --- Default OOD config used when the JSON file is missing or malformed ---
@@ -122,6 +131,7 @@ def check_image_quality(
     image_bytes: bytes,
     blur_threshold: float = BLUR_THRESHOLD,
     darkness_threshold: float = DARKNESS_THRESHOLD,
+    edge_density_threshold: float = EDGE_DENSITY_THRESHOLD,
 ) -> tuple[bool, str]:
     """
     Stage 1 heuristic gatekeeper — runs entirely on raw bytes via OpenCV.
@@ -183,7 +193,22 @@ def check_image_quality(
                     mean_intensity, darkness_threshold)
         return False, _ERR_DARK
 
-    logger.debug("Stage 1 PASS — blur=%.2f, brightness=%.1f", lap_var, mean_intensity)
+    # ---- 3. Edge density check (Canny) ---------------------------------------
+    # Fraction of pixels that are Canny edges.  Featureless images (blank walls,
+    # solid backgrounds) have almost no edges and are useless for inference.
+    edges = cv2.Canny(gray, 50, 150)
+    edge_density: float = float(np.sum(edges > 0)) / float(gray.size)
+    logger.debug("Stage 1 edge density: %.5f (threshold: %.3f)",
+                 edge_density, edge_density_threshold)
+    if edge_density < edge_density_threshold:
+        logger.info(
+            "Stage 1 REJECT — edge density %.5f < threshold %.3f",
+            edge_density, edge_density_threshold,
+        )
+        return False, _ERR_EDGE
+
+    logger.debug("Stage 1 PASS — blur=%.2f, brightness=%.1f, edge=%.5f",
+                 lap_var, mean_intensity, edge_density)
     return True, ""
 
 

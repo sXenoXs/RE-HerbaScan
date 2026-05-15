@@ -413,7 +413,8 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                   profile.strictContraindications.isNotEmpty ||
                   profile.pregnancyWarning);
           // ROADMAP B 3.3: When high-risk, safety first (CE below name, before scientific name)
-          final showSafetyFirst = hasActiveContraindications && !isLowConfidence;
+          final showSafetyFirst =
+              hasActiveContraindications && !isLowConfidence;
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -431,7 +432,8 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                       ),
                     ),
                   ),
-                  _buildDOHBadge(context, resolvedPlant?.isDOHApproved ?? false),
+                  _buildDOHBadge(
+                      context, resolvedPlant?.isDOHApproved ?? false),
                 ],
               ),
               if (showSafetyFirst) ...[
@@ -488,7 +490,8 @@ class _PlantResultScreenState extends State<PlantResultScreen>
     final l10n = AppLocalizations.of(context);
     final scanId = _savedScanResult?.id ?? widget.scanResultFromHistory?.id;
     final plantName = widget.predictions.isNotEmpty
-        ? (widget.predictions[0]['plantName'] ?? widget.predictions[0]['label']) as String?
+        ? (widget.predictions[0]['plantName'] ?? widget.predictions[0]['label'])
+            as String?
         : null;
     final confidence = widget.predictions.isNotEmpty
         ? (widget.predictions[0]['confidence'] as num?)?.toDouble()
@@ -650,8 +653,12 @@ class _PlantResultScreenState extends State<PlantResultScreen>
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final bgColor = isDOHApproved
-        ? (isDark ? AppTheme.safeGreen.withValues(alpha: 0.25) : AppTheme.safeBgLight)
-        : (isDark ? AppTheme.warningAmber.withValues(alpha: 0.2) : AppTheme.warningBgLight);
+        ? (isDark
+            ? AppTheme.safeGreen.withValues(alpha: 0.25)
+            : AppTheme.safeBgLight)
+        : (isDark
+            ? AppTheme.warningAmber.withValues(alpha: 0.2)
+            : AppTheme.warningBgLight);
     final fgColor = isDOHApproved ? AppTheme.safeGreen : AppTheme.warningAmber;
     final label = isDOHApproved ? 'DOH Verified' : 'Scientifically Documented';
     final icon = isDOHApproved ? Icons.verified_rounded : Icons.science_rounded;
@@ -686,7 +693,9 @@ class _PlantResultScreenState extends State<PlantResultScreen>
   /// ROADMAP B 2.3: Bottom sheet explaining DOH vs Scientifically Documented.
   void _showDOHInfoSheet(BuildContext context, bool isDOHApproved) {
     final theme = Theme.of(context);
-    final title = isDOHApproved ? 'DOH Verified Plant' : 'Scientifically Documented Plant';
+    final title = isDOHApproved
+        ? 'DOH Verified Plant'
+        : 'Scientifically Documented Plant';
     final body = isDOHApproved
         ? 'This plant is officially endorsed by the Philippine Department of Health under Administrative Order No. 12, series of 1997, and is included in the list of clinically validated herbal medicines (Republic Act No. 8423 — TAMA).'
         : 'This plant is not on the DOH approved list but is included in HerbaScan based on peer-reviewed literature and PITAHC (Philippine Institute of Traditional and Alternative Health Care) references.';
@@ -772,54 +781,54 @@ class _PlantResultScreenState extends State<PlantResultScreen>
           child: ConstrainedBox(
             constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
             child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: isDisabled
-                ? theme.colorScheme.surfaceContainerHighest
-                : color.withOpacity(0.08),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isDisabled
-                  ? theme.colorScheme.outline.withOpacity(0.1)
-                  : color.withOpacity(0.2),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDisabled
+                    ? theme.colorScheme.surfaceContainerHighest
+                    : color.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isDisabled
+                      ? theme.colorScheme.outline.withOpacity(0.1)
+                      : color.withOpacity(0.2),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: isDisabled
+                          ? theme.colorScheme.onSurface.withOpacity(0.08)
+                          : color.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      icon,
+                      color: isDisabled
+                          ? theme.colorScheme.onSurface.withOpacity(0.4)
+                          : color,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: isDisabled
+                          ? theme.colorScheme.onSurface.withOpacity(0.4)
+                          : theme.colorScheme.onSurface,
+                    ),
+                    maxLines: 2,
+                  ),
+                ],
+              ),
             ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: isDisabled
-                      ? theme.colorScheme.onSurface.withOpacity(0.08)
-                      : color.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  icon,
-                  color: isDisabled
-                      ? theme.colorScheme.onSurface.withOpacity(0.4)
-                      : color,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: isDisabled
-                      ? theme.colorScheme.onSurface.withOpacity(0.4)
-                      : theme.colorScheme.onSurface,
-                ),
-                maxLines: 2,
-              ),
-            ],
-          ),
-        ),
-        ),
         ),
       ),
     );
@@ -895,24 +904,24 @@ class _PlantResultScreenState extends State<PlantResultScreen>
                       ],
                     ),
                   ),
-                SizedBox(
-                  width: 60,
-                  height: 6,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(3),
-                    child: LinearProgressIndicator(
-                      value: conf.clamp(0.0, 1.0),
-                      backgroundColor:
-                          theme.colorScheme.surfaceContainerHighest,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        _getConfidenceColor(conf),
+                  SizedBox(
+                    width: 60,
+                    height: 6,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(3),
+                      child: LinearProgressIndicator(
+                        value: conf.clamp(0.0, 1.0),
+                        backgroundColor:
+                            theme.colorScheme.surfaceContainerHighest,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          _getConfidenceColor(conf),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
           );
         }),
       ],
@@ -1336,8 +1345,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
       // Milestone feedback prompt (3rd or 5th save)
       final count = plantProvider.scanHistory.length;
       final feedbackService = FeedbackService();
-      final shouldShow =
-          await feedbackService.shouldShowMilestonePrompt(count);
+      final shouldShow = await feedbackService.shouldShowMilestonePrompt(count);
       if (!mounted) return;
       if (shouldShow) {
         await feedbackService.recordMilestonePromptShown();

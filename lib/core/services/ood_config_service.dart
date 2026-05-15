@@ -31,6 +31,10 @@ class OodConfigService {
   /// Class index of a dedicated "not_plant" output class, or -1 if disabled.
   int notPlantClassIndex = -1;
 
+  /// Minimum edge-pixel fraction (Sobel magnitude > 50) required to pass Stage 1.
+  /// Images below this are featureless (blank, solid colour) and are rejected.
+  double edgeDensityMin = 0.003;
+
   /// Display names of plants that should always route to the warning screen.
   List<String> toxicBlacklist = ['Adelfa', 'IpilIpil', 'TubaTuba'];
 
@@ -62,6 +66,9 @@ class OodConfigService {
       notPlantClassIndex =
           (notPlantIdx != null && notPlantIdx is int) ? notPlantIdx : -1;
 
+      edgeDensityMin =
+          (data['ood_edge_density_min'] as num?)?.toDouble() ?? edgeDensityMin;
+
       final blacklist = data['toxic_blacklist'];
       if (blacklist != null) {
         toxicBlacklist = List<String>.from(blacklist as List);
@@ -70,6 +77,7 @@ class OodConfigService {
       _loaded = true;
       print('✅ [OodConfigService] Config loaded — '
           'blur≥$blurThreshold  dark≥$darknessThreshold  '
+          'edge≥$edgeDensityMin  '
           'ood≥$confidenceThresholdOod  accept≥$confidenceThresholdAccept  '
           'notPlantIdx=$notPlantClassIndex');
     } catch (e) {

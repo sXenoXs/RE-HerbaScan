@@ -1,13 +1,15 @@
 # HerbaScan Backend - Quick Start Guide
 
-**Last Updated**: April 2026  
-**Backend Version**: 0.9.7
-**Flutter App Version**: v0.9.7
+**Last Updated**: May 2026  
+**Backend Version**: 0.9.9
+**Flutter App Version**: v0.9.9
 
-> **Changelog note (v0.9.4 – v0.9.6):** No backend terminal commands, script changes, or migration steps were introduced in app versions v0.9.4, v0.9.5, or v0.9.6. The quick-start steps, Railway config, and model extraction workflow are unchanged from v0.9.7.
+> **Changelog note (v0.9.4 – v0.9.8):** No backend terminal commands, script changes, or migration steps were introduced in app versions v0.9.4–v0.9.6. v0.9.7–v0.9.8 added the Modal training pipeline and admin routing. The quick-start deployment steps and model extraction workflow remain as described below.
+>
+> **Architecture note:** Plant identification runs **fully offline** on-device via TFLite. The Railway backend is used exclusively for model retraining (`POST /admin/trigger-training` → Modal GPU) and model reload (`POST /admin/reload-model`). The `/identify` endpoint exists but is not called by the Flutter app during normal operation.
 
-**Model Standardization**: MobileNetV2 Only (Phase 34) - HerbaScan custom model deprecated  
-**AI Explanation Standardization**: Phase 35 Complete - Structured format with 42 plants
+**Model Standardization**: MobileNetV2 Only — HerbaScan custom model deprecated  
+**AI Explanation Standardization**: Complete — Structured offline format for all 29 plant classes
 
 ## ✅ **What's Complete**
 
@@ -16,8 +18,9 @@ Your backend is **100% ready** to deploy! All code is written and tested.
 ```
 ✅ Python backend code complete
 ✅ MobileNetV2 model only (HerbaScan model deprecated); Docker and Railway config ready
+✅ POST /admin/trigger-training — forwards training requests to Modal GPU pipeline
+✅ POST /admin/reload-model — hot-swaps model from Supabase storage
 ✅ API documentation complete
-✅ Postman testing collection ready
 ```
 
 ---
@@ -88,7 +91,7 @@ Should see:
 {
   "status": "healthy",
   "model_loaded": true,
-  "num_classes": 43
+  "num_classes": 31
 }
 ```
 
@@ -107,23 +110,17 @@ Should see:
 
 ---
 
-## 📱 **Use in Flutter App**
+## 📱 **Admin Training Trigger**
 
-Once deployed, add this to your Flutter app:
+The Railway backend is called by the Flutter admin panel to kick off model retraining:
 
 ```dart
-// lib/core/services/online_gradcam_service.dart
-static const String API_BASE_URL = 
-  'https://YOUR-RAILWAY-URL.up.railway.app';
+// TriggerTrainingWidget sends POST /admin/trigger-training
+// with x-admin-secret header and {plant_slug, new_class_name} body.
+// Training runs on Modal GPU (~15 min) and reloads the model automatically.
 ```
 
-Then call:
-```dart
-final response = await http.post(
-  Uri.parse('$API_BASE_URL/identify'),
-  body: formData
-);
-```
+The admin URL is already wired in `lib/features/admin/widgets/trigger_training_widget.dart`.
 
 ---
 
@@ -267,12 +264,12 @@ When you have a new trained model:
 ## ✨ **That's It!**
 
 Once deployed, you have:
-- ✅ Working Grad-CAM API
-- ✅ 42 medicinal plant species + 1 OOD rejection class (`Not_Plant`)
-- ✅ Base64 encoded heatmap images
-- ✅ Top-3 predictions with confidence scores
-- ✅ Ready for Flutter integration
-- ✅ Integrated with Hybrid XAI Explanation System (v0.9.7) - supports 42 plants with complete structured offline explanations (taxonomy, ecology, medicinal_preparation, safety_consideration)
+
+- ✅ Working model retraining pipeline (Modal GPU triggered via `/admin/trigger-training`)
+- ✅ Model hot-reload endpoint (`/admin/reload-model` pulls from Supabase storage)
+- ✅ 31-class MobileNetV2 model (29 plants + `Not_Plant` index 19 + `UnknownPlant` index 30)
+- ✅ Plant identification runs fully offline on-device via TFLite — no Railway call during scanning
+- ✅ Offline XAI explanations for all 29 plant classes (taxonomy, ecology, medicinal_preparation, safety_consideration)
 
 ### Next Steps
 
