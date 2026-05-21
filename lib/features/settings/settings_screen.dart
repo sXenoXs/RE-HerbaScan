@@ -53,14 +53,12 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 24),
 
           // 3. Scanning & AI
-          _buildSectionLabel(context, theme, 'Scanning & AI'),
+          _buildSectionLabel(context, theme, 'Scanning & Recognition'),
           const SizedBox(height: 8),
           _buildGroupedCard(
             theme,
             children: [
               _buildConfidenceScoresTile(context, theme),
-              _buildSoftDivider(theme),
-              _buildGradCAMTile(context, theme),
               _buildSoftDivider(theme),
               _buildTop3ResultsTile(context, theme),
             ],
@@ -255,9 +253,7 @@ class SettingsScreen extends StatelessWidget {
                 'Sign Out',
                 style: TextStyle(color: theme.colorScheme.error),
               ),
-              onTap: () async {
-                await auth.signOut();
-              },
+              onTap: () => _showSignOutDialog(context, auth),
             ),
             _buildSoftDivider(theme),
             ListTile(
@@ -349,21 +345,6 @@ class SettingsScreen extends StatelessWidget {
         appProvider.toggleConfidenceScores();
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('show_confidence', value);
-      },
-    );
-  }
-
-  Widget _buildGradCAMTile(BuildContext context, ThemeData theme) {
-    final appProvider = Provider.of<AppProvider>(context);
-    return SwitchListTile(
-      secondary: const Icon(Icons.visibility_outlined),
-      title: const Text('Show AI Reasoning Heatmap'),
-      subtitle: const Text('Highlights the leaf areas the AI examined'),
-      value: appProvider.showGradCAM,
-      onChanged: (value) async {
-        appProvider.toggleGradCAM();
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('show_gradcam', value);
       },
     );
   }
@@ -601,6 +582,38 @@ class SettingsScreen extends StatelessWidget {
         children: [
           Text(label),
           Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+
+  void _showSignOutDialog(BuildContext context, AuthProvider auth) {
+    final theme = Theme.of(context);
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        icon: Icon(Icons.logout_rounded,
+            color: theme.colorScheme.error, size: 48),
+        title: const Text('Sign out?'),
+        content: const Text(
+          'You will be signed out of your Personal Herbarium account.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.of(dialogContext).pop();
+              await auth.signOut();
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.error,
+              foregroundColor: theme.colorScheme.onError,
+            ),
+            child: const Text('Sign Out'),
+          ),
         ],
       ),
     );

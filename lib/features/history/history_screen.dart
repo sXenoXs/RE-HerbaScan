@@ -332,142 +332,110 @@ class _HistoryScreenState extends State<HistoryScreen>
                         tooltip: appLocalizations.deleteAll,
                       ),
                   ],
-                  if (_historyTabIndex == 0 &&
-                      sortedScans.isNotEmpty &&
-                      !_selectMode)
+                  if (!_selectMode)
                     PopupMenuButton<String>(
-                      icon: const Icon(Icons.sort),
-                      onSelected: (value) => setState(() => _sortBy = value),
-                      itemBuilder: (context) => [
-                        PopupMenuItem(
-                          value: 'recent',
-                          child: Row(
-                            children: [
-                              Icon(Icons.access_time,
-                                  color: _sortBy == 'recent'
-                                      ? theme.colorScheme.primary
-                                      : null),
-                              const SizedBox(width: 12),
-                              Text('Most Recent',
-                                  style: TextStyle(
-                                      fontWeight: _sortBy == 'recent'
-                                          ? FontWeight.bold
-                                          : null)),
-                            ],
+                      icon: const Icon(Icons.more_vert),
+                      onSelected: (value) {
+                        if (value == 'select') {
+                          setState(() => _selectMode = true);
+                        } else if (value.startsWith('sort_')) {
+                          final sort = value.replaceFirst('sort_', '');
+                          setState(() {
+                            if (_historyTabIndex == 0) {
+                              _sortBy = sort;
+                            } else {
+                              _cloudSortBy = sort;
+                            }
+                          });
+                        }
+                      },
+                      itemBuilder: (context) {
+                        final activeSortBy =
+                            _historyTabIndex == 0 ? _sortBy : _cloudSortBy;
+                        final hasItems = _historyTabIndex == 0
+                            ? sortedScans.isNotEmpty
+                            : _cloudScans.isNotEmpty;
+
+                        Widget sortLeading(String key) {
+                          return activeSortBy == key
+                              ? Icon(Icons.check,
+                                  color: theme.colorScheme.primary, size: 20)
+                              : const SizedBox(width: 20);
+                        }
+
+                        return [
+                          PopupMenuItem<String>(
+                            enabled: false,
+                            height: 32,
+                            child: Text(
+                              'SORT',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: theme.colorScheme.onSurface
+                                    .withValues(alpha: 0.5),
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
                           ),
-                        ),
-                        PopupMenuItem(
-                          value: 'oldest',
-                          child: Row(
-                            children: [
-                              Icon(Icons.history,
-                                  color: _sortBy == 'oldest'
-                                      ? theme.colorScheme.primary
-                                      : null),
+                          PopupMenuItem<String>(
+                            value: 'sort_recent',
+                            child: Row(children: [
+                              sortLeading('recent'),
                               const SizedBox(width: 12),
-                              Text('Oldest First',
-                                  style: TextStyle(
-                                      fontWeight: _sortBy == 'oldest'
-                                          ? FontWeight.bold
-                                          : null)),
-                            ],
+                              Text(
+                                'Most Recent',
+                                style: TextStyle(
+                                  fontWeight: activeSortBy == 'recent'
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                            ]),
                           ),
-                        ),
-                        PopupMenuItem(
-                          value: 'confidence',
-                          child: Row(
-                            children: [
-                              Icon(Icons.trending_up,
-                                  color: _sortBy == 'confidence'
-                                      ? theme.colorScheme.primary
-                                      : null),
+                          PopupMenuItem<String>(
+                            value: 'sort_oldest',
+                            child: Row(children: [
+                              sortLeading('oldest'),
                               const SizedBox(width: 12),
-                              Text('Highest Confidence',
-                                  style: TextStyle(
-                                      fontWeight: _sortBy == 'confidence'
-                                          ? FontWeight.bold
-                                          : null)),
-                            ],
+                              Text(
+                                'Oldest First',
+                                style: TextStyle(
+                                  fontWeight: activeSortBy == 'oldest'
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                            ]),
                           ),
-                        ),
-                      ],
+                          PopupMenuItem<String>(
+                            value: 'sort_confidence',
+                            child: Row(children: [
+                              sortLeading('confidence'),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Highest Confidence',
+                                style: TextStyle(
+                                  fontWeight: activeSortBy == 'confidence'
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                            ]),
+                          ),
+                          if (hasItems) ...[
+                            const PopupMenuDivider(),
+                            PopupMenuItem<String>(
+                              value: 'select',
+                              child: const Row(children: [
+                                SizedBox(width: 20),
+                                SizedBox(width: 12),
+                                Text('Select Items'),
+                              ]),
+                            ),
+                          ],
+                        ];
+                      },
                     ),
-                  if (!_selectMode &&
-                      _historyTabIndex == 0 &&
-                      sortedScans.isNotEmpty)
-                    IconButton(
-                      icon: const Icon(Icons.checklist_rtl),
-                      onPressed: () => setState(() => _selectMode = true),
-                      tooltip: 'Select',
-                    ),
-                  if (!_selectMode &&
-                      _historyTabIndex == 1 &&
-                      _cloudScans.isNotEmpty) ...[
-                    PopupMenuButton<String>(
-                      icon: const Icon(Icons.sort),
-                      tooltip: 'Sort',
-                      onSelected: (value) =>
-                          setState(() => _cloudSortBy = value),
-                      itemBuilder: (context) => [
-                        PopupMenuItem(
-                          value: 'recent',
-                          child: Row(
-                            children: [
-                              Icon(Icons.access_time,
-                                  color: _cloudSortBy == 'recent'
-                                      ? theme.colorScheme.primary
-                                      : null),
-                              const SizedBox(width: 12),
-                              Text('Most Recent',
-                                  style: TextStyle(
-                                      fontWeight: _cloudSortBy == 'recent'
-                                          ? FontWeight.bold
-                                          : null)),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: 'oldest',
-                          child: Row(
-                            children: [
-                              Icon(Icons.history,
-                                  color: _cloudSortBy == 'oldest'
-                                      ? theme.colorScheme.primary
-                                      : null),
-                              const SizedBox(width: 12),
-                              Text('Oldest First',
-                                  style: TextStyle(
-                                      fontWeight: _cloudSortBy == 'oldest'
-                                          ? FontWeight.bold
-                                          : null)),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: 'confidence',
-                          child: Row(
-                            children: [
-                              Icon(Icons.trending_up,
-                                  color: _cloudSortBy == 'confidence'
-                                      ? theme.colorScheme.primary
-                                      : null),
-                              const SizedBox(width: 12),
-                              Text('Highest Confidence',
-                                  style: TextStyle(
-                                      fontWeight: _cloudSortBy == 'confidence'
-                                          ? FontWeight.bold
-                                          : null)),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.checklist_rtl),
-                      onPressed: () => setState(() => _selectMode = true),
-                      tooltip: 'Select',
-                    ),
-                  ],
                 ],
                 bottom: TabBar(
                   controller: _tabController,
@@ -542,8 +510,8 @@ class _HistoryScreenState extends State<HistoryScreen>
                       ? Icons.cloud_upload
                       : Icons.download),
                   label: Text(_historyTabIndex == 0
-                      ? 'Sync Selected'
-                      : 'Download Selected'),
+                      ? 'Upload Selected Images'
+                      : 'Download Selected Images'),
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(52),
                     shape: RoundedRectangleBorder(
@@ -1081,7 +1049,34 @@ class _HistoryScreenState extends State<HistoryScreen>
         ],
       ),
       child: InkWell(
-        onTap: isSelectMode && onToggleSelect != null ? onToggleSelect : null,
+        onTap: () async {
+          if (isSelectMode && onToggleSelect != null) {
+            onToggleSelect();
+            return;
+          }
+          final scan = _cloudScanToScanResult(cloud);
+          if (!mounted) return;
+          if (isScanResultTopPredictionBlacklisted(scan)) {
+            await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => NoMatchFoundScreen(
+                  imagePath: scan.imagePath,
+                  isToxicPlant: true,
+                  detectedToxicPlantName: toxicPlantDisplayName(
+                    scan.topPrediction?.plantName,
+                  ),
+                ),
+              ),
+            );
+          } else {
+            await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => PlantResultScreen.fromScanResult(scan),
+              ),
+            );
+          }
+          if (mounted) _loadCloudScans();
+        },
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(12.0),
@@ -1246,6 +1241,42 @@ class _HistoryScreenState extends State<HistoryScreen>
     } finally {
       if (mounted) setState(() => _batchOperationInProgress = false);
     }
+  }
+
+  ScanResult _cloudScanToScanResult(CloudScan cloud) {
+    final rawPreds = cloud.predictions ??
+        cloud.metadata?['predictions'] as List<dynamic>? ??
+        [];
+
+    final predictions = rawPreds
+        .whereType<Map<String, dynamic>>()
+        .map((p) => Prediction(
+              plantId: p['plantId']?.toString() ??
+                  p['plantName']?.toString() ??
+                  p['label']?.toString() ??
+                  '',
+              plantName: p['plantName']?.toString() ??
+                  p['plantId']?.toString() ??
+                  p['label']?.toString() ??
+                  'Unknown',
+              scientificName: p['scientificName']?.toString() ?? '',
+              confidence: (p['confidence'] is num)
+                  ? (p['confidence'] as num).toDouble()
+                  : double.tryParse(p['confidence']?.toString() ?? '') ?? 0.0,
+              features:
+                  (p['features'] as Map<String, dynamic>?) ?? {},
+            ))
+        .toList();
+
+    return ScanResult(
+      id: cloud.id,
+      imagePath: cloud.imageUrl ?? '',
+      scanDate: cloud.scanDate,
+      predictions: predictions,
+      confidenceScore: _cloudScanConfidence(cloud) ?? 0.0,
+      isOfflineScan: false,
+      metadata: cloud.metadata ?? {},
+    );
   }
 
   Widget _buildEmptyState(BuildContext context, ThemeData theme,

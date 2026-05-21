@@ -275,6 +275,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
     return GestureDetector(
       onTap: () => _searchFocusNode.unfocus(),
       child: Scaffold(
+        resizeToAvoidBottomInset: false,
         body: RefreshIndicator(
           onRefresh: () async {
             if (isToxic) {

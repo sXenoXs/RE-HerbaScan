@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:herbascan/core/providers/app_provider.dart';
 import 'package:herbascan/core/providers/auth_provider.dart';
 import 'package:herbascan/core/services/performance_monitor.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
+import 'package:herbascan/features/splash/disclaimer_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -58,18 +61,29 @@ class _SplashScreenState extends State<SplashScreen>
     final performanceMonitor = PerformanceMonitor();
     await performanceMonitor.stopTimer(PerformanceOperation.appStart);
 
-    if (mounted) {
-      final appProvider = Provider.of<AppProvider>(context, listen: false);
-      if (appProvider.isFirstLaunch) {
-        context.go('/onboarding');
-      } else {
-        final auth = Provider.of<AuthProvider>(context, listen: false);
-        if (auth.isLoggedIn && auth.isAdmin) {
-          context.go('/admin');
-        } else {
-          context.go('/home');
-        }
-      }
+    if (!mounted) return;
+
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+
+    final String destination;
+    if (appProvider.isFirstLaunch) {
+      destination = 'onboarding';
+    } else if (auth.isLoggedIn && auth.isAdmin) {
+      destination = 'admin';
+    } else {
+      destination = 'home';
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final acknowledged = prefs.getBool(kDisclaimerAcknowledgedKey) ?? false;
+
+    if (!mounted) return;
+
+    if (acknowledged) {
+      context.go('/$destination');
+    } else {
+      context.go('/disclaimer', extra: destination);
     }
   }
 
@@ -100,7 +114,7 @@ class _SplashScreenState extends State<SplashScreen>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Leaf hero icon in circular container
+                      // App icon
                       Container(
                         width: 112,
                         height: 112,
@@ -108,10 +122,11 @@ class _SplashScreenState extends State<SplashScreen>
                           shape: BoxShape.circle,
                           color: AppTheme.botanicalPrimary.withOpacity(0.10),
                         ),
-                        child: const Icon(
-                          Icons.eco_rounded,
-                          size: 80,
-                          color: AppTheme.botanicalPrimary,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: SvgPicture.asset(
+                            'assets/icons/HerbaScan_Icon1.svg',
+                          ),
                         ),
                       ),
 

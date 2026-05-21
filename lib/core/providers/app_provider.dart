@@ -5,7 +5,6 @@ class AppProvider extends ChangeNotifier {
   bool _isFirstLaunch = true;
   bool _isOfflineMode = false;
   bool _showConfidenceScores = true;
-  bool _showGradCAM = true;
   bool _showTop3Results = true; // Default to true (ON)
   bool _autoSaveScans = true; // Default ON: auto-save new scans to device history
   bool _isDarkMode = false;
@@ -17,7 +16,6 @@ class AppProvider extends ChangeNotifier {
   bool get isFirstLaunch => _isFirstLaunch;
   bool get isOfflineMode => _isOfflineMode;
   bool get showConfidenceScores => _showConfidenceScores;
-  bool get showGradCAM => _showGradCAM;
   bool get showTop3Results => _showTop3Results;
   bool get autoSaveScans => _autoSaveScans;
   bool get isDarkMode => _isDarkMode;
@@ -38,8 +36,6 @@ class AppProvider extends ChangeNotifier {
       _showConfidenceScores = prefs.getBool('show_confidence') ??
           prefs.getBool('showConfidenceScores') ??
           true;
-      _showGradCAM =
-          prefs.getBool('show_gradcam') ?? prefs.getBool('showGradCAM') ?? true;
       _showTop3Results = prefs.getBool('show_top3') ??
           prefs.getBool('showTop3Results') ??
           true; // Default to true (ON)
@@ -64,7 +60,6 @@ class AppProvider extends ChangeNotifier {
         prefs.setBool('isFirstLaunch', _isFirstLaunch),
         prefs.setBool('isOfflineMode', _isOfflineMode),
         prefs.setBool('showConfidenceScores', _showConfidenceScores),
-        prefs.setBool('showGradCAM', _showGradCAM),
         prefs.setBool('showTop3Results', _showTop3Results),
         prefs.setBool('auto_save_scans', _autoSaveScans),
         prefs.setBool('isDarkMode', _isDarkMode),
@@ -110,13 +105,6 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Toggle GradCAM visualization
-  Future<void> toggleGradCAM() async {
-    _showGradCAM = !_showGradCAM;
-    await _saveSettings();
-    notifyListeners();
-  }
-
   // Toggle top 3 results display
   Future<void> toggleTop3Results() async {
     _showTop3Results = !_showTop3Results;
@@ -151,7 +139,6 @@ class AppProvider extends ChangeNotifier {
       'isOfflineMode': _isOfflineMode,
       'features': {
         'confidenceScores': _showConfidenceScores,
-        'gradCAM': _showGradCAM,
         'top3Results': _showTop3Results,
       },
     };

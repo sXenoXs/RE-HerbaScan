@@ -64,7 +64,7 @@ class _HelpTutorialScreenState extends State<HelpTutorialScreen> {
     _IssueData(
       title: 'Low Confidence Score',
       content:
-          'Scores below 80% may be less reliable. Compare with plant details in the catalog to verify the identification before use.',
+          'Scores below 85% may be less reliable. Compare with plant details in the catalog to verify the identification before use.',
     ),
   ];
 
@@ -91,11 +91,6 @@ class _HelpTutorialScreenState extends State<HelpTutorialScreen> {
       title: 'Scan History',
       subtitle: 'Access your past scans with confidence scores and timestamps.',
     ),
-    _FeatureData(
-      icon: Icons.visibility_rounded,
-      title: 'AI Reasoning Heatmap',
-      subtitle: 'See which leaf areas the AI focused on for identification.',
-    ),
   ];
 
   @override
@@ -103,7 +98,8 @@ class _HelpTutorialScreenState extends State<HelpTutorialScreen> {
     super.initState();
     _analytics.trackHelpViewed();
     if (widget.scrollToSection == 'ood_explanation') {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToOODSection());
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _scrollToOODSection());
     }
   }
 
@@ -404,7 +400,7 @@ class _OODExplanationTile extends StatelessWidget {
       'Why did the app say it cannot identify my plant?';
   static const String _body =
       'HerbaScan identifies only the 31 Philippine medicinal plants in its database. '
-      'When the identification confidence is too low (below 60%), the app does not show '
+      'When the identification confidence is too low (below 85%), the app does not show '
       'safety information or preparation guides for your safety—using the wrong plant can be harmful.\n\n'
       'Tips: use a clear, single leaf; avoid shadows and blur; ensure the plant is one of the '
       '31 supported species. You can browse the plant list in the app to see which plants are supported.';

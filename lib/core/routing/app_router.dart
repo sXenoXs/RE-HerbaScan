@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:herbascan/core/providers/auth_provider.dart';
 import 'package:herbascan/features/splash/splash_screen.dart';
+import 'package:herbascan/features/splash/disclaimer_screen.dart';
 import 'package:herbascan/features/auth/login_screen.dart';
 import 'package:herbascan/features/home/home_screen.dart';
 import 'package:herbascan/features/onboarding/onboarding_screen.dart';
@@ -55,6 +56,12 @@ GoRouter createAppRouter(GlobalKey<NavigatorState> navigatorKey) {
           final unauthorized = state.uri.queryParameters['unauthorized'] == '1';
           return HomeScreen(showUnauthorizedSnackBar: unauthorized);
         },
+      ),
+      GoRoute(
+        path: '/disclaimer',
+        builder: (_, state) => DisclaimerScreen(
+          destination: (state.extra as String?) ?? 'home',
+        ),
       ),
       GoRoute(
         path: '/onboarding',

@@ -29,6 +29,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:gal/gal.dart';
 import 'dart:io';
+import 'dart:ui' as ui;
+import 'package:flutter/rendering.dart';
 
 class PlantResultScreen extends StatefulWidget {
   final String imagePath;
@@ -113,7 +115,6 @@ class _PlantResultScreenState extends State<PlantResultScreen>
 
   // Settings from SharedPreferences
   bool _showConfidence = true;
-  bool _showGradcam = true;
   bool _showTop3 = true;
 
   final AdaptiveGradCAMService _adaptiveGradCAMService =
@@ -148,7 +149,6 @@ class _PlantResultScreenState extends State<PlantResultScreen>
       if (mounted) {
         setState(() {
           _showConfidence = prefs.getBool('show_confidence') ?? true;
-          _showGradcam = prefs.getBool('show_gradcam') ?? true;
           _showTop3 = prefs.getBool('show_top3') ?? true;
         });
       }
@@ -198,8 +198,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
         widget.method != 'classification_only' &&
         widget.method != '';
     final hasFallback = widget.fallbackUsed == true;
-    final showAIVision =
-        _showGradcam && (hasFallback || hasValidMethod || hasHeatmap);
+    final showAIVision = hasFallback || hasValidMethod || hasHeatmap;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -223,7 +222,7 @@ class _PlantResultScreenState extends State<PlantResultScreen>
               actions: [
                 _buildGlassmorphicButton(
                   icon: Icons.share_rounded,
-                  onTap: _shareResults,
+                  onTap: () => _showShareSheet(context),
                 ),
                 const SizedBox(width: 8),
                 _buildGlassmorphicButton(
@@ -1188,27 +1187,365 @@ class _PlantResultScreenState extends State<PlantResultScreen>
     }
   }
 
-  Future<void> _shareResults() async {
+  // ── Share sheet + options ─────────────────────────────────────────────────
+
+  void _showShareSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Share',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.image_rounded),
+                title: const Text('Share as Info Card'),
+                subtitle: const Text('Branded card with plant details'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _shareAsCard();
+                },
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.text_fields_rounded),
+                title: const Text('Share as Text'),
+                subtitle: const Text('Plain text for WhatsApp, SMS, etc.'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _shareAsText();
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _shareAsCard() async {
     final top = widget.predictions.isNotEmpty ? widget.predictions.first : null;
-    final plantName = top?['plantName'] ?? top?['label'] ?? 'Unknown Plant';
-    final confidence = (top?['confidence'] ?? 0.0) is num
-        ? ((top!['confidence'] as num) * 100).toStringAsFixed(1)
-        : '0';
-    final textPayload =
-        'I identified $plantName using HerbaScan! It\'s a $confidence% match. '
-        'Identified using AI-powered plant recognition.';
-    try {
-      if (widget.imagePath.isNotEmpty && File(widget.imagePath).existsSync()) {
-        await Share.shareXFiles([XFile(widget.imagePath)], text: textPayload);
-      } else {
-        await Share.share(textPayload);
+    if (top == null) return;
+
+    final plantName =
+        (top['plantName'] ?? top['label'] ?? 'Unknown Plant') as String;
+    final scientificName =
+        ((top['scientificName'] as String?)?.trim().isNotEmpty == true
+            ? top['scientificName'] as String
+            : plantName);
+    final confidence = ((top['confidence'] ?? 0.0) as num).toDouble();
+    final confidencePct = (confidence * 100).toStringAsFixed(1);
+
+    final resolvedPlant = _resolveMatchedPlant(plantName);
+    final isDOH = resolvedPlant?.isDOHApproved ?? false;
+    final uses = resolvedPlant?.medicinalUses
+            .take(3)
+            .map((u) => u.condition)
+            .join(', ') ??
+        '';
+
+    final bytes = await _renderCardToImage(
+      _buildShareCard(
+        plantName: plantName,
+        scientificName: scientificName,
+        confidencePct: confidencePct,
+        isDOH: isDOH,
+        uses: uses,
+      ),
+    );
+
+    if (bytes == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to generate share card')),
+        );
       }
+      return;
+    }
+
+    final dir = await getTemporaryDirectory();
+    final file = File(
+        '${dir.path}/herbascan_share_${DateTime.now().millisecondsSinceEpoch}.png');
+    await file.writeAsBytes(bytes);
+
+    try {
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text: '🌿 $plantName – scanned with HerbaScan',
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Share failed: $e')));
       }
     }
+  }
+
+  void _shareAsText() {
+    final top = widget.predictions.isNotEmpty ? widget.predictions.first : null;
+    if (top == null) return;
+
+    final plantName =
+        (top['plantName'] ?? top['label'] ?? 'Unknown Plant') as String;
+    final scientificName =
+        ((top['scientificName'] as String?)?.trim().isNotEmpty == true
+            ? top['scientificName'] as String
+            : plantName);
+    final confidence = ((top['confidence'] ?? 0.0) as num).toDouble();
+    final confidencePct = (confidence * 100).toStringAsFixed(1);
+
+    final resolvedPlant = _resolveMatchedPlant(plantName);
+    final isDOH = resolvedPlant?.isDOHApproved ?? false;
+    final uses = resolvedPlant?.medicinalUses
+            .take(3)
+            .map((u) => u.condition)
+            .join(', ') ??
+        '';
+
+    final text = '🌿 I just identified a Philippine medicinal plant using HerbaScan!\n\n'
+        'Plant: $plantName ($scientificName)\n'
+        'Confidence: $confidencePct% Match\n'
+        'DOH Approved: ${isDOH ? '✅ Yes' : 'Not listed'}\n'
+        '${uses.isNotEmpty ? 'Uses: $uses\n' : ''}'
+        '\n⚠️ Always consult a healthcare professional before use.\n\n'
+        'Scanned with HerbaScan – Discover Philippine Medicinal Plants';
+
+    Share.share(text);
+  }
+
+  // ── Share card widget (rendered off-screen) ───────────────────────────────
+
+  Widget _buildShareCard({
+    required String plantName,
+    required String scientificName,
+    required String confidencePct,
+    required bool isDOH,
+    required String uses,
+  }) {
+    final scanImageExists =
+        widget.imagePath.isNotEmpty && File(widget.imagePath).existsSync();
+
+    return SizedBox(
+      width: 380,
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Scan image thumbnail
+            if (scanImageExists)
+              SizedBox(
+                height: 180,
+                child: Image.file(File(widget.imagePath), fit: BoxFit.cover),
+              )
+            else
+              Container(
+                height: 180,
+                color: AppTheme.botanicalPrimary.withValues(alpha: 0.10),
+                child: const Center(
+                  child: Icon(Icons.eco_rounded,
+                      size: 64, color: AppTheme.botanicalPrimary),
+                ),
+              ),
+
+            // Botanical green accent stripe
+            Container(height: 4, color: AppTheme.botanicalPrimary),
+
+            // Body
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    plantName,
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF111827),
+                      height: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    scientificName,
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 14,
+                      fontStyle: FontStyle.italic,
+                      color: Color(0xFF6B7280),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildCardRow(
+                    icon: Icons.analytics_outlined,
+                    label: 'Match Confidence',
+                    value: '$confidencePct%',
+                  ),
+                  const SizedBox(height: 8),
+                  _buildCardRow(
+                    icon: isDOH
+                        ? Icons.verified_rounded
+                        : Icons.info_outline_rounded,
+                    label: 'DOH Approved',
+                    value: isDOH ? '✅ Yes' : 'Not listed',
+                    valueColor: isDOH
+                        ? AppTheme.botanicalPrimary
+                        : const Color(0xFF6B7280),
+                  ),
+                  if (uses.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    _buildCardRow(
+                      icon: Icons.local_hospital_outlined,
+                      label: 'Medicinal Uses',
+                      value: uses,
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  const Divider(color: Color(0xFFE5E7EB)),
+                  const SizedBox(height: 12),
+
+                  // Footer branding
+                  Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppTheme.botanicalPrimary
+                              .withValues(alpha: 0.10),
+                        ),
+                        child: const Icon(Icons.eco_rounded,
+                            size: 18, color: AppTheme.botanicalPrimary),
+                      ),
+                      const SizedBox(width: 10),
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Scanned with HerbaScan 🌱',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.botanicalPrimary,
+                            ),
+                          ),
+                          Text(
+                            'Discover Philippine medicinal plants',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 11,
+                              color: Color(0xFF9CA3AF),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCardRow({
+    required IconData icon,
+    required String label,
+    required String value,
+    Color? valueColor,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 16, color: const Color(0xFF9CA3AF)),
+        const SizedBox(width: 8),
+        Text(
+          '$label: ',
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 13,
+            color: Color(0xFF6B7280),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: valueColor ?? const Color(0xFF111827),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Inserts the card widget into the Overlay off-screen, waits two frames for
+  // painting, then captures it via RenderRepaintBoundary.toImage().
+  Future<Uint8List?> _renderCardToImage(Widget cardWidget) async {
+    if (!mounted) return null;
+    final pixelRatio = MediaQuery.of(context).devicePixelRatio;
+    final overlayState = Overlay.of(context, rootOverlay: true);
+    final key = GlobalKey();
+    late OverlayEntry entry;
+
+    entry = OverlayEntry(
+      builder: (_) => Positioned(
+        left: -99999,
+        top: -99999,
+        child: Material(
+          color: Colors.transparent,
+          child: RepaintBoundary(
+            key: key,
+            child: cardWidget,
+          ),
+        ),
+      ),
+    );
+
+    overlayState.insert(entry);
+    // Two frames: first mounts the widget, second paints it.
+    await WidgetsBinding.instance.endOfFrame;
+    await WidgetsBinding.instance.endOfFrame;
+
+    Uint8List? bytes;
+    try {
+      final boundary =
+          key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary != null) {
+        final image = await boundary.toImage(pixelRatio: pixelRatio);
+        final data =
+            await image.toByteData(format: ui.ImageByteFormat.png);
+        bytes = data?.buffer.asUint8List();
+      }
+    } finally {
+      entry.remove();
+    }
+    return bytes;
   }
 
   Future<void> _saveToCameraRoll() async {

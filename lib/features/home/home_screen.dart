@@ -68,20 +68,24 @@ class _HomeScreenState extends State<HomeScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: FloatingActionButton(
-        onPressed: _openScan,
-        backgroundColor: AppTheme.botanicalPrimary,
-        foregroundColor: Colors.white,
-        elevation: 4,
-        shape: const CircleBorder(),
-        child: const Icon(Icons.camera_alt_rounded),
-      ),
+      floatingActionButton: isKeyboardOpen
+          ? null
+          : FloatingActionButton(
+              onPressed: _openScan,
+              backgroundColor: AppTheme.botanicalPrimary,
+              foregroundColor: Colors.white,
+              elevation: 4,
+              shape: const CircleBorder(),
+              child: const Icon(Icons.camera_alt_rounded),
+            ),
       bottomNavigationBar: BottomAppBar(
         color: isDark ? AppTheme.darkSurface : Colors.white,
         elevation: 8,
