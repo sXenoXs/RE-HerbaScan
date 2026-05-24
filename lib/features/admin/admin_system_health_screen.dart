@@ -776,6 +776,7 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
 
   // ── Export Sheet ───────────────────────────────────────────────────────────
 
+  // Changed: fontSize 12→11, expandedInsets zero→horizontal(4), all segment labels get maxLines:1+ellipsis.
   void _showExportSheet({required bool errorsOnly}) {
     String selectedFormat = 'JSON';
     bool isProcessing = false;
@@ -839,11 +840,10 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
                 const SizedBox(height: 10),
                 SegmentedButton<String>(
                   showSelectedIcon: false,
-                  expandedInsets: EdgeInsets.zero,
+                  expandedInsets: const EdgeInsets.symmetric(horizontal: 4),
                   style: ButtonStyle(
                     textStyle: const WidgetStatePropertyAll(
-                      TextStyle(
-                          fontSize: 12, fontWeight: FontWeight.w500),
+                      TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
                     ),
                     backgroundColor:
                         WidgetStateProperty.resolveWith((states) {
@@ -863,22 +863,26 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
                   segments: const [
                     ButtonSegment(
                       value: 'JSON',
-                      label: Text('JSON'),
+                      label: Text('JSON',
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
                       icon: Icon(Icons.code_rounded, size: 16),
                     ),
                     ButtonSegment(
                       value: 'MD',
-                      label: Text('MD'),
+                      label: Text('MD',
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
                       icon: Icon(Icons.text_snippet_outlined, size: 16),
                     ),
                     ButtonSegment(
                       value: 'CSV',
-                      label: Text('CSV'),
+                      label: Text('CSV',
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
                       icon: Icon(Icons.table_chart_outlined, size: 16),
                     ),
                     ButtonSegment(
                       value: 'TXT',
-                      label: Text('Text'),
+                      label: Text('Text',
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
                       icon: Icon(Icons.article_outlined, size: 16),
                     ),
                   ],

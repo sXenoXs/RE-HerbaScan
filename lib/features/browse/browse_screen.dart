@@ -731,17 +731,6 @@ class _BrowseScreenState extends State<BrowseScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ],
-                        const SizedBox(height: 4),
-                        Text(
-                          plant.symptoms,
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: color.withValues(alpha: 0.85),
-                            height: 1.3,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
                       ],
                     ),
                   ),
@@ -949,46 +938,6 @@ class _BrowseScreenState extends State<BrowseScreen> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(Icons.science_rounded,
-                          size: 12, color: color.withOpacity(0.75)),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          'Toxin: ${plant.toxin}',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontSize: 11,
-                            color: AppTheme.textSecondary,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(Icons.sick_rounded,
-                          size: 12, color: color.withOpacity(0.75)),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          plant.symptoms,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontSize: 11,
-                            color: AppTheme.textSecondary,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
                   ),
                 ],
               ),
