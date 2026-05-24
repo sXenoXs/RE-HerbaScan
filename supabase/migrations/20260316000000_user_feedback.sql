@@ -18,12 +18,14 @@ CREATE INDEX IF NOT EXISTS idx_user_feedback_created_at
 ALTER TABLE public.user_feedback ENABLE ROW LEVEL SECURITY;
 
 -- INSERT: allow anyone (anonymous and authenticated) so milestone and Plant Result feedback work without login.
+DROP POLICY IF EXISTS "user_feedback_insert_allow_all" ON public.user_feedback;
 CREATE POLICY "user_feedback_insert_allow_all"
   ON public.user_feedback
   FOR INSERT
   WITH CHECK (true);
 
 -- SELECT: only admins (via existing is_admin() SECURITY DEFINER).
+DROP POLICY IF EXISTS "user_feedback_select_admin_only" ON public.user_feedback;
 CREATE POLICY "user_feedback_select_admin_only"
   ON public.user_feedback
   FOR SELECT

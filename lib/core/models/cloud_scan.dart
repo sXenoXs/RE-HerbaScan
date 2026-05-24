@@ -10,6 +10,8 @@ class CloudScan {
   final Map<String, dynamic>? metadata;
   final String? gradcamUrl;
   final String status;
+  final bool trainingEligible;
+  final DateTime? trainingCopiedAt;
 
   CloudScan({
     required this.id,
@@ -22,6 +24,8 @@ class CloudScan {
     this.metadata,
     this.gradcamUrl,
     this.status = 'pending',
+    this.trainingEligible = false,
+    this.trainingCopiedAt,
   });
 
   factory CloudScan.fromJson(Map<String, dynamic> json) {
@@ -38,6 +42,10 @@ class CloudScan {
           : null,
       gradcamUrl: json['gradcam_url'] as String?,
       status: json['status'] as String? ?? 'pending',
+      trainingEligible: json['training_eligible'] as bool? ?? false,
+      trainingCopiedAt: json['training_copied_at'] != null
+          ? DateTime.parse(json['training_copied_at'] as String)
+          : null,
     );
   }
 }

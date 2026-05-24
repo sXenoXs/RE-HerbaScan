@@ -7,6 +7,7 @@ import 'package:herbascan/core/services/catalog_plant_admin_service.dart';
 import 'package:herbascan/core/services/database_service.dart';
 import 'package:herbascan/core/services/plant_data_service.dart';
 import 'package:herbascan/core/services/plant_metadata_service.dart';
+import 'package:herbascan/core/services/herbarium_service.dart';
 import 'package:herbascan/core/services/training_dataset_service.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/core/widgets/plant_image.dart';
@@ -36,7 +37,7 @@ class _AdminPlantMetadataScreenState extends State<AdminPlantMetadataScreen> {
   List<CatalogPlantEntry> _cloudEntries = [];
   // Map cloud entries by plant id for quick look-up
   Map<String, CatalogPlantEntry> _cloudById = {};
-  // Metadata overrides (AI vision summary, etc.)
+  // Metadata overrides (description, safety_warnings, preparation_steps_json)
   Map<String, PlantMetadataOverride> _overrides = {};
   // Combined list: local plants + wizard-created (cloud-only) plant stubs
   List<Plant> _allPlants = [];
@@ -242,150 +243,6 @@ class _AdminPlantMetadataScreenState extends State<AdminPlantMetadataScreen> {
         },
       ),
     );
-  }
-
-  Future<void> _editAIVisionSummary(
-      Plant plant, PlantMetadataOverride? currentOverride) async {
-    final theme = Theme.of(context);
-    final textController =
-        TextEditingController(text: currentOverride?.aiVisionSummary ?? '');
-    bool isSaving = false;
-
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: theme.colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setModalState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(ctx).viewInsets.bottom,
-                left: 16,
-                right: 16,
-                top: 24,
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.psychology_rounded,
-                            color: AppTheme.botanicalPrimary),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Machine Learning UI',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const Spacer(),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () => Navigator.pop(ctx),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'AI Vision Summary for ${plant.commonName}',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: textController,
-                      maxLines: 4,
-                      decoration: const InputDecoration(
-                        labelText: 'AI Vision Summary',
-                        hintText: 'Enter a custom explanation for GradCAM…',
-                        border: OutlineInputBorder(),
-                        alignLabelWithHint: true,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        TextButton.icon(
-                          onPressed: isSaving
-                              ? null
-                              : () async {
-                                  setModalState(() => isSaving = true);
-                                  final success =
-                                      await PlantMetadataService().save(
-                                    plantId: plant.id,
-                                    description:
-                                        currentOverride?.description,
-                                    safetyWarnings:
-                                        currentOverride?.safetyWarnings,
-                                    preparationStepsJson:
-                                        currentOverride?.preparationStepsJson,
-                                    aiVisionSummary: null,
-                                  );
-                                  setModalState(() => isSaving = false);
-                                  if (success && ctx.mounted) {
-                                    Navigator.pop(ctx);
-                                    _load();
-                                  }
-                                },
-                          icon: const Icon(Icons.restore_rounded),
-                          label: const Text('Restore Default'),
-                          style: TextButton.styleFrom(
-                              foregroundColor: theme.colorScheme.error),
-                        ),
-                        const Spacer(),
-                        FilledButton(
-                          onPressed: isSaving
-                              ? null
-                              : () async {
-                                  setModalState(() => isSaving = true);
-                                  final success =
-                                      await PlantMetadataService().save(
-                                    plantId: plant.id,
-                                    description:
-                                        currentOverride?.description,
-                                    safetyWarnings:
-                                        currentOverride?.safetyWarnings,
-                                    preparationStepsJson:
-                                        currentOverride?.preparationStepsJson,
-                                    aiVisionSummary: textController.text
-                                            .trim()
-                                            .isEmpty
-                                        ? null
-                                        : textController.text.trim(),
-                                  );
-                                  setModalState(() => isSaving = false);
-                                  if (success && ctx.mounted) {
-                                    Navigator.pop(ctx);
-                                    _load();
-                                  }
-                                },
-                          child: isSaving
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2, color: Colors.white))
-                              : const Text('Save'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-    textController.dispose();
   }
 
   Future<void> _deletePlant(Plant plant) async {
@@ -679,8 +536,6 @@ class _AdminPlantMetadataScreenState extends State<AdminPlantMetadataScreen> {
                 final status = cloudEntry?.status ?? 'active';
                 final trainingCount =
                     cloudEntry?.trainingImageCount ?? 0;
-                final hasOverride = _overrides.containsKey(plant.id);
-
                 return ListTile(
                   contentPadding:
                       const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
@@ -723,19 +578,7 @@ class _AdminPlantMetadataScreenState extends State<AdminPlantMetadataScreen> {
                         ),
                     ],
                   ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.psychology_rounded),
-                        color: _overrides[plant.id]?.aiVisionSummary != null
-                            ? AppTheme.botanicalPrimary
-                            : Colors.grey.shade400,
-                        tooltip: 'Edit AI Vision Summary',
-                        onPressed: () =>
-                            _editAIVisionSummary(plant, _overrides[plant.id]),
-                      ),
-                      PopupMenuButton<String>(
+                  trailing: PopupMenuButton<String>(
                         icon: Icon(Icons.more_vert_rounded,
                             color: Colors.grey.shade400),
                         onSelected: (action) {
@@ -814,8 +657,6 @@ class _AdminPlantMetadataScreenState extends State<AdminPlantMetadataScreen> {
                           ),
                         ],
                       ),
-                    ],
-                  ),
                   onTap: () => _openEditor(plant),
                 );
               },
@@ -854,18 +695,27 @@ class _TrainingImagesSheetState extends State<_TrainingImagesSheet> {
   int _uploadedCount = 0;
   bool _done = false;
   int _existingCount = 0;
+  int _approvedScanCount = 0;
+  bool _includeApprovedScans = true;
   List<String> _uploadErrors = [];
 
   @override
   void initState() {
     super.initState();
     _fetchExistingCount();
+    _fetchApprovedScanCount();
   }
 
   Future<void> _fetchExistingCount() async {
     final count =
         await TrainingDatasetService().getImageCount(widget.plantSlug);
     if (mounted) setState(() => _existingCount = count);
+  }
+
+  Future<void> _fetchApprovedScanCount() async {
+    final scans = await HerbariumService()
+        .getTrainingEligibleScans(widget.plantSlug);
+    if (mounted) setState(() => _approvedScanCount = scans.length);
   }
 
   Future<void> _pick() async {
@@ -988,6 +838,85 @@ class _TrainingImagesSheetState extends State<_TrainingImagesSheet> {
                       color: purple,
                       fontWeight: FontWeight.w600),
                 ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // ── From Approved Scans ────────────────────────────────────────
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.botanicalPrimary.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                    color: AppTheme.botanicalPrimary.withValues(alpha: 0.2)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.model_training_rounded,
+                          size: 16, color: AppTheme.botanicalPrimary),
+                      const SizedBox(width: 6),
+                      const Text(
+                        'From Approved Scans',
+                        style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.botanicalPrimary),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color:
+                              AppTheme.botanicalPrimary.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                        child: Text(
+                          '$_approvedScanCount approved scan image${_approvedScanCount == 1 ? '' : 's'} available',
+                          style: const TextStyle(
+                              fontSize: 10,
+                              color: AppTheme.botanicalPrimary,
+                              fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Include in next training run',
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.75)),
+                        ),
+                      ),
+                      Switch(
+                        value: _includeApprovedScans,
+                        activeThumbColor: AppTheme.botanicalPrimary,
+                        onChanged: (v) =>
+                            setState(() => _includeApprovedScans = v),
+                      ),
+                    ],
+                  ),
+                  if (!_includeApprovedScans)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        'Approved scan copies already in training-datasets will still be picked up by the training pipeline.',
+                        style: TextStyle(
+                            fontSize: 10,
+                            color: theme.colorScheme.onSurface
+                                .withValues(alpha: 0.5)),
+                      ),
+                    ),
+                ],
               ),
             ),
             const SizedBox(height: 16),

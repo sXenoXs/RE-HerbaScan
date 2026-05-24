@@ -198,6 +198,88 @@ class HerbariumService {
     }
   }
 
+  // ── Training pipeline ─────────────────────────────────────────────────────
+
+  /// Admin: mark scan training-eligible, copy image from herbarium-images to
+  /// training-datasets/{plantSlug}/approved_{scanId}.jpg, and set status=approved.
+  /// Idempotent — FileOptions(upsert:true) makes repeated calls safe.
+  Future<bool> approveForTraining(String scanId, String plantSlug) async {
+    if (!isAvailable) return false;
+    try {
+      final res = await _client
+          .from('scans')
+          .select('user_id')
+          .eq('id', scanId)
+          .single();
+      final userId = res['user_id'] as String?;
+      if (userId == null) return false;
+
+      final bytes =
+          await _client.storage.from(_bucket).download('$userId/$scanId.jpg');
+
+      const trainingBucket = 'training-datasets';
+      await _client.storage.from(trainingBucket).uploadBinary(
+            '$plantSlug/approved_$scanId.jpg',
+            bytes,
+            fileOptions: const FileOptions(
+              contentType: 'image/jpeg',
+              upsert: true,
+            ),
+          );
+
+      await _client.from('scans').update({
+        'status': 'approved',
+        'training_eligible': true,
+        'training_copied_at': DateTime.now().toUtc().toIso8601String(),
+      }).eq('id', scanId);
+
+      return true;
+    } catch (e) {
+      if (kDebugMode) debugPrint('[HerbariumService] approveForTraining: $e');
+      return false;
+    }
+  }
+
+  /// Admin: returns training-eligible scans for a given plant slug.
+  Future<List<CloudScan>> getTrainingEligibleScans(String plantSlug) async {
+    if (!isAvailable) return [];
+    try {
+      final res = await _client
+          .from('scans')
+          .select()
+          .eq('plant_id', plantSlug)
+          .eq('training_eligible', true)
+          .order('scan_date', ascending: false);
+      return (res as List)
+          .map((e) => CloudScan.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[HerbariumService] getTrainingEligibleScans: $e');
+      }
+      return [];
+    }
+  }
+
+  /// Admin: total count of training-eligible scans across all plants (for Overview metric).
+  Future<int> getTrainingEligibleScanCount() async {
+    if (!isAvailable) return 0;
+    try {
+      final res = await _client
+          .from('scans')
+          .select('id')
+          .eq('training_eligible', true);
+      return (res as List).length;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[HerbariumService] getTrainingEligibleScanCount: $e');
+      }
+      return 0;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+
   /// Download a cloud scan image to local storage and build a ScanResult for device history.
   /// Also downloads the heatmap image if a gradcam_url is stored in metadata.
   /// Returns the ScanResult on success, null on failure. Caller should call PlantProvider.addScanResult(result).

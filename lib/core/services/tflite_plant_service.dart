@@ -23,9 +23,6 @@ class TflitePlantService {
   // Output indices for multi-output models
   int _mobilenetv2PredictionIndex = 1; // Default: predictions at output 1
 
-  // Track which model was used for the last prediction (always MobileNetV2 now)
-  String? _lastUsedModel = "MobileNetV2";
-
   static const String mobilenetv2ModelPath =
       "assets/models/mobilenetv2_multi_output.tflite";
   static const String labelPath = "assets/models/class_indices.json";
@@ -73,7 +70,6 @@ class TflitePlantService {
             _determinePredictionOutputIndex(_mobilenetv2Interpreter!);
         print(" MobileNetV2 Multi-Output TFLite Model loaded successfully.");
         print("   Prediction output index: $_mobilenetv2PredictionIndex");
-        _lastUsedModel = "MobileNetV2";
       } catch (e) {
         print(" Error loading MobileNetV2 model: $e");
         throw Exception("Failed to load MobileNetV2 TFLite model: $e");
@@ -218,7 +214,6 @@ class TflitePlantService {
     print("    Starting inference with MobileNetV2...");
     PlantPrediction? bestPrediction;
     double bestConfidence = -1.0;
-    String? modelUsed = "MobileNetV2";
 
     // Use MobileNetV2 multi-output model (ONLY MODEL)
     if (_mobilenetv2Interpreter != null) {
@@ -299,7 +294,6 @@ class TflitePlantService {
           bestConfidence = maxScore;
           bestPrediction =
               PlantPrediction(label: _labels![maxIndex], confidence: maxScore);
-          _lastUsedModel = "MobileNetV2";
           print(
               " MobileNetV2: ${_labels![maxIndex]} (${(maxScore * 100).toStringAsFixed(2)}%)");
         } else {
@@ -320,7 +314,7 @@ class TflitePlantService {
     print("    Inference complete. Best confidence: $bestConfidence");
     if (bestPrediction != null) {
       print(
-          "Best result from $modelUsed: ${bestPrediction.label} (${(bestPrediction.confidence * 100).toStringAsFixed(2)}%)");
+          "Best result: ${bestPrediction.label} (${(bestPrediction.confidence * 100).toStringAsFixed(2)}%)");
 
       // Use OodConfigService threshold (0.85 from config) to unify OOD gate.
       await OodConfigService().load();
@@ -339,12 +333,6 @@ class TflitePlantService {
 
     print("    Returning null - no valid prediction");
     return null;
-  }
-
-  /// Get the model name that was used for the best prediction
-  /// This helps OfflineCAMService use the matching model for CAM
-  String? getBestModelName() {
-    return _lastUsedModel;
   }
 
   /// Run inference and return the top-K predictions sorted by confidence
@@ -381,12 +369,12 @@ class TflitePlantService {
             inputSize,
             (w) => List.generate(3, (c) {
               final pixel = resizedImage.getPixel(w, h);
-              return (c == 0
-                      ? pixel.r.toDouble()
-                      : c == 1
-                          ? pixel.g.toDouble()
-                          : pixel.b.toDouble()) /
-                  255.0;
+              final raw = c == 0
+                  ? pixel.r.toDouble()
+                  : c == 1
+                      ? pixel.g.toDouble()
+                      : pixel.b.toDouble();
+              return (raw / 255.0) * 2.0 - 1.0;
             }),
           ),
         ),

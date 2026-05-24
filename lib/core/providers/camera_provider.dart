@@ -12,8 +12,6 @@ import 'package:herbascan/core/providers/offline_provider.dart';
 import 'package:herbascan/core/services/performance_monitor.dart';
 import 'package:herbascan/core/services/usage_analytics.dart';
 import 'package:herbascan/core/services/error_logger.dart';
-import 'package:herbascan/core/services/adaptive_gradcam_service.dart';
-
 class CameraProvider extends ChangeNotifier {
   CameraController? _cameraController;
   List<CameraDescription> _cameras = [];
@@ -25,11 +23,7 @@ class CameraProvider extends ChangeNotifier {
   Uint8List? _lastCapturedImageData;
   String? _errorMessage;
 
-  // --- CHANGED: Use TflitePlantService instead of PlantClassifierService ---
   final TflitePlantService _tfliteService = TflitePlantService();
-
-  // Keep this if you still want online capabilities as backup
-  final AdaptiveGradCAMService _adaptiveGradCAM = AdaptiveGradCAMService();
 
   List<Map<String, dynamic>> _lastPredictions = [];
   bool _isClassifying = false;
@@ -135,13 +129,6 @@ class CameraProvider extends ChangeNotifier {
       await _tfliteService.loadModel();
 
       _errorMessage = null;
-
-      // Initialize AdaptiveGradCAMService asynchronously (optional)
-      _adaptiveGradCAM.initialize().catchError((e) {
-        print(
-            ' Warning: Failed to initialize Online Service (that is okay, using Offline TFLite): $e');
-      });
-
       notifyListeners();
     } catch (e, stackTrace) {
       _errorMessage = 'Failed to load AI models: $e';
@@ -272,8 +259,7 @@ class CameraProvider extends ChangeNotifier {
     }
   }
 
-  // --- CHANGED: Main method called by UI ---
-  // Uses AdaptiveGradCAMService which tries online first, then falls back to offline
+  // Main method called by UI — offline TFLite inference only (no GradCAM)
   Future<Map<String, dynamic>> processPlantIdentificationWithGradCAM(
     Uint8List imageData, {
     OfflineProvider? offlineProvider,
@@ -284,158 +270,56 @@ class CameraProvider extends ChangeNotifier {
     _performanceMonitor.startTimer(PerformanceOperation.aiInference);
 
     try {
-      print('🌿 [CameraProvider] Processing with AdaptiveGradCAM...');
-
-      // Save image to temp file for AdaptiveGradCAMService (needs file path for online)
       final imageFile = await _getImageFileForTflite(imageData);
-      final imagePath = imageFile.path;
 
-      print('   📁 Image saved to: $imagePath');
-      print('   📊 Image bytes: ${imageData.length} bytes');
+      final topK = await _tfliteService.predictTopK(imageFile, k: 3);
+      await _performanceMonitor.stopTimer(PerformanceOperation.aiInference);
 
-      // Get model name from TFLite service (for matching CAM with prediction)
-      // Note: We'll get this after the first prediction, but for now try online first
-      String? modelName;
-      try {
-        modelName = _tfliteService.getBestModelName();
-        print('   📌 Best model from TFLite: $modelName');
-      } catch (e) {
-        print('   ⚠️ Could not get model name: $e');
-        modelName = null;
-      }
-
-      // Use AdaptiveGradCAMService - it will try online first, then offline
-      final result = await _adaptiveGradCAM.identifyPlant(
-        imagePath: imagePath,
-        imageBytes: imageData,
-        modelName:
-            modelName, // Pass model name to ensure CAM matches prediction
-      );
-
-      if (result == null) {
-        print(
-            '   ❌ AdaptiveGradCAM returned null, falling back to TFLite only...');
-        // Fallback to TFLite only
-        final tfliteResult = await _tfliteService.predict(imageFile);
-        if (tfliteResult == null) {
-          throw Exception("Model could not identify image.");
-        }
-
-        // Hard-reject for OOD / Not_Plant in fallback
-        if (tfliteResult.label == 'Not_Plant') {
-          print('🚫 [CameraProvider] Fallback TFLite Stage 2 OOD failure');
-          _isClassifying = false;
-          notifyListeners();
-          return {
-            'validation_failed': true,
-            'failure_reason':
-                'Validation Failed: Subject unrecognized or not a plant.',
-            'stage': 2,
-          };
-        }
-
-        final predictions = [
-          {
-            'label': tfliteResult.label,
-            'plantName': tfliteResult.label,
-            'scientificName': tfliteResult.label,
-            'confidence': tfliteResult.confidence,
-            'index': 0,
-            'isDOHApproved': false,
-          }
-        ];
-
-        _lastPredictions = predictions;
-        await _performanceMonitor.stopTimer(PerformanceOperation.aiInference);
-
-        if (tfliteResult.confidence > 0.5) {
-          await _usageAnalytics.trackSuccessfulScan(tfliteResult.label);
-        } else {
-          await _usageAnalytics.trackFailedScan();
-        }
-
+      // OOD rejection: top prediction is Not_Plant
+      if (topK.isNotEmpty && topK.first.label == 'Not_Plant') {
         _isClassifying = false;
         notifyListeners();
-
         return {
-          'predictions': predictions,
-          'gradcam_image': null,
-          'method': 'cam', // Offline CAM
-          'fallback_used': true,
-          'processing_time_ms': 0.0,
-          'gradCAMPath': null,
-          'summaryGradCAMPath': null,
+          'validation_failed': true,
+          'failure_reason': 'Validation Failed: Subject unrecognized or not a plant.',
+          'stage': 2,
         };
       }
 
-      // If validation failed inside AdaptiveGradCAMService, propagate it immediately
-      if (result['validation_failed'] == true) {
-        _isClassifying = false;
-        notifyListeners();
-        return result;
+      if (topK.isEmpty) {
+        throw Exception('Model could not identify image.');
       }
 
-      // Extract predictions from result
-      final predictions = (result['predictions'] as List<dynamic>?)
-              ?.map((p) => p as Map<String, dynamic>)
-              .toList() ??
-          [];
-
-      // FALLBACK: AdaptiveGradCAM returned no predictions (e.g., offline CAM
-      // service couldn't initialize because the bundled model isn't multi-output).
-      // Use TflitePlantService for plain top-3 predictions without CAM.
-      if (predictions.isEmpty) {
-        print('⚠️ [CameraProvider] AdaptiveGradCAM returned 0 predictions; '
-            'falling back to TFLite top-K (no CAM)...');
-        try {
-          final topK = await _tfliteService.predictTopK(imageFile, k: 3);
-          for (int i = 0; i < topK.length; i++) {
-            predictions.add({
-              'label': topK[i].label,
-              'plantName': topK[i].label,
-              'scientificName': topK[i].label,
-              'confidence': topK[i].confidence,
-              'index': i,
-              'isDOHApproved': false,
-            });
-          }
-          print(
-              '   ✅ TFLite top-K fallback produced ${predictions.length} predictions');
-        } catch (e) {
-          print('   ❌ TFLite top-K fallback failed: $e');
-        }
-      }
+      final predictions = topK.asMap().entries.map((e) => {
+        'label': e.value.label,
+        'plantName': e.value.label,
+        'scientificName': e.value.label,
+        'confidence': e.value.confidence,
+        'index': e.key,
+        'isDOHApproved': false,
+      }).toList();
 
       _lastPredictions = predictions;
-      await _performanceMonitor.stopTimer(PerformanceOperation.aiInference);
 
-      if (predictions.isNotEmpty && predictions[0]['confidence'] != null) {
-        final confidence = predictions[0]['confidence'] as double;
-        final plantName = predictions[0]['plantName'] as String? ??
-            predictions[0]['label'] as String? ??
-            'Unknown';
-        if (confidence > 0.5) {
-          await _usageAnalytics.trackSuccessfulScan(plantName);
-        } else {
-          await _usageAnalytics.trackFailedScan();
-        }
+      final confidence = predictions[0]['confidence'] as double;
+      final plantName = predictions[0]['plantName'] as String? ?? 'Unknown';
+      if (confidence > 0.5) {
+        await _usageAnalytics.trackSuccessfulScan(plantName);
+      } else {
+        await _usageAnalytics.trackFailedScan();
       }
 
       _isClassifying = false;
       notifyListeners();
 
-      print(
-          '   ✅ Result: method=${result['method']}, fallback=${result['fallback_used']}, predictions=${predictions.length}');
-
-      // Return result from AdaptiveGradCAMService
       return {
         'predictions': predictions,
-        'gradcam_image': result['gradcam_image'] as Uint8List?,
-        'method': result['method'] as String? ?? 'cam',
-        'fallback_used': result['fallback_used'] as bool? ?? true,
-        'processing_time_ms': result['processing_time_ms'] as double? ?? 0.0,
-        'gradCAMPath': result['gradCAMPath'] as String?,
-        'summaryGradCAMPath': result['summaryGradCAMPath'] as String?,
+        'gradcam_image': null,
+        'method': 'classification_only',
+        'fallback_used': false,
+        'processing_time_ms': 0.0,
+        'gradCAMPath': null,
+        'summaryGradCAMPath': null,
         'validation_failed': false,
       };
     } catch (e, stackTrace) {

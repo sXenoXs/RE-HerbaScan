@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:herbascan/core/services/herbarium_service.dart';
 import 'package:herbascan/core/services/training_dataset_service.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/features/admin/admin_new_plant_wizard.dart';
@@ -55,9 +56,12 @@ class _AdminOverviewScreenState extends State<AdminOverviewScreen> {
         // status column may not exist yet — graceful degradation
       }
 
-      // Training images in Storage
-      final imageCount =
-          await TrainingDatasetService().getTotalImageCount();
+      // Training images: manual uploads + approved scan copies (run in parallel)
+      final imageCounts = await Future.wait([
+        TrainingDatasetService().getTotalImageCount(),
+        HerbariumService().getTrainingEligibleScanCount(),
+      ]);
+      final imageCount = imageCounts[0] + imageCounts[1];
 
       // Current deployed model version
       String modelVersion = '—';
@@ -720,7 +724,6 @@ class _DeployModelSheetState extends State<_DeployModelSheet> {
   final _versionCtrl = TextEditingController();
   final _tfliteCtrl = TextEditingController();
   final _classIndicesCtrl = TextEditingController();
-  final _camWeightsCtrl = TextEditingController();
   bool _deploying = false;
   String? _resultMsg;
   bool _success = false;
@@ -730,7 +733,6 @@ class _DeployModelSheetState extends State<_DeployModelSheet> {
     _versionCtrl.dispose();
     _tfliteCtrl.dispose();
     _classIndicesCtrl.dispose();
-    _camWeightsCtrl.dispose();
     super.dispose();
   }
 
@@ -746,7 +748,6 @@ class _DeployModelSheetState extends State<_DeployModelSheet> {
         'is_active': true,
         'tflite_url': _tfliteCtrl.text.trim(),
         'class_indices_url': _classIndicesCtrl.text.trim(),
-        'cam_weights_url': _camWeightsCtrl.text.trim(),
       });
       // Deactivate previous versions
       await Supabase.instance.client
@@ -875,14 +876,6 @@ class _DeployModelSheetState extends State<_DeployModelSheet> {
                 controller: _classIndicesCtrl,
                 label: 'class_indices_url (.json) *',
                 hint: 'https://…/class_indices.json',
-              ),
-              const SizedBox(height: 12),
-
-              // CAM weights URL
-              _UrlField(
-                controller: _camWeightsCtrl,
-                label: 'cam_weights_url (.json) *',
-                hint: 'https://…/mobilenetv2_cam_weights.json',
               ),
               const SizedBox(height: 20),
 

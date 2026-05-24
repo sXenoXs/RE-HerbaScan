@@ -6,6 +6,8 @@ import 'package:herbascan/core/services/herbarium_service.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:intl/intl.dart';
 
+enum _ApproveChoice { approveOnly, approveAndTrain }
+
 /// Data collection admin: review, approve, reject, or delete user-submitted scans.
 /// Shown only when user role is admin (RBAC). RLS enforces on backend.
 class AdminDashboardScreen extends StatefulWidget {
@@ -129,12 +131,47 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     }
   }
 
-  void _onDismissed(CloudScan scan, DismissDirection direction) {
-    if (direction == DismissDirection.startToEnd) {
-      _updateStatus(scan, 'approved');
-    } else {
-      _updateStatus(scan, 'rejected');
+  /// Shows the approve action sheet. Approve direction swipe or "Approve" menu tap
+  /// both land here. Returns after side-effects complete and list has been reloaded.
+  Future<void> _showApproveSheet(CloudScan scan) async {
+    final choice = await showModalBottomSheet<_ApproveChoice>(
+      context: context,
+      builder: (_) => _ApproveActionSheet(scan: scan),
+    );
+    if (choice == null || !mounted) return;
+
+    if (choice == _ApproveChoice.approveOnly) {
+      await _updateStatus(scan, 'approved');
+      return;
     }
+
+    // approveAndTrain — show blocking progress overlay while storage copy runs
+    if (!mounted) return;
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const _CopyingProgressDialog(),
+    );
+
+    final plantSlug = scan.plantId ?? '';
+    final ok =
+        await HerbariumService().approveForTraining(scan.id, plantSlug);
+
+    if (!mounted) return;
+    Navigator.of(context).pop(); // dismiss progress dialog
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok
+              ? 'Image added to training dataset for $plantSlug'
+              : 'Storage copy failed — scan approved but not in training-datasets',
+        ),
+        backgroundColor:
+            ok ? AppTheme.botanicalPrimary : AppTheme.errorColor,
+      ),
+    );
+    _load();
   }
 
   @override
@@ -177,13 +214,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       _load();
                     },
                     style: ButtonStyle(
-                      // Selected segment: botanical green bg + white text/icon
                       backgroundColor:
                           WidgetStateProperty.resolveWith<Color?>((states) {
                         if (states.contains(WidgetState.selected)) {
                           return AppTheme.botanicalPrimary;
                         }
-                        // Unselected: white/surface so text is clearly visible
                         return theme.colorScheme.surface;
                       }),
                       foregroundColor:
@@ -202,7 +237,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       }),
                       side: WidgetStateProperty.all(
                         BorderSide(
-                            color: theme.colorScheme.outline.withValues(alpha: 0.4)),
+                            color: theme.colorScheme.outline
+                                .withValues(alpha: 0.4)),
                       ),
                     ),
                   ),
@@ -218,71 +254,68 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         ),
       ),
       body: GestureDetector(
-        // Swipe left → switch to "All", swipe right → switch to "Pending"
         onHorizontalDragEnd: (details) {
           final velocity = details.primaryVelocity ?? 0;
           if (velocity < -300 && _pendingOnly) {
-            // Swipe left: go to "All"
             setState(() => _pendingOnly = false);
             _load();
           } else if (velocity > 300 && !_pendingOnly) {
-            // Swipe right: go to "Pending"
             setState(() => _pendingOnly = true);
             _load();
           }
         },
         behavior: HitTestBehavior.translucent,
         child: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(_error!, style: theme.textTheme.bodyMedium),
-                        const SizedBox(height: 16),
-                        FilledButton(
-                            onPressed: _load, child: const Text('Retry')),
-                      ],
-                    ),
-                  ),
-                )
-              : _scans.isEmpty
-                  ? Center(
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.inbox_rounded,
-                              size: 64,
-                              color: theme.colorScheme.onSurface
-                                  .withValues(alpha: 0.35)),
+                          Text(_error!, style: theme.textTheme.bodyMedium),
                           const SizedBox(height: 16),
-                          Text(
-                            'Inbox Zero. All submissions reviewed.',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              color:
-                                  theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
+                          FilledButton(
+                              onPressed: _load, child: const Text('Retry')),
                         ],
                       ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _load,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
-                        itemCount: _scans.length,
-                        itemBuilder: (context, index) {
-                          final scan = _scans[index];
-                          return _buildDismissibleTile(context, theme, scan);
-                        },
-                      ),
                     ),
-        ),
+                  )
+                : _scans.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.inbox_rounded,
+                                size: 64,
+                                color: theme.colorScheme.onSurface
+                                    .withValues(alpha: 0.35)),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Inbox Zero. All submissions reviewed.',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: theme.colorScheme.onSurface
+                                    .withValues(alpha: 0.6),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      )
+                    : RefreshIndicator(
+                        onRefresh: _load,
+                        child: ListView.builder(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          itemCount: _scans.length,
+                          itemBuilder: (context, index) {
+                            final scan = _scans[index];
+                            return _buildDismissibleTile(context, theme, scan);
+                          },
+                        ),
+                      ),
+      ),
     );
   }
 
@@ -303,9 +336,20 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         label: 'Reject',
       ),
       confirmDismiss: (direction) async {
+        if (direction == DismissDirection.startToEnd) {
+          // Approve direction: handle via bottom sheet, never auto-dismiss.
+          await _showApproveSheet(scan);
+          return false;
+        }
+        // Reject direction: let dismiss animate, then update status in onDismissed.
         return true;
       },
-      onDismissed: (direction) => _onDismissed(scan, direction),
+      onDismissed: (direction) {
+        // Only reject reaches here (approve returns false from confirmDismiss).
+        if (direction == DismissDirection.endToStart) {
+          _updateStatus(scan, 'rejected');
+        }
+      },
       child: _buildScanRow(context, theme, scan),
     );
   }
@@ -412,25 +456,59 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   Text(
                     dateFormat.format(scan.scanDate),
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                      color:
+                          theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(100),
-                    ),
-                    child: Text(
-                      scan.status,
-                      style: TextStyle(
-                          color: statusColor,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.3),
-                    ),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: statusColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                        child: Text(
+                          scan.status,
+                          style: TextStyle(
+                              color: statusColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.3),
+                        ),
+                      ),
+                      if (scan.trainingEligible)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppTheme.botanicalPrimary
+                                .withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(100),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.model_training_rounded,
+                                  size: 11,
+                                  color: AppTheme.botanicalPrimary),
+                              SizedBox(width: 4),
+                              Text(
+                                'Training eligible',
+                                style: TextStyle(
+                                    color: AppTheme.botanicalPrimary,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.3),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
                   ),
                 ],
               ),
@@ -440,7 +518,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               onSelected: (action) {
                 switch (action) {
                   case 'approve':
-                    _updateStatus(scan, 'approved');
+                    _showApproveSheet(scan);
                   case 'reject':
                     _updateStatus(scan, 'rejected');
                   case 'delete':
@@ -452,9 +530,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   const PopupMenuItem(
                     value: 'approve',
                     child: Row(children: [
-                      Icon(Icons.check_circle_outline, color: AppTheme.safeGreen),
+                      Icon(Icons.check_circle_outline,
+                          color: AppTheme.safeGreen),
                       SizedBox(width: 12),
-                      Text('Approve'),
+                      Text('Approve…'),
                     ]),
                   ),
                 if (scan.status != 'rejected')
@@ -473,7 +552,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         color: theme.colorScheme.error),
                     const SizedBox(width: 12),
                     Text('Delete Permanently',
-                        style: TextStyle(color: theme.colorScheme.error)),
+                        style:
+                            TextStyle(color: theme.colorScheme.error)),
                   ]),
                 ),
               ],
@@ -485,3 +565,105 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 }
 
+// ── Approve action bottom sheet ───────────────────────────────────────────────
+
+class _ApproveActionSheet extends StatelessWidget {
+  const _ApproveActionSheet({required this.scan});
+
+  final CloudScan scan;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Approve submission',
+              style: theme.textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            Text(
+              scan.plantId ?? 'Unknown Plant',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+            const SizedBox(height: 12),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const CircleAvatar(
+                backgroundColor: AppTheme.safeGreen,
+                radius: 20,
+                child: Icon(Icons.check_rounded,
+                    color: Colors.white, size: 20),
+              ),
+              title: const Text('Approve only',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: const Text('Mark as approved; image stays in herbarium.'),
+              onTap: () =>
+                  Navigator.pop(context, _ApproveChoice.approveOnly),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const CircleAvatar(
+                backgroundColor: AppTheme.botanicalPrimary,
+                radius: 20,
+                child: Icon(Icons.model_training_rounded,
+                    color: Colors.white, size: 20),
+              ),
+              title: const Text('Approve + Add to Training Data',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: const Text(
+                  'Copies image to training-datasets bucket for the next training run.'),
+              onTap: () =>
+                  Navigator.pop(context, _ApproveChoice.approveAndTrain),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Progress overlay shown while storage copy runs ────────────────────────────
+
+class _CopyingProgressDialog extends StatelessWidget {
+  const _CopyingProgressDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      content: Row(
+        children: [
+          const CircularProgressIndicator(
+              color: AppTheme.botanicalPrimary, strokeWidth: 3),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Text(
+              'Copying image to training dataset…',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

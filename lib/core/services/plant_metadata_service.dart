@@ -52,7 +52,6 @@ class PlantMetadataService {
     String? description,
     String? safetyWarnings,
     String? preparationStepsJson,
-    String? aiVisionSummary,
   }) async {
     if (!isAvailable) return false;
     try {
@@ -61,7 +60,6 @@ class PlantMetadataService {
         'description': description ?? '',
         'safety_warnings': safetyWarnings ?? '',
         'preparation_steps_json': preparationStepsJson ?? '',
-        'ai_vision_summary': aiVisionSummary,
         'updated_at': DateTime.now().toIso8601String(),
       }, onConflict: 'plant_id');
       return true;

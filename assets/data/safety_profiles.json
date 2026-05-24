@@ -1,35 +1,20 @@
 {
-  "Adelfa": {
-    "plant_id": "adelfa-001",
-    "name": "Adelfa",
-    "safety_profile": {
-      "is_generally_safe": false,
-      "pregnancy_warning": true,
-      "known_side_effects": ["Cardiac arrest", "Severe skin irritation from sap", "Death if ingested"],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["Do not use for medication", "Ingestion of any part", "Smoke from burning leaves is toxic"]
-    }
-  },
   "Akapulko": {
     "plant_id": "akapulko-001",
     "name": "Akapulko",
     "safety_profile": {
       "is_generally_safe": true,
       "pregnancy_warning": false,
-      "known_side_effects": ["Strong purgative effect if ingested in large quantities", "Skin sensitivity"],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["Perform patch test before full application"]
-    }
-  },
-  "Alagaw": {
-    "plant_id": "alagaw-001",
-    "name": "Alagaw",
-    "safety_profile": {
-      "is_generally_safe": true,
-      "pregnancy_warning": false,
-      "known_side_effects": [],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["Consult a doctor if pregnant or breastfeeding", "Consult if symptoms persist"]
+      "known_side_effects": [
+        "Strong purgative effect if ingested in large quantities",
+        "Skin sensitivity"
+      ],
+      "drug_interactions": [
+        "No known drug interactions documented in DOH/PITAHC references."
+      ],
+      "strict_contraindications": [
+        "Perform patch test before full application"
+      ]
     }
   },
   "AloeVera": {
@@ -38,9 +23,17 @@
     "safety_profile": {
       "is_generally_safe": true,
       "pregnancy_warning": false,
-      "known_side_effects": ["Yellow latex (aloin) is strong laxative and irritant", "May lower blood sugar", "Digestive cramping with internal use"],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["Avoid ingesting yellow sap near leaf skin"]
+      "known_side_effects": [
+        "Yellow latex (aloin) is strong laxative and irritant",
+        "May lower blood sugar",
+        "Digestive cramping with internal use"
+      ],
+      "drug_interactions": [
+        "No known drug interactions documented in DOH/PITAHC references."
+      ],
+      "strict_contraindications": [
+        "Avoid ingesting yellow sap near leaf skin"
+      ]
     }
   },
   "Ampalaya": {
@@ -49,20 +42,16 @@
     "safety_profile": {
       "is_generally_safe": true,
       "pregnancy_warning": true,
-      "known_side_effects": ["Hypoglycemia if taken with diabetic medication"],
-      "drug_interactions": ["Diabetic medications", "Insulin"],
-      "strict_contraindications": ["Pregnancy (may cause uterine contractions)"]
-    }
-  },
-  "Balanoy": {
-    "plant_id": "balanoy-001",
-    "name": "Balanoy",
-    "safety_profile": {
-      "is_generally_safe": true,
-      "pregnancy_warning": false,
-      "known_side_effects": ["Concentrated essential oil may irritate sensitive skin"],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["Avoid large amounts of concentrated oil on sensitive skin"]
+      "known_side_effects": [
+        "Hypoglycemia if taken with diabetic medication"
+      ],
+      "drug_interactions": [
+        "Diabetic medications",
+        "Insulin"
+      ],
+      "strict_contraindications": [
+        "Pregnancy (may cause uterine contractions)"
+      ]
     }
   },
   "Banaba": {
@@ -71,9 +60,15 @@
     "safety_profile": {
       "is_generally_safe": true,
       "pregnancy_warning": false,
-      "known_side_effects": ["Hypoglycemia with concurrent diabetes medications"],
-      "drug_interactions": ["Diabetes medications"],
-      "strict_contraindications": ["Consult a doctor for kidney disorders"]
+      "known_side_effects": [
+        "Hypoglycemia with concurrent diabetes medications"
+      ],
+      "drug_interactions": [
+        "Diabetes medications"
+      ],
+      "strict_contraindications": [
+        "Consult a doctor for kidney disorders"
+      ]
     }
   },
   "Bawang": {
@@ -82,9 +77,20 @@
     "safety_profile": {
       "is_generally_safe": true,
       "pregnancy_warning": false,
-      "known_side_effects": ["Breath odor", "Body odor", "Gastric irritation (heartburn)"],
-      "drug_interactions": ["Aspirin", "Warfarin", "Blood thinners"],
-      "strict_contraindications": ["Bleeding disorders", "Upcoming surgery"]
+      "known_side_effects": [
+        "Breath odor",
+        "Body odor",
+        "Gastric irritation (heartburn)"
+      ],
+      "drug_interactions": [
+        "Aspirin",
+        "Warfarin",
+        "Blood thinners"
+      ],
+      "strict_contraindications": [
+        "Bleeding disorders",
+        "Upcoming surgery"
+      ]
     }
   },
   "Bayabas": {
@@ -93,20 +99,15 @@
     "safety_profile": {
       "is_generally_safe": true,
       "pregnancy_warning": false,
-      "known_side_effects": ["Constipation from too many unripe fruits or strong leaf decoctions"],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["No contraindication documented for this plant in DOH/PITAHC references."]
-    }
-  },
-  "Bignay": {
-    "plant_id": "bignay-001",
-    "name": "Bignay",
-    "safety_profile": {
-      "is_generally_safe": true,
-      "pregnancy_warning": false,
-      "known_side_effects": ["Hyperacidity from unripe fruits in some"],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["No contraindication documented for this plant in DOH/PITAHC references."]
+      "known_side_effects": [
+        "Constipation from too many unripe fruits or strong leaf decoctions"
+      ],
+      "drug_interactions": [
+        "No known drug interactions documented in DOH/PITAHC references."
+      ],
+      "strict_contraindications": [
+        "No contraindication documented for this plant in DOH/PITAHC references."
+      ]
     }
   },
   "Calamansi": {
@@ -115,20 +116,17 @@
     "safety_profile": {
       "is_generally_safe": true,
       "pregnancy_warning": false,
-      "known_side_effects": ["Phytophotodermatitis (skin darkening/burns) if juice on skin then sun exposure"],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["Hyperacidity", "Gastric ulcers", "Avoid undiluted juice if ulcers"]
-    }
-  },
-  "Dayap": {
-    "plant_id": "dayap-001",
-    "name": "Dayap",
-    "safety_profile": {
-      "is_generally_safe": true,
-      "pregnancy_warning": false,
-      "known_side_effects": ["Photosensitive – wash hands after handling before sun"],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["Use with caution if GERD"]
+      "known_side_effects": [
+        "Phytophotodermatitis (skin darkening/burns) if juice on skin then sun exposure"
+      ],
+      "drug_interactions": [
+        "No known drug interactions documented in DOH/PITAHC references."
+      ],
+      "strict_contraindications": [
+        "Hyperacidity",
+        "Gastric ulcers",
+        "Avoid undiluted juice if ulcers"
+      ]
     }
   },
   "Gumamela": {
@@ -137,9 +135,15 @@
     "safety_profile": {
       "is_generally_safe": true,
       "pregnancy_warning": true,
-      "known_side_effects": ["Emmenagogue effects (may stimulate menstrual flow) in some Hibiscus species"],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["Caution with internal use during pregnancy"]
+      "known_side_effects": [
+        "Emmenagogue effects (may stimulate menstrual flow) in some Hibiscus species"
+      ],
+      "drug_interactions": [
+        "No known drug interactions documented in DOH/PITAHC references."
+      ],
+      "strict_contraindications": [
+        "Caution with internal use during pregnancy"
+      ]
     }
   },
   "Guyabano": {
@@ -148,31 +152,16 @@
     "safety_profile": {
       "is_generally_safe": true,
       "pregnancy_warning": false,
-      "known_side_effects": ["Neurotoxicity (annonacin) with long-term excessive leaf/seed consumption"],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["Use leaves sparingly", "Avoid long-term excessive consumption of leaves or seeds"]
-    }
-  },
-  "IpilIpil": {
-    "plant_id": "ipilipil-001",
-    "name": "Ipil-ipil",
-    "safety_profile": {
-      "is_generally_safe": false,
-      "pregnancy_warning": false,
-      "known_side_effects": ["Hair loss (alopecia)", "Stomach issues", "Mimosine toxicity"],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["Not recommended for human medicinal use without expert supervision"]
-    }
-  },
-  "Kahel": {
-    "plant_id": "kahel-001",
-    "name": "Kahel",
-    "safety_profile": {
-      "is_generally_safe": true,
-      "pregnancy_warning": false,
-      "known_side_effects": ["High acid may irritate acid reflux or mouth ulcers"],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["No contraindication documented for this plant in DOH/PITAHC references."]
+      "known_side_effects": [
+        "Neurotoxicity (annonacin) with long-term excessive leaf/seed consumption"
+      ],
+      "drug_interactions": [
+        "No known drug interactions documented in DOH/PITAHC references."
+      ],
+      "strict_contraindications": [
+        "Use leaves sparingly",
+        "Avoid long-term excessive consumption of leaves or seeds"
+      ]
     }
   },
   "Kakawate": {
@@ -181,21 +170,17 @@
     "safety_profile": {
       "is_generally_safe": false,
       "pregnancy_warning": false,
-      "known_side_effects": ["Toxic to humans if ingested"],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["External use only", "Do not consume leaves or bark"],
+      "known_side_effects": [
+        "Toxic to humans if ingested"
+      ],
+      "drug_interactions": [
+        "No known drug interactions documented in DOH/PITAHC references."
+      ],
+      "strict_contraindications": [
+        "External use only",
+        "Do not consume leaves or bark"
+      ],
       "needs_strict_contraindications": true
-    }
-  },
-  "Kamantigue": {
-    "plant_id": "kamantigue-001",
-    "name": "Kamantigue",
-    "safety_profile": {
-      "is_generally_safe": true,
-      "pregnancy_warning": false,
-      "known_side_effects": ["Calcium oxalate can be irritating if ingested"],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["Internal use not recommended without supervision"]
     }
   },
   "Kamias": {
@@ -204,9 +189,15 @@
     "safety_profile": {
       "is_generally_safe": true,
       "pregnancy_warning": false,
-      "known_side_effects": ["Acute kidney injury from oxalate crystals with excessive consumption"],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["Kidney issues – avoid excessive fruit or juice"],
+      "known_side_effects": [
+        "Acute kidney injury from oxalate crystals with excessive consumption"
+      ],
+      "drug_interactions": [
+        "No known drug interactions documented in DOH/PITAHC references."
+      ],
+      "strict_contraindications": [
+        "Kidney issues – avoid excessive fruit or juice"
+      ],
       "needs_strict_contraindications": true
     }
   },
@@ -217,8 +208,12 @@
       "is_generally_safe": true,
       "pregnancy_warning": false,
       "known_side_effects": [],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["Ensure leaves are cooked or washed thoroughly"]
+      "drug_interactions": [
+        "No known drug interactions documented in DOH/PITAHC references."
+      ],
+      "strict_contraindications": [
+        "Ensure leaves are cooked or washed thoroughly"
+      ]
     }
   },
   "KamotengKahoy": {
@@ -227,9 +222,16 @@
     "safety_profile": {
       "is_generally_safe": false,
       "pregnancy_warning": false,
-      "known_side_effects": ["Cyanide release if raw or improperly prepared"],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["Never eat leaves or roots raw", "Must be thoroughly cooked"],
+      "known_side_effects": [
+        "Cyanide release if raw or improperly prepared"
+      ],
+      "drug_interactions": [
+        "No known drug interactions documented in DOH/PITAHC references."
+      ],
+      "strict_contraindications": [
+        "Never eat leaves or roots raw",
+        "Must be thoroughly cooked"
+      ],
       "needs_strict_contraindications": true
     }
   },
@@ -240,8 +242,12 @@
       "is_generally_safe": true,
       "pregnancy_warning": true,
       "known_side_effects": [],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["Not recommended for pregnant women without medical advice"]
+      "drug_interactions": [
+        "No known drug interactions documented in DOH/PITAHC references."
+      ],
+      "strict_contraindications": [
+        "Not recommended for pregnant women without medical advice"
+      ]
     }
   },
   "Luya": {
@@ -250,9 +256,16 @@
     "safety_profile": {
       "is_generally_safe": true,
       "pregnancy_warning": false,
-      "known_side_effects": ["Increases bile – caution with gallstones"],
-      "drug_interactions": ["Blood thinners (anticoagulant properties)"],
-      "strict_contraindications": ["Caution with gallstones", "Caution if on blood thinners"]
+      "known_side_effects": [
+        "Increases bile – caution with gallstones"
+      ],
+      "drug_interactions": [
+        "Blood thinners (anticoagulant properties)"
+      ],
+      "strict_contraindications": [
+        "Caution with gallstones",
+        "Caution if on blood thinners"
+      ]
     }
   },
   "Malunggay": {
@@ -262,8 +275,12 @@
       "is_generally_safe": true,
       "pregnancy_warning": false,
       "known_side_effects": [],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["Avoid root bark – contains potential abortifacients and is toxic"]
+      "drug_interactions": [
+        "No known drug interactions documented in DOH/PITAHC references."
+      ],
+      "strict_contraindications": [
+        "Avoid root bark – contains potential abortifacients and is toxic"
+      ]
     }
   },
   "Mango": {
@@ -272,20 +289,15 @@
     "safety_profile": {
       "is_generally_safe": true,
       "pregnancy_warning": false,
-      "known_side_effects": ["Contact dermatitis from sap (itchy rash) in sensitive individuals"],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["Sap from tree/stem can cause skin irritation"]
-    }
-  },
-  "Mani": {
-    "plant_id": "mani-001",
-    "name": "Mani / Peanut",
-    "safety_profile": {
-      "is_generally_safe": true,
-      "pregnancy_warning": false,
-      "known_side_effects": ["Aflatoxin in improperly stored peanuts"],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["Peanut allergy – avoid completely", "Severe food allergy (anaphylaxis) risk"]
+      "known_side_effects": [
+        "Contact dermatitis from sap (itchy rash) in sensitive individuals"
+      ],
+      "drug_interactions": [
+        "No known drug interactions documented in DOH/PITAHC references."
+      ],
+      "strict_contraindications": [
+        "Sap from tree/stem can cause skin irritation"
+      ]
     }
   },
   "Mayana": {
@@ -295,8 +307,12 @@
       "is_generally_safe": true,
       "pregnancy_warning": false,
       "known_side_effects": [],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["Not typically used for internal consumption"]
+      "drug_interactions": [
+        "No known drug interactions documented in DOH/PITAHC references."
+      ],
+      "strict_contraindications": [
+        "Not typically used for internal consumption"
+      ]
     }
   },
   "NiyogNiyogan": {
@@ -305,9 +321,17 @@
     "safety_profile": {
       "is_generally_safe": true,
       "pregnancy_warning": false,
-      "known_side_effects": ["Hiccups", "Stomach ache", "Dizziness on overdose"],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["Do not give to children below 2 years old"]
+      "known_side_effects": [
+        "Hiccups",
+        "Stomach ache",
+        "Dizziness on overdose"
+      ],
+      "drug_interactions": [
+        "No known drug interactions documented in DOH/PITAHC references."
+      ],
+      "strict_contraindications": [
+        "Do not give to children below 2 years old"
+      ]
     }
   },
   "Oregano": {
@@ -316,20 +340,15 @@
     "safety_profile": {
       "is_generally_safe": true,
       "pregnancy_warning": false,
-      "known_side_effects": ["Very large doses of oil can be irritating"],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["No contraindication documented for this plant in DOH/PITAHC references."]
-    }
-  },
-  "Pandan": {
-    "plant_id": "pandan-001",
-    "name": "Pandan",
-    "safety_profile": {
-      "is_generally_safe": true,
-      "pregnancy_warning": false,
-      "known_side_effects": [],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["No contraindication documented for this plant in DOH/PITAHC references."]
+      "known_side_effects": [
+        "Very large doses of oil can be irritating"
+      ],
+      "drug_interactions": [
+        "No known drug interactions documented in DOH/PITAHC references."
+      ],
+      "strict_contraindications": [
+        "No contraindication documented for this plant in DOH/PITAHC references."
+      ]
     }
   },
   "Pomelo": {
@@ -339,8 +358,14 @@
       "is_generally_safe": true,
       "pregnancy_warning": false,
       "known_side_effects": [],
-      "drug_interactions": ["Statins", "Blood pressure medications", "Many medications (furanocoumarins)"],
-      "strict_contraindications": ["Consult a doctor if on maintenance medication"]
+      "drug_interactions": [
+        "Statins",
+        "Blood pressure medications",
+        "Many medications (furanocoumarins)"
+      ],
+      "strict_contraindications": [
+        "Consult a doctor if on maintenance medication"
+      ]
     }
   },
   "Saluyot": {
@@ -350,8 +375,12 @@
       "is_generally_safe": true,
       "pregnancy_warning": false,
       "known_side_effects": [],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["No contraindication documented for this plant in DOH/PITAHC references."]
+      "drug_interactions": [
+        "No known drug interactions documented in DOH/PITAHC references."
+      ],
+      "strict_contraindications": [
+        "No contraindication documented for this plant in DOH/PITAHC references."
+      ]
     }
   },
   "Sambong": {
@@ -361,8 +390,13 @@
       "is_generally_safe": true,
       "pregnancy_warning": false,
       "known_side_effects": [],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["Severe kidney disease", "Heart conditions – consult doctor before use (diuretic)"]
+      "drug_interactions": [
+        "No known drug interactions documented in DOH/PITAHC references."
+      ],
+      "strict_contraindications": [
+        "Severe kidney disease",
+        "Heart conditions – consult doctor before use (diuretic)"
+      ]
     }
   },
   "SampaSampalukan": {
@@ -372,8 +406,12 @@
       "is_generally_safe": true,
       "pregnancy_warning": false,
       "known_side_effects": [],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["Self-medication for serious liver/kidney issues is risky – consult a doctor"]
+      "drug_interactions": [
+        "No known drug interactions documented in DOH/PITAHC references."
+      ],
+      "strict_contraindications": [
+        "Self-medication for serious liver/kidney issues is risky – consult a doctor"
+      ]
     }
   },
   "Sampalok": {
@@ -382,9 +420,16 @@
     "safety_profile": {
       "is_generally_safe": true,
       "pregnancy_warning": false,
-      "known_side_effects": ["Strong laxative in high doses", "Acidity harsh on teeth enamel if excessive"],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["No contraindication documented for this plant in DOH/PITAHC references."]
+      "known_side_effects": [
+        "Strong laxative in high doses",
+        "Acidity harsh on teeth enamel if excessive"
+      ],
+      "drug_interactions": [
+        "No known drug interactions documented in DOH/PITAHC references."
+      ],
+      "strict_contraindications": [
+        "No contraindication documented for this plant in DOH/PITAHC references."
+      ]
     }
   },
   "SilingLabuyo": {
@@ -393,20 +438,17 @@
     "safety_profile": {
       "is_generally_safe": true,
       "pregnancy_warning": false,
-      "known_side_effects": ["Gastritis from internal excess", "Skin and eye irritation"],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["Wash hands after handling", "Avoid contact with eyes and sensitive membranes"]
-    }
-  },
-  "TakipKuhol": {
-    "plant_id": "takipkuhol-001",
-    "name": "Takip-kuhol / Gotu Kola",
-    "safety_profile": {
-      "is_generally_safe": true,
-      "pregnancy_warning": false,
-      "known_side_effects": ["Rare liver toxicity with heavy supplement use"],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["Avoid if you have liver disease"]
+      "known_side_effects": [
+        "Gastritis from internal excess",
+        "Skin and eye irritation"
+      ],
+      "drug_interactions": [
+        "No known drug interactions documented in DOH/PITAHC references."
+      ],
+      "strict_contraindications": [
+        "Wash hands after handling",
+        "Avoid contact with eyes and sensitive membranes"
+      ]
     }
   },
   "TawaTawa": {
@@ -415,9 +457,16 @@
     "safety_profile": {
       "is_generally_safe": true,
       "pregnancy_warning": false,
-      "known_side_effects": ["Gastrointestinal irritation", "Nausea with large doses"],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["No contraindication documented for this plant in DOH/PITAHC references."]
+      "known_side_effects": [
+        "Gastrointestinal irritation",
+        "Nausea with large doses"
+      ],
+      "drug_interactions": [
+        "No known drug interactions documented in DOH/PITAHC references."
+      ],
+      "strict_contraindications": [
+        "No contraindication documented for this plant in DOH/PITAHC references."
+      ]
     }
   },
   "TsaangGubat": {
@@ -427,19 +476,12 @@
       "is_generally_safe": true,
       "pregnancy_warning": false,
       "known_side_effects": [],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["No contraindication documented for this plant in DOH/PITAHC references."]
-    }
-  },
-  "TubaTuba": {
-    "plant_id": "tuba-tuba-001",
-    "name": "Tuba-tuba",
-    "safety_profile": {
-      "is_generally_safe": false,
-      "pregnancy_warning": false,
-      "known_side_effects": ["Severe vomiting", "Diarrhea", "Dehydration", "Shock", "Sap is strong irritant"],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["Do not ingest seeds (Curcin toxalbumin)", "Do not use for medication"]
+      "drug_interactions": [
+        "No known drug interactions documented in DOH/PITAHC references."
+      ],
+      "strict_contraindications": [
+        "No contraindication documented for this plant in DOH/PITAHC references."
+      ]
     }
   },
   "UlasimangBato": {
@@ -449,19 +491,12 @@
       "is_generally_safe": true,
       "pregnancy_warning": true,
       "known_side_effects": [],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["Avoid excessive use if pregnant"]
-    }
-  },
-  "YerbaBuena": {
-    "plant_id": "yerba-buena-001",
-    "name": "Yerba Buena",
-    "safety_profile": {
-      "is_generally_safe": true,
-      "pregnancy_warning": false,
-      "known_side_effects": [],
-      "drug_interactions": ["No known drug interactions documented in DOH/PITAHC references."],
-      "strict_contraindications": ["No contraindication documented for this plant in DOH/PITAHC references."]
+      "drug_interactions": [
+        "No known drug interactions documented in DOH/PITAHC references."
+      ],
+      "strict_contraindications": [
+        "Avoid excessive use if pregnant"
+      ]
     }
   }
 }

@@ -1,12 +1,4 @@
 {
-  "Adelfa": {
-    "identification": "The model identified this as Adelfa (Nerium oleander) with high confidence. The distinctive lanceolate leaves arranged in whorls of three, showy funnel-shaped flowers in various colors, and characteristic shrub growth habit match typical Adelfa features. The leathery leaves and prominent midrib are key identifying characteristics.",
-    "taxonomy": "**Family:** Apocynaceae\n**Genus:** Nerium\n**Species:** Nerium oleander",
-    "ecology": "An evergreen shrub or small tree widely cultivated as an ornamental in tropical and subtropical areas. It is drought-tolerant and often found in gardens, roadsides, and parks. Known for its leathery leaves and showy flowers, it thrives in full sun.",
-    "medicinal_preparation": "**Uses:** TRADITIONAL USE ONLY - NOT RECOMMENDED.\n\n**Preparation:**\nThere are NO safe home preparation methods for this plant. In strict traditional settings, external poultices were historically used for herpes or skin diseases, but the risk of systemic absorption and poisoning makes this highly dangerous.",
-    "safety_consideration": "**DANGER: HIGHLY TOXIC.**\n\nContains cardiac glycosides (oleandrin). Ingestion of any part (leaves, flowers, seeds) can cause cardiac arrest and death. Contact with sap can cause severe skin irritation. Smoke from burning leaves is also toxic. **Do not use for medication.**",
-    "heatmap_guidance": "When viewing the heatmap, red areas on the lanceolate leaves indicate the model focused on the distinctive leaf shape and arrangement in whorls of three. The heatmap should show attention on the leathery leaf texture and prominent midrib. If flowers are visible, the funnel-shaped structure should appear as distinct red zones. Concentrated red areas on leaf margins suggest healthy leaf structure. However, this plant is toxic and should not be used medicinally."
-  },
   "Akapulko": {
     "identification": "The model identified this as Akapulko (Senna alata) with high confidence. The distinctive pinnately compound leaves with large oblong leaflets, bright golden-yellow flowers in erect spikes, and characteristic flat winged pods match typical Akapulko features. The candle-like flower spikes are a key identifying characteristic.",
     "taxonomy": "**Family:** Fabaceae\n**Genus:** Senna\n**Species:** Senna alata",
@@ -14,14 +6,6 @@
     "medicinal_preparation": "**Uses:** DOH-Approved for fungal skin infections (Ringworm, Athlete's Foot, Tinea Flava).\n\n**Preparation:**\n1. Gather fresh leaves.\n2. Pound the leaves until crushed.\n3. Apply the juices directly to the affected skin area.\n4. Apply 1-2 times daily until the infection clears.",
     "safety_consideration": "**Safety:** Generally safe for external use. Not recommended for internal ingestion in large quantities as it acts as a strong purgative (laxative). Perform a patch test to check for skin sensitivity before full application.",
     "heatmap_guidance": "When viewing the heatmap, red areas on the pinnately compound leaves indicate the model focused on the large oblong leaflet shape and arrangement. The heatmap should show attention on individual leaflets and the central rachis. If flower spikes are visible, they should show as distinct red zones. Concentrated red areas on leaf margins suggest healthy leaf structure. Scattered red patterns may indicate fungal infection or damage."
-  },
-  "Alagaw": {
-    "identification": "The model identified this as Alagaw (Premna odorata) with high confidence. The distinctive opposite leaves, aromatic scent, and characteristic shrub or small tree growth habit match typical Alagaw features. The leaf shape and aromatic properties are key identifying characteristics.",
-    "taxonomy": "**Family:** Lamiaceae\n**Genus:** Premna\n**Species:** Premna odorata",
-    "ecology": "A small tree or shrub native to the Philippines, often found in secondary forests and thickets at low altitudes. It has hairy, aromatic leaves and small greenish-white flowers.",
-    "medicinal_preparation": "**Uses:** Traditional remedy for coughs, phlegm, and gas pain.\n\n**Preparation:**\n1. **Decoction:** Boil a handful of fresh leaves in 2 cups of water for 10-15 minutes.\n2. Drink the decoction warm to relieve cough or gas.\n3. **Wash:** Boiled leaf water can be used as a bath for babies or for washing wounds.",
-    "safety_consideration": "**Safety:** Generally considered safe for traditional use. However, it is not one of the primary DOH-approved herbs. Consult a doctor if symptoms persist or if pregnant/breastfeeding.",
-    "heatmap_guidance": "When viewing the heatmap, red areas on the opposite leaves indicate the model focused on the leaf arrangement and shape. The heatmap should show pairs of leaves with attention on both members. The aromatic properties may be indicated by attention on the leaf surface. Healthy leaves should show uniform red coverage. Scattered red spots may indicate disease or damage."
   },
   "AloeVera": {
     "identification": "The model identified this as Aloe Vera (Aloe barbadensis Miller) with high confidence. The distinctive thick fleshy leaves with serrated edges, rosette growth pattern, and characteristic gel-filled interior match typical Aloe Vera features. The thick succulent leaves and gel content are key identifying characteristics.",
@@ -38,14 +22,6 @@
     "medicinal_preparation": "**Uses:** DOH-Approved for non-insulin dependent Diabetes Mellitus (Type 2).\n\n**Preparation:**\n1. Gather young, clean leaves.\n2. Steam or blanch leaves and eat as a salad.\n3. **Decoction:** Boil 6 tablespoons of chopped leaves in 2 glasses of water for 15 minutes in an uncovered pot. Drink 1/3 cup, 3 times a day.",
     "safety_consideration": "**Safety:** Safe for most adults. **Contraindicated for pregnancy** (may cause uterine contractions). Patients taking diabetic medication should monitor blood sugar closely to avoid hypoglycemia (excessively low blood sugar).",
     "heatmap_guidance": "When viewing the heatmap, red areas on the deeply lobed leaves indicate the model focused on the distinctive palmately lobed structure with 5-7 deep cuts. The heatmap should show concentrated attention along the lobe margins and the central leaf base. The unique leaf shape with deep sinuses should be clearly visible as red zones. If tendrils are visible, they may show as distinct red lines. Scattered red areas may indicate disease or pest damage."
-  },
-  "Balanoy": {
-    "identification": "The model identified this as Balanoy (Ocimum basilicum) with high confidence. The distinctive oval to lanceolate leaves, square stems, and characteristic strong aromatic scent match typical Balanoy (Basil) features. The aromatic leaves and square stems are key identifying characteristics.",
-    "taxonomy": "**Family:** Lamiaceae\n**Genus:** Ocimum\n**Species:** Ocimum basilicum",
-    "ecology": "An aromatic herb often grown in gardens. It prefers moist, fertile soil and full sun. It produces spikes of white or purplish flowers.",
-    "medicinal_preparation": "**Uses:** Gas pain, indigestion, and minor cuts.\n\n**Preparation:**\n1. **Tea:** Infuse fresh leaves in hot water for 10 minutes; drink for digestive relief.\n2. **Poultice:** Crush fresh leaves and apply to insect bites or minor wounds to reduce itching and inflammation.",
-    "safety_consideration": "**Safety:** Safe for culinary and medicinal use in moderation. Essential oils are potent; avoid using large amounts of concentrated oil on sensitive skin.",
-    "heatmap_guidance": "When viewing the heatmap, red areas on the oval to lanceolate leaves indicate the model focused on the leaf shape and venation pattern. The heatmap should show attention on the leaf margins and the central midrib. Square stems, if visible, should appear as distinct red lines. The aromatic properties are indicated by attention on the leaf surface. Healthy leaves should show uniform red coverage."
   },
   "Banaba": {
     "identification": "The model identified this as Banaba (Lagerstroemia speciosa) with high confidence. The distinctive elliptical to oblong leaves, showy pink to purple flowers in large panicles, and characteristic tree growth habit match typical Banaba features. The leaf shape and flower clusters are key identifying characteristics.",
@@ -71,14 +47,6 @@
     "safety_consideration": "**Safety:** Safe for children and adults. Ingestion of too many unripe fruits or strong leaf decoctions may cause constipation.",
     "heatmap_guidance": "When viewing the heatmap, red areas on the leaves indicate the model focused on the prominent parallel venation pattern, which is a key identifying feature. The heatmap should show red lines following the parallel veins from base to tip. The oval to elliptical leaf shape should be clearly outlined. Concentrated red areas along the midrib and major veins suggest healthy leaf structure. If fruits are visible, they should show as distinct red zones with the characteristic round to pear shape."
   },
-  "Bignay": {
-    "identification": "The model identified this as Bignay (Antidesma bunius) with high confidence. The distinctive elliptical to oblong leaves, small flowers in spikes, and characteristic small round fruits that turn from green to red to black match typical Bignay features. The leaf shape and fruit color progression are key identifying characteristics.",
-    "taxonomy": "**Family:** Phyllanthaceae\n**Genus:** Antidesma\n**Species:** Antidesma bunius",
-    "ecology": "A small dioecious tree found in thickets and open places. It produces clustered fruits that ripen unevenly (green, red, black).",
-    "medicinal_preparation": "**Uses:** Antioxidant, blood pressure management (traditional).\n\n**Preparation:**\n1. **Tea:** Boil leaves or bark as a tea for general wellness.\n2. **Fruit:** Eaten raw or made into wine/vinegar. The fruits are rich in antioxidants.",
-    "safety_consideration": "**Safety:** Generally safe. Consumption of unripe fruits acts as a sour condiment but may cause hyperacidity in some.",
-    "heatmap_guidance": "When viewing the heatmap, red areas on the elliptical to oblong leaves indicate the model focused on the leaf shape and venation pattern. The heatmap should show attention along the leaf margins and the central midrib. If fruits are visible, they should appear as distinct red zones. The color progression of fruits (green to red to black) is not visible in heatmaps but the fruit shape should be clear. Healthy leaves should show uniform red coverage."
-  },
   "Calamansi": {
     "identification": "The model identified this as Calamansi (Citrus × microcarpa) with high confidence. The distinctive small oval to elliptical leaves, small white flowers, and characteristic small round green to orange fruits match typical Calamansi features. The leaf shape and small fruit size are key identifying characteristics.",
     "taxonomy": "**Family:** Rutaceae\n**Genus:** Citrus\n**Species:** Citrus × microcarpa",
@@ -86,14 +54,6 @@
     "medicinal_preparation": "**Uses:** Cough, colds, and skin bleaching/cleaning.\n\n**Preparation:**\n1. **Juice:** Squeeze fruits into warm water (with or without honey) and drink for sore throat or cough.\n2. **Skin:** Rub cut fruit on dark skin areas (elbows/knees) as a mild bleach (rinse after).",
     "safety_consideration": "**Safety:** Highly acidic. Avoid undiluted juice if you have hyperacidity or gastric ulcers. Application on skin followed by sun exposure can cause phytophotodermatitis (skin darkening/burns).",
     "heatmap_guidance": "When viewing the heatmap, red areas on the small oval to elliptical leaves indicate the model focused on the leaf shape and venation pattern. The heatmap should show attention along the leaf margins and the central midrib. If fruits are visible, the small round shape should appear as distinct red zones. Healthy leaves should show uniform red coverage. The citrus scent is not visible but the leaf structure should be clear."
-  },
-  "Dayap": {
-    "identification": "The model identified this as Dayap (Citrus aurantifolia) with high confidence. The distinctive small oval leaves, small white flowers, and characteristic small round green to yellow fruits match typical Dayap (Lime) features. The leaf shape and small acidic fruits are key identifying characteristics.",
-    "taxonomy": "**Family:** Rutaceae\n**Genus:** Citrus\n**Species:** Citrus aurantifolia",
-    "ecology": "A shrub or small tree with sharp spines. It is widely distributed in the Philippines and cultivated for its acidic fruits.",
-    "medicinal_preparation": "**Uses:** Nausea, fainting, and disinfectant.\n\n**Preparation:**\n1. **Nausea:** Squeeze the rind near the nostrils and inhale the zest oils to relieve nausea.\n2. **Drink:** Juice mixed with water for hydration and Vitamin C.",
-    "safety_consideration": "**Safety:** Similar to Calamansi, it is highly acidic. Use with caution if you have GERD. Photosensitive—wash hands after handling before going into the sun.",
-    "heatmap_guidance": "When viewing the heatmap, red areas on the small oval leaves indicate the model focused on the leaf shape and venation pattern. The heatmap should show attention along the leaf margins and the central midrib. If fruits are visible, the small round shape should appear as distinct red zones. Healthy leaves should show uniform red coverage. The citrus scent is not visible but the leaf structure should be clear."
   },
   "Gumamela": {
     "identification": "The model identified this as Gumamela (Hibiscus rosa-sinensis) with high confidence. The distinctive ovate to lanceolate leaves with serrated margins, large showy funnel-shaped flowers in various colors, and characteristic shrub growth habit match typical Gumamela features. The prominent flowers and leaf shape are key identifying characteristics.",
@@ -111,22 +71,6 @@
     "safety_consideration": "**Safety:** **Consumption Caution.** While the fruit is healthy, long-term excessive consumption of leaves/seeds is linked to neurotoxicity (symptoms similar to Parkinson's disease) due to annonacin content. Use leaves sparingly.",
     "heatmap_guidance": "When viewing the heatmap, red areas on the oblong to elliptical leaves indicate the model focused on the leaf shape and venation pattern. The heatmap should show attention along the leaf margins and the central midrib. If fruits are visible, the large spiny green fruits should appear as distinct red zones with attention on the spiny surface. Healthy leaves should show uniform red coverage. The distinctive fruit spines may show as concentrated red areas."
   },
-  "IpilIpil": {
-    "identification": "The model identified this as Ipil-ipil (Leucaena leucocephala) with high confidence. The distinctive bipinnately compound leaves with small leaflets, small white flowers in round heads, and characteristic tree growth habit match typical Ipil-ipil features. The compound leaf structure and flower heads are key identifying characteristics.",
-    "taxonomy": "**Family:** Fabaceae\n**Genus:** Leucaena\n**Species:** Leucaena leucocephala",
-    "ecology": "A fast-growing tree often used for reforestation and firewood. It produces flat brown pods and grows aggressively in open areas.",
-    "medicinal_preparation": "**Uses:** Deworming (Seeds) - TRADITIONAL USE ONLY.\n\n**Preparation:**\n1. Mature seeds are historically roasted and eaten to expel roundworms.\n2. **WARNING:** This is not a primary recommended method due to potential toxicity.",
-    "safety_consideration": "**Safety:** **CAUTION.** Contains mimosine, a toxic amino acid. Ingestion can cause hair loss (alopecia) and stomach issues. Not recommended for human medicinal use without expert supervision.",
-    "heatmap_guidance": "When viewing the heatmap, red areas on the bipinnately compound leaves indicate the model focused on the complex leaf structure with multiple small leaflets. The heatmap should show attention on individual leaflets and the branching pattern. If flowers are visible, the round flower heads should appear as distinct red zones. Healthy leaves should show uniform attention across all leaflets. The compound structure should be clearly visible in the heatmap pattern."
-  },
-  "Kahel": {
-    "identification": "The model identified this as Kahel (Citrus sinensis) with high confidence. The distinctive oval to elliptical leaves, white flowers, and characteristic round orange fruits match typical Kahel (Orange) features. The leaf shape and fruit color are key identifying characteristics.",
-    "taxonomy": "**Family:** Rutaceae\n**Genus:** Citrus\n**Species:** Citrus sinensis",
-    "ecology": "A small to medium-sized evergreen tree. While less common in the lowlands than Calamansi, it is cultivated for its sweet fruit.",
-    "medicinal_preparation": "**Uses:** Immune support and cough relief.\n\n**Preparation:**\n1. **Juice:** Freshly squeezed juice is high in Vitamin C.\n2. **Peel:** The zest contains essential oils used in aromatherapy for mood lifting.",
-    "safety_consideration": "**Safety:** Safe for consumption. High acid content may irritate those with acid reflux or mouth ulcers.",
-    "heatmap_guidance": "When viewing the heatmap, red areas on the oval to elliptical leaves indicate the model focused on the leaf shape and venation pattern. The heatmap should show attention along the leaf margins and the central midrib. If fruits are visible, the round orange shape should appear as distinct red zones. Healthy leaves should show uniform red coverage. The citrus scent is not visible but the leaf structure should be clear."
-  },
   "Kakawate": {
     "identification": "The model identified this as Kakawate (Gliricidia sepium) with high confidence. The distinctive pinnately compound leaves with oval leaflets, pink to purple flowers, and characteristic tree growth habit match typical Kakawate features. The compound leaf structure and flower color are key identifying characteristics.",
     "taxonomy": "**Family:** Fabaceae\n**Genus:** Gliricidia\n**Species:** Gliricidia sepium",
@@ -134,14 +78,6 @@
     "medicinal_preparation": "**Uses:** Skin itchiness, scabies, and dermatitis.\n\n**Preparation:**\n1. **Wash:** Extract juice from leaves or boil leaves in water.\n2. Apply the juice/water to itchy skin areas or areas affected by scabies.",
     "safety_consideration": "**Safety:** **External Use Only.** Leaves and bark are toxic to rodents and can be toxic to humans if ingested. Do not consume.",
     "heatmap_guidance": "When viewing the heatmap, red areas on the pinnately compound leaves indicate the model focused on the compound leaf structure with oval leaflets. The heatmap should show attention on individual leaflets and the central rachis. If flowers are visible, the pink to purple flowers should appear as distinct red zones. Healthy leaves should show uniform attention across all leaflets. The compound structure should be clearly visible."
-  },
-  "Kamantigue": {
-    "identification": "The model identified this as Kamantigue (Impatiens balsamina) with high confidence. The distinctive lanceolate to elliptic leaves, showy flowers in various colors, and characteristic annual herb growth habit match typical Kamantigue features. The flower shape and leaf arrangement are key identifying characteristics.",
-    "taxonomy": "**Family:** Balsaminaceae\n**Genus:** Impatiens\n**Species:** Impatiens balsamina",
-    "ecology": "An annual succulent herb cultivated for its colorful flowers. It grows well in moist, shaded areas.",
-    "medicinal_preparation": "**Uses:** Fungal skin infections and whitlow (paronychia).\n\n**Preparation:**\n1. **Poultice:** Crush the fresh flowers or leaves.\n2. Apply directly to the fungal infection or fingernail infection.",
-    "safety_consideration": "**Safety:** External use is generally safe. Internal use is not recommended without supervision as it contains calcium oxalate which can be irritating.",
-    "heatmap_guidance": "When viewing the heatmap, red areas on the lanceolate to elliptic leaves indicate the model focused on the leaf shape and venation pattern. The heatmap should show attention along the leaf margins and the central midrib. If flowers are visible, the showy flowers should appear as distinct red zones. Healthy leaves should show uniform red coverage. The distinctive flower shape may show as concentrated red areas."
   },
   "Kamias": {
     "identification": "The model identified this as Kamias (Averrhoa bilimbi) with high confidence. The distinctive pinnately compound leaves with small leaflets, small red to purple flowers, and characteristic oblong green fruits match typical Kamias features. The compound leaf structure and fruit shape are key identifying characteristics.",
@@ -199,14 +135,6 @@
     "safety_consideration": "**Safety:** Fruit is safe. Sap from the tree/stem can cause contact dermatitis (itchy rash) in sensitive individuals, similar to poison ivy (same family).",
     "heatmap_guidance": "When viewing the heatmap, red areas on the lanceolate to oblong leaves indicate the model focused on the leaf shape and venation pattern. The heatmap should show attention along the leaf margins and the central midrib. If fruits are visible, the large oval to kidney-shaped fruits should appear as distinct red zones. Healthy leaves should show uniform red coverage. The prominent venation pattern should be visible as red lines."
   },
-  "Mani": {
-    "identification": "The model identified this as Mani (Arachis hypogaea) with high confidence. The distinctive pinnately compound leaves with four leaflets, yellow flowers, and characteristic underground pods with edible seeds match typical Mani (Peanut) features. The compound leaf structure and growth habit are key identifying characteristics.",
-    "taxonomy": "**Family:** Fabaceae\n**Genus:** Arachis\n**Species:** Arachis hypogaea",
-    "ecology": "A low-growing annual herb that buries its seeds (pods) underground to mature. It requires loose, sandy soil.",
-    "medicinal_preparation": "**Uses:** Nutrition (High Protein).\n\n**Preparation:**\n1. **Food:** Seeds are boiled, roasted, or fried.\n2. **Oil:** Extracted peanut oil is used for cooking.",
-    "safety_consideration": "**Safety:** **Allergen Alert.** A common cause of severe food allergies (anaphylaxis). Individuals with peanut allergies must avoid it completely. Aflatoxin (mold toxin) can develop in improperly stored peanuts.",
-    "heatmap_guidance": "When viewing the heatmap, red areas on the pinnately compound leaves indicate the model focused on the compound leaf structure with four leaflets. The heatmap should show attention on individual leaflets and the central rachis. The four-leaflet arrangement should be clearly visible as distinct red zones. Healthy leaves should show uniform attention across all four leaflets. The compound structure should be clearly visible in the heatmap pattern."
-  },
   "Mayana": {
     "identification": "The model identified this as Mayana (Coleus scutellarioides) with high confidence. The distinctive ovate to heart-shaped leaves with various colors and patterns, square stems, and characteristic herbaceous growth habit match typical Mayana features. The colorful variegated leaves are key identifying characteristics.",
     "taxonomy": "**Family:** Lamiaceae\n**Genus:** Coleus\n**Species:** Coleus scutellarioides",
@@ -230,14 +158,6 @@
     "medicinal_preparation": "**Uses:** Cough, colds, and culinary flavoring.\n\n**Preparation:**\n1. **Tea:** Steep fresh or dried leaves in hot water.\n2. **Vapor:** Inhale steam from boiled leaves to clear nasal passages.",
     "safety_consideration": "**Safety:** Safe. Very large doses of oil can be irritating, but typical leaf consumption is safe.",
     "heatmap_guidance": "When viewing the heatmap, red areas on the small oval leaves indicate the model focused on the smooth leaf edges and oval shape. The heatmap should show concentrated attention on the leaf margins and the overall leaf shape. Square stems, if visible, should appear as distinct red lines with angular corners. The aromatic properties are not directly visible but the leaf structure should show uniform red coverage. Healthy leaves should display smooth red gradients without irregularities."
-  },
-  "Pandan": {
-    "identification": "The model identified this as Pandan (Pandanus amaryllifolius) with high confidence. The distinctive long narrow leaves arranged in a fan-like rosette, aromatic scent, and characteristic grass-like appearance match typical Pandan features. The long linear leaves and aromatic properties are key identifying characteristics.",
-    "taxonomy": "**Family:** Pandanaceae\n**Genus:** Pandanus\n**Species:** Pandanus amaryllifolius",
-    "ecology": "A tropical shrub with fragrant, strap-shaped leaves. It rarely flowers and is propagated by suckers/cuttings. It prefers moist soil.",
-    "medicinal_preparation": "**Uses:** Aromatic, mild diuretic, and headache relief.\n\n**Preparation:**\n1. **Food:** Leaves are tied in knots and boiled with rice or sweets for flavor.\n2. **Tea:** Boiled leaves make a mild tea for relaxation.",
-    "safety_consideration": "**Safety:** Highly safe. Widely used in cuisine.",
-    "heatmap_guidance": "When viewing the heatmap, red areas on the long narrow leaves indicate the model focused on the distinctive linear leaf shape and arrangement. The heatmap should show attention along the length of the leaves and the parallel venation pattern. The fan-like rosette arrangement should be visible as radial red zones. The aromatic properties may be indicated by attention on the leaf surface. Healthy leaves should show uniform red coverage along their length."
   },
   "Pomelo": {
     "identification": "The model identified this as Pomelo (Citrus maxima) with high confidence. The distinctive large oval to elliptical leaves, white flowers, and characteristic large round to pear-shaped fruits match typical Pomelo features. The leaf size and large fruit are key identifying characteristics.",
@@ -287,14 +207,6 @@
     "safety_consideration": "**Safety:** **Irritant.** Wash hands immediately after handling. Avoid contact with eyes and sensitive membranes. Internal excess can cause gastritis.",
     "heatmap_guidance": "When viewing the heatmap, red areas on the ovate to lanceolate leaves indicate the model focused on the leaf shape and venation pattern. The heatmap should show attention along the leaf margins and the central midrib. If fruits are visible, the small elongated peppers should appear as distinct red zones. The color change from green to red is not visible in heatmaps but the fruit shape should be clear. Healthy leaves should show uniform red coverage."
   },
-  "TakipKuhol": {
-    "identification": "The model identified this as Takip-kuhol (Centella asiatica) with high confidence. The distinctive kidney-shaped to round leaves with scalloped edges, creeping growth habit, and characteristic small white to pinkish flowers match typical Takip-kuhol (Gotu Kola) features. The kidney-shaped leaves and creeping habit are key identifying characteristics.",
-    "taxonomy": "**Family:** Apiaceae\n**Genus:** Centella\n**Species:** Centella asiatica",
-    "ecology": "A creeping herbaceous plant that loves moisture. It is found in rice paddies, riverbanks, and gardens.",
-    "medicinal_preparation": "**Uses:** Wound healing, memory support, and venous insufficiency.\n\n**Preparation:**\n1. **Raw:** Leaves are eaten fresh in salads.\n2. **Tea:** Dried or fresh leaves are brewed.",
-    "safety_consideration": "**Safety:** Generally safe. However, rare cases of liver toxicity have been reported with heavy supplement use. Avoid if you have liver disease.",
-    "heatmap_guidance": "When viewing the heatmap, red areas on the kidney-shaped to round leaves indicate the model focused on the distinctive leaf shape with scalloped edges. The heatmap should show concentrated attention on the rounded leaf shape and the scalloped margins, which are key identifying features. The creeping growth habit may be visible as attention on stems and leaf arrangement. If flowers are visible, they should appear as small red zones. Healthy leaves should show uniform red coverage with clear emphasis on the kidney shape and scalloped edges."
-  },
   "TawaTawa": {
     "identification": "The model identified this as Tawa-tawa (Euphorbia hirta) with high confidence. The distinctive opposite leaves with reddish stems, small flowers, and characteristic milky sap match typical Tawa-tawa features. The opposite leaf arrangement and milky latex are key identifying characteristics.",
     "taxonomy": "**Family:** Euphorbiaceae\n**Genus:** Euphorbia\n**Species:** Euphorbia hirta",
@@ -311,14 +223,6 @@
     "safety_consideration": "**Safety:** Very safe. It is widely used as a tea substitute even without illness.",
     "heatmap_guidance": "When viewing the heatmap, red areas on the small serrated leaves indicate the model focused on the distinctive serrated leaf margins, which are a key identifying feature. The heatmap should show concentrated attention along the leaf edges where serrations are located. The small leaf size and compact shrub form should be visible as focused red zones. Healthy leaves should show uniform red coverage. Scattered red spots may indicate disease or pest damage."
   },
-  "TubaTuba": {
-    "identification": "The model identified this as Tuba-tuba (Jatropha curcas) with high confidence. The distinctive palmately lobed leaves, small greenish flowers, and characteristic shrub growth habit match typical Tuba-tuba features. The leaf shape and growth habit are key identifying characteristics.",
-    "taxonomy": "**Family:** Euphorbiaceae\n**Genus:** Jatropha\n**Species:** Jatropha curcas",
-    "ecology": "A drought-resistant shrub often used as a living fence. It produces fruits containing oil-rich seeds.",
-    "medicinal_preparation": "**Uses:** TRADITIONAL USE ONLY - NOT RECOMMENDED.\n\n**Preparation:**\nUsed traditionally for sprains (leaves) but the risks outweigh the benefits for non-experts. **Do not ingest seeds.**",
-    "safety_consideration": "**DANGER: TOXIC.** The seeds contain Curcin (a toxalbumin). Ingestion of seeds causes severe vomiting, diarrhea, and potential dehydration/shock. The sap is also a strong irritant.",
-    "heatmap_guidance": "When viewing the heatmap, red areas on the palmately lobed leaves indicate the model focused on the distinctive lobed leaf structure. The heatmap should show attention on the leaf lobes and the central leaf base. The shrub growth habit may be visible as attention on stems. However, this plant is toxic and should not be used medicinally. Healthy leaves should show uniform red coverage with emphasis on the lobed structure."
-  },
   "UlasimangBato": {
     "identification": "The model identified this as Ulasimang Bato (Peperomia pellucida) with high confidence. The distinctive heart-shaped succulent leaves, translucent appearance, and characteristic fleshy stems match typical Ulasimang Bato features. The translucent heart-shaped leaves are a key identifying characteristic.",
     "taxonomy": "**Family:** Piperaceae\n**Genus:** Peperomia\n**Species:** Peperomia pellucida",
@@ -326,13 +230,5 @@
     "medicinal_preparation": "**Uses:** DOH-Approved for Uric Acid control (Gout/Rheumatism).\n\n**Preparation:**\n1. **Salad:** Wash fresh leaves and eat raw as a salad (1.5 cups daily).\n2. **Decoction:** Boil 1.5 cups of fresh leaves in 2 cups water for 10-15 minutes.",
     "safety_consideration": "**Safety:** Safe. No known severe side effects. Avoid excessive use if pregnant.",
     "heatmap_guidance": "When viewing the heatmap, red areas on the heart-shaped leaves indicate the model focused on the distinctive heart shape and translucent appearance. The heatmap should show concentrated attention on the leaf shape, particularly the rounded base and pointed tip that form the heart shape. The succulent, fleshy texture should be visible as uniform red coverage. If stems are visible, they should show as distinct red lines. Healthy leaves should show smooth red gradients without scattered spots."
-  },
-  "YerbaBuena": {
-    "identification": "The model identified this as Yerba Buena (Clinopodium douglasii) with high confidence. The distinctive small oval leaves with serrated edges, mint-like aroma, and characteristic creeping or trailing growth habit match typical Yerba Buena features. The minty scent and small serrated leaves are key identifying characteristics.",
-    "taxonomy": "**Family:** Lamiaceae\n**Genus:** Clinopodium\n**Species:** Clinopodium douglasii",
-    "ecology": "A creeping, aromatic herb of the mint family. It grows well in moist, high-altitude or shaded areas.",
-    "medicinal_preparation": "**Uses:** DOH-Approved for Pain (Headache, toothache, arthritis).\n\n**Preparation:**\n1. **Tea:** Boil leaves for headache or stomach ache.\n2. **Poultice:** Crush fresh leaves and apply to forehead (headache) or cheek (toothache) for pain relief.",
-    "safety_consideration": "**Safety:** Safe. Widely used as a culinary mint as well.",
-    "heatmap_guidance": "When viewing the heatmap, red areas on the small oval leaves indicate the model focused on the serrated leaf edges and oval shape. The heatmap should show concentrated attention along the serrated margins, which are a key identifying feature. The small leaf size should be visible as compact red zones. The creeping or trailing growth habit may show as attention on stems. Healthy leaves should show uniform red coverage with emphasis on the serrated edges."
   }
 }

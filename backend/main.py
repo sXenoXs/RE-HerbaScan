@@ -69,7 +69,7 @@ async def lifespan(app: FastAPI):
         else:
             print(f"⚠️  Labels file not found at: {LABELS_PATH}")
             print("📝 Please place your labels.json file in the models/ directory")
-            labels = {str(i): f"Plant_{i}" for i in range(42)}
+            labels = {str(i): f"Plant_{i}" for i in range(31)}
 
     except Exception as e:
         print(f"❌ Error loading models: {str(e)}")

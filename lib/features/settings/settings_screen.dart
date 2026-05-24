@@ -10,7 +10,7 @@ import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/features/auth/login_screen.dart';
 import 'package:herbascan/features/auth/change_password_screen.dart';
 import 'package:herbascan/features/auth/change_email_screen.dart';
-import 'package:herbascan/features/offline/offline_demo_screen.dart';
+import 'package:herbascan/features/offline/system_diagnostics_screen.dart';
 import 'package:herbascan/features/help/help_tutorial_screen.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -499,7 +499,7 @@ class SettingsScreen extends StatelessWidget {
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (context) => const OfflineDemoScreen(),
+                          builder: (context) => const SystemDiagnosticsScreen(),
                         ),
                       );
                     },
