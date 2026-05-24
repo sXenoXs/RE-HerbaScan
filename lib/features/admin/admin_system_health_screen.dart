@@ -717,58 +717,59 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
   // ── Export Section (refactored) ────────────────────────────────────────────
 
   Widget _buildExportSection(ThemeData theme) {
-    return Card(
-      elevation: 0,
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Export',
-              style: theme.textTheme.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Export',
+            style: theme.textTheme.titleSmall
+                ?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Export stats and errors for thesis analysis',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Export stats and errors for thesis analysis',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              FilledButton.icon(
+                onPressed: () =>
+                    _showExportSheet(errorsOnly: false),
+                icon:
+                    const Icon(Icons.download_rounded, size: 18),
+                label: const Text('Export All'),
               ),
-            ),
-            const SizedBox(height: 14),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                FilledButton.icon(
-                  onPressed: () =>
-                      _showExportSheet(errorsOnly: false),
-                  icon:
-                      const Icon(Icons.download_rounded, size: 18),
-                  label: const Text('Export All'),
+              OutlinedButton.icon(
+                onPressed: () =>
+                    _showExportSheet(errorsOnly: true),
+                icon: const Icon(Icons.bug_report_outlined,
+                    size: 18),
+                label: const Text('Export Error Logs'),
+              ),
+              OutlinedButton.icon(
+                onPressed: _clearAll,
+                icon: const Icon(Icons.delete_outline, size: 18),
+                label: const Text('Clear All'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppTheme.errorDeep,
                 ),
-                OutlinedButton.icon(
-                  onPressed: () =>
-                      _showExportSheet(errorsOnly: true),
-                  icon: const Icon(Icons.bug_report_outlined,
-                      size: 18),
-                  label: const Text('Export Error Logs'),
-                ),
-                OutlinedButton.icon(
-                  onPressed: _clearAll,
-                  icon: const Icon(Icons.delete_outline, size: 18),
-                  label: const Text('Clear All'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppTheme.errorDeep,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -837,6 +838,28 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
                 ),
                 const SizedBox(height: 10),
                 SegmentedButton<String>(
+                  showSelectedIcon: false,
+                  expandedInsets: EdgeInsets.zero,
+                  style: ButtonStyle(
+                    textStyle: const WidgetStatePropertyAll(
+                      TextStyle(
+                          fontSize: 12, fontWeight: FontWeight.w500),
+                    ),
+                    backgroundColor:
+                        WidgetStateProperty.resolveWith((states) {
+                      if (states.contains(WidgetState.selected)) {
+                        return AppTheme.botanicalPrimary;
+                      }
+                      return null;
+                    }),
+                    foregroundColor:
+                        WidgetStateProperty.resolveWith((states) {
+                      if (states.contains(WidgetState.selected)) {
+                        return Colors.white;
+                      }
+                      return null;
+                    }),
+                  ),
                   segments: const [
                     ButtonSegment(
                       value: 'JSON',

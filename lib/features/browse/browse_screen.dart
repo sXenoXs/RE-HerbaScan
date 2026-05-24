@@ -532,7 +532,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
                       crossAxisCount: 2,
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
-                      childAspectRatio: 0.82,
+                      childAspectRatio: 0.72,
                     ),
                   ),
                 )
@@ -695,53 +695,55 @@ class _BrowseScreenState extends State<BrowseScreen> {
                 flex: 42,
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Text(
-                        plant.commonName,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 1),
-                      Text(
-                        plant.scientificName,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontStyle: FontStyle.italic,
-                          color: AppTheme.textSecondary,
-                          fontSize: 11,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (plant.localName.isNotEmpty) ...[
-                        const SizedBox(height: 1),
+                  child: ClipRect(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
                         Text(
-                          plant.localName,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: AppTheme.textTertiary,
-                            fontSize: 10,
+                          plant.commonName,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                      const SizedBox(height: 4),
-                      Text(
-                        plant.symptoms,
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: color.withOpacity(0.85),
-                          height: 1.3,
+                        const SizedBox(height: 1),
+                        Text(
+                          plant.scientificName,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontStyle: FontStyle.italic,
+                            color: AppTheme.textSecondary,
+                            fontSize: 11,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                        if (plant.localName.isNotEmpty) ...[
+                          const SizedBox(height: 1),
+                          Text(
+                            plant.localName,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: AppTheme.textTertiary,
+                              fontSize: 10,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                        const SizedBox(height: 4),
+                        Text(
+                          plant.symptoms,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: color.withValues(alpha: 0.85),
+                            height: 1.3,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

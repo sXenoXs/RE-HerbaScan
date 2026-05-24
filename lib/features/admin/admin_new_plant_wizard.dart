@@ -311,15 +311,16 @@ class _AdminNewPlantWizardState extends State<AdminNewPlantWizard> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppTheme.darkSurface,
-        foregroundColor: Colors.white,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
         elevation: 0,
-        title: const Text(
+        scrolledUnderElevation: 1,
+        title: Text(
           'New Plant',
           style: TextStyle(
               fontFamily: 'Inter',
               fontWeight: FontWeight.w700,
-              color: Colors.white),
+              color: theme.colorScheme.onSurface),
         ),
       ),
       body: Column(
@@ -816,13 +817,14 @@ class _StepIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       decoration: BoxDecoration(
-        color: AppTheme.darkSurface,
+        color: theme.scaffoldBackgroundColor,
         border: Border(
             bottom: BorderSide(
-                color: Colors.white.withValues(alpha: 0.08))),
+                color: theme.dividerColor.withValues(alpha: 0.5))),
       ),
       child: Row(
         children: List.generate(3, (i) {
@@ -842,7 +844,8 @@ class _StepIndicator extends StatelessWidget {
                         : isActive
                             ? AppTheme.botanicalPrimary
                                 .withValues(alpha: 0.25)
-                            : Colors.white.withValues(alpha: 0.08),
+                            : theme.colorScheme.onSurface
+                                .withValues(alpha: 0.10),
                     border: isActive
                         ? Border.all(
                             color: AppTheme.botanicalPrimary, width: 2)
@@ -860,7 +863,8 @@ class _StepIndicator extends StatelessWidget {
                               fontWeight: FontWeight.w700,
                               color: isActive
                                   ? AppTheme.botanicalPrimaryL
-                                  : Colors.white38,
+                                  : theme.colorScheme.onSurface
+                                      .withValues(alpha: 0.35),
                             ),
                           ),
                   ),
@@ -875,16 +879,20 @@ class _StepIndicator extends StatelessWidget {
                         ? FontWeight.w600
                         : FontWeight.w400,
                     color: isActive
-                        ? AppTheme.botanicalPrimaryL
+                        ? (isDark
+                            ? AppTheme.botanicalPrimaryL
+                            : AppTheme.botanicalPrimary)
                         : isDone
-                            ? Colors.white70
-                            : Colors.white38,
+                            ? theme.colorScheme.onSurface
+                                .withValues(alpha: 0.7)
+                            : theme.colorScheme.onSurface
+                                .withValues(alpha: 0.35),
                   ),
                 ),
                 if (i < 2)
                   Expanded(
                     child: Divider(
-                      color: Colors.white.withValues(alpha: 0.12),
+                      color: theme.dividerColor.withValues(alpha: 0.4),
                       thickness: 1,
                       indent: 8,
                       endIndent: 0,

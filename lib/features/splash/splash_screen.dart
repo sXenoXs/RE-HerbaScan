@@ -114,14 +114,10 @@ class _SplashScreenState extends State<SplashScreen>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // App icon
-                      Container(
+                      // App icon Container
+                      SizedBox(
                         width: 112,
                         height: 112,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppTheme.botanicalPrimary.withOpacity(0.10),
-                        ),
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: SvgPicture.asset(
@@ -169,7 +165,7 @@ class _SplashScreenState extends State<SplashScreen>
                     width: 200,
                     child: LinearProgressIndicator(
                       backgroundColor:
-                          AppTheme.botanicalPrimary.withOpacity(0.15),
+                          AppTheme.botanicalPrimary.withValues(alpha: 0.15),
                       valueColor: const AlwaysStoppedAnimation<Color>(
                         AppTheme.botanicalPrimary,
                       ),

@@ -125,7 +125,6 @@ class _AdminOverviewScreenState extends State<AdminOverviewScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -136,23 +135,26 @@ class _AdminOverviewScreenState extends State<AdminOverviewScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             // ── App bar ────────────────────────────────────────────────────
+            // SliverAppBar
             SliverAppBar(
               automaticallyImplyLeading: false,
               pinned: true,
-              backgroundColor: isDark ? AppTheme.darkSurface : AppTheme.botanicalPrimary,
-              title: const Text(
+              elevation: 0,
+              scrolledUnderElevation: 1,
+              backgroundColor: theme.scaffoldBackgroundColor,
+              title: Text(
                 'Overview',
                 style: TextStyle(
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: theme.colorScheme.onSurface,
                   fontSize: 18,
                 ),
               ),
               actions: [
                 IconButton(
-                  icon: const Icon(Icons.refresh_rounded,
-                      color: Colors.white70),
+                  icon: Icon(Icons.refresh_rounded,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
                   tooltip: 'Refresh',
                   onPressed: _loadMetrics,
                 ),

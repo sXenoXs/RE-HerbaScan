@@ -238,6 +238,39 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
   // ── Hero background (edge-to-edge scan image) ────────────────────────────
   Widget _buildHeroBackground(
       BuildContext context, String plantName, double confidence) {
+    // Cloud scans thread their Supabase URL through metadata['imageUrl'];
+    // local scans have no such key, so imagePath is a filesystem path.
+    final imageUrlFromMeta =
+        widget.scanResultFromHistory?.metadata['imageUrl'] as String?;
+    final hasNetworkImage =
+        imageUrlFromMeta != null && imageUrlFromMeta.startsWith('http');
+
+    final imageWidget = hasNetworkImage
+        ? Image.network(
+            imageUrlFromMeta,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+            errorBuilder: (_, __, ___) => Container(
+              color: AppTheme.darkSurface,
+              child: const Center(
+                child: Icon(Icons.eco_rounded,
+                    size: 64, color: AppTheme.botanicalPrimaryL),
+              ),
+            ),
+          )
+        : Image.file(
+            File(widget.imagePath),
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(
+              color: AppTheme.darkSurface,
+              child: const Center(
+                child: Icon(Icons.eco_rounded,
+                    size: 64, color: AppTheme.botanicalPrimaryL),
+              ),
+            ),
+          );
+
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -253,17 +286,7 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
           },
           child: Hero(
             tag: 'scan_image_${widget.imagePath.hashCode}',
-            child: Image.file(
-              File(widget.imagePath),
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                color: AppTheme.darkSurface,
-                child: const Center(
-                  child: Icon(Icons.eco_rounded,
-                      size: 64, color: AppTheme.botanicalPrimaryL),
-                ),
-              ),
-            ),
+            child: imageWidget,
           ),
         ),
         // Bottom gradient overlay

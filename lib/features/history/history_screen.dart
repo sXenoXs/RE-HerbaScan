@@ -1268,6 +1268,12 @@ class _HistoryScreenState extends State<HistoryScreen>
             ))
         .toList();
 
+    final mergedMetadata = {
+      ...cloud.metadata ?? {},
+      if (cloud.imageUrl != null && cloud.imageUrl!.isNotEmpty)
+        'imageUrl': cloud.imageUrl!,
+    };
+
     return ScanResult(
       id: cloud.id,
       imagePath: cloud.imageUrl ?? '',
@@ -1275,7 +1281,7 @@ class _HistoryScreenState extends State<HistoryScreen>
       predictions: predictions,
       confidenceScore: _cloudScanConfidence(cloud) ?? 0.0,
       isOfflineScan: false,
-      metadata: cloud.metadata ?? {},
+      metadata: mergedMetadata,
     );
   }
 
