@@ -281,5 +281,17 @@
       "Laxative",
       "Culinary"
     ]
+  },
+  "yerba-buena-001|leaves": {
+    "svg_path": "M 20 20 L 180 20 L 180 160 L 20 160 Z",
+    "title": "Leaves",
+    "description": "Yerba buena leaves contain essential oils (menthol, carvone) responsible for the characteristic mint fragrance. Used as hot tea for headache, colds, and nausea; as a topical poultice for toothache; and as a warm compress for arthritis. DOH approved.",
+    "conditions": [
+      "Headache",
+      "Toothache",
+      "Nausea and Stomach Problems",
+      "Cough and Colds",
+      "Arthritis and Rheumatism"
+    ]
   }
 }

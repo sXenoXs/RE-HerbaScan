@@ -780,5 +780,31 @@
       "Davao"
     ],
     "climate_notes": "Tropical; small perennial shrub. Very hot small chilies; cultivated or wild; full sun."
+  },
+  "yerba-buena-001": {
+    "plant_id": "yerba-buena-001",
+    "known_coordinates": [
+      {
+        "lat": 14.1021,
+        "lng": 120.9597
+      },
+      {
+        "lat": 16.4023,
+        "lng": 120.5960
+      },
+      {
+        "lat": 16.9754,
+        "lng": 121.1708
+      }
+    ],
+    "region_names": [
+      "Tagaytay, Cavite",
+      "Benguet",
+      "Mountain Province",
+      "Cordillera Administrative Region",
+      "Metro Manila (cultivated)",
+      "Batangas (cultivated)"
+    ],
+    "climate_notes": "Thrives in cool, humid highland climates at 600–2000 masl. Also widely cultivated at lower elevations in pots and home gardens throughout the Philippines. Requires partial shade and consistently moist, well-drained soil."
   }
 }

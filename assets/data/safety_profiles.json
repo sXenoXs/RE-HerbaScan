@@ -498,5 +498,25 @@
         "Avoid excessive use if pregnant"
       ]
     }
+  },
+  "YerbaBuena": {
+    "plant_id": "yerba-buena-001",
+    "name": "Yerba Buena",
+    "safety_profile": {
+      "is_generally_safe": true,
+      "pregnancy_warning": true,
+      "known_side_effects": [
+        "May act as emmenagogue at very high doses",
+        "Avoid pure menthol/essential oil in young children (respiratory risk)",
+        "Mild skin sensitization possible with prolonged topical use"
+      ],
+      "drug_interactions": [
+        "No known drug interactions documented in DOH/PITAHC references."
+      ],
+      "strict_contraindications": [
+        "Avoid high medicinal doses during pregnancy — may stimulate uterine contractions at excessive intake",
+        "Do not apply pure essential oil directly to the face of infants or young children"
+      ]
+    }
   }
 }

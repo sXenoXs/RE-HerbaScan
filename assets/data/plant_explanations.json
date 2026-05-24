@@ -230,5 +230,13 @@
     "medicinal_preparation": "**Uses:** DOH-Approved for Uric Acid control (Gout/Rheumatism).\n\n**Preparation:**\n1. **Salad:** Wash fresh leaves and eat raw as a salad (1.5 cups daily).\n2. **Decoction:** Boil 1.5 cups of fresh leaves in 2 cups water for 10-15 minutes.",
     "safety_consideration": "**Safety:** Safe. No known severe side effects. Avoid excessive use if pregnant.",
     "heatmap_guidance": "When viewing the heatmap, red areas on the heart-shaped leaves indicate the model focused on the distinctive heart shape and translucent appearance. The heatmap should show concentrated attention on the leaf shape, particularly the rounded base and pointed tip that form the heart shape. The succulent, fleshy texture should be visible as uniform red coverage. If stems are visible, they should show as distinct red lines. Healthy leaves should show smooth red gradients without scattered spots."
+  },
+  "YerbaBuena": {
+    "identification": "Yerba Buena (Clinopodium douglasii) is a browse-only DOH-approved plant. It is not yet assigned a model class, so it will not appear as a scan result. It can be browsed in the plant catalog for its medicinal information. The plant is recognized by its creeping aromatic stems, opposite ovate leaves with crenate margins, and a distinctive minty fragrance.",
+    "taxonomy": "**Family:** Lamiaceae\n**Genus:** Clinopodium\n**Species:** Clinopodium douglasii",
+    "ecology": "A creeping aromatic herb native to the Philippines and Southeast Asia. Thrives in moist, partially shaded environments, particularly in highland gardens. Spreads readily by stolons and is widely cultivated in Filipino home gardens.",
+    "medicinal_preparation": "**Uses:** DOH-Approved for Headache, Toothache, Arthritis/Rheumatism, Nausea, and Cough/Colds.\n\n**Preparation:**\n1. **Tea (Headache/Colds):** Boil 10–15 fresh leaves in 1 cup water for 10 minutes. Strain and drink warm.\n2. **Topical (Toothache):** Crush 3–5 fresh leaves and apply directly to the aching tooth or gum for 10–15 minutes.",
+    "safety_consideration": "**Safety:** Generally safe at recommended amounts. Avoid high doses during pregnancy — may act as emmenagogue at excessive intake. Do not apply pure menthol oil to young children's faces.",
+    "heatmap_guidance": "Yerba Buena is currently a browse-only plant and does not have an assigned model class. It will not appear as a scan result. If the model is retrained to include Yerba Buena in the future, the heatmap would focus on the characteristic small ovate leaves with crenate margins, square stems (visible in cross-section), and the creeping growth pattern. The opposite leaf arrangement and distinctive minty aroma are key identifying features."
   }
 }

@@ -18,6 +18,7 @@ class PlantDataService {
       _getNiyogNiyoganData(),
       _getTsaangGubatData(),
       _getUlasimangBatoData(),
+      _getYerbaBuenaData(),
 
       // ADDITIONAL MEDICINAL PLANTS
       _getTawaTawaData(),
@@ -987,6 +988,138 @@ class PlantDataService {
         'No known serious side effects at recommended dosages',
       ],
       imagePath: 'assets/images/ulasimang_bato.jpg',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  static Plant _getYerbaBuenaData() {
+    return Plant(
+      id: 'yerba-buena-001',
+      commonName: 'Yerba Buena',
+      scientificName: 'Clinopodium douglasii',
+      localName: 'Yerba Buena',
+      englishName: 'Peppermint',
+      family: 'Lamiaceae',
+      genus: 'Clinopodium',
+      species: 'douglasii',
+      isDOHApproved: true,
+      morphology:
+          'Creeping, aromatic herb with slender, branching stems 10–40 cm long. Leaves are opposite, ovate to orbicular, 1–3 cm long, with crenate margins and a distinctive minty fragrance. Stems are square in cross-section (typical of Lamiaceae). Small white to pale-purple flowers borne in axillary clusters.',
+      ecology:
+          'Native to the Philippines and Southeast Asia. Thrives in moist, partially shaded environments. Commonly cultivated in gardens and pots throughout the Philippines, especially at higher elevations. Spreads by stolons and root cuttings.',
+      habitat:
+          'Found in highland areas 600–2000 masl in the Philippines, particularly in Cordillera Administrative Region, Tagaytay, Benguet, and Mountain Province. Prefers cool, humid microclimates with partial shade and well-drained, humus-rich soil. Widely cultivated in home gardens at all elevations.',
+      medicinalUses: [
+        MedicinalUse(
+          condition: 'Headache',
+          description:
+              'Crushed fresh leaves applied to temples, or hot mint tea consumed, for headache and fever relief. The cooling effect of menthol provides symptomatic relief.',
+          effectiveness:
+              'Moderate – DOH recognized traditional use',
+          activeCompounds: ['Menthol', 'Carvone', 'Pulegone', 'Flavonoids'],
+          dosage: '1 cup warm tea (10–15 fresh leaves in 1 cup water), 2–3 times daily',
+          duration: 'As needed for acute episodes',
+        ),
+        MedicinalUse(
+          condition: 'Toothache',
+          description:
+              'Fresh crushed leaves placed directly on the aching tooth or gum for topical pain relief. Menthol acts as a mild local analgesic and antiseptic.',
+          effectiveness: 'Moderate – Traditional use, antiseptic properties documented',
+          activeCompounds: ['Menthol', 'Rosmarinic acid'],
+          dosage: 'Small amount of crushed fresh leaves applied topically',
+          duration: 'Up to 15–20 minutes per application; repeat as needed',
+        ),
+        MedicinalUse(
+          condition: 'Arthritis and Rheumatism',
+          description:
+              'Warm decoction or poultice of leaves applied to affected joints for relief of pain and inflammation.',
+          effectiveness:
+              'Moderate – Traditional use with documented anti-inflammatory activity',
+          activeCompounds: ['Flavonoids', 'Rosmarinic acid', 'Ursolic acid'],
+          dosage: 'Warm decoction as topical wash or poultice 1–2 times daily',
+          duration: '1–2 weeks; reassess with physician for chronic conditions',
+        ),
+        MedicinalUse(
+          condition: 'Nausea and Stomach Problems',
+          description:
+              'Hot mint tea relieves nausea, stomach cramps, and indigestion through carminative and antispasmodic properties.',
+          effectiveness:
+              'Moderate to High – Well-documented carminative properties',
+          activeCompounds: ['Menthol', 'Carvone', 'Limonene'],
+          dosage: '1 cup warm tea 2–3 times daily, preferably after meals',
+          duration: 'As needed; continuous use up to 2 weeks',
+        ),
+        MedicinalUse(
+          condition: 'Cough and Colds',
+          description:
+              'Hot decoction of leaves used to soothe cough, colds, and mild fever. Steam inhalation of boiling decoction helps clear nasal congestion.',
+          effectiveness: 'Moderate – Traditional use with expectorant properties',
+          activeCompounds: ['Menthol', 'Cineole', 'Flavonoids'],
+          dosage: '1 cup warm tea 3 times daily; or inhale steam from boiling decoction',
+          duration: 'Continue until symptoms resolve, typically 3–5 days',
+        ),
+      ],
+      preparationMethods: [
+        PreparationMethod(
+          id: _uuid.v4(),
+          condition: 'Headache',
+          title: 'Yerba Buena Mint Tea',
+          description: 'Classic hot decoction for headache, fever, and colds relief',
+          steps: [
+            'Gather 10–15 fresh yerba buena leaves',
+            'Wash leaves thoroughly under running water',
+            'Place leaves in 1 cup (250 ml) of clean water',
+            'Bring to a boil, then reduce heat and simmer 10 minutes',
+            'Remove from heat and steep 5 minutes',
+            'Strain and serve warm',
+            'Drink while still warm for best effect',
+          ],
+          dosage: '1 cup warm tea (250 ml)',
+          frequency: '2–3 times daily',
+          duration: 'As needed; up to 1 week continuous use',
+          warnings: [
+            'Let tea cool slightly before drinking — avoid burning',
+            'Pregnant women should limit to 1 cup per day and avoid prolonged daily use',
+            'Not a substitute for medical treatment of severe headache or fever',
+            'Seek medical attention if headache is sudden, severe, or accompanied by stiff neck',
+          ],
+          preparationType: 'Decoction',
+        ),
+        PreparationMethod(
+          id: _uuid.v4(),
+          condition: 'Toothache',
+          title: 'Yerba Buena Topical Compress',
+          description: 'Fresh leaf poultice applied directly to aching tooth or gum',
+          steps: [
+            'Select 3–5 fresh, clean yerba buena leaves',
+            'Wash thoroughly under running water',
+            'Lightly crush or bruise leaves between fingers to release essential oils',
+            'Place crushed leaves directly on the aching tooth or surrounding gum',
+            'Hold in place for 10–15 minutes',
+            'Remove and rinse mouth with clean water',
+            'Repeat as needed for pain relief',
+          ],
+          dosage: 'Small amount of crushed fresh leaves (3–5 leaves)',
+          frequency: 'As needed, up to 3–4 times daily',
+          duration: 'Short-term relief only; consult a dentist for persistent toothache',
+          warnings: [
+            'For topical use only in this preparation — do not swallow poultice',
+            'Seek dental care for underlying tooth problems',
+            'Discontinue if oral irritation or allergic reaction occurs',
+          ],
+          preparationType: 'Topical poultice',
+        ),
+      ],
+      safetyWarnings: [
+        'Generally safe for most people at recommended amounts',
+        'Avoid high medicinal doses during pregnancy — may act as emmenagogue at excessive intake',
+        'Do not apply pure menthol essential oil to the face of infants or young children',
+        'Mild skin sensitization possible with prolonged topical use',
+        'Not a substitute for medical treatment',
+        'Seek medical attention if symptoms persist or worsen',
+      ],
+      imagePath: 'assets/images/yerba_buena.jpg',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
