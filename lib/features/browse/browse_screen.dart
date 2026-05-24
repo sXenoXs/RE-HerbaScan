@@ -348,11 +348,14 @@ class _BrowseScreenState extends State<BrowseScreen> {
               ),
             ),
 
-            // Segmented filter
+            // Segmented filter SliverToBoxAdapter
+            // Added showSelectedIcon: false to reclaim the checkmark's ~24dp, and
+            // textStyle at 12sp so all three labels fit on one line at ~109dp per segment.
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                 child: SegmentedButton<BrowseFilter>(
+                  showSelectedIcon: false,
                   segments: const [
                     ButtonSegment(
                       value: BrowseFilter.all,
@@ -377,6 +380,9 @@ class _BrowseScreenState extends State<BrowseScreen> {
                     });
                   },
                   style: ButtonStyle(
+                    textStyle: const WidgetStatePropertyAll(
+                      TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                    ),
                     backgroundColor: WidgetStateProperty.resolveWith(
                       (states) {
                         if (states.contains(WidgetState.selected)) {
@@ -399,69 +405,6 @@ class _BrowseScreenState extends State<BrowseScreen> {
                 ),
               ),
             ),
-
-            // Medical Conditions Banner (hidden on toxic tab)
-            if (!isToxic)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => const ConditionSearchScreen(),
-                          ),
-                        );
-                      },
-                      borderRadius: BorderRadius.circular(12),
-                      child: Ink(
-                        decoration: BoxDecoration(
-                          color: theme.brightness == Brightness.dark
-                              ? AppTheme.darkCard
-                              : AppTheme.safeBgLight,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: AppTheme.botanicalPrimary.withOpacity(
-                              theme.brightness == Brightness.dark ? 0.4 : 0.5,
-                            ),
-                            width: 1.5,
-                          ),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 11),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.medical_services_outlined,
-                                color: AppTheme.botanicalPrimary,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Search by Medical Condition',
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: theme.colorScheme.onSurface,
-                                ),
-                              ),
-                              const Spacer(),
-                              Icon(
-                                Icons.arrow_forward_ios_rounded,
-                                size: 13,
-                                color: theme.colorScheme.onSurface
-                                    .withOpacity(0.4),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
 
             // Toxic Plants info banner
             if (isToxic)
@@ -499,7 +442,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
                 ),
               ),
 
-            // Toolbar row: count + grid/list toggle
+            // Toolbar row: count + Medical pill (non-toxic only) + grid/list toggle
             SliverToBoxAdapter(
               child: Padding(
                 padding:
@@ -513,6 +456,41 @@ class _BrowseScreenState extends State<BrowseScreen> {
                       ),
                     ),
                     const Spacer(),
+                    if (!isToxic) ...[
+                      ActionChip(
+                        avatar: const Icon(
+                          Icons.medical_services_outlined,
+                          size: 14,
+                          color: AppTheme.botanicalPrimary,
+                        ),
+                        label: const Text(
+                          'Medical',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: AppTheme.botanicalPrimary,
+                          ),
+                        ),
+                        backgroundColor: theme.brightness == Brightness.dark
+                            ? AppTheme.darkCard
+                            : AppTheme.safeBgLight,
+                        side: BorderSide(
+                          color: AppTheme.botanicalPrimary.withValues(alpha: 0.4),
+                        ),
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 4),
+                        materialTapTargetSize:
+                            MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const ConditionSearchScreen(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                    ],
                     IconButton(
                       icon: Icon(
                         _isGridView

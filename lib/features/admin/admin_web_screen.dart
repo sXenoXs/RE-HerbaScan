@@ -115,16 +115,22 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
     );
   }
 
+  // _buildNavigationRail()
   Widget _buildNavigationRail(ThemeData theme, double width) {
     final isExtended = width >= 900;
+    final isDark = theme.brightness == Brightness.dark;
+    final sidebarBg = isDark ? AppTheme.darkSurface : theme.colorScheme.surface;
+    final borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : theme.dividerColor.withValues(alpha: 0.5);
+    final dividerColor = isDark ? Colors.white12 : theme.dividerColor;
+    final titleColor = isDark ? Colors.white : theme.colorScheme.onSurface;
+
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.darkSurface,
+        color: sidebarBg,
         border: Border(
-          right: BorderSide(
-            color: Colors.white.withValues(alpha: 0.08),
-            width: 1,
-          ),
+          right: BorderSide(color: borderColor, width: 1),
         ),
       ),
       child: Column(
@@ -135,15 +141,14 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
             child: isExtended
                 ? Row(
                     children: [
-                      const Icon(Icons.security_rounded,
-                          color: Colors.white, size: 32),
+                      Icon(Icons.security_rounded, color: titleColor, size: 32),
                       const SizedBox(width: 12),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Admin Console',
+                          Text('Admin Console',
                               style: TextStyle(
-                                  color: Colors.white,
+                                  color: titleColor,
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700)),
                           Text('Elevated Privileges Active',
@@ -157,12 +162,11 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
                   )
                 : Column(
                     children: [
-                      const Icon(Icons.security_rounded,
-                          color: Colors.white, size: 32),
+                      Icon(Icons.security_rounded, color: titleColor, size: 32),
                       const SizedBox(height: 4),
                       Text('Admin',
                           style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.8),
+                              color: titleColor.withValues(alpha: 0.8),
                               fontSize: 10,
                               fontWeight: FontWeight.w500)),
                     ],
@@ -180,13 +184,14 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
                   label: dest.label,
                   isSelected: isSelected,
                   isExtended: isExtended,
+                  isDark: isDark,
                   onTap: () => setState(() => _selectedIndex = i),
                 );
               }).toList(),
             ),
           ),
           // Escape hatch footer
-          const Divider(color: Colors.white12, height: 1),
+          Divider(color: dividerColor, height: 1),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: isExtended
@@ -196,15 +201,13 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
                     label: const Text('Exit Admin Console',
                         style: TextStyle(
                             color: AppTheme.errorLight, fontSize: 13)),
-                    onPressed: () =>
-                        context.go('/home'),
+                    onPressed: () => context.go('/home'),
                   )
                 : IconButton(
                     icon: const Icon(Icons.exit_to_app,
                         color: AppTheme.errorLight, size: 22),
                     tooltip: 'Exit Admin Console',
-                    onPressed: () =>
-                        context.go('/home'),
+                    onPressed: () => context.go('/home'),
                   ),
           ),
           const SizedBox(height: 8),
@@ -213,18 +216,24 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
     );
   }
 
+  // _buildRailItem()
   Widget _buildRailItem({
     required IconData icon,
     required IconData selectedIcon,
     required String label,
     required bool isSelected,
     required bool isExtended,
+    required bool isDark,
     required VoidCallback onTap,
   }) {
     final bg = isSelected
         ? AppTheme.botanicalPrimary.withValues(alpha: 0.15)
         : Colors.transparent;
-    final fg = isSelected ? AppTheme.botanicalPrimaryL : Colors.white60;
+    final fg = isSelected
+        ? AppTheme.botanicalPrimaryL
+        : isDark
+            ? Colors.white60
+            : Colors.black.withValues(alpha: 0.55);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -259,25 +268,31 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
     );
   }
 
+  // _buildAdminDrawer()
   Widget _buildAdminDrawer(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final sidebarBg = isDark ? AppTheme.darkSurface : theme.colorScheme.surface;
+    final dividerColor = isDark ? Colors.white12 : theme.dividerColor;
+    final titleColor = isDark ? Colors.white : theme.colorScheme.onSurface;
+
     return Drawer(
-      backgroundColor: AppTheme.darkSurface,
+      backgroundColor: sidebarBg,
       child: Column(
         children: [
-          // Dark premium header
+          // Header
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.security_rounded,
-                      color: Colors.white, size: 32),
+                  Icon(Icons.security_rounded, color: titleColor, size: 32),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     'Admin Console',
                     style: TextStyle(
-                        color: Colors.white,
+                        color: titleColor,
                         fontSize: 20,
                         fontWeight: FontWeight.w700),
                   ),
@@ -293,7 +308,7 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
               ),
             ),
           ),
-          const Divider(color: Colors.white12, height: 1),
+          Divider(color: dividerColor, height: 1),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
@@ -306,20 +321,20 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
                   selectedIcon: dest.selectedIcon,
                   label: dest.label,
                   index: i,
+                  isDark: isDark,
                 );
               }).toList(),
             ),
           ),
           // Escape hatch footer
-          const Divider(color: Colors.white12, height: 1),
+          Divider(color: dividerColor, height: 1),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
             child: TextButton.icon(
               icon: const Icon(Icons.exit_to_app,
                   color: AppTheme.errorLight, size: 20),
               label: const Text('Exit Admin Console',
-                  style: TextStyle(
-                      color: AppTheme.errorLight, fontSize: 14)),
+                  style: TextStyle(color: AppTheme.errorLight, fontSize: 14)),
               onPressed: () {
                 Navigator.pop(context);
                 context.go('/home');
@@ -332,18 +347,24 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
     );
   }
 
+  // _buildDrawerTile()
   Widget _buildDrawerTile(
     BuildContext context, {
     required IconData icon,
     required IconData selectedIcon,
     required String label,
     required int index,
+    required bool isDark,
   }) {
     final isSelected = _selectedIndex == index;
     final bg = isSelected
         ? AppTheme.botanicalPrimary.withValues(alpha: 0.15)
         : Colors.transparent;
-    final fg = isSelected ? AppTheme.botanicalPrimaryL : Colors.white60;
+    final fg = isSelected
+        ? AppTheme.botanicalPrimaryL
+        : isDark
+            ? Colors.white60
+            : Colors.black.withValues(alpha: 0.55);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),

@@ -125,6 +125,7 @@ class _AdminOverviewScreenState extends State<AdminOverviewScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -138,7 +139,7 @@ class _AdminOverviewScreenState extends State<AdminOverviewScreen> {
             SliverAppBar(
               automaticallyImplyLeading: false,
               pinned: true,
-              backgroundColor: AppTheme.darkSurface,
+              backgroundColor: isDark ? AppTheme.darkSurface : AppTheme.botanicalPrimary,
               title: const Text(
                 'Overview',
                 style: TextStyle(

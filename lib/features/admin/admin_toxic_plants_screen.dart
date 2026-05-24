@@ -270,6 +270,9 @@ class _AdminToxicPlantsScreenState extends State<AdminToxicPlantsScreen> {
     );
   }
 
+  // _buildPlantCard()
+  // Refactored from a single horizontal Row to a two-row Column so the button
+  // column no longer competes with the plant-name text for horizontal space.
   Widget _buildPlantCard(
     ThemeData theme,
     ({String slug, String commonName, String scientificName}) plant,
@@ -290,112 +293,119 @@ class _AdminToxicPlantsScreenState extends State<AdminToxicPlantsScreen> {
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Image preview / placeholder
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: SizedBox(
-                width: 80,
-                height: 80,
-                child: isUploading
-                    ? Container(
-                        color: Colors.red.shade50,
-                        child: const Center(
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.red,
-                          ),
-                        ),
-                      )
-                    : hasImage
-                        ? CachedNetworkImage(
-                            imageUrl: imageUrl,
-                            fit: BoxFit.cover,
-                            placeholder: (_, __) => Container(
-                              color: Colors.red.shade50,
-                              child: const Center(
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2, color: Colors.red)),
+            // ── Top row: thumbnail + plant info ──────────────────────────
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Image preview / placeholder
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    width: 80,
+                    height: 80,
+                    child: isUploading
+                        ? Container(
+                            color: Colors.red.shade50,
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.red,
+                              ),
                             ),
-                            errorWidget: (_, __, ___) => _placeholderBox(color),
                           )
-                        : _placeholderBox(color),
-              ),
-            ),
-            const SizedBox(width: 16),
-            // Plant info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    plant.commonName,
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w700),
+                        : hasImage
+                            ? CachedNetworkImage(
+                                imageUrl: imageUrl,
+                                fit: BoxFit.cover,
+                                placeholder: (_, __) => Container(
+                                  color: Colors.red.shade50,
+                                  child: const Center(
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2, color: Colors.red)),
+                                ),
+                                errorWidget: (_, __, ___) =>
+                                    _placeholderBox(color),
+                              )
+                            : _placeholderBox(color),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    plant.scientificName,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontStyle: FontStyle.italic,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
+                ),
+                const SizedBox(width: 16),
+                // Plant info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        hasImage
-                            ? Icons.check_circle_rounded
-                            : Icons.image_not_supported_outlined,
-                        size: 14,
-                        color: hasImage
-                            ? AppTheme.botanicalPrimary
-                            : AppTheme.textTertiary,
-                      ),
-                      const SizedBox(width: 4),
                       Text(
-                        hasImage ? 'Photo uploaded' : 'No photo yet',
+                        plant.commonName,
+                        style: theme.textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        plant.scientificName,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: hasImage
-                              ? AppTheme.botanicalPrimary
-                              : AppTheme.textTertiary,
-                          fontSize: 11,
+                          fontStyle: FontStyle.italic,
+                          color: AppTheme.textSecondary,
                         ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            hasImage
+                                ? Icons.check_circle_rounded
+                                : Icons.image_not_supported_outlined,
+                            size: 14,
+                            color: hasImage
+                                ? AppTheme.botanicalPrimary
+                                : AppTheme.textTertiary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            hasImage ? 'Photo uploaded' : 'No photo yet',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: hasImage
+                                  ? AppTheme.botanicalPrimary
+                                  : AppTheme.textTertiary,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            // Actions
-            Column(
+            const SizedBox(height: 12),
+            // ── Bottom row: action buttons, right-aligned ─────────────────
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 FilledButton.icon(
                   onPressed: isUploading
                       ? null
                       : () => _pickAndUpload(plant.slug, plant.commonName),
                   icon: Icon(
-                    hasImage
-                        ? Icons.edit_rounded
-                        : Icons.upload_rounded,
+                    hasImage ? Icons.edit_rounded : Icons.upload_rounded,
                     size: 16,
                   ),
                   label: Text(hasImage ? 'Replace' : 'Upload'),
                   style: FilledButton.styleFrom(
                     visualDensity: VisualDensity.compact,
                     backgroundColor: AppTheme.botanicalPrimary,
+                    minimumSize: const Size(100, 36),
                   ),
                 ),
                 if (hasImage) ...[
-                  const SizedBox(height: 6),
+                  const SizedBox(width: 8),
                   TextButton.icon(
                     onPressed: isUploading
                         ? null
-                        : () =>
-                            _confirmRemove(plant.slug, plant.commonName),
+                        : () => _confirmRemove(plant.slug, plant.commonName),
                     icon: const Icon(Icons.delete_outline_rounded, size: 16),
                     label: const Text('Remove'),
                     style: TextButton.styleFrom(
