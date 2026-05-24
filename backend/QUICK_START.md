@@ -1,361 +1,346 @@
-# HerbaScan Backend - Quick Start Guide
+# HerbaScan Backend — Quick Start Guide
 
-**Last Updated**: May 2026  
-**Backend Version**: 0.9.9
-**Flutter App Version**: v0.9.9
+**Last Updated**: May 25, 2026
+**Backend Version**: 1.0.7 (31-class model; GradCAM/CAM system removed)
+**Flutter App Version**: v1.0.23
 
-> **Changelog note (v0.9.4 – v0.9.8):** No backend terminal commands, script changes, or migration steps were introduced in app versions v0.9.4–v0.9.6. v0.9.7–v0.9.8 added the Modal training pipeline and admin routing. The quick-start deployment steps and model extraction workflow remain as described below.
->
-> **Architecture note:** Plant identification runs **fully offline** on-device via TFLite. The Railway backend is used exclusively for model retraining (`POST /admin/trigger-training` → Modal GPU) and model reload (`POST /admin/reload-model`). The `/identify` endpoint exists but is not called by the Flutter app during normal operation.
+> **Architecture note:** Plant identification runs **fully offline** on-device via TFLite. The Railway backend is used exclusively for model retraining (`POST /admin/trigger-training` → Modal GPU) and model hot-reload (`POST /admin/reload-model`). The `/identify` endpoint exists for server-side testing but is **not called by the Flutter app** during normal scanning.
 
-**Model Standardization**: MobileNetV2 Only — HerbaScan custom model deprecated  
-**AI Explanation Standardization**: Complete — Structured offline format for all 29 plant classes
+---
 
-## ✅ **What's Complete**
+## ✓ What's Complete
 
-Your backend is **100% ready** to deploy! All code is written and tested.
+Your backend is **100% ready** to deploy. All code is written and tested.
 
 ```
-✅ Python backend code complete
-✅ MobileNetV2 model only (HerbaScan model deprecated); Docker and Railway config ready
-✅ POST /admin/trigger-training — forwards training requests to Modal GPU pipeline
-✅ POST /admin/reload-model — hot-swaps model from Supabase storage
-✅ API documentation complete
+✓ Python FastAPI backend code complete
+✓ MobileNetV2 31-class model; Dockerfile and Railway config ready
+✓ POST /admin/trigger-training — forwards training requests to Modal GPU pipeline
+✓ POST /admin/reload-model — hot-swaps MobileNetV2_model.keras from Supabase Storage
+✓ Two-stage validation pipeline (blur / darkness / edge density + OOD confidence gate)
+✓ API documentation complete (backend/README.md + HerbaScan_API.postman_collection.json)
 ```
 
 ---
 
-## 📋 **Prerequisites**
+## Prerequisites
 
 Before deploying, make sure you have:
 
-- ✅ Railway account ([signup here](https://railway.app))
-- ✅ GitHub account
-- ✅ Model files in `backend/models/` directory:
-  - `MobileNetV2_model.keras` (MobileNetV2 architecture model - `.keras` format) - **REQUIRED**
-  - `labels.json` (plant class labels - optional, for backward compatibility)
-  
-  **Note:** MobileNetV2 model is required. HerbaScan custom model is deprecated. The Flutter app uses `assets/models/class_indices.json` for labels (not `labels.txt`) and `mobilenetv2_multi_output.tflite` for offline CAM. For full change history see the project **CHANGELOG.md**.
+- ✓ Railway account ([railway.app](https://railway.app))
+- ✓ GitHub account with access to the HerbaScan repo
+- ✓ Model file in `backend/models/`:
+  - `MobileNetV2_model.keras` — **required** for `/identify` and `/admin/reload-model`
+  - `labels.json` — optional; 31 placeholder labels are auto-generated if absent
+
+> **Label format note:** `backend/models/labels.json` uses `index → name` format. `assets/models/class_indices.json` (Flutter) uses `name → index` format. Both must stay in sync across any retraining run. See `backend/README.md` for details.
 
 ---
 
-## 🚀 **Deploy in 3 Steps** (15 minutes)
+## Deploy in 3 Steps (15 minutes)
 
-### **Step 1: Create GitHub Repo**
+### Step 1: Connect the Repo to Railway
 
-**Option A: Separate backend repo**
+#### Option A: Monorepo (recommended — main HerbaScan repo)
+
+This repo is already a monorepo (Flutter app at root, backend under `backend/`). In Railway:
+
+1. Create a new service linked to the `sXenoXs/RE-HerbaScan` repo.
+2. Open the service → **Settings → Source** → set **Root Directory** to `backend`.
+3. Optionally set **Watch Path** to `backend/**` so only backend changes trigger redeploys.
+
+Railway uses `backend/railway.json` (Dockerfile + start command) for build and deploy. No separate backend repo needed.
+
+#### Option B: Separate backend repo
 
 ```bash
 cd backend
 git init
 git add .
-git commit -m "Initial commit: HerbaScan Grad-CAM API"
+git commit -m "Initial commit: HerbaScan backend API"
 
-# Create repo on GitHub: https://github.com/new
-# Name: herbascan-backend
-
+# Create repo on GitHub: https://github.com/new (name: herbascan-backend)
 git remote add origin https://github.com/YOUR_USERNAME/herbascan-backend.git
 git push -u origin main
 ```
 
-**Option B: Monorepo (main HerbaScan repo)**  
-If using the main HerbaScan repo, you do not need a separate backend repo. In Railway, create a service linked to the same repo, then set **Root Directory** to `backend` so only files under `backend/` are used for build and deploy. See `backend/README.md` → "Deploying on Railway (monorepo)".
+Then link that repo to a new Railway service (no Root Directory override needed).
 
-### **Step 2: Deploy to Railway**
+### Step 2: Deploy to Railway
 
-1. Go to https://railway.app
-2. Click "New Project" → "Deploy from GitHub repo"
-3. Select your `herbascan-backend` repository
-4. Railway will automatically detect Dockerfile and deploy
-5. Wait ~5-10 minutes for first build
+1. Go to [railway.app](https://railway.app)
+2. Click **New Project** → **Deploy from GitHub repo**
+3. Select your repository (and set Root Directory to `backend` if using the monorepo)
+4. Railway detects the Dockerfile automatically and starts the build
+5. Wait ~5–10 minutes for the first build
 
-### **Step 3: Get Your URL**
+### Step 3: Get Your URL
 
-1. In Railway dashboard, go to "Settings"
-2. Under "Networking", click "Generate Domain"
+1. In Railway dashboard → your service → **Settings → Networking**
+2. Click **Generate Domain**
 3. Copy your URL: `https://YOUR-APP.up.railway.app`
+
+> **Production URL (already deployed):** `https://re-herbascan-production.up.railway.app`
 
 ---
 
-## 🧪 **Test Your API**
+## Required Environment Variables
 
-### **Option A: Browser Test** (Quick)
+Set these in Railway → your service → **Variables**:
 
-Open in browser:
-```
+| Variable | Required | Notes |
+| --- | --- | --- |
+| `ADMIN_RELOAD_SECRET` | **Yes** | Shared secret for `/admin/reload-model` and `/admin/trigger-training` — must match `trigger_training_widget.dart` |
+| `MODAL_TRAINING_URL` | **Yes** | Modal web endpoint for training trigger |
+| `SUPABASE_URL` | Yes (reload only) | Required by `/admin/reload-model` to download model from Storage |
+| `SUPABASE_SERVICE_KEY` | Yes (reload only) | Required by `/admin/reload-model` |
+| `SUPABASE_JWT_SECRET` | **Do not set** | Leave unset — prevents 401 for anonymous users on `/identify` |
+
+---
+
+## Test Your API
+
+### Option A: Browser (quick)
+
+```text
 https://YOUR-APP.up.railway.app/health
 ```
 
-Should see:
+Expected response when model is loaded:
+
 ```json
 {
   "status": "healthy",
-  "model_loaded": true,
+  "mobilenetv2_loaded": true,
+  "labels_loaded": true,
   "num_classes": 31
 }
 ```
 
-### **Option B: Postman Test** (Thorough)
+### Option B: curl
 
-1. Open Postman
-2. Import `HerbaScan_API.postman_collection.json`
-3. Update `railway_url` variable with your Railway URL
-4. Run "Health Check (Railway)" request
-5. Run "Identify Plant (Railway)" request with a plant image
+```bash
+# Health check
+curl https://YOUR-APP.up.railway.app/health
 
-**For detailed Postman instructions:**
-- See `/backend/README.md` → "🧪 Testing with Postman" section
-- Includes instructions for Postman desktop app, VS Code (REST Client, Thunder Client), and other IDEs
-- Includes troubleshooting guide for common Postman issues
-
----
-
-## 📱 **Admin Training Trigger**
-
-The Railway backend is called by the Flutter admin panel to kick off model retraining:
-
-```dart
-// TriggerTrainingWidget sends POST /admin/trigger-training
-// with x-admin-secret header and {plant_slug, new_class_name} body.
-// Training runs on Modal GPU (~15 min) and reloads the model automatically.
+# Test identification (server-side only — Flutter app does not call this)
+curl -X POST https://YOUR-APP.up.railway.app/identify -F "file=@path/to/image.jpg"
 ```
 
-The admin URL is already wired in `lib/features/admin/widgets/trigger_training_widget.dart`.
+> Use `curl` for Railway file upload tests — Postman can have multipart issues on Railway. Postman works fine for local testing.
+
+### Option C: Postman
+
+1. Open Postman → Import `backend/HerbaScan_API.postman_collection.json`
+2. Update the `railway_url` collection variable to your Railway URL
+3. Run **Health Check (Railway)** → confirm `"mobilenetv2_loaded": true`
+4. Run **Identify Plant (Railway)** with a plant image
+
+For full Postman instructions see `backend/README.md` → "Testing with Postman".
 
 ---
 
-## 🔄 **Updating Models**
+## Admin Training Trigger
 
-### Quick Model Update Process
+The Railway backend is called from the Flutter admin panel to start model retraining:
 
-When you have a new trained model:
+```dart
+// lib/features/admin/widgets/trigger_training_widget.dart
+// Sends POST /admin/trigger-training with x-admin-secret header
+// and {plant_slug, new_class_name} body.
+// Training runs asynchronously on Modal GPU (~15 min) and auto-reloads the model.
+```
 
-1. **Replace model files (`.keras` format):**
-   ```bash
-   # Backup old model (optional)
-   cp backend/models/MobileNetV2_model.keras backend/models/MobileNetV2_model.keras.backup
-   
-   # Copy new model (MobileNetV2 only - HerbaScan deprecated)
-   cp /path/to/your/new_mobilenetv2_model.keras backend/models/MobileNetV2_model.keras
-   ```
-   
-   **Note:** HerbaScan custom model is deprecated. Only MobileNetV2 model is required.
-
-2. **Update labels (if classes changed):**
-   ```bash
-   # Backend labels (index:name format)
-   # Edit backend/models/labels.json
-   
-   # Frontend labels (name:index format)
-   # Edit assets/models/class_indices.json
-   ```
-
-3. **Test locally:**
-   ```bash
-   python main.py
-   curl http://localhost:8000/health
-   ```
-
-4. **Regenerate Flutter assets (Phase 2):**
-   ```bash
-   cd backend
-   
-   # Option A: Update scripts to use .keras (recommended)
-   # Edit extract_cam_weights.py: Change MODEL_PATH to models/MobileNetV2_model.keras
-   # Edit create_multi_output_tflite.py: Change MODEL_PATH to models/MobileNetV2_model.keras
-   
-   # Option B: Convert .keras to .h5 temporarily
-   python -c "import tensorflow as tf; model = tf.keras.models.load_model('models/MobileNetV2_model.keras'); model.save('models/mobilenetv2_rf.h5', save_format='h5')"
-   
-   # Run extraction scripts
-   python extract_cam_weights.py
-   python create_multi_output_tflite.py
-   
-   # Copy to Flutter assets (MobileNetV2 only)
-   cp models/mobilenetv2_cam_weights.json ../assets/models/
-   cp models/mobilenetv2_multi_output.tflite ../assets/models/
-   # Note: Frontend uses class_indices.json, not labels.json
-   # Note: HerbaScan model files are deprecated and not needed
-   ```
-
-5. **Update Flutter pubspec.yaml:**
-   ```yaml
-   flutter:
-     assets:
-       - assets/models/
-       # This includes all files in assets/models/:
-       # - mobilenetv2_multi_output.tflite
-       # - mobilenetv2_cam_weights.json
-       # - class_indices.json
-   ```
-
-6. **Redeploy to Railway:**
-   ```bash
-   git add backend/models/MobileNetV2_model.keras backend/models/labels.json
-   git commit -m "Update models to v2.0"
-   git push
-   # Railway will automatically redeploy
-   ```
-
-**For detailed instructions, see `/backend/README.md` → "🔄 Updating Models" section.**
+The Railway URL is already wired in `lib/features/admin/widgets/trigger_training_widget.dart`.
 
 ---
 
-## 🐛 **Troubleshooting**
+## Updating Models
 
-### **Build Failed?**
-- Check Railway logs in dashboard
-- Verify model file is in git (if < 100MB) or uploaded to Railway volumes
-- Check Dockerfile syntax
-- Ensure TensorFlow dependencies are correct
+Use this workflow after a retraining run produces a new `.keras` model.
 
-### **Model Not Loading?**
-- Railway logs will show error
-- Verify `MobileNetV2_model.keras` exists (required)
-- Check file permissions
-- For large models (>100MB), use Railway volumes or Git LFS
-- **Note:** HerbaScan model is deprecated - only MobileNetV2 is required
+### Step 1 — Replace the Keras model
 
-### **API Slow?**
-- First request always slower (cold start: 10-30 seconds)
-- Subsequent requests should be 2-4 seconds
-- Consider Railway Pro for better performance
-- Check Railway logs for memory issues
+```bash
+# Backup (optional)
+cp backend/models/MobileNetV2_model.keras backend/models/MobileNetV2_model.keras.backup
 
-### **File Upload Errors?**
-- Use `curl` instead of Postman for Railway testing:
-  ```bash
-  curl -X POST https://YOUR-RAILWAY-URL.railway.app/identify \
-    -F "file=@path/to/your/image.jpg"
-  ```
-- Postman works fine for local testing (`http://localhost:8000`)
-- Flutter app works perfectly with Railway (uses `http` package)
+# Place the retrained model
+cp /path/to/retrained_model.keras backend/models/MobileNetV2_model.keras
+```
 
-### **TFLite Conversion Fails?**
-- Check TensorFlow version: `pip show tensorflow`
-- Recommended: `pip install tensorflow==2.15.0`
-- See `TENSORFLOW_COMPATIBILITY_FIX.md` for details
+### Step 2 — Update labels if class mappings changed
 
-**For more troubleshooting, see `/backend/README.md` → "🐛 Troubleshooting" section.**
+Both files must stay in sync — same 31 classes, same index assignments:
+
+```bash
+# Backend labels (index → name) — edit directly
+# backend/models/labels.json
+
+# Flutter labels (name → index) — edit directly
+# assets/models/class_indices.json
+```
+
+### Step 3 — Test locally
+
+```bash
+cd backend
+python -m venv venv
+venv\Scripts\activate        # Windows
+# source venv/bin/activate   # Mac/Linux
+
+pip install -r requirements.txt
+python main.py
+curl http://localhost:8000/health
+# Confirm "num_classes": 31
+```
+
+### Step 4 — Regenerate the Flutter TFLite asset
+
+```bash
+cd backend
+
+# Create the multi-output TFLite (outputs: [1,7,7,1280] features + [1,31] predictions)
+# If MODEL_PATH in the script still points to .h5, update it to .keras first:
+#   MODEL_PATH = Path("models/MobileNetV2_model.keras")
+python create_multi_output_tflite.py
+# → backend/models/mobilenetv2_multi_output.tflite
+```
+
+> `extract_cam_weights.py` is **not used** — the GradCAM/CAM system was removed in v1.0.7. Do not run it or copy any `cam_weights` file to Flutter assets.
+
+### Step 5 — Copy TFLite asset to Flutter and rebuild
+
+```bash
+# From project root
+cp backend/models/mobilenetv2_multi_output.tflite assets/models/
+
+# Rebuild Flutter app
+flutter clean && flutter pub get && flutter run
+```
+
+`pubspec.yaml` already declares `assets/models/` as an asset path — no changes needed unless class mappings changed.
+
+### Step 6 — Redeploy to Railway
+
+```bash
+git add backend/models/MobileNetV2_model.keras backend/models/labels.json
+git commit -m "Update model to retrained v<version>"
+git push
+# Railway auto-redeploys on push
+```
 
 ---
 
-## 📊 **Expected Results**
+## Troubleshooting
 
-| Endpoint | Response Time | Status |
-|----------|--------------|--------|
-| /health | < 100ms | ✅ instant |
-| /test | < 100ms | ✅ instant |
-| /identify | 2-5 seconds | ✅ includes ML inference |
+| Issue | Cause | Fix |
+| --- | --- | --- |
+| `"mobilenetv2_loaded": false` on `/health` | Model file missing or failed to load | Verify `MobileNetV2_model.keras` exists in `backend/models/`; check Railway logs |
+| 503 on `/identify` | Model not loaded at startup | Check model file path and Railway volume / Git LFS setup |
+| 422 on `/identify` | Stage 1 or Stage 2 validation failure | Image is too blurry, too dark, featureless, or not a plant |
+| 401 on `/admin/*` | Wrong or missing `x-admin-secret` header | Verify `ADMIN_RELOAD_SECRET` matches between `trigger_training_widget.dart` and Railway variable |
+| 401 on `/identify` | `SUPABASE_JWT_SECRET` is set | Remove `SUPABASE_JWT_SECRET` from Railway Variables and redeploy |
+| 502 on `/admin/trigger-training` | Modal endpoint error | Verify `MODAL_TRAINING_URL` is correct and Modal deployment is active |
+| 502 on `/admin/reload-model` | Supabase Storage download failed | Check `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, and that `live-models` bucket exists |
+| TFLite conversion fails | TensorFlow version incompatibility | Use `pip install tensorflow==2.15.0`; see `backend/README.md` → Troubleshooting |
+| Build failed on Railway | Missing model file or Dockerfile issue | Check Railway logs; verify model is in git (< 100 MB) or use Railway volumes / Git LFS |
+| Cold start 10–30 s | TensorFlow model loading on first request | Expected on Railway free tier; warm requests take 2–4 s |
 
----
-
-## 📚 **More Help**
-
-### Key Sections in README.md
-
-- **🔄 Updating Models**: How to update backend and Flutter models
-- **🚀 Deployment to Railway**: Detailed deployment instructions
-- **🐛 Troubleshooting**: Common issues and solutions
-- **Phase 2: Model Extraction & Conversion**: Preparing models for Flutter
+**For full troubleshooting details, see `backend/README.md` → "Troubleshooting".**
 
 ---
 
-## ✨ **That's It!**
+## Expected Performance
+
+| Endpoint | Response Time |
+| --- | --- |
+| `GET /health` | < 100 ms |
+| `GET /test` | < 100 ms |
+| `POST /identify` (warm) | 2–4 s (includes ML inference + Grad-CAM on server) |
+| Cold start (first request) | 10–30 s (TensorFlow model load) |
+
+---
+
+## That's It
 
 Once deployed, you have:
 
-- ✅ Working model retraining pipeline (Modal GPU triggered via `/admin/trigger-training`)
-- ✅ Model hot-reload endpoint (`/admin/reload-model` pulls from Supabase storage)
-- ✅ 31-class MobileNetV2 model (29 plants + `Not_Plant` index 19 + `UnknownPlant` index 30)
-- ✅ Plant identification runs fully offline on-device via TFLite — no Railway call during scanning
-- ✅ Offline XAI explanations for all 29 plant classes (taxonomy, ecology, medicinal_preparation, safety_consideration)
+- ✓ Working model retraining pipeline (Modal GPU triggered via `/admin/trigger-training`)
+- ✓ Model hot-reload endpoint (`/admin/reload-model` pulls from Supabase `live-models` bucket)
+- ✓ 31-class MobileNetV2 model (29 plants + `Not_Plant` @ index 19 + `UnknownPlant` @ index 30)
+- ✓ Plant identification runs **fully offline** on-device via TFLite — Railway is never called during scanning
+- ✓ Offline XAI explanations for 30 catalog plants (29 ML classes + Yerba Buena browse-only)
 
 ### Next Steps
 
-1. **Test your API:**
-   - Health check: `curl https://YOUR-RAILWAY-URL.railway.app/health`
-   - Test identification with sample images
-
-2. **Update Flutter app:**
-   - Update `online_gradcam_service.dart` with your Railway URL
-   - Test connection from Flutter app
-
-3. **Phase 2 - Offline CAM Preparation:**
+1. **Verify the deployment:**
    ```bash
-   cd backend
-   
-   # Option A: Update scripts to use .keras (recommended)
-   # Edit extract_cam_weights.py: Change MODEL_PATH to models/MobileNetV2_model.keras
-   # Edit create_multi_output_tflite.py: Change MODEL_PATH to models/MobileNetV2_model.keras
-   
-   # Option B: Convert .keras to .h5 temporarily
-   python -c "import tensorflow as tf; model = tf.keras.models.load_model('models/MobileNetV2_model.keras'); model.save('models/mobilenetv2_rf.h5', save_format='h5')"
-   
-   # Extract CAM weights
-   python extract_cam_weights.py
-   # Create multi-output TFLite model
-   python create_multi_output_tflite.py
-   # Copy to Flutter assets (MobileNetV2 only)
-   cp models/mobilenetv2_cam_weights.json ../assets/models/
-   cp models/mobilenetv2_multi_output.tflite ../assets/models/
+   curl https://YOUR-RAILWAY-URL.railway.app/health
+   # Expect: { "mobilenetv2_loaded": true, "labels_loaded": true, "num_classes": 31 }
    ```
-   - See `/backend/README.md` → "Phase 2: Model Extraction & Conversion" for detailed steps
-   - **Note:** Frontend uses `assets/models/class_indices.json` (name:index format), not `labels.json`
-   - **Note:** HerbaScan model files are deprecated - only MobileNetV2 is required
 
-4. **Monitor Performance:**
-   - Check Railway logs for errors
-   - Monitor response times
-   - Consider upgrading to Railway Pro for production
+2. **Test the admin training trigger** from the Flutter admin panel (Admin → Plant Metadata → Training Images → Trigger Training).
+
+3. **Monitor performance** — check Railway logs for errors; upgrade to Railway Pro for production traffic.
 
 ---
 
-## 🎯 **Quick Reference**
+## Quick Reference
 
 ### Local Development
+
 ```bash
-# Run server
+cd backend
+
+# Create and activate virtual environment
+python -m venv venv
+venv\Scripts\activate        # Windows
+# source venv/bin/activate   # Mac/Linux
+
+pip install -r requirements.txt
+
+# Place MobileNetV2_model.keras in backend/models/ then run:
 python main.py
+# or: uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
-# Test health
+# Verify
 curl http://localhost:8000/health
-
-# Test identification
-curl -X POST http://localhost:8000/identify -F "file=@image.jpg"
 ```
 
 ### Railway Deployment
+
 ```bash
-# Deploy (auto-deploys on git push)
+# Deploy (auto-deploys on git push to linked branch)
 git push
 
-# Check logs
+# Stream logs
 railway logs
 
-# Get URL
-# Railway dashboard → Settings → Networking → Generate Domain
+# Get service URL
+# Railway dashboard → service → Settings → Networking → Generate Domain
 ```
 
-### Model Updates
+### After Retraining: Regenerate Flutter TFLite Asset
+
 ```bash
-# Update scripts to use .keras (or convert .keras to .h5 temporarily)
-# Edit extract_cam_weights.py: MODEL_PATH = "models/MobileNetV2_model.keras"
-# Edit create_multi_output_tflite.py: MODEL_PATH = "models/MobileNetV2_model.keras"
+cd backend
 
-# Extract CAM weights (MobileNetV2 only)
-python extract_cam_weights.py
-
-# Create TFLite model (MobileNetV2 only)
+# Regenerate TFLite from retrained Keras model
 python create_multi_output_tflite.py
+# → backend/models/mobilenetv2_multi_output.tflite
 
-# Copy to Flutter assets (MobileNetV2 only)
-cp models/mobilenetv2_cam_weights.json ../assets/models/
+# Copy to Flutter assets
 cp models/mobilenetv2_multi_output.tflite ../assets/models/
-# Frontend uses class_indices.json for labels (not labels.txt). Keep class_indices.json in sync with backend labels.
+
+# Keep label maps in sync if classes changed:
+# backend/models/labels.json        (index → name)
+# assets/models/class_indices.json  (name → index)
+
+# Rebuild Flutter app
+flutter clean && flutter pub get && flutter run
 ```
 
 ---
 
-**Ready to deploy? Follow the steps above and your API will be live in 15 minutes!** 🚀
-
+**Ready to deploy? Follow the 3 steps above and your API will be live in 15 minutes.**

@@ -1,6 +1,6 @@
 # Supabase setup (HerbaScan Personal Herbarium)
 
-**Catalog rule (1-to-1):** The plant catalog is fixed and must mirror the ML model's output classes. Do not add or delete plants from the catalog via admin or API. Admin may only edit text fields (e.g. preparation, DOH info) for existing plants and review/approve/delete user-submitted scan images for dataset building. Adding a new plant requires a new model training and app release.
+**Catalog rule:** The Supabase catalog has **30 rows**: 29 ML-mapped plant classes (matching the 31-class TFLite model's output classes exactly, excluding `Not_Plant` and `UnknownPlant`) plus Yerba Buena as a browse-only DOH-approved plant with no TFLite class yet. The 29 ML-mapped plants are fixed — do not add or delete them via admin or API. Adding a new ML class requires a retraining run, a new TFLite model, and an app release. Yerba Buena is the exception: it was inserted via migration `20260525000000_readd_yerba_buena_browse_only.sql` as a browse-only DOH reference and will not appear as a scan result. Admins may edit text fields (preparation, DOH info) for any catalog plant and review/approve/delete user-submitted scan images for ML dataset building.
 
 1. Create a project at [supabase.com](https://supabase.com). Note your project URL and anon key (Settings → API).
 2. In the app, set `SUPABASE_URL` and `SUPABASE_ANON_KEY` (or edit `lib/core/config/supabase_config.dart`).
@@ -148,7 +148,7 @@ Supabase can block **compromised passwords** by checking new passwords against [
 
 ## Step 3: Railway – JWT for /identify (optional; recommend leaving unset)
 
-**Recommended:** Do **not** set `SUPABASE_JWT_SECRET` on Railway. Then `POST /identify` works for everyone (anonymous and logged-in users). Scans use online Grad-CAM; cloud save to Personal Herbarium remains opt-in when the user is signed in. No 401 errors.
+**Recommended:** Do **not** set `SUPABASE_JWT_SECRET` on Railway. Then `POST /identify` works for everyone (anonymous and logged-in users). Cloud save to Personal Herbarium remains opt-in when the user is signed in. No 401 errors.
 
 **If you get 401 "Invalid or expired token":** Remove the variable. In Railway → your backend service → **Variables** → delete `SUPABASE_JWT_SECRET` → Save. Railway will redeploy; after that, /identify will accept all requests.
 
@@ -174,7 +174,43 @@ Supabase can block **compromised passwords** by checking new passwords against [
 
 ---
 
+## Complete Migrations Reference (all 19)
+
+Apply all migrations in a single command using the Supabase CLI (recommended):
+
+```bash
+npx supabase login
+npx supabase link --project-ref tsahfzmxqsgbxrrtbdnw
+npx supabase db push
+```
+
+The table below documents every migration file in `supabase/migrations/` in chronological order. All 19 are currently applied to the production project (`tsahfzmxqsgbxrrtbdnw`).
+
+| Migration file | Purpose |
+| --- | --- |
+| `20260223000000_herbarium_schema.sql` | `profiles` + `scans` tables; `on_auth_user_created` trigger |
+| `20260228000000_profiles_admin_and_email.sql` | `is_active`, `email` columns on `profiles`; admin list/deactivate policies |
+| `20260228000001_plant_metadata.sql` | `plant_metadata` table |
+| `20260301000000_fix_profiles_rls_recursion.sql` | `is_admin()` SECURITY DEFINER function |
+| `20260302000000_storage_herbarium_policies.sql` | `herbarium-images` bucket RLS policies (INSERT/SELECT/DELETE) |
+| `20260302100000_catalog_plants_schema.sql` | Full plant catalog schema — 8 tables: `catalog_plants`, `catalog_medicinal_uses`, `catalog_preparation_methods`, `catalog_safety`, `catalog_habitat`, `catalog_conditions`, `catalog_condition_plants`, `catalog_plant_anatomy` |
+| `20260302100001_storage_plant_catalog.sql` | Plant catalog storage bucket |
+| `20260302200000_catalog_plant_anatomy.sql` | `catalog_plant_anatomy` table refinements |
+| `20260314000000_catalog_safety_strict_contraindications.sql` | `needs_strict_contraindications` BOOLEAN (default false) on `catalog_safety`; backfills `true` for Kamias, Kamoteng Kahoy, Kakawate |
+| `20260316000000_user_feedback.sql` | `public.user_feedback` table + RLS (INSERT open to all; SELECT admin-only) |
+| `20260316000001_user_feedback_admin_delete.sql` | Admin DELETE policy on `user_feedback` |
+| `20260425000000_toxic_plant_images.sql` | Toxic plant image storage bucket and initial policies |
+| `20260502000000_admin_toxic_storage.sql` | Admin-only upload and management policies for toxic plant image storage |
+| `20260523000000_reduce_catalog_to_31_classes.sql` | Deleted 13 non-model plant rows from all 8 catalog tables (child-first order); catalog reduced 42 → 29 rows; `DROP COLUMN IF EXISTS ai_vision_summary` guard |
+| `20260524000000_model_versions_rls.sql` | RLS enabled on `public.model_versions`; SELECT open to all; INSERT/UPDATE/DELETE restricted to `is_admin()` |
+| `20260524000001_scan_training_eligible.sql` | `training_eligible boolean NOT NULL DEFAULT false` + `training_copied_at timestamptz NULL` on `public.scans`; partial index; `training-datasets` bucket admin INSERT/SELECT policies |
+| `20260525000000_readd_yerba_buena_browse_only.sql` | Yerba Buena (*Clinopodium douglasii*) re-inserted across all 8 catalog tables as browse-only DOH plant; `SELECT COUNT(*) FROM catalog_plants` = **30** |
+
+---
+
 ## Step-by-step: Run the migration (Dashboard method)
+
+> **Recommended:** Use the CLI (`npx supabase db push`) to apply all 19 migrations at once. The dashboard method below is for reference when you need to inspect or manually apply a single migration.
 
 This runs your `20260223000000_herbarium_schema.sql` file in Supabase **without** using the CLI.
 
@@ -201,22 +237,63 @@ This runs your `20260223000000_herbarium_schema.sql` file in Supabase **without*
 - In the left sidebar, open **Table Editor**.
 - You should see `profiles` and `scans` under the `public` schema. You can open them to see the columns (no data yet).
 
-**Step 6b – Admin user management (optional)**  
-- Run the second migration `supabase/migrations/20260228000000_profiles_admin_and_email.sql` in the SQL Editor to add `is_active` and `email` to `profiles`, backfill email, and add admin policies for listing and deactivating users. Required for the Admin Web Portal **User Management** module.
+### Step 6b – Admin user management (optional)
 
-**Step 6c – Strict contraindication flagging (optional)** *(introduced in v0.9.4 – March 10, 2026)*  
-- Run `supabase/migrations/20260314000000_catalog_safety_strict_contraindications.sql` in the SQL Editor to add column `needs_strict_contraindications` (BOOLEAN, default false) to `catalog_safety`. The migration backfills `true` for Kamias, Kamoteng Kahoy, and Kakawate. The Flutter app uses this to show a prominent "Use with strict caution" card; local SQLite is upgraded to version 8 with the same column in `safety_profiles`.
+Run `supabase/migrations/20260228000000_profiles_admin_and_email.sql` in the SQL Editor to add `is_active` and `email` to `profiles`, backfill email, and add admin policies for listing and deactivating users. Required for the Admin Web Portal **User Management** module.
 
-**Step 6d – User feedback table (optional)** *(introduced in v0.9.4 – March 10, 2026)*
-- Run `supabase/migrations/20260316000000_user_feedback.sql` in the SQL Editor to create `public.user_feedback` and RLS (INSERT allowed for all, SELECT for admins only). Required for the Admin **Feedback** tab (Option B: store feedback in Supabase and view submissions from all users). You can also run `npx supabase db push` to apply all pending migrations.
-- **Schema:** Table `public.user_feedback` has columns: `id` (UUID PK), `user_id` (UUID NULL, references auth.users), `rating`, `category`, `comment`, `feature_suggestion`, `metadata` (JSONB), `created_at`. Index on `created_at DESC` for admin list ordering. RLS policies: `user_feedback_insert_allow_all` (INSERT with check true), `user_feedback_select_admin_only` (SELECT using `public.is_admin()`).
+### Step 6c – Strict contraindication flagging (optional) *(v0.9.4 – March 10, 2026)*
 
-**Step 6e – Admin delete feedback (optional)** *(introduced in v0.9.5 – March 16, 2026)*
-- Run `supabase/migrations/20260316000001_user_feedback_admin_delete.sql` in the SQL Editor (or `npx supabase db push`) to add RLS policy `user_feedback_delete_admin_only` (DELETE using `public.is_admin()`) so admins can delete feedback rows from the Admin Feedback tab. Requires Step 6d first.
+Run `supabase/migrations/20260314000000_catalog_safety_strict_contraindications.sql` in the SQL Editor to add column `needs_strict_contraindications` (BOOLEAN, default false) to `catalog_safety`. The migration backfills `true` for Kamias, Kamoteng Kahoy, and Kakawate. The Flutter app uses this to show a prominent “Use with strict caution” card; local SQLite is upgraded to version 8 with the same column in `safety_profiles`.
 
-**If you get an error**
-- If it says something like “relation already exists”, you may have run the migration before. That’s okay; the script uses `CREATE TABLE IF NOT EXISTS` so it’s safe to run again in most cases.
-- If the error is about a trigger or policy already existing, you can drop it first in a new query (e.g. `DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;`) then run the migration again, or ask for help with the exact error message.
+### Step 6d – User feedback table (optional) *(v0.9.4 – March 10, 2026)*
+
+Run `supabase/migrations/20260316000000_user_feedback.sql` in the SQL Editor to create `public.user_feedback` and RLS (INSERT allowed for all, SELECT for admins only). Required for the Admin **Feedback** tab.
+
+Schema — table `public.user_feedback`: `id` (UUID PK), `user_id` (UUID NULL, references auth.users), `rating`, `category`, `comment`, `feature_suggestion`, `metadata` (JSONB), `created_at`. Index on `created_at DESC` for admin list ordering. RLS policies: `user_feedback_insert_allow_all` (INSERT with check true), `user_feedback_select_admin_only` (SELECT using `public.is_admin()`).
+
+### Step 6e – Admin delete feedback (optional) *(v0.9.5 – March 16, 2026)*
+
+Run `supabase/migrations/20260316000001_user_feedback_admin_delete.sql` in the SQL Editor (or `npx supabase db push`) to add RLS policy `user_feedback_delete_admin_only` (DELETE using `public.is_admin()`) so admins can delete feedback rows from the Admin Feedback tab. Requires Step 6d first.
+
+### Step 6f – Catalog 42 → 29 alignment *(v1.0.8 – May 23, 2026)*
+
+Run `supabase/migrations/20260523000000_reduce_catalog_to_31_classes.sql` (or `npx supabase db push`). Deletes 13 plant rows not present in the 31-class TFLite model from all 8 catalog tables in child-first order. Post-migration: `SELECT COUNT(*) FROM catalog_plants` = **29**. Includes a `DROP COLUMN IF EXISTS ai_vision_summary` guard on both `catalog_plants` and `plant_metadata` (idempotent). **Already applied to production.**
+
+### Step 6g – model\_versions RLS *(v1.0.9 – May 24, 2026)*
+
+Run `supabase/migrations/20260524000000_model_versions_rls.sql` (or `npx supabase db push`). Enables Row Level Security on `public.model_versions` (previously unprotected — flagged Critical by Supabase Advisor). Adds 4 policies: `SELECT` open to all (required by `OtaModelService` for non-admin OTA model update checks); `INSERT`, `UPDATE`, `DELETE` restricted to admins via `public.is_admin()`. No app code changes needed. **Already applied to production.**
+
+### Step 6h – Training-eligible scans pipeline *(v1.0.12 – May 24, 2026)*
+
+Run `supabase/migrations/20260524000001_scan_training_eligible.sql` (or `npx supabase db push`). Adds schema support for the approved-image-to-training-dataset pipeline:
+
+- `training_eligible boolean NOT NULL DEFAULT false` column on `public.scans`
+- `training_copied_at timestamptz NULL` column on `public.scans`
+- Partial index: `idx_scans_training_eligible ON scans(plant_id, training_eligible) WHERE training_eligible = true`
+- Two idempotent storage policies on `storage.objects` for the `training-datasets` bucket: admin INSERT and admin SELECT
+
+Required for Admin → Submission Triage → “Approve + Add to Training Data” and the Training Images sheet approved-scan count. **Already applied to production.**
+
+> **CLI history repair (v1.0.12):** Five migrations applied manually via the Dashboard (from `20260316000001` through `20260524000000`) were not registered in the Supabase CLI migration history. They were backfilled as `applied` in v1.0.12 so `npx supabase db push` correctly skips them. If you encounter them reported as pending, run `supabase migration repair --status applied <timestamp>` for each affected file.
+
+### Step 6i – Yerba Buena browse-only plant *(v1.0.22 – May 25, 2026)*
+
+Run `supabase/migrations/20260525000000_readd_yerba_buena_browse_only.sql` (or `npx supabase db push`). Idempotent migration using `ON CONFLICT DO NOTHING` and `WHERE NOT EXISTS` guards throughout. Re-inserts Yerba Buena (*Clinopodium douglasii*, `id: yerba-buena-001`) across all 8 catalog tables:
+
+- `catalog_plants` — browse-only DOH plant, no `model_class` assigned
+- `catalog_medicinal_uses` — 5 conditions: Headache, Toothache, Arthritis/Rheumatism, Nausea, Cough/Colds
+- `catalog_preparation_methods` — Mint Tea decoction + Topical Compress
+- `catalog_safety` — `pregnancy_warning: true` (emmenagogue risk at high doses)
+- `catalog_habitat` — Cordillera/Tagaytay/Benguet/Mountain Province + cultivated
+- `catalog_conditions` — 5 new conditions (`ON CONFLICT (name) DO NOTHING`)
+- `catalog_condition_plants` — links all 5 conditions
+- `catalog_plant_anatomy` — leaves part (`WHERE NOT EXISTS` guard)
+
+Post-migration: `SELECT COUNT(*) FROM catalog_plants` = **30**. **Already applied to production.**
+
+### If you get an error
+
+If it says something like “relation already exists”, you may have run the migration before. The scripts use `CREATE TABLE IF NOT EXISTS` so it is safe to run again in most cases. If the error is about a trigger or policy already existing, drop it first in a new query (e.g. `DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;`) then run the migration again.
 
 ---
 
@@ -275,6 +352,36 @@ Ensure the bucket name in your policy is `herbarium-images` (the UI may add `buc
 **Step 4 – Save**
 
 - Create each policy and save (or run the migration above). After that, the app can upload to `herbarium-images/{user_id}/{scan_id}.jpg` and RLS will enforce access.
+
+---
+
+## Step-by-step: Create the `training-datasets` bucket and policies *(v1.0.12 – May 24, 2026)*
+
+The `training-datasets` bucket stores copies of approved scan images used for ML model retraining. It is **admin-only** — regular users cannot upload to or read from this bucket. Policies were added via migration `20260524000001_scan_training_eligible.sql`.
+
+### Step 1 – Open Storage
+
+- Dashboard → left sidebar → **Storage**.
+
+### Step 2 – Create the bucket
+
+- Click **New bucket**.
+- **Name:** `training-datasets` (must match exactly).
+- **Public bucket:** Leave **off** (private — admin-only access).
+- Click **Create bucket**.
+
+### Step 3 – Add policies
+
+| Policy name | Allowed operation | Target roles | Expression |
+| --- | --- | --- | --- |
+| Admin insert training datasets | INSERT | authenticated | `bucket_id = 'training-datasets' AND EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')` |
+| Admin select training datasets | SELECT | authenticated | `bucket_id = 'training-datasets' AND EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')` |
+
+Alternative: run `supabase/migrations/20260524000001_scan_training_eligible.sql` in Dashboard → SQL Editor (or `npx supabase db push`). The migration creates both policies idempotently. Create the bucket first (Step 2 above) if it does not exist.
+
+### Step 4 – Save
+
+- After creating the policies, the Admin Portal → Submission Triage → "Approve + Add to Training Data" workflow can copy approved scans to `training-datasets/{plant_id}/{scan_id}.jpg`.
 
 ---
 
@@ -351,4 +458,14 @@ Config in `supabase/config.toml`: `[functions.force-verify-user] verify_jwt = fa
 
 ---
 
-**Using Supabase CLI (recommended):** From project root, run once: `npx supabase login` (opens browser). Then: `npx supabase link --project-ref tsahfzmxqsgbxrrtbdnw` (use your project ref if different). Then: `npx supabase db push` to apply migrations. If prompted for database password, use the one from Supabase Dashboard → Project Settings → Database.
+## Using Supabase CLI (recommended)
+
+From project root, run once: `npx supabase login` (opens browser). Then: `npx supabase link --project-ref tsahfzmxqsgbxrrtbdnw` (use your project ref if different). Then: `npx supabase db push` to apply all **19 migrations** in order. If prompted for database password, use the one from Supabase Dashboard → Project Settings → Database.
+
+All 19 migrations are already applied to production. If any are reported as pending after linking a fresh CLI, repair the history with:
+
+```bash
+supabase migration repair --status applied <timestamp>
+```
+
+Run this for each migration that was applied manually via the Dashboard (from `20260316000001_user_feedback_admin_delete.sql` through `20260524000000_model_versions_rls.sql`). See Step 6h above for details on the CLI history repair performed in v1.0.12.

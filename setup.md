@@ -1,397 +1,387 @@
-## Quick Setup Instructions
+# HerbaScan – Quick Setup Guide
 
-**Last Updated**: March 16, 2026 · **App Version**: v0.9.7
+## Prerequisites
 
-### 1. Install Flutter
+| Requirement | Version | Notes |
+| --- | --- | --- |
+| Flutter SDK | 3.9.2+ | |
+| Dart SDK | bundled with Flutter | |
+| Android SDK | API 21+ | For Android target |
+| Android Studio | Latest stable | Or VS Code with extensions |
+| Python | 3.8+ | Backend only — optional |
 
-**Windows:**
-1. Download Flutter SDK from: https://flutter.dev/docs/get-started/install/windows
+---
+
+## 1. Install Flutter
+
+### Windows
+
+1. Download Flutter SDK from [flutter.dev/docs/get-started/install/windows](https://flutter.dev/docs/get-started/install/windows)
 2. Extract to `C:\flutter`
 3. Add `C:\flutter\bin` to your PATH environment variable
-4. Run `flutter doctor` to check installation
+4. Run `flutter doctor` to verify installation
 
-**macOS:**
-1. Download Flutter SDK from: https://flutter.dev/docs/get-started/install/macos
+### macOS
+
+1. Download from [flutter.dev/docs/get-started/install/macos](https://flutter.dev/docs/get-started/install/macos)
 2. Extract to your home directory
-3. Add Flutter to your PATH in `~/.zshrc` or `~/.bash_profile`
-4. Run `flutter doctor` to check installation
+3. Add Flutter to PATH in `~/.zshrc` or `~/.bash_profile`
+4. Run `flutter doctor` to verify installation
 
-**Linux:**
-1. Download Flutter SDK from: https://flutter.dev/docs/get-started/install/linux
+### Linux
+
+1. Download from [flutter.dev/docs/get-started/install/linux](https://flutter.dev/docs/get-started/install/linux)
 2. Extract to your home directory
-3. Add Flutter to your PATH in `~/.bashrc`
-4. Run `flutter doctor` to check installation
+3. Add Flutter to PATH in `~/.bashrc`
+4. Run `flutter doctor` to verify installation
 
-### 2. Install Dependencies
+---
+
+## 2. Install Dependencies
 
 ```bash
 # Navigate to project directory
-cd herbascan
+cd RE-HerbaScan
 
 # Install Flutter dependencies
 flutter pub get
 
-# Check for any issues
+# Verify installation
 flutter doctor
 ```
 
-### 3. Run the App
+---
+
+## 3. Run the App
 
 ```bash
-# For Android
+# Android device (primary target — camera + TFLite work here)
 flutter run
 
-# For iOS (macOS only)
-flutter run -d ios
+# Windows desktop (admin portal testing — no camera/TFLite)
+flutter run -d windows
 
-# For Web
+# Web
 flutter run -d web
 
-# For Windows desktop (admin portal testing, no camera/TFLite)
-flutter run -d windows
+# iOS (macOS only)
+flutter run -d ios
 ```
 
-## Development Setup
+---
 
-### Android Studio Setup
-1. Install Android Studio
-2. Install Android SDK (API level 21 or higher)
-3. Create an Android Virtual Device (AVD)
-4. Enable USB Debugging on your physical device
+## 4. Build Commands
 
-### VS Code Setup
-1. Install VS Code
-2. Install Flutter and Dart extensions
-3. Open the project folder in VS Code
-4. Use `Ctrl+Shift+P` and run "Flutter: Select Device"
+```bash
+# Release APK (split per ABI — recommended)
+flutter build apk --split-per-abi
 
-## Troubleshooting
+# Universal APK
+flutter build apk
 
-### Common Issues
-
-**Flutter not found:**
-- Make sure Flutter is added to your PATH
-- Restart your terminal/command prompt
-- Run `flutter doctor` to verify installation
-
-**Android SDK not found:**
-- Install Android Studio
-- Run `flutter doctor --android-licenses`
-- Accept all licenses
-
-**Device not detected:**
-- Enable USB Debugging on Android device
-- Install device drivers
-- Run `flutter devices` to list available devices
-
-**Dependencies not installing:**
-- Check internet connection
-- Run `flutter clean` then `flutter pub get`
-- Check `pubspec.yaml` for syntax errors
-- Verify Flutter and Dart versions compatibility
-
-**Build errors:**
-- Check Flutter and Dart versions
-- Update dependencies if needed
-- Run `flutter doctor` to identify issues
-- Check for version conflicts in pubspec.yaml
-
-**Camera permissions:**
-- Add camera permissions to AndroidManifest.xml
-- Test on real device (camera doesn't work in emulator)
-- Check device camera permissions in settings
-
-**Database errors:**
-- Check SQLite database initialization
-- Verify database schema creation
-- Check file permissions for database storage
-
-### Getting Help
-
-1. Check Flutter documentation: https://flutter.dev/docs
-2. Check the project's README.md for specific instructions
-
-## Next Steps
-
-After successful setup:
-
-1. **Test the app**: Run `flutter run` and test all functionality
-2. **Test AI Features**: 
-   - Test plant identification with camera and gallery
-   - Check confidence scores and predictions
-3. **Test Offline Mode**: Toggle offline mode in settings and verify functionality
-4. **Test Multi-language**: Switch between English and Filipino
-5. **Deploy**: Build APK with `flutter build apk` for release
-
-**Current Features Ready for Testing** (v0.9.7 – March 2026). For full detail see **CHANGELOG.md**.
-
-- ✅ Plant identification (camera + gallery) — fully offline via TFLite on-device
-- ✅ XAI explanations from cache/offline/fallback only (no live LLM)
-- ✅ Contraindication Engine (safety_profiles.json) and structured safety
-- ✅ Offline processing and offline CAM heatmap generation; labels from `class_indices.json`
-- ✅ Multi-language support (English/Filipino)
-- ✅ Scan history: Device/Cloud tabs, swipe, pull-to-refresh, select mode, batch sync (Device→Cloud, Cloud→Device), Select all/Deselect all; save/export from Plant Result only
-- ✅ Accounts: signup with 6-digit confirmation, change password/email, delete account; account deactivation by admin
-- ✅ Interactive preparation guide (Preparation Guide) with checklist, timers, timer notifications & persistence, Focus Mode, calendar add
-- ✅ Share (native OS) and export to gallery (Plant Result; History device cards)
-- ✅ Admin: Image Review, Plant Metadata (cloud-first catalog), Condition Search, User Management; Factory Reset; 2D plant anatomy
-- ✅ Settings and preferences; offline management
-- ✅ Backend API for Grad-CAM (Railway); Postman collection
-
-**Recent Features (v0.9.6 – April 4, 2026)**:
-- ✅ Preparation Step Infographics: All step cards in `PreparationInstructionsScreen` and `PreparationFocusModeScreen` show context-aware icons with color-coded accent borders (heat → orange, herb → green, filter → teal, cool → blue, drink → amber); animated icon → check transition on completion; 96 px Focus Mode icon with spring entrance animation
-
-**Recent Features (v0.9.5 – March 16, 2026)**:
-- ✅ Admin Feedback Management: Admins can view, filter, and delete user feedback from Admin Portal
-- ✅ System Health Dashboard: Real-time backend and Supabase connectivity indicators in Admin Portal
-- ✅ Force-Verify User Edge Function: Admin can manually verify a user's email (deploy: `npx supabase functions deploy force-verify-user`)
-- ✅ Auto-Save Toggle: Settings preference `auto_save_scans`; when OFF, new scans not auto-saved until user saves
-- ✅ Extended Plant Anatomy: 39 non-toxic plants with anatomy data in `default_plant_anatomy.json`
-- ✅ Strict Contraindication Flagging: `needs_strict_contraindications` flag; prominent "Use with strict caution" card
-
-**Recent Features (v0.9.4 – March 10, 2026)**:
-- ✅ Catalog Safety migration: `20260314000000_catalog_safety_strict_contraindications.sql` — run in Supabase SQL Editor
-- ✅ User Feedback System: migrations `20260316000000_user_feedback.sql` + `20260316000001_user_feedback_admin_delete.sql`
-- ✅ Admin User Service: admin can deactivate and delete user accounts
-
-**Recent Features (v0.9.7)**:
-- ✅ Two-Stage Image Validation Pipeline: Added a heuristic gatekeeper (blur/darkness) and OOD ML rejection (`Not_Plant` class) to explicitly drop irrelevant images
-- ✅ Toxic plant blacklist (Adelfa, Ipil-Ipil, Tuba-Tuba): dedicated warning screen; never shown as recommended
-- ✅ Strict-contraindication flagging (`needs_strict_contraindications`); prominent "Use with strict caution" card; Admin Safety tab switch
-- ✅ Extended plant anatomy (39 non-toxic plants in default_plant_anatomy.json); seed from defaults in Admin
-- ✅ Auto-save scans toggle in Settings; when OFF, new scans not auto-saved until user saves from Plant Result or History
-- ✅ Signup 6-digit email confirmation; duplicate email handling; stronger password rules; delete account
-- ✅ Preparation Guide (renamed from Instructions); interactive checklist, contextual timers, Focus Mode, calendar; save/export from Plant Result only
-- ✅ Admin instant local sync after catalog/condition/plant save; condition count 1:1 with browse
-- ✅ System Diagnostics (renamed from Offline Demo); design system (botanical green / Emerald, app_theme.dart)
-- ✅ Contraindication Engine; no live LLM (thesis-defensible)
-- ✅ Scan History: swipe between tabs, pull-to-refresh on Cloud, select mode, batch sync; save/export from Plant Result only
-- ✅ Friendly auth errors; 6-digit OTP password reset; auth deep links
-
-**Recent Fixes (v0.9.7)**:
-- ✅ Feedback Bottom Sheet Keyboard Overflow: Programmatic dynamic paddings over rigid Scaffolds for Android 16/Samsung devices
-- ✅ Not_Plant Array Shift: Secured Supabase string mappings against alphabetical ML array shifts
-- ✅ Summary tab content and layout; taxonomy Markdown line breaks
-- ✅ Railway /identify 401 when not logged in (optional JWT; recommend unset)
-- ✅ Calendar add-event on Android (queries intent); Focus Mode contrast
-- ✅ Offline/management settings copy and refresh behavior
-- ✅ SnackBar floating so camera FAB not displaced
-
-**Backend API Testing**:
-- See `backend/README.md` → "🧪 Testing with Postman" for complete testing guide
-- Postman collection: `backend/HerbaScan_API.postman_collection.json`
-- Supports: Postman desktop, VS Code (REST Client, Thunder Client), curl
-
-**Project structure (v0.9.7):** The `tests/` folder (test plans: Unit, Integration, System, etc.) has been removed from the repository. User testing: see TESTING_GUIDE.md if present.
-
-## Project Structure Overview
-
-```
-herbascan/
-├── lib/                   # Dart source code
-│   ├── core/              # Core functionality
-│   │   ├── config/        # Supabase URL/anon key, auth redirect
-│   │   ├── models/        # Data models
-│   │   ├── providers/     # State management
-│   │   ├── services/      # Business logic
-│   │   ├── widgets/       # Shared widgets (e.g. botanical auth header)
-│   │   ├── theme/         # App styling (app_theme.dart – botanical green)
-│   │   └── localization/  # Multi-language
-│   └── features/          # Feature modules
-│       ├── splash/        # App launch
-│       ├── home/          # Main dashboard
-│       ├── scan/          # Camera scanning
-│       └── ...
-├── assets/                # Static assets
-│   ├── images/            # Plant images and app icons
-│   ├── models/            # AI model files (.tflite)
-│   ├── data/              # JSON data files (doh_plants.json)
-│   ├── fonts/             # Custom fonts (Inter)
-│   └── icons/             # App icons and UI elements
-├── tests/                 # Testing plans (Unit, Integration, System, Acceptance, Performance, Usability, Compatibility, Security)
-├── android/               # Android-specific code
-├── ios/                   # iOS-specific code
-└── pubspec.yaml           # Dependencies
+# Analyze for issues
+flutter analyze
 ```
 
-## AI Model Integration
+---
 
-The app uses the following for offline inference:
-1. **Multi-output TFLite model**: `mobilenetv2_multi_output.tflite` (feature maps + predictions)
-2. **CAM weights**: `mobilenetv2_cam_weights.json` (for offline CAM heatmaps)
-3. **Class labels**: `class_indices.json` (name→index format; the app does not use `labels.txt`)
+## 5. IDE Setup
 
-**Model Files Location**: `assets/models/`
+### Android Studio
 
-### Backend Setup (Python FastAPI — Model Retraining Only)
+1. Install Android Studio (latest stable)
+2. Install Android SDK — API level 21 or higher
+3. Enable USB Debugging on your physical device (recommended; camera not available in emulator)
+4. Install Flutter and Dart plugins
 
-HerbaScan includes a Python backend for model retraining via the Modal GPU pipeline. Plant identification runs fully offline on-device via TFLite.
+### VS Code
 
-**Location**: `backend/` directory
+1. Install the Flutter and Dart extensions
+2. Open the project folder
+3. Use `Ctrl+Shift+P` → "Flutter: Select Device" to target a device
 
-#### Prerequisites
-- Python 3.8+ installed
-- Virtual environment (recommended)
-- Model files: `backend/models/MobileNetV2_model.keras` (required for retraining) and `backend/models/labels.json` (optional)
-- Railway account (for deployment) — Optional but recommended
+---
 
-#### Setup Steps
+## 6. Asset Files (already bundled — no action needed)
 
-1. **Navigate to backend directory**:
-   ```bash
-   cd backend
-   ```
+The following files are bundled in the repo and require no separate download for normal development:
 
-2. **Create virtual environment**:
-   ```bash
-   # Windows
-   python -m venv venv
-   venv\Scripts\activate
-   
-   # Mac/Linux
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
+| File | Location | Purpose |
+| --- | --- | --- |
+| `mobilenetv2_multi_output.tflite` | `assets/models/` | 31-class offline TFLite inference model |
+| `class_indices.json` | `assets/models/` | Label map — name→index (31 entries) |
+| `plant_explanations.json` | `assets/data/` | Deterministic XAI text for 30 plants |
+| `safety_profiles.json` | `assets/data/` | Contraindication Engine data for 30 plants |
+| `plant_habitats.json` | `assets/data/` | Habitat coordinates for habitat map |
+| `doh_plants.json` | `assets/data/` | DOH-approved plant metadata (10 plants) |
+| `default_plant_anatomy.json` | `assets/data/` | 2D silhouette anatomy parts for 30 plants |
+| `ood_safety_config.json` | `assets/data/` | OOD thresholds — `num_classes=31`, `not_plant_index=19`, `confidence_threshold=0.85` |
 
-3. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
+> **Note (v1.0.7):** `mobilenetv2_cam_weights.json` was permanently deleted when the GradCAM/CAM heatmap system was removed. It is not present and not required. The app uses a classification-only inference pipeline.
 
-4. **Place model files**:
-   - Copy `MobileNetV2_model.keras` to `backend/models/`
-   - Copy `labels.json` to `backend/models/` (optional)
+---
 
-5. **Run locally**:
-   ```bash
-   python main.py
-   # Or
-   uvicorn main:app --reload --host 0.0.0.0 --port 8000
-   ```
+## 7. Supabase Configuration
 
-6. **Test API**:
-   ```bash
-   curl http://localhost:8000/health
-   ```
+Supabase credentials are set in `lib/core/config/supabase_config.dart`. The project is already configured for `tsahfzmxqsgbxrrtbdnw.supabase.co`.
 
-#### Backend Documentation
+**Apply all 19 migrations via CLI (recommended):**
 
-For detailed backend setup, see:
-- **`backend/README.md`** - Complete backend documentation
-- **`backend/QUICK_START.md`** - Quick deployment guide
-- **Model Management**: `backend/README.md` → "🔄 Updating Models"
-- **Deployment**: `backend/README.md` → "🚀 Deployment to Railway"
-- **Phase 2**: `backend/README.md` → "Phase 2: Model Extraction & Conversion"
-- **Testing**: `backend/README.md` → "🧪 Testing with Postman"
+```bash
+# Link project (run once)
+npx supabase login
+npx supabase link --project-ref tsahfzmxqsgbxrrtbdnw
 
-#### Phase 2: Model Extraction (For Flutter Assets)
+# Push all pending migrations
+npx supabase db push
+```
 
-After setting up the backend, extract CAM weights and create multi-output TFLite model:
+**Deploy Edge Functions:**
+
+```bash
+npx supabase functions deploy delete-user
+npx supabase functions deploy force-verify-user
+```
+
+**Grant admin role to your account:**
+
+```sql
+UPDATE public.profiles SET role = 'admin' WHERE id = 'YOUR_USER_UUID';
+```
+
+> For full Supabase setup steps (storage bucket, URL configuration, email OTP templates), see `supabase/README.md`.
+
+---
+
+## 8. Local Database (SQLite)
+
+The SQLite database is created automatically on first app launch. No manual setup is required.
+
+**9 tables auto-created and seeded:**
+
+| Table | Purpose |
+| --- | --- |
+| `plants` | 30 medicinal plants (29 ML-mapped + Yerba Buena browse-only); optional `image_url` |
+| `medicinal_uses` | Therapeutic applications per plant |
+| `preparation_methods` | Preparation steps with step details and schedule JSON |
+| `scan_history` | Local scan results with predictions and metadata |
+| `catalog_conditions` | Condition list (synced from Supabase when online) |
+| `catalog_condition_plants` | Condition–plant mapping |
+| `safety_profiles` | Contraindication data; includes `needs_strict_contraindications` |
+| `plant_habitats` | Coordinates, region names, climate notes |
+| `catalog_plant_anatomy` | SVG path data for 2D interactive silhouette |
+
+Seeded from `PlantDataService.getAllMedicinalPlantsData()` on first launch (30 plants). When online, `CatalogSyncService` overwrites catalog tables from Supabase on every app open.
+
+---
+
+## 9. Backend Setup (Optional — Model Retraining Only)
+
+> The Railway backend is **not called during plant scanning**. All identification runs fully offline via TFLite on-device. The backend handles model retraining (via Modal GPU pipeline) and hot-reload only.
+
+**Production URL:** `https://re-herbascan-production.up.railway.app`
+
+### Local Backend Setup
 
 ```bash
 cd backend
 
-# Extract CAM weights
-python extract_cam_weights.py
+# Windows
+python -m venv venv
+venv\Scripts\activate
 
-# Create multi-output TFLite model
-python create_multi_output_tflite.py
+# Mac/Linux
+python3 -m venv venv
+source venv/bin/activate
 
-# Copy to Flutter assets (app uses class_indices.json for labels, not labels.txt)
-cp models/mobilenetv2_cam_weights.json ../assets/models/
-cp models/mobilenetv2_multi_output.tflite ../assets/models/
+pip install -r requirements.txt
 ```
 
-**For detailed instructions, see `backend/README.md` → "Phase 2: Model Extraction & Conversion"**
+**Required model file** — place in `backend/models/`:
 
-## Database Setup
+```text
+backend/models/
+└── MobileNetV2_model.keras    ← required for retraining
+```
 
-The app uses SQLite for local storage. The database is created automatically on first run. Tables include:
+> `labels.json` in `backend/models/` is optional. The backend generates 31 placeholder labels if it is absent.
 
-- `plants` - Plant information (42 medicinal plants: 10 DOH-approved + 32 additional; optional image_url from Supabase)
-- `medicinal_uses` - Medicinal applications and therapeutic uses
-- `preparation_methods` - Preparation instructions and dosage guidelines
-- `scan_history` - User scan results with GradCAM paths and metadata
-- Catalog tables (synced from Supabase when online): `safety_profiles`, `plant_habitats`, `catalog_conditions`, `catalog_condition_plants`, `catalog_plant_anatomy`
+```bash
+# Run locally
+python main.py
+# Or
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
-**Plant Database**: The app automatically initializes with 42 plants on first launch (10 DOH-approved + 32 additional). See main README for full list.
+# Verify
+curl http://localhost:8000/health
+```
 
-To enable Admin **Force activate email** (OTP bypass), deploy the Edge Function: `npx supabase functions deploy force-verify-user`. See [supabase/README.md](supabase/README.md).
+### Regenerating TFLite Assets After Retraining
 
-For Admin **Feedback** tab (Option B: store feedback in Supabase and allow admins to view/delete), run migrations `20260316000000_user_feedback.sql` and `20260316000001_user_feedback_admin_delete.sql` in the Supabase SQL Editor (or `npx supabase db push`). See [supabase/README.md](supabase/README.md) Steps 6d and 6e.
+If the Keras model is retrained, regenerate the Flutter TFLite asset:
 
-## XAI Explanation System Setup
+```bash
+cd backend
 
-### Offline Explanations
-- **Location**: `assets/data/plant_explanations.json`, `assets/data/safety_profiles.json`
-- **Content**: Pre-written explanations and safety profiles for all 42 plants
-- **Format**: JSON with taxonomy, ecology, medicinal uses, safety; structured safety profiles
-- **Status**: ✅ Automatically included in app assets
+# Create multi-output TFLite model (classification outputs: [1,7,7,1280] features + [1,31] predictions)
+python create_multi_output_tflite.py
+# → backend/models/mobilenetv2_multi_output.tflite
 
-### XAI Explanation Behavior
+# Copy to Flutter assets
+cp models/mobilenetv2_multi_output.tflite ../assets/models/
 
-- The app does **not** use live generative AI at runtime. Explanations come from: SharedPreferences/file cache (read-only), offline `plant_explanations.json`, and fallback text. Safety is fully deterministic via the Contraindication Engine (`safety_profiles.json`).
-- **Fallback**: If no cached or offline explanation is found, a fallback message is shown.
+# Update class_indices.json if class mappings changed
+# assets/models/class_indices.json — format: {"PlantName": index}
 
-### Explanation Features
-- **Markdown Formatting**: Rich text with bold, italic, headers, lists
-- **Usability Assessment**: Clear status (USABLE/USE WITH CAUTION/NOT RECOMMENDED)
-- **Refresh Functionality**: Regenerate AI explanation
+# Rebuild Flutter app
+flutter clean && flutter pub get && flutter run
+```
 
+> `extract_cam_weights.py` is no longer used — GradCAM/CAM weights were removed in v1.0.7.
 
-## Development Tips
+### Backend Environment Variables (Railway)
 
-### Hot Reload & Debugging
-- Use `r` in terminal for hot reload during development
-- Use `R` in terminal for hot restart
-- Use `flutter run --debug` for debugging
-- Use `flutter run --release` for performance testing
-- Use `flutter devices` to see available devices
+| Variable | Required | Notes |
+| --- | --- | --- |
+| `ADMIN_RELOAD_SECRET` | Yes | Shared secret for `/admin/reload-model` and `/admin/trigger-training` |
+| `MODAL_TRAINING_URL` | Yes | Modal web endpoint for training trigger |
+| `SUPABASE_JWT_SECRET` | **Not recommended** | Leave unset — prevents 401 for anonymous users on `/identify` |
 
-### Performance Tips
-- Use `flutter run --release` for better performance
-- Enable R8/ProGuard for smaller APK size
-- Optimize images in `assets/images/`
-- Use `flutter build apk --split-per-abi` for smaller APKs
-- Monitor memory usage with Flutter Inspector
-
-### Code Quality
-- Run `flutter analyze` to check for issues
-- Use `flutter test` to run unit tests
-- Follow Dart/Flutter style guidelines
-- Use proper error handling throughout the app
+> For full Railway deployment steps, see `backend/README.md` and `backend/QUICK_START.md`.
 
 ---
 
-## Key Configuration Files
+## 10. Key Configuration Files
 
-### API Configuration
+| File | Purpose |
+| --- | --- |
+| `lib/core/config/supabase_config.dart` | Supabase URL and anon key |
+| `lib/core/theme/app_theme.dart` | Design tokens — Botanical Emerald `#16A34A`, Material 3, Inter font |
+| `assets/data/ood_safety_config.json` | OOD thresholds (`num_classes=31`, `not_plant_index=19`, `confidence_threshold=0.85`) |
+| `assets/models/class_indices.json` | 31-class label map — keep in sync with backend `labels.json` after retraining |
+| `lib/features/admin/widgets/trigger_training_widget.dart` | Contains the Railway backend URL for training trigger |
+| `pubspec.yaml` | All Flutter/Dart dependencies |
 
-- **Backend (Model Retraining)**: The Railway backend is used only for model retraining (`POST /admin/trigger-training` → Modal GPU pipeline) and model reload (`POST /admin/reload-model`). Default production URL: `https://re-herbascan-production.up.railway.app`. Plant identification runs fully offline on-device via TFLite — no backend call is made during scanning.
-- **No live LLM**: Explanations use cache/offline JSON and fallback only.
+---
 
-### Backend API URL
-- **Location**: `lib/core/services/online_gradcam_service.dart`
-- **Default**: `https://re-herbascan-production.up.railway.app` (production)
-- **Format**: `https://YOUR-APP.up.railway.app` for custom deployment
+## 11. Troubleshooting
 
-### Offline Explanation Data
-- **Location**: `assets/data/plant_explanations.json`
-- **Update**: Edit JSON file and rebuild app
-- **Format**: See existing entries for structure
+### Flutter not found
 
-## Troubleshooting
+- Verify Flutter is added to PATH; restart your terminal
+- Run `flutter doctor` to identify configuration gaps
 
-### XAI Explanation Issues
+### Android SDK not found
 
-**Offline explanations not showing:**
-- Check `assets/data/plant_explanations.json` exists
-- Verify JSON format is valid
-- Check `pubspec.yaml` includes `assets/data/` in assets list
+- Install Android Studio; accept licenses with `flutter doctor --android-licenses`
 
-**Markdown not rendering:**
-- Verify `flutter_markdown: ^0.6.18` in `pubspec.yaml`
-- Run `flutter pub get`
-- Check for markdown syntax errors in explanation text
+### Device not detected
 
+- Enable USB Debugging on Android device
+- Run `flutter devices` to list available targets
+- Camera and TFLite inference require a real device (not emulator)
 
+### Dependencies not installing
+
+- Check internet connection
+- Run `flutter clean` then `flutter pub get`
+- Check `pubspec.yaml` for syntax errors
+
+### TFLite model not loading
+
+- Verify `assets/models/mobilenetv2_multi_output.tflite` exists
+- Verify `pubspec.yaml` declares `assets/models/` as an asset path
+- Run `flutter clean && flutter pub get && flutter run`
+
+### Offline explanations not showing
+
+- Verify `assets/data/plant_explanations.json` exists and is valid JSON
+- Verify `pubspec.yaml` includes `assets/data/` in the assets list
+
+### SQLite errors (desktop)
+
+- Desktop (Windows/Linux/macOS) uses `sqflite_common_ffi` — confirm it is in `pubspec.yaml`
+- `sqflite` is for mobile; `sqflite_common_ffi` is required for desktop
+
+### Supabase 403 when saving to cloud
+
+- Storage RLS policies may be missing — run migration `20260302000000_storage_herbarium_policies.sql` or `npx supabase db push`
+- Confirm the `herbarium-images` bucket exists in your Supabase project
+
+### Railway 401 when triggering training
+
+- Verify `ADMIN_RELOAD_SECRET` on Railway matches the value in `trigger_training_widget.dart`
+- Do **not** set `SUPABASE_JWT_SECRET` on Railway — leave it unset
+
+### Backend cold start delay
+
+- First Railway request takes 10–30 s (TensorFlow model load); warm requests take 2–4 s
+- This only affects model retraining triggers — plant scanning is fully offline and unaffected
+
+---
+
+## 12. Development Tips
+
+```bash
+# Hot reload (keeps state)
+r
+
+# Hot restart (resets state)
+R
+
+# Debug mode
+flutter run --debug
+
+# Release mode (performance testing)
+flutter run --release
+
+# List available devices
+flutter devices
+
+# Analyze code
+flutter analyze
+
+# Run widget tests
+flutter test
+```
+
+### Performance tips
+
+- Use `flutter build apk --split-per-abi` for smaller release APKs
+- Monitor memory with Flutter Inspector during development
+- Test on a real Android device — emulators do not support camera or TFLite
+
+---
+
+## 13. Project Structure Reference
+
+```text
+RE-HerbaScan/
+├── lib/
+│   ├── core/
+│   │   ├── config/        ← Supabase URL + anon key
+│   │   ├── models/        ← Data models (Plant, ScanResult, CloudScan, …)
+│   │   ├── providers/     ← 6 providers: App, Auth, Plant, Camera, Language, Offline
+│   │   ├── services/      ← 30+ services (TFLite, XAI, Auth, Herbarium, CatalogSync, …)
+│   │   ├── theme/         ← app_theme.dart (Botanical Emerald, Material 3)
+│   │   ├── widgets/       ← Shared widgets
+│   │   ├── routing/       ← app_router.dart (GoRouter)
+│   │   └── localization/  ← English / Filipino
+│   ├── features/          ← Screen modules (scan, browse, history, admin, auth, …)
+│   └── main.dart
+├── assets/
+│   ├── models/            ← mobilenetv2_multi_output.tflite, class_indices.json
+│   ├── data/              ← plant_explanations.json, safety_profiles.json, …
+│   ├── images/            ← 50+ plant reference JPEGs
+│   └── icons/             ← HerbaScan_Icon1.svg, HerbaScan_Icon1.png
+├── backend/               ← Python FastAPI — model retraining pipeline only
+│   ├── main.py
+│   ├── modal_train.py     ← Modal T4 GPU training pipeline
+│   └── models/            ← MobileNetV2_model.keras (place here for retraining)
+├── supabase/
+│   ├── migrations/        ← 19 SQL migrations
+│   └── functions/         ← delete-user, force-verify-user (Deno Edge Functions)
+├── android/
+├── ios/
+└── pubspec.yaml
+```
