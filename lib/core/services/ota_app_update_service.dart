@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:herbascan/core/models/app_version.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
@@ -98,7 +99,20 @@ class OtaAppUpdateService {
       },
     );
 
-    final result = await OpenFile.open(savePath, type: 'application/vnd.android.package-archive');
+    // On Android 8.0+, we must explicitly ask the user to allow "Install unknown apps"
+    // from this app's settings if they haven't already.
+    if (Platform.isAndroid) {
+      var status = await Permission.requestInstallPackages.status;
+      if (!status.isGranted) {
+        // This opens the Android system settings page for the user to toggle the permission
+        status = await Permission.requestInstallPackages.request();
+      }
+      // If the user still denied it, we cannot install.
+      // OpenFile.open will throw, which is handled gracefully by the dialog.
+    }
+
+    final result = await OpenFile.open(savePath,
+        type: 'application/vnd.android.package-archive');
     if (result.type != ResultType.done) {
       throw Exception('Failed to open installer: ${result.message}');
     }
@@ -177,7 +191,8 @@ class _UpdateDialogState extends State<_UpdateDialog> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            Icon(Icons.system_update_rounded, color: AppTheme.botanicalPrimary, size: 24),
+            Icon(Icons.system_update_rounded,
+                color: AppTheme.botanicalPrimary, size: 24),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -216,7 +231,8 @@ class _UpdateDialogState extends State<_UpdateDialog> {
             // Mandatory badge
             if (isMandatory) ...[
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFEF2F2),
                   borderRadius: BorderRadius.circular(8),
@@ -224,7 +240,8 @@ class _UpdateDialogState extends State<_UpdateDialog> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.warning_amber_rounded, size: 14, color: Color(0xFFDC2626)),
+                    const Icon(Icons.warning_amber_rounded,
+                        size: 14, color: Color(0xFFDC2626)),
                     const SizedBox(width: 4),
                     Text(
                       'Required update',
@@ -253,8 +270,10 @@ class _UpdateDialogState extends State<_UpdateDialog> {
               const SizedBox(height: 4),
               LinearProgressIndicator(
                 value: _progress > 0 ? _progress : null,
-                backgroundColor: AppTheme.botanicalPrimary.withValues(alpha: 0.15),
-                valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.botanicalPrimary),
+                backgroundColor:
+                    AppTheme.botanicalPrimary.withValues(alpha: 0.15),
+                valueColor: const AlwaysStoppedAnimation<Color>(
+                    AppTheme.botanicalPrimary),
                 borderRadius: BorderRadius.circular(100),
               ),
               const SizedBox(height: 6),

@@ -96,6 +96,7 @@ dependencies:
   package_info_plus: ^8.1.2   # Read current app version/build number
   open_file: ^3.3.2           # Trigger Android APK install intent
   dio: ^5.7.0                 # Chunked download with progress callback
+  permission_handler: ^12.0.3
 
 
 dev_dependencies:
