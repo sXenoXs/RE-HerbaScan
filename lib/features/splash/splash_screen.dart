@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:herbascan/core/providers/app_provider.dart';
 import 'package:herbascan/core/providers/auth_provider.dart';
+import 'package:herbascan/core/services/ota_app_update_service.dart';
 import 'package:herbascan/core/services/performance_monitor.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/features/splash/disclaimer_screen.dart';
@@ -73,6 +74,12 @@ class _SplashScreenState extends State<SplashScreen>
       destination = 'admin';
     } else {
       destination = 'home';
+    }
+
+    // OTA update check — runs before routing so mandatory updates block navigation.
+    // Safe: wrapped in try/catch inside checkAndPrompt; never crashes the app.
+    if (mounted) {
+      await OtaAppUpdateService().checkAndPrompt(context);
     }
 
     final prefs = await SharedPreferences.getInstance();

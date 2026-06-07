@@ -2,7 +2,7 @@ name: herbascan
 description: "A complete, self-contained offline-first flutter app for local plant identification with 42 medicinal plants, powered by TFLite and a smart offline-sync layer."
 publish_to: "none"
 
-version: 0.9.7+1
+version: 1.0.26+26
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
@@ -88,6 +88,15 @@ dependencies:
   share_plus: ^10.0.0
   flutter_local_notifications: ^18.0.0
   timezone: ^0.10.0
+
+  # Security: secure token storage (Android Keystore / iOS Keychain / Windows Credential Manager)
+  flutter_secure_storage: ^9.2.2
+
+  # OTA App Updates: version check + in-app APK download & install
+  package_info_plus: ^8.1.2   # Read current app version/build number
+  open_file: ^3.3.2           # Trigger Android APK install intent
+  dio: ^5.7.0                 # Chunked download with progress callback
+
 
 dev_dependencies:
   flutter_test:

@@ -21,14 +21,36 @@ class _TriggerTrainingWidgetState extends State<TriggerTrainingWidget> {
   String? _statusMessage;
   bool _isError = false;
 
-  static const String _railwayBackendUrl =
-      'https://re-herbascan-production.up.railway.app';
+  /// Railway backend URL injected at build time via:
+  ///   --dart-define=RAILWAY_BACKEND_URL=https://re-herbascan-production.up.railway.app
+  static const String _railwayBackendUrl = String.fromEnvironment(
+    'RAILWAY_BACKEND_URL',
+    defaultValue: 'https://re-herbascan-production.up.railway.app',
+  );
+
+  /// Admin secret injected at build time via:
+  ///   --dart-define=ADMIN_SECRET=<your_secret>
   static const String _adminSecret = String.fromEnvironment(
     'ADMIN_SECRET',
     defaultValue: '',
   );
 
+  /// Returns true if required configuration is present.
+  bool get _isConfigured =>
+      _railwayBackendUrl.isNotEmpty && _adminSecret.isNotEmpty;
+
   Future<void> _triggerTraining() async {
+    // Guard: show error if config is missing rather than making a broken call.
+    if (!_isConfigured) {
+      setState(() {
+        _statusMessage = 'Configuration missing.\n'
+            'Build with --dart-define=RAILWAY_BACKEND_URL=... '
+            'and --dart-define=ADMIN_SECRET=...';
+        _isError = true;
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _statusMessage = null;
