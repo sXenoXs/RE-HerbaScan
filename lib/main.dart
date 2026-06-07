@@ -29,7 +29,13 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Preparation step timer notifications (mobile)
-  await PreparationNotificationService().init();
+  if (!kIsWeb) {
+    try {
+      await PreparationNotificationService().init();
+    } catch (e) {
+      debugPrint('Notification init failed: $e');
+    }
+  }
 
   // Initialize SQLite for desktop (Windows/Linux/macOS). No change to mobile or web.
   if (!kIsWeb && platform_utils.isDesktop()) {
