@@ -1,6 +1,6 @@
 // lib/core/services/plant_classifier_service.dart
 import 'dart:convert';
-import 'package:tflite_flutter/tflite_flutter.dart';
+import 'package:herbascan/core/services/tflite/tflite_import.dart';
 import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
 // Old GradCAM service removed - replaced with AdaptiveGradCAMService

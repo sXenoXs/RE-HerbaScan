@@ -1,7 +1,7 @@
 // lib/core/services/plant_classifier_service.dart
 import 'dart:convert';
 import 'dart:io';
-import 'package:tflite_flutter/tflite_flutter.dart';
+import 'package:herbascan/core/services/tflite/tflite_import.dart';
 import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
 import 'package:herbascan/core/platform_utils_stub.dart' if (dart.library.io) 'package:herbascan/core/platform_utils_io.dart' as platform_utils;
