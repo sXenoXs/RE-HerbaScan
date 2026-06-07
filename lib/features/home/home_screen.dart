@@ -40,9 +40,10 @@ class _HomeScreenState extends State<HomeScreen> {
   late final List<Widget> _screens;
 
   // Coachmark anchors. Hero key lives inside HomeDashboard; FAB + Settings nav
-  // are owned by this state. All three are passed to HomeCoachmarkTour.show().
+  // are owned by this state. All four are passed to HomeCoachmarkTour.show().
   final GlobalKey _heroKey = GlobalKey(debugLabel: 'coachmark_home_hero');
   final GlobalKey _fabKey = GlobalKey(debugLabel: 'coachmark_home_fab');
+  final GlobalKey _recentScansKey = GlobalKey(debugLabel: 'coachmark_home_recent_scans');
   final GlobalKey _settingsNavKey =
       GlobalKey(debugLabel: 'coachmark_home_settings_nav');
 
@@ -65,6 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
         context: state.context,
         heroKey: state._heroKey,
         fabKey: state._fabKey,
+        recentScansKey: state._recentScansKey,
         settingsNavKey: state._settingsNavKey,
       );
     });
@@ -86,6 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _screens = [
       HomeDashboard(
         heroKey: _heroKey,
+        recentScansKey: _recentScansKey,
         onNavigate: (index) {
           setState(() {
             _currentIndex = index;
@@ -110,6 +113,7 @@ class _HomeScreenState extends State<HomeScreen> {
         context: context,
         heroKey: _heroKey,
         fabKey: _fabKey,
+        recentScansKey: _recentScansKey,
         settingsNavKey: _settingsNavKey,
       );
     });
@@ -248,8 +252,9 @@ class _NavItem extends StatelessWidget {
 class HomeDashboard extends StatefulWidget {
   final Function(int)? onNavigate;
   final GlobalKey? heroKey;
+  final GlobalKey? recentScansKey;
 
-  const HomeDashboard({super.key, this.onNavigate, this.heroKey});
+  const HomeDashboard({super.key, this.onNavigate, this.heroKey, this.recentScansKey});
 
   @override
   State<HomeDashboard> createState() => _HomeDashboardState();
@@ -423,6 +428,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
     final recentScans = plantProvider.scanHistory.take(6).toList();
 
     return Column(
+      key: widget.recentScansKey,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(

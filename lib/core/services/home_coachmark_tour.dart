@@ -22,6 +22,7 @@ class HomeCoachmarkTour {
     required BuildContext context,
     required GlobalKey heroKey,
     required GlobalKey fabKey,
+    required GlobalKey recentScansKey,
     required GlobalKey settingsNavKey,
   }) {
     bool dontShowAgain = false;
@@ -59,6 +60,19 @@ class HomeCoachmarkTour {
           title: 'Tip:',
           body:
               'Tap the camera button to scan a plant. Hold the device steady for a clear photo.',
+          onNext: () => tutorial.next(),
+          onSkip: () => tutorial.skip(),
+          onDontShowChanged: (v) => dontShowAgain = v,
+        ),
+        _buildTarget(
+          identify: 'home_recent_scans',
+          keyTarget: recentScansKey,
+          shape: ShapeLightFocus.RRect,
+          radius: 18,
+          align: ContentAlign.bottom,
+          title: 'Tip:',
+          body:
+              'Here are your recent scans. Tap any card to see details or "View All" for history.',
           onNext: () => tutorial.next(),
           onSkip: () => tutorial.skip(),
           onDontShowChanged: (v) => dontShowAgain = v,

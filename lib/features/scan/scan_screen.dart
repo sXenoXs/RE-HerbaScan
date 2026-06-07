@@ -1052,6 +1052,26 @@ class _ScanTipsSheet extends StatelessWidget {
       title: 'Clean Subject',
       body: 'Choose an undamaged leaf on a plain background.',
     ),
+    (
+      icon: Icons.history_rounded,
+      title: 'Recent Scans',
+      body: 'View your scan history from the Home screen to revisit past identifications.',
+    ),
+    (
+      icon: Icons.warning_rounded,
+      title: 'Toxic Plant Alert',
+      body: 'If a toxic plant is detected, you\'ll see a clear warning screen.',
+    ),
+    (
+      icon: Icons.photo_library_rounded,
+      title: 'Use Gallery',
+      body: 'Scan existing photos from your gallery using the photo icon.',
+    ),
+    (
+      icon: Icons.help_outline_rounded,
+      title: 'Confidence Scores',
+      body: 'Higher confidence percentages indicate more reliable identifications.',
+    ),
   ];
 
   @override
