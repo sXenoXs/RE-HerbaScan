@@ -89,6 +89,9 @@ dependencies:
   flutter_local_notifications: ^18.0.0
   timezone: ^0.10.0
 
+  # In-app coachmark walkthrough (first-launch home tour)
+  tutorial_coach_mark: ^1.2.12
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

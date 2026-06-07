@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:herbascan/core/constants/toxic_plant_blacklist.dart';
 import 'package:herbascan/core/providers/plant_provider.dart';
+import 'package:herbascan/core/services/home_coachmark_tour.dart';
+import 'package:herbascan/core/services/tutorial_preferences.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/features/scan/scan_screen.dart';
@@ -22,6 +24,10 @@ class HomeScreen extends StatefulWidget {
 
   final bool showUnauthorizedSnackBar;
 
+  /// Re-run the home coachmark walkthrough (Settings → "Replay walkthrough").
+  /// No-op if /home is not currently mounted.
+  static void replayTour() => _HomeScreenState.replayTour();
+
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -33,9 +39,41 @@ class _HomeScreenState extends State<HomeScreen> {
 
   late final List<Widget> _screens;
 
+  // Coachmark anchors. Hero key lives inside HomeDashboard; FAB + Settings nav
+  // are owned by this state. All three are passed to HomeCoachmarkTour.show().
+  final GlobalKey _heroKey = GlobalKey(debugLabel: 'coachmark_home_hero');
+  final GlobalKey _fabKey = GlobalKey(debugLabel: 'coachmark_home_fab');
+  final GlobalKey _settingsNavKey =
+      GlobalKey(debugLabel: 'coachmark_home_settings_nav');
+
+  // Holds the most recently-mounted home state so Settings "Replay walkthrough"
+  // can re-fire the tour without rebuilding /home. Cleared in dispose().
+  static _HomeScreenState? _currentInstance;
+
+  /// Re-run the home coachmark walkthrough against the live target keys.
+  /// Safe to call from anywhere (e.g. Settings tile). Switches the active tab
+  /// back to Home first so the hero card is on screen.
+  static void replayTour() {
+    final state = _currentInstance;
+    if (state == null || !state.mounted) return;
+    state.setState(() => state._currentIndex = 0);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!state.mounted) return;
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (!state.mounted) return;
+      HomeCoachmarkTour.show(
+        context: state.context,
+        heroKey: state._heroKey,
+        fabKey: state._fabKey,
+        settingsNavKey: state._settingsNavKey,
+      );
+    });
+  }
+
   @override
   void initState() {
     super.initState();
+    _currentInstance = this;
     if (widget.showUnauthorizedSnackBar) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
@@ -46,15 +84,43 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     }
     _screens = [
-      HomeDashboard(onNavigate: (index) {
-        setState(() {
-          _currentIndex = index;
-        });
-      }),
+      HomeDashboard(
+        heroKey: _heroKey,
+        onNavigate: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+      ),
       const BrowseScreen(),
       const HistoryScreen(),
       const SettingsScreen(),
     ];
+
+    // After the first frame, if the user hasn't seen (or dismissed) the home
+    // coachmark tour yet, fire it. A short delay lets the FAB scale animation
+    // settle so the focus circle lands on the final position.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      if (!await TutorialPreferences.shouldShowHomeTour()) return;
+      if (!mounted) return;
+      await Future.delayed(const Duration(milliseconds: 350));
+      if (!mounted) return;
+      HomeCoachmarkTour.show(
+        context: context,
+        heroKey: _heroKey,
+        fabKey: _fabKey,
+        settingsNavKey: _settingsNavKey,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    if (identical(_currentInstance, this)) {
+      _currentInstance = null;
+    }
+    super.dispose();
   }
 
   void _openScan() {
@@ -79,6 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
       floatingActionButton: isKeyboardOpen
           ? null
           : FloatingActionButton(
+              key: _fabKey,
               onPressed: _openScan,
               backgroundColor: AppTheme.botanicalPrimary,
               foregroundColor: Colors.white,
@@ -117,6 +184,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () => setState(() => _currentIndex = 2),
             ),
             _NavItem(
+              key: _settingsNavKey,
               icon: Icons.settings_rounded,
               label: AppLocalizations.of(context).settings,
               selected: _currentIndex == 3,
@@ -131,6 +199,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
 class _NavItem extends StatelessWidget {
   const _NavItem({
+    super.key,
     required this.icon,
     required this.label,
     required this.selected,
@@ -178,8 +247,9 @@ class _NavItem extends StatelessWidget {
 
 class HomeDashboard extends StatefulWidget {
   final Function(int)? onNavigate;
+  final GlobalKey? heroKey;
 
-  const HomeDashboard({super.key, this.onNavigate});
+  const HomeDashboard({super.key, this.onNavigate, this.heroKey});
 
   @override
   State<HomeDashboard> createState() => _HomeDashboardState();
@@ -254,6 +324,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
 
   Widget _buildHeroSection(BuildContext context, ThemeData theme) {
     return Container(
+      key: widget.heroKey,
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(

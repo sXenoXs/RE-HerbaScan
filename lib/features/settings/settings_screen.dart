@@ -12,7 +12,9 @@ import 'package:herbascan/features/auth/change_password_screen.dart';
 import 'package:herbascan/features/auth/change_email_screen.dart';
 import 'package:herbascan/features/offline/system_diagnostics_screen.dart';
 import 'package:herbascan/features/help/help_tutorial_screen.dart';
+import 'package:herbascan/features/home/home_screen.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
+import 'package:herbascan/core/services/tutorial_preferences.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -73,6 +75,8 @@ class SettingsScreen extends StatelessWidget {
             theme,
             children: [
               _buildHelpTutorialTile(context, theme),
+              _buildSoftDivider(theme),
+              _buildReplayTutorialTile(context, theme),
               _buildSoftDivider(theme),
               _buildAppVersionTile(context, theme),
               _buildSoftDivider(theme),
@@ -377,6 +381,26 @@ class SettingsScreen extends StatelessWidget {
             builder: (context) => const HelpTutorialScreen(),
           ),
         );
+      },
+    );
+  }
+
+  Widget _buildReplayTutorialTile(BuildContext context, ThemeData theme) {
+    return ListTile(
+      leading: const Icon(Icons.replay_rounded),
+      title: const Text('Replay walkthrough'),
+      subtitle: const Text('Show the home screen hint cards again'),
+      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+      onTap: () async {
+        final messenger = ScaffoldMessenger.of(context);
+        await TutorialPreferences.resetAll();
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Replaying walkthrough...'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        HomeScreen.replayTour();
       },
     );
   }
