@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
@@ -35,7 +36,7 @@ class OtaAppUpdateService {
   /// Returns true if an update dialog was shown, false otherwise.
   /// Safe to call on non-Android platforms (silently returns false).
   Future<bool> checkAndPrompt(BuildContext context) async {
-    if (!Platform.isAndroid) return false;
+    if (kIsWeb || !Platform.isAndroid) return false;
 
     try {
       final update = await checkForUpdate();
