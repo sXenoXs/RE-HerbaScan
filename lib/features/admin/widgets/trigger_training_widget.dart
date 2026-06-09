@@ -53,7 +53,7 @@ class _TriggerTrainingWidgetState extends State<TriggerTrainingWidget> {
       if (response.statusCode == 200) {
         setState(() {
           _statusMessage = 'Training started for ${widget.newClassName}.\n'
-              'Takes ~15 min. Check Modal dashboard for progress.';
+              'Takes ~15 min.';
           _isError = false;
         });
       } else {

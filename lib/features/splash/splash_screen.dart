@@ -147,6 +147,13 @@ class _SplashScreenState extends State<SplashScreen>
                           color: textSecondary,
                         ),
                       ),
+                      const SizedBox(height: 16),
+                      // PITAHC logo
+                      Image.asset(
+                        'assets/images/Pitahc.png',
+                        height: 80,
+                        fit: BoxFit.contain,
+                      ),
                     ],
                   ),
                 ),

@@ -435,15 +435,6 @@ class _QuickActionsCard extends StatelessWidget {
             subtitle: 'Launch the 3-step wizard to create a draft plant entry',
             onTap: onAddPlant,
           ),
-          const Divider(height: 1),
-          // Deploy Model
-          _ActionRow(
-            icon: Icons.rocket_launch_rounded,
-            color: const Color(0xFF6366F1),
-            title: 'Deploy New Model',
-            subtitle: 'Publish a retrained .tflite model via OTA update',
-            onTap: onDeployModel,
-          ),
         ],
       ),
     );
@@ -542,32 +533,26 @@ class _PipelineCard extends StatelessWidget {
     final steps = [
       (
         num: '1',
-        label: 'Create plant',
-        detail: 'Admin wizard → saved as Draft',
-        done: true,
+        label: 'Add a new plant',
+        detail: 'Use the wizard to create a draft entry.',
+        done: false,
       ),
       (
         num: '2',
-        label: 'Upload training images',
-        detail: 'Plant Catalog → ⋮ → Training Images',
-        done: true,
+        label: 'Add training photos',
+        detail: 'Go to the plant catalog, tap the three‑dot menu, and choose “Training Images then click Upload Images (Minimum of 100 images for better training)”.',
+        done: false,
       ),
       (
         num: '3',
-        label: 'Train model externally',
-        detail: 'Run Python / Colab script on the uploaded images',
+        label: 'Train the model',
+        detail: 'Click "Start Training" and wait for the model to train, the training time will depend on the number of images uploaded',
         done: false,
       ),
       (
         num: '4',
-        label: 'Deploy new model',
-        detail: 'Overview → Quick Actions → Deploy New Model',
-        done: false,
-      ),
-      (
-        num: '5',
-        label: 'Publish plant',
-        detail: 'Plant Catalog → ⋮ → Publish (→ Active)',
+        label: 'Make the plant live',
+        detail: 'In the plant catalog, tap the three‑dot menu and select “Publish” to make it available to users.',
         done: false,
       ),
     ];

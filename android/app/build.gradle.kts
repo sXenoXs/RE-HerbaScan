@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.herbascan"
+    namespace = "com.herbascan.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
