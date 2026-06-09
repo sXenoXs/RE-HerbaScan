@@ -859,28 +859,37 @@ class _TrainingImagesSheetState extends State<_TrainingImagesSheet> {
                       const Icon(Icons.model_training_rounded,
                           size: 16, color: AppTheme.botanicalPrimary),
                       const SizedBox(width: 6),
-                      const Text(
-                        'From Approved Scans',
-                        style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.botanicalPrimary),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color:
-                              AppTheme.botanicalPrimary.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(100),
-                        ),
-                        child: Text(
-                          '$_approvedScanCount approved scan image${_approvedScanCount == 1 ? '' : 's'} available',
-                          style: const TextStyle(
-                              fontSize: 10,
-                              color: AppTheme.botanicalPrimary,
-                              fontWeight: FontWeight.w600),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'From Approved Scans',
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppTheme.botanicalPrimary),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color:
+                                    AppTheme.botanicalPrimary.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(100),
+                              ),
+                              child: Text(
+                                '$_approvedScanCount approved scan image${_approvedScanCount == 1 ? '' : 's'} available',
+                                style: const TextStyle(
+                                    fontSize: 10,
+                                    color: AppTheme.botanicalPrimary,
+                                    fontWeight: FontWeight.w600),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
