@@ -1,4 +1,5 @@
-package com.example.herbascan
+
+package com.herbascan.app
 
 import io.flutter.embedding.android.FlutterActivity
 
