@@ -88,7 +88,10 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
         title: Text(l10n.sendFeedback),
         elevation: 0,
       ),
-      body: SingleChildScrollView(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: SingleChildScrollView(
         padding: EdgeInsets.only(
           left: 24,
           right: 24,
@@ -177,6 +180,8 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
               ),
             ),
           ],
+        ),
+      ),
         ),
       ),
     );

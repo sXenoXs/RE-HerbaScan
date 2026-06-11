@@ -27,7 +27,10 @@ class _SystemDiagnosticsScreenState extends State<SystemDiagnosticsScreen> {
       appBar: AppBar(
         title: const Text('System Diagnostics'),
       ),
-      body: Consumer<OfflineProvider>(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: Consumer<OfflineProvider>(
         builder: (context, offlineProvider, child) {
           if (!offlineProvider.isInitialized) {
             return _buildLoadingState(context);
@@ -53,6 +56,8 @@ class _SystemDiagnosticsScreenState extends State<SystemDiagnosticsScreen> {
             ),
           );
         },
+      ),
+        ),
       ),
     );
   }

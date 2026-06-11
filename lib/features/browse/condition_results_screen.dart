@@ -61,11 +61,16 @@ class _ConditionResultsScreenState extends State<ConditionResultsScreen> {
           ? const Center(child: CircularProgressIndicator())
           : _plants.isEmpty
               ? _buildEmptyState(theme)
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _plants.length,
-                  itemBuilder: (context, index) =>
-                      _buildListCard(_plants[index], theme),
+              : Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 800),
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _plants.length,
+                      itemBuilder: (context, index) =>
+                          _buildListCard(_plants[index], theme),
+                    ),
+                  ),
                 ),
     );
   }

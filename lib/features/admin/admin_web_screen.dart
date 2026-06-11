@@ -89,7 +89,12 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
             _buildNavigationRail(theme, width),
             const VerticalDivider(thickness: 1, width: 1),
             Expanded(
-              child: _buildModuleContent(),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1200),
+                  child: _buildModuleContent(),
+                ),
+              ),
             ),
           ],
         ),
@@ -111,7 +116,12 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
         ),
       ),
       drawer: _buildAdminDrawer(context),
-      body: _buildModuleContent(),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1200),
+          child: _buildModuleContent(),
+        ),
+      ),
     );
   }
 

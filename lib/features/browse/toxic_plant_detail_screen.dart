@@ -64,7 +64,10 @@ class _ToxicPlantDetailScreenState extends State<ToxicPlantDetailScreen> {
     final accent = _harmColor;
 
     return Scaffold(
-      body: NestedScrollView(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: NestedScrollView(
         controller: _scrollController,
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
@@ -261,6 +264,8 @@ class _ToxicPlantDetailScreenState extends State<ToxicPlantDetailScreen> {
               ),
             ),
           ],
+        ),
+      ),
         ),
       ),
     );

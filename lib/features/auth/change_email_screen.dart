@@ -61,8 +61,11 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Email Address')),
-      body: SafeArea(
-        child: SingleChildScrollView(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 450),
+          child: SafeArea(
+            child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           child: Form(
             key: _formKey,
@@ -184,6 +187,8 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
               ],
             ),
           ),
+        ),
+      ),
         ),
       ),
     );

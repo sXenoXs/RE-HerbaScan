@@ -125,7 +125,10 @@ class _HelpTutorialScreenState extends State<HelpTutorialScreen> {
       appBar: AppBar(
         title: Text(loc.helpAndTutorial),
       ),
-      body: SingleChildScrollView(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -201,6 +204,8 @@ class _HelpTutorialScreenState extends State<HelpTutorialScreen> {
 
             const SizedBox(height: 32),
           ],
+        ),
+      ),
         ),
       ),
     );

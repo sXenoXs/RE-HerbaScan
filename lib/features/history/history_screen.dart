@@ -633,7 +633,10 @@ class _HistoryScreenState extends State<HistoryScreen>
     }
     return RefreshIndicator(
       onRefresh: onRefresh,
-      child: ListView.builder(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: ListView.builder(
         padding: EdgeInsets.fromLTRB(
             16, 8, 16, 60 + 56 + 60 + MediaQuery.of(context).padding.bottom),
         itemCount: sortedScans.length,
@@ -751,6 +754,8 @@ class _HistoryScreenState extends State<HistoryScreen>
           );
         },
       ),
+        ),
+      ),
     );
   }
 
@@ -854,7 +859,10 @@ class _HistoryScreenState extends State<HistoryScreen>
     final appLocalizations = AppLocalizations.of(context);
     return RefreshIndicator(
       onRefresh: _loadCloudScans,
-      child: ListView.builder(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: sortedCloudScans.length,
         itemBuilder: (context, index) {
@@ -923,6 +931,8 @@ class _HistoryScreenState extends State<HistoryScreen>
             ),
           );
         },
+      ),
+        ),
       ),
     );
   }

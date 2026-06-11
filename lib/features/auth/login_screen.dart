@@ -75,7 +75,10 @@ class _LoginScreenState extends State<LoginScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(automaticallyImplyLeading: false, toolbarHeight: 0),
-      body: SafeArea(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 450),
+          child: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
           child: Form(
@@ -225,6 +228,8 @@ class _LoginScreenState extends State<LoginScreen> {
               ],
             ),
           ),
+        ),
+      ),
         ),
       ),
     );

@@ -77,7 +77,10 @@ class _DisclaimerScreenState extends State<DisclaimerScreen>
 
     return Scaffold(
       backgroundColor: bgColor,
-      body: SafeArea(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 450),
+          child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 36.0),
           child: Column(
@@ -166,6 +169,8 @@ class _DisclaimerScreenState extends State<DisclaimerScreen>
               const SizedBox(height: 40),
             ],
           ),
+        ),
+      ),
         ),
       ),
     );

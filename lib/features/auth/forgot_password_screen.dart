@@ -63,7 +63,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return Scaffold(
       // Keep only back arrow — no title text
       appBar: AppBar(title: const SizedBox.shrink()),
-      body: SafeArea(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 450),
+          child: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           child: Form(
@@ -173,6 +176,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               ],
             ),
           ),
+        ),
+      ),
         ),
       ),
     );

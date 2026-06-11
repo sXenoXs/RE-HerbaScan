@@ -71,8 +71,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Column(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: SafeArea(
+            child: Column(
           children: [
             // Header Navigation
             Padding(
@@ -137,6 +140,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
             ),
           ],
+        ),
+      ),
         ),
       ),
     );

@@ -528,8 +528,8 @@ class _BrowseScreenState extends State<BrowseScreen> {
                       childCount: filteredToxic.length,
                     ),
                     gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
+                        const SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: 200,
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
                       childAspectRatio: 0.72,
@@ -568,8 +568,8 @@ class _BrowseScreenState extends State<BrowseScreen> {
                       childCount: filteredPlants.length,
                     ),
                     gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
+                        const SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: 200,
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
                       childAspectRatio: 1.0,

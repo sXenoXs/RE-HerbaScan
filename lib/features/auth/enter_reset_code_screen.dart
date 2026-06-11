@@ -153,8 +153,11 @@ class _EnterResetCodeScreenState extends State<EnterResetCodeScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 450),
+          child: SafeArea(
+            child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -257,6 +260,8 @@ class _EnterResetCodeScreenState extends State<EnterResetCodeScreen> {
               ),
             ],
           ),
+        ),
+      ),
         ),
       ),
     );

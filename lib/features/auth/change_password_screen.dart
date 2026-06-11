@@ -111,106 +111,118 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Create New Password')),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Create New Password',
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  "You'll remain signed in on this device.",
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 28),
-
-                // Server error — collapses to zero when empty, no layout shift
-                AnimatedSize(
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeInOut,
-                  child: _errorMessage != null
-                      ? Container(
-                          width: double.infinity,
-                          margin: const EdgeInsets.only(bottom: 16),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: AppTheme.errorBgLight,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            _errorMessage!,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: AppTheme.errorDeep,
-                            ),
-                          ),
-                        )
-                      : const SizedBox.shrink(),
-                ),
-
-                // New password field — suffix only
-                TextFormField(
-                  controller: _newPasswordController,
-                  obscureText: _obscureNew,
-                  decoration: InputDecoration(
-                    labelText: 'New password',
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscureNew
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 450),
+          child: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Create New Password',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
                       ),
-                      onPressed: () =>
-                          setState(() => _obscureNew = !_obscureNew),
                     ),
-                  ),
-                  validator: _validatePassword,
-                ),
+                    const SizedBox(height: 6),
+                    Text(
+                      "You'll remain signed in on this device.",
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 28),
 
-                // 2-column micro-pill requirements
-                PasswordRequirementsWidget(
-                  password: _newPasswordController.text,
-                ),
-                const SizedBox(height: 16),
+                    // Server error — collapses to zero when empty, no layout shift
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeInOut,
+                      child: _errorMessage != null
+                          ? Container(
+                              width: double.infinity,
+                              margin: const EdgeInsets.only(bottom: 16),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: AppTheme.errorBgLight,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                _errorMessage!,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: AppTheme.errorDeep,
+                                ),
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
 
-                // Confirm password — border changes based on match
-                TextFormField(
-                  controller: _confirmPasswordController,
-                  obscureText: _obscureConfirm,
-                  decoration: InputDecoration(
-                    labelText: 'Confirm Password',
-                    enabledBorder: confirmNotEmpty
-                        ? confirmBorder(
-                            matches
-                                ? AppTheme.successColor
-                                : AppTheme.errorColor,
-                          )
-                        : null,
-                    focusedBorder: confirmNotEmpty
-                        ? confirmBorder(
-                            matches
-                                ? AppTheme.successColor
-                                : AppTheme.errorColor,
-                            width: 2,
-                          )
-                        : null,
-                    errorText: (confirmNotEmpty && !matches)
-                        ? 'Passwords do not match'
-                        : null,
-                    suffixIcon: confirmNotEmpty
-                        ? (matches
-                            ? const Icon(Icons.check_circle_rounded,
-                                color: AppTheme.successColor)
+                    // New password field — suffix only
+                    TextFormField(
+                      controller: _newPasswordController,
+                      obscureText: _obscureNew,
+                      decoration: InputDecoration(
+                        labelText: 'New password',
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscureNew
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                          ),
+                          onPressed: () =>
+                              setState(() => _obscureNew = !_obscureNew),
+                        ),
+                      ),
+                      validator: _validatePassword,
+                    ),
+
+                    // 2-column micro-pill requirements
+                    PasswordRequirementsWidget(
+                      password: _newPasswordController.text,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Confirm password — border changes based on match
+                    TextFormField(
+                      controller: _confirmPasswordController,
+                      obscureText: _obscureConfirm,
+                      decoration: InputDecoration(
+                        labelText: 'Confirm Password',
+                        enabledBorder: confirmNotEmpty
+                            ? confirmBorder(
+                                matches
+                                    ? AppTheme.successColor
+                                    : AppTheme.errorColor,
+                              )
+                            : null,
+                        focusedBorder: confirmNotEmpty
+                            ? confirmBorder(
+                                matches
+                                    ? AppTheme.successColor
+                                    : AppTheme.errorColor,
+                                width: 2,
+                              )
+                            : null,
+                        errorText: (confirmNotEmpty && !matches)
+                            ? 'Passwords do not match'
+                            : null,
+                        suffixIcon: confirmNotEmpty
+                            ? (matches
+                                ? const Icon(Icons.check_circle_rounded,
+                                    color: AppTheme.successColor)
+                                : IconButton(
+                                    icon: Icon(
+                                      _obscureConfirm
+                                          ? Icons.visibility_off_outlined
+                                          : Icons.visibility_outlined,
+                                    ),
+                                    onPressed: () => setState(
+                                        () => _obscureConfirm = !_obscureConfirm),
+                                  ))
                             : IconButton(
                                 icon: Icon(
                                   _obscureConfirm
@@ -219,43 +231,36 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                                 ),
                                 onPressed: () => setState(
                                     () => _obscureConfirm = !_obscureConfirm),
-                              ))
-                        : IconButton(
-                            icon: Icon(
-                              _obscureConfirm
-                                  ? Icons.visibility_off_outlined
-                                  : Icons.visibility_outlined,
-                            ),
-                            onPressed: () => setState(
-                                () => _obscureConfirm = !_obscureConfirm),
-                          ),
-                  ),
-                  validator: (v) {
-                    if (v == null || v.isEmpty) {
-                      return 'Confirm your new password';
-                    }
-                    if (v != _newPasswordController.text) {
-                      return 'Passwords do not match';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 24),
+                              ),
+                      ),
+                      validator: (v) {
+                        if (v == null || v.isEmpty) {
+                          return 'Confirm your new password';
+                        }
+                        if (v != _newPasswordController.text) {
+                          return 'Passwords do not match';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 24),
 
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: _isLoading ? null : _submit,
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Update Password'),
-                  ),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: _isLoading ? null : _submit,
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Text('Update Password'),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),

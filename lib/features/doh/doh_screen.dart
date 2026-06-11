@@ -81,8 +81,8 @@ class _DOHScreenState extends State<DOHScreen> {
                           childCount: dohPlants.length,
                         ),
                         gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
+                            const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 200,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
                           childAspectRatio: 1.0,

@@ -15,6 +15,7 @@ import 'package:herbascan/features/scan/plant_detail_screen.dart';
 import 'package:herbascan/core/models/scan_result.dart';
 import 'package:herbascan/core/models/plant.dart';
 import 'package:herbascan/core/widgets/plant_image.dart';
+import 'package:herbascan/core/widgets/responsive_layout.dart';
 import 'dart:io';
 
 class HomeScreen extends StatefulWidget {
@@ -67,64 +68,125 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-
     final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
-    return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: isKeyboardOpen
-          ? null
-          : FloatingActionButton(
-              onPressed: _openScan,
-              backgroundColor: AppTheme.botanicalPrimary,
-              foregroundColor: Colors.white,
-              elevation: 4,
-              shape: const CircleBorder(),
-              child: const Icon(Icons.camera_alt_rounded),
+    return ResponsiveLayout(
+      mobile: (context) {
+        return Scaffold(
+          body: IndexedStack(
+            index: _currentIndex,
+            children: _screens,
+          ),
+          floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+          floatingActionButton: isKeyboardOpen
+              ? null
+              : FloatingActionButton(
+                  onPressed: _openScan,
+                  backgroundColor: AppTheme.botanicalPrimary,
+                  foregroundColor: Colors.white,
+                  elevation: 4,
+                  shape: const CircleBorder(),
+                  child: const Icon(Icons.camera_alt_rounded),
+                ),
+          bottomNavigationBar: BottomAppBar(
+            color: isDark ? AppTheme.darkSurface : Colors.white,
+            elevation: 8,
+            notchMargin: 8,
+            height: 60,
+            padding: EdgeInsets.zero,
+            shape: const CircularNotchedRectangle(),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _NavItem(
+                  icon: Icons.home_rounded,
+                  label: 'Home',
+                  selected: _currentIndex == 0,
+                  onTap: () => setState(() => _currentIndex = 0),
+                ),
+                _NavItem(
+                  icon: Icons.search_rounded,
+                  label: AppLocalizations.of(context).browse,
+                  selected: _currentIndex == 1,
+                  onTap: () => setState(() => _currentIndex = 1),
+                ),
+                // Center gap for FAB
+                const SizedBox(width: 56),
+                _NavItem(
+                  icon: Icons.history_rounded,
+                  label: AppLocalizations.of(context).history,
+                  selected: _currentIndex == 2,
+                  onTap: () => setState(() => _currentIndex = 2),
+                ),
+                _NavItem(
+                  icon: Icons.settings_rounded,
+                  label: AppLocalizations.of(context).settings,
+                  selected: _currentIndex == 3,
+                  onTap: () => setState(() => _currentIndex = 3),
+                ),
+              ],
             ),
-      bottomNavigationBar: BottomAppBar(
-        color: isDark ? AppTheme.darkSurface : Colors.white,
-        elevation: 8,
-        notchMargin: 8,
-        height: 60,
-        padding: EdgeInsets.zero,
-        shape: const CircularNotchedRectangle(),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _NavItem(
-              icon: Icons.home_rounded,
-              label: 'Home',
-              selected: _currentIndex == 0,
-              onTap: () => setState(() => _currentIndex = 0),
-            ),
-            _NavItem(
-              icon: Icons.search_rounded,
-              label: AppLocalizations.of(context).browse,
-              selected: _currentIndex == 1,
-              onTap: () => setState(() => _currentIndex = 1),
-            ),
-            // Center gap for FAB
-            const SizedBox(width: 56),
-            _NavItem(
-              icon: Icons.history_rounded,
-              label: AppLocalizations.of(context).history,
-              selected: _currentIndex == 2,
-              onTap: () => setState(() => _currentIndex = 2),
-            ),
-            _NavItem(
-              icon: Icons.settings_rounded,
-              label: AppLocalizations.of(context).settings,
-              selected: _currentIndex == 3,
-              onTap: () => setState(() => _currentIndex = 3),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
+      tablet: (context) {
+        return Scaffold(
+          body: Row(
+            children: [
+              NavigationRail(
+                selectedIndex: _currentIndex,
+                onDestinationSelected: (index) {
+                  setState(() {
+                    _currentIndex = index;
+                  });
+                },
+                labelType: NavigationRailLabelType.all,
+                backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
+                leading: Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0, top: 8.0),
+                  child: FloatingActionButton(
+                    onPressed: _openScan,
+                    backgroundColor: AppTheme.botanicalPrimary,
+                    foregroundColor: Colors.white,
+                    elevation: 4,
+                    shape: const CircleBorder(),
+                    child: const Icon(Icons.camera_alt_rounded),
+                  ),
+                ),
+                destinations: [
+                  const NavigationRailDestination(
+                    icon: Icon(Icons.home_outlined),
+                    selectedIcon: Icon(Icons.home_rounded),
+                    label: Text('Home'),
+                  ),
+                  NavigationRailDestination(
+                    icon: const Icon(Icons.search_outlined),
+                    selectedIcon: const Icon(Icons.search_rounded),
+                    label: Text('Browse'),
+                  ),
+                  NavigationRailDestination(
+                    icon: const Icon(Icons.history_outlined),
+                    selectedIcon: const Icon(Icons.history_rounded),
+                    label: Text('History'),
+                  ),
+                  NavigationRailDestination(
+                    icon: const Icon(Icons.settings_outlined),
+                    selectedIcon: const Icon(Icons.settings_rounded),
+                    label: Text('Settings'),
+                  ),
+                ],
+              ),
+              const VerticalDivider(thickness: 1, width: 1),
+              Expanded(
+                child: IndexedStack(
+                  index: _currentIndex,
+                  children: _screens,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

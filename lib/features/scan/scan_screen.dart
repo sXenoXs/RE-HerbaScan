@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'dart:async';
 import 'dart:io';
 
+import 'package:herbascan/core/widgets/responsive_layout.dart';
 import 'package:herbascan/core/constants/toxic_plant_blacklist.dart';
 import 'package:herbascan/core/providers/camera_provider.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
@@ -598,7 +599,7 @@ class _ScanScreenState extends State<ScanScreen>
       BuildContext context, ThemeData theme, CameraProvider cameraProvider) {
     final padding = MediaQuery.of(context).padding;
 
-    return Stack(
+    final cameraStack = Stack(
       fit: StackFit.expand,
       children: [
         // 1. Full-screen camera preview
@@ -875,6 +876,22 @@ class _ScanScreenState extends State<ScanScreen>
           ),
         ),
       ],
+    );
+
+    return ResponsiveLayout(
+      mobile: (context) => cameraStack,
+      tablet: (context) => Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: AspectRatio(
+              aspectRatio: 3 / 4,
+              child: cameraStack,
+            ),
+          ),
+        ),
+      ),
     );
   }
 

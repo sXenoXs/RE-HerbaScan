@@ -26,7 +26,10 @@ class SettingsScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(AppLocalizations.of(context).settings),
       ),
-      body: ListView(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         children: [
           // 1. Account / Personal Herbarium
@@ -87,6 +90,8 @@ class SettingsScreen extends StatelessWidget {
 
           const SizedBox(height: 24),
         ],
+      ),
+        ),
       ),
     );
   }

@@ -105,11 +105,16 @@ class _HabitatMapScreenState extends State<HabitatMapScreen> {
     return Scaffold(
       extendBody: true,
       extendBodyBehindAppBar: true,
-      body: _loading
-          ? _buildLoadingView()
-          : _error != null && (_habitat == null || !_habitat!.hasCoordinates)
-              ? _buildNoDataView(context, l10n)
-              : _buildEdgeToEdgeMapView(context, l10n),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: _loading
+              ? _buildLoadingView()
+              : _error != null && (_habitat == null || !_habitat!.hasCoordinates)
+                  ? _buildNoDataView(context, l10n)
+                  : _buildEdgeToEdgeMapView(context, l10n),
+        ),
+      ),
     );
   }
 

@@ -43,7 +43,10 @@ class _ConditionSearchScreenState extends State<ConditionSearchScreen> {
       appBar: AppBar(
         title: const Text('Medical Conditions'),
       ),
-      body: Column(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
@@ -61,6 +64,8 @@ class _ConditionSearchScreenState extends State<ConditionSearchScreen> {
                 : _buildConditionGrid(theme),
           ),
         ],
+      ),
+        ),
       ),
     );
   }

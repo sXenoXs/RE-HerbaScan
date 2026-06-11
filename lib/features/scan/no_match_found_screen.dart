@@ -74,8 +74,10 @@ class NoMatchFoundScreen extends StatelessWidget {
 
           // 3. Glassmorphic center card
           Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(24),
                 child: BackdropFilter(
@@ -245,6 +247,7 @@ class NoMatchFoundScreen extends StatelessWidget {
                       ],
                     ),
                   ),
+                ),
                 ),
               ),
             ),
