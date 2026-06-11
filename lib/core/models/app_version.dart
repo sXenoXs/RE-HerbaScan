@@ -3,7 +3,7 @@
 /// Used by [OtaAppUpdateService] to compare the latest available version
 /// against the current installed build number and drive the update dialog.
 class AppVersion {
-  /// Human-readable version string, e.g. "1.0.26".
+  /// Human-readable version string, e.g. "1.0.28".
   final String versionName;
 
   /// Monotonically increasing integer build number, e.g. 26.

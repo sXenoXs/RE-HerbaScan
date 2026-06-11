@@ -10,7 +10,7 @@ class AppProvider extends ChangeNotifier {
   bool _showTop3Results = true; // Default to true (ON)
   bool _autoSaveScans = true; // Default ON: auto-save new scans to device history
   bool _isDarkMode = false;
-  String _appVersion = 'v1.0.26';
+  String _appVersion = 'v1.0.28';
   String _modelVersion = 'CNN v1.0';
   String _helpContent = '';
   bool _isThemeChanging = false;
