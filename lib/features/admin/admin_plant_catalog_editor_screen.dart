@@ -17,6 +17,7 @@ import 'package:herbascan/core/services/safety_profile_service.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/providers/plant_provider.dart';
 import 'package:herbascan/features/scan/habitat_map_screen.dart';
+import 'package:herbascan/features/admin/image_tracer_dialog.dart';
 
 /// Tabbed admin editor for one plant: Identity & Taxonomy, Ecology, Medicinal, Preparations, Safety.
 /// Saves to Supabase catalog_* tables; image upload to Storage.
@@ -2033,6 +2034,22 @@ class _EditAnatomyPartScreenState extends State<_EditAnatomyPartScreen> {
     super.dispose();
   }
 
+  Future<void> _openImageTracer() async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (_) => const ImageTracerDialog(),
+    );
+    if (result != null && result.isNotEmpty && mounted) {
+      setState(() => _svgPathController.text = result);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('SVG path applied from Image Tracer ✓'),
+          backgroundColor: AppTheme.botanicalPrimary,
+        ),
+      );
+    }
+  }
+
   void _done() {
     final partName = _partNameController.text.trim();
     if (partName.isEmpty) {
@@ -2114,6 +2131,27 @@ class _EditAnatomyPartScreenState extends State<_EditAnatomyPartScreen> {
                 hintText: 'e.g. M 20 20 L 180 20 L 180 160 L 20 160 Z',
               ),
               maxLines: 3,
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.auto_fix_high_rounded, size: 18),
+                label: const Text('Trace from Image'),
+                onPressed: _openImageTracer,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppTheme.botanicalPrimary,
+                  side: BorderSide(color: AppTheme.botanicalPrimary.withValues(alpha: 0.5)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Upload a plant part image (will be resized to 300×300) to auto-generate the SVG path.',
+              style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
             ),
             const SizedBox(height: 12),
             TextField(

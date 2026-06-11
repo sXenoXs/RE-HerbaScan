@@ -12,9 +12,9 @@ HerbaScan is a Flutter-based mobile application that uses a MobileNetV2 Convolut
 
 ## Current Development Status
 
-**Version**: v1.0.22
-**Last Updated**: May 25, 2026
-**Overall Progress**: ~98% Complete — **PRODUCTION READY**
+**Version**: v1.0.28
+**Last Updated**: June 11, 2026
+**Overall Progress**: 100% Complete — **PRODUCTION READY**
 
 ---
 
@@ -512,17 +512,17 @@ See `backend/README.md` and `backend/QUICK_START.md` for Railway deployment.
 
 | Metric | Value |
 | --- | --- |
-| **Version** | v1.0.22 |
-| **Dart source files** | 114 |
-| **Lines of code** | 12,000+ |
-| **Core features** | 60+ |
-| **Screens** | 22+ |
+| **Version** | v1.0.28 |
+| **Dart source files** | 120+ |
+| **Lines of code** | 13,000+ |
+| **Core features** | 65+ |
+| **Screens** | 26+ |
 | **State management providers** | 6 |
-| **Core services** | 30+ |
+| **Core services** | 34+ |
 | **ML model classes** | 31 (29 plants + 2 OOD) |
 | **Catalog plants** | 30 (29 model-aligned + Yerba Buena browse-only) |
 | **DOH-approved plants** | 10 |
-| **Supabase migrations** | 19 |
+| **Supabase migrations** | 23 |
 | **Languages supported** | 2 (English, Filipino) |
 | **Training pipeline** | Modal T4 GPU, triggered from admin panel |
 

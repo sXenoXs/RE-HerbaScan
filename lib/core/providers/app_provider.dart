@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:herbascan/core/services/app_config_service.dart';
 
 class AppProvider extends ChangeNotifier {
   bool _isFirstLaunch = true;
@@ -8,8 +10,9 @@ class AppProvider extends ChangeNotifier {
   bool _showTop3Results = true; // Default to true (ON)
   bool _autoSaveScans = true; // Default ON: auto-save new scans to device history
   bool _isDarkMode = false;
-  final String _appVersion = 'v1.0.26';
-  final String _modelVersion = 'CNN v1.0';
+  String _appVersion = 'v1.0.26';
+  String _modelVersion = 'CNN v1.0';
+  String _helpContent = '';
   bool _isThemeChanging = false;
 
   // Getters
@@ -21,6 +24,7 @@ class AppProvider extends ChangeNotifier {
   bool get isDarkMode => _isDarkMode;
   String get appVersion => _appVersion;
   String get modelVersion => _modelVersion;
+  String get helpContent => _helpContent;
 
   AppProvider() {
     _loadSettings();
@@ -142,5 +146,25 @@ class AppProvider extends ChangeNotifier {
         'top3Results': _showTop3Results,
       },
     };
+  }
+
+  /// Load remote configuration from Supabase `app_config` table.
+  /// Updates app version, model version, and help content on success.
+  /// Falls back to compile-time defaults when Supabase is unreachable.
+  Future<void> loadRemoteConfig() async {
+    try {
+      final config = await AppConfigService().fetchAll();
+      if (config.isNotEmpty) {
+        _appVersion = config['app_version'] ?? _appVersion;
+        _modelVersion = config['model_version'] ?? _modelVersion;
+        _helpContent = config['help_content'] ?? _helpContent;
+        notifyListeners();
+      }
+    } catch (e) {
+      // Fall back to defaults — remote config is optional
+      if (kDebugMode) {
+        debugPrint('AppProvider.loadRemoteConfig: $e');
+      }
+    }
   }
 }

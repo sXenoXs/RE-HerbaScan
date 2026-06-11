@@ -1,8 +1,8 @@
 # HerbaScan Backend — Quick Start Guide
 
-**Last Updated**: May 25, 2026
+**Last Updated**: June 11, 2026
 **Backend Version**: 1.0.7 (31-class model; GradCAM/CAM system removed)
-**Flutter App Version**: v1.0.23
+**Flutter App Version**: v1.0.28
 
 > **Architecture note:** Plant identification runs **fully offline** on-device via TFLite. The Railway backend is used exclusively for model retraining (`POST /admin/trigger-training` → Modal GPU) and model hot-reload (`POST /admin/reload-model`). The `/identify` endpoint exists for server-side testing but is **not called by the Flutter app** during normal scanning.
 
@@ -17,6 +17,7 @@ Your backend is **100% ready** to deploy. All code is written and tested.
 ✓ MobileNetV2 31-class model; Dockerfile and Railway config ready
 ✓ POST /admin/trigger-training — forwards training requests to Modal GPU pipeline
 ✓ POST /admin/reload-model — hot-swaps MobileNetV2_model.keras from Supabase Storage
+✓ POST /admin/test-inference — tests model inference with scored OOD gate results
 ✓ Two-stage validation pipeline (blur / darkness / edge density + OOD confidence gate)
 ✓ API documentation complete (backend/README.md + HerbaScan_API.postman_collection.json)
 ```

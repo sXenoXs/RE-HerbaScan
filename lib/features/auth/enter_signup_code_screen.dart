@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:pinput/pinput.dart';
 import 'package:provider/provider.dart';
 import 'package:herbascan/core/providers/auth_provider.dart';
@@ -266,10 +267,10 @@ class _EnterSignupCodeScreenState extends State<EnterSignupCodeScreen> {
           ),
         ),
       ),
-        ),
-      ),
-    );
-  }
+    ),
+  ),
+  );
+}
 
   String _buildSubtitle() {
     return 'We sent a 6-digit code to\n${widget.email}';

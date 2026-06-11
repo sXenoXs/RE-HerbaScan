@@ -1,6 +1,6 @@
 # HerbaScan Backend API
 
-**Last Updated:** May 25, 2026
+**Last Updated:** June 11, 2026
 **Backend Version:** 1.0.7 (aligned with app v1.0.7 — 31-class model, Grad-CAM Flutter-side removed)
 
 > **Architecture note:** Plant identification runs **fully offline** on-device via TFLite.
@@ -9,6 +9,7 @@
 >
 > - `POST /admin/trigger-training` → forwards to Modal GPU pipeline for model retraining
 > - `POST /admin/reload-model` → hot-swaps `MobileNetV2_model.keras` from Supabase Storage
+> - `POST /admin/test-inference` → runs full inference + OOD gating for admin testing
 
 ---
 
@@ -126,6 +127,7 @@ These thresholds match `ood_safety_config.json` (`ood_blur_threshold`, `ood_dark
 | `POST` | `/identify` | Optional JWT | Plant ID with server-side Grad-CAM (not called by Flutter during normal scanning) |
 | `POST` | `/admin/trigger-training` | `x-admin-secret` header | Validates secret, forwards to Modal GPU pipeline |
 | `POST` | `/admin/reload-model` | `x-admin-secret` header | Downloads model + labels from Supabase Storage and hot-reloads |
+| `POST` | `/admin/test-inference` | `x-admin-secret` header | Tests model inference and returns scored OOD gate results |
 
 ### `POST /identify`
 
@@ -192,6 +194,16 @@ Returns immediately — training runs asynchronously on Modal GPU.
 Downloads `MobileNetV2_model.keras` and `labels.json` from Supabase Storage bucket `live-models` and hot-swaps them in memory without restarting the server.
 
 **Required Railway env vars for this endpoint:** `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`.
+
+### `POST /admin/test-inference`
+
+**Required header:** `x-admin-secret: <ADMIN_RELOAD_SECRET>`
+
+**Query Parameters:** `temperature` (optional, 0.1 to 5.0, default 1.0)
+
+**Request body:** `multipart/form-data`, field `file` (JPEG/PNG)
+
+Returns detailed diagnostics, including image info, scored OOD gate results (blur, darkness, edge density), Top-5 predictions with confidences, confidence gate pass/fail, and the final inference result. Rate-limited to 5/min.
 
 ### JWT Behaviour (`SUPABASE_JWT_SECRET` env var)
 

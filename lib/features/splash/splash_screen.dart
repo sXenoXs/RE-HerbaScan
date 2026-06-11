@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -63,6 +64,18 @@ class _SplashScreenState extends State<SplashScreen>
     await performanceMonitor.stopTimer(PerformanceOperation.appStart);
 
     if (!mounted) return;
+
+    // ── Web: always splash → login (skip onboarding & disclaimer) ──
+    if (kIsWeb) {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      if (auth.isLoggedIn && auth.isAdmin) {
+        context.go('/admin');
+      } else {
+        context.go('/login');
+      }
+      return;
+    }
+    // ── Mobile: existing logic below ──────────────────────────────
 
     final appProvider = Provider.of<AppProvider>(context, listen: false);
     final auth = Provider.of<AuthProvider>(context, listen: false);

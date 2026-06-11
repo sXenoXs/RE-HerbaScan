@@ -212,6 +212,90 @@ def check_image_quality(
     return True, ""
 
 
+def check_image_quality_scored(image_bytes: bytes) -> dict:
+    """
+    Like check_image_quality() but returns all raw metric scores for
+    display in the Admin Inference Testing Lab.
+
+    This function is used by POST /admin/test-inference to populate the
+    ood_gate object in the response.  Scores are returned regardless of
+    whether the image passes or fails so the admin can see which check
+    failed and why.
+
+    Args:
+        image_bytes: Raw image bytes (JPEG, PNG, etc.).
+
+    Returns:
+        dict with keys:
+            decoded          (bool)  — True if OpenCV could decode the image
+            brightness       (float) — raw mean grayscale intensity [0, 255]
+            brightness_min   (float) — DARKNESS_THRESHOLD constant
+            brightness_pass  (bool)  — brightness >= darkness_threshold
+            blur             (float) — Variance of Laplacian score
+            blur_min         (float) — BLUR_THRESHOLD constant
+            blur_pass        (bool)  — blur >= blur_threshold
+            edge_density     (float) — Canny edge fraction
+            edge_density_min (float) — EDGE_DENSITY_THRESHOLD constant
+            edge_density_pass(bool)  — edge_density >= edge_density_threshold
+            overall_pass     (bool)  — True when all checks passed
+            fail_reason      (str|None) — human-readable failure reason,
+                                          or None when overall_pass is True
+    """
+    result: dict = {
+        "decoded": False,
+        "brightness": 0.0,
+        "brightness_min": float(DARKNESS_THRESHOLD),
+        "brightness_pass": False,
+        "blur": 0.0,
+        "blur_min": float(BLUR_THRESHOLD),
+        "blur_pass": False,
+        "edge_density": 0.0,
+        "edge_density_min": float(EDGE_DENSITY_THRESHOLD),
+        "edge_density_pass": False,
+        "overall_pass": False,
+        "fail_reason": None,
+    }
+
+    # ---- 0. Decode --------------------------------------------------------
+    bgr = _decode_image_bgr(image_bytes)
+    if bgr is None:
+        result["fail_reason"] = _ERR_CORRUPT
+        return result
+
+    gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+    result["decoded"] = True
+
+    # ---- 1. Blur ----------------------------------------------------------
+    lap_var: float = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+    result["blur"] = round(lap_var, 2)
+    result["blur_pass"] = lap_var >= BLUR_THRESHOLD
+
+    # ---- 2. Brightness (darkness) -----------------------------------------
+    mean_intensity: float = float(gray.mean())
+    result["brightness"] = round(mean_intensity, 2)
+    result["brightness_pass"] = mean_intensity >= DARKNESS_THRESHOLD
+
+    # ---- 3. Edge density --------------------------------------------------
+    edges = cv2.Canny(gray, 50, 150)
+    edge_density: float = float(np.sum(edges > 0)) / float(gray.size)
+    result["edge_density"] = round(edge_density, 5)
+    result["edge_density_pass"] = edge_density >= EDGE_DENSITY_THRESHOLD
+
+    # ---- Overall ----------------------------------------------------------
+    if not result["blur_pass"]:
+        result["fail_reason"] = _ERR_BLUR
+    elif not result["brightness_pass"]:
+        result["fail_reason"] = _ERR_DARK
+    elif not result["edge_density_pass"]:
+        result["fail_reason"] = _ERR_EDGE
+    else:
+        result["overall_pass"] = True
+
+    logger.debug("check_image_quality_scored: overall_pass=%s blur=%.2f brightness=%.1f edge=%.5f",
+                 result["overall_pass"], lap_var, mean_intensity, edge_density)
+    return result
+
+
 # ===========================================================================
 # OOD CONFIG LOADER (singleton)
 # ===========================================================================

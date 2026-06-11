@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:herbascan/core/providers/auth_provider.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
@@ -119,9 +120,13 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
               child: Form(
                 key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
+                child: CallbackShortcuts(
+                  bindings: {
+                    const SingleActivator(LogicalKeyboardKey.enter): _submit,
+                  },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
                     Text(
                       'Create New Password',
                       style: theme.textTheme.headlineSmall?.copyWith(
@@ -177,6 +182,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                               setState(() => _obscureNew = !_obscureNew),
                         ),
                       ),
+                      textInputAction: TextInputAction.next,
                       validator: _validatePassword,
                     ),
 
@@ -233,6 +239,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                                     () => _obscureConfirm = !_obscureConfirm),
                               ),
                       ),
+                      textInputAction: TextInputAction.done,
+                      onFieldSubmitted: (_) => _submit(),
                       validator: (v) {
                         if (v == null || v.isEmpty) {
                           return 'Confirm your new password';
@@ -265,6 +273,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 }

@@ -1,5 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
+import 'package:herbascan/core/providers/app_provider.dart';
 import 'package:herbascan/core/services/usage_analytics.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 
@@ -17,7 +21,21 @@ class _HelpTutorialScreenState extends State<HelpTutorialScreen> {
   final UsageAnalytics _analytics = UsageAnalytics();
   final GlobalKey _oodSectionKey = GlobalKey();
 
-  static const List<_TipData> _tips = [
+  // Remote-configurable content, loaded from AppProvider.helpContent JSON.
+  // Falls back to hardcoded defaults when no remote data is available.
+  List<_TipData> _tips = _defaultTips;
+  List<_IssueData> _issues = _defaultIssues;
+  List<_FeatureData> _features = _defaultFeatures;
+  String _oodExplanation = _defaultOodExplanation;
+
+  static const String _defaultOodExplanation =
+      'HerbaScan identifies only the 31 Philippine medicinal plants in its database. '
+      'When the identification confidence is too low (below 85%), the app does not show '
+      'safety information or preparation guides for your safety using the wrong plant can be harmful.\n\n'
+      'Tips: use a clear, single leaf; avoid shadows and blur; ensure the plant is one of the '
+      '31 supported species. You can browse the plant list in the app to see which plants are supported.';
+
+  static const List<_TipData> _defaultTips = [
     _TipData(
       icon: Icons.wb_sunny_rounded,
       title: 'Bright\nLighting',
@@ -50,7 +68,7 @@ class _HelpTutorialScreenState extends State<HelpTutorialScreen> {
     ),
   ];
 
-  static const List<_IssueData> _issues = [
+  static const List<_IssueData> _defaultIssues = [
     _IssueData(
       title: 'Poor Image Quality',
       content:
@@ -68,7 +86,7 @@ class _HelpTutorialScreenState extends State<HelpTutorialScreen> {
     ),
   ];
 
-  static const List<_FeatureData> _features = [
+  static const List<_FeatureData> _defaultFeatures = [
     _FeatureData(
       icon: Icons.search_rounded,
       title: 'Browse Plants',
@@ -97,9 +115,82 @@ class _HelpTutorialScreenState extends State<HelpTutorialScreen> {
   void initState() {
     super.initState();
     _analytics.trackHelpViewed();
+    _loadRemoteHelpContent();
     if (widget.scrollToSection == 'ood_explanation') {
       WidgetsBinding.instance
           .addPostFrameCallback((_) => _scrollToOODSection());
+    }
+  }
+
+  /// Load help content from AppProvider's remote config JSON.
+  /// Falls back to hardcoded defaults if no remote data or parse fails.
+  void _loadRemoteHelpContent() {
+    try {
+      final raw = context.read<AppProvider>().helpContent;
+      if (raw.isEmpty) return;
+      final json = jsonDecode(raw) as Map<String, dynamic>;
+
+      if (json['tips'] is List) {
+        final tips = (json['tips'] as List)
+            .whereType<Map<String, dynamic>>()
+            .map((t) => _TipData(
+                  icon: _iconFromName(t['icon'] as String?) ?? Icons.eco_rounded,
+                  title: (t['title'] as String?) ?? '',
+                  subtitle: (t['subtitle'] as String?) ?? '',
+                ))
+            .toList();
+        if (tips.isNotEmpty) _tips = tips;
+      }
+
+      if (json['issues'] is List) {
+        final issues = (json['issues'] as List)
+            .whereType<Map<String, dynamic>>()
+            .map((i) => _IssueData(
+                  title: (i['title'] as String?) ?? '',
+                  content: (i['content'] as String?) ?? '',
+                ))
+            .toList();
+        if (issues.isNotEmpty) _issues = issues;
+      }
+
+      if (json['features'] is List) {
+        final features = (json['features'] as List)
+            .whereType<Map<String, dynamic>>()
+            .map((f) => _FeatureData(
+                  icon: _iconFromName(f['icon'] as String?) ?? Icons.info_outline,
+                  title: (f['title'] as String?) ?? '',
+                  subtitle: (f['subtitle'] as String?) ?? '',
+                ))
+            .toList();
+        if (features.isNotEmpty) _features = features;
+      }
+
+      if (json['ood_explanation'] is String &&
+          (json['ood_explanation'] as String).isNotEmpty) {
+        _oodExplanation = json['ood_explanation'] as String;
+      }
+    } catch (_) {
+      // Use hardcoded defaults — remote config is optional
+    }
+  }
+
+  /// Map icon name strings to Material Icons.
+  IconData? _iconFromName(String? name) {
+    if (name == null || name.isEmpty) return null;
+    // Simple mapping for common icons; extend as needed.
+    switch (name) {
+      case 'wb_sunny': return Icons.wb_sunny_rounded;
+      case 'filter_center_focus': return Icons.filter_center_focus_rounded;
+      case 'eco': return Icons.eco_rounded;
+      case 'center_focus_strong': return Icons.center_focus_strong_rounded;
+      case 'crop_free': return Icons.crop_free_rounded;
+      case 'image': return Icons.image_rounded;
+      case 'search': return Icons.search_rounded;
+      case 'verified': return Icons.verified_rounded;
+      case 'medical_services': return Icons.medical_services_rounded;
+      case 'history': return Icons.history_rounded;
+      case 'info': return Icons.info_outline;
+      default: return null;
     }
   }
 
@@ -181,6 +272,7 @@ class _HelpTutorialScreenState extends State<HelpTutorialScreen> {
             _OODExplanationTile(
               key: _oodSectionKey,
               theme: theme,
+              body: _oodExplanation,
               initiallyExpanded: widget.scrollToSection == 'ood_explanation',
             ),
 
@@ -394,21 +486,17 @@ class _IssueExpansionTile extends StatelessWidget {
 class _OODExplanationTile extends StatelessWidget {
   final ThemeData theme;
   final bool initiallyExpanded;
+  final String body;
 
   const _OODExplanationTile({
     super.key,
     required this.theme,
     this.initiallyExpanded = false,
+    required this.body,
   });
 
   static const String _title =
       'Why did the app say it cannot identify my plant?';
-  static const String _body =
-      'HerbaScan identifies only the 31 Philippine medicinal plants in its database. '
-      'When the identification confidence is too low (below 85%), the app does not show '
-      'safety information or preparation guides for your safety using the wrong plant can be harmful.\n\n'
-      'Tips: use a clear, single leaf; avoid shadows and blur; ensure the plant is one of the '
-      '31 supported species. You can browse the plant list in the app to see which plants are supported.';
 
   @override
   Widget build(BuildContext context) {
@@ -429,7 +517,7 @@ class _OODExplanationTile extends StatelessWidget {
         Align(
           alignment: Alignment.centerLeft,
           child: Text(
-            _body,
+            body,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: AppTheme.textSecondary,
               height: 1.5,

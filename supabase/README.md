@@ -174,7 +174,7 @@ Supabase can block **compromised passwords** by checking new passwords against [
 
 ---
 
-## Complete Migrations Reference (all 19)
+## Complete Migrations Reference (all 23)
 
 Apply all migrations in a single command using the Supabase CLI (recommended):
 
@@ -184,7 +184,7 @@ npx supabase link --project-ref tsahfzmxqsgbxrrtbdnw
 npx supabase db push
 ```
 
-The table below documents every migration file in `supabase/migrations/` in chronological order. All 19 are currently applied to the production project (`tsahfzmxqsgbxrrtbdnw`).
+The table below documents every migration file in `supabase/migrations/` in chronological order. All 23 are currently applied to the production project (`tsahfzmxqsgbxrrtbdnw`).
 
 | Migration file | Purpose |
 | --- | --- |
@@ -205,12 +205,16 @@ The table below documents every migration file in `supabase/migrations/` in chro
 | `20260524000000_model_versions_rls.sql` | RLS enabled on `public.model_versions`; SELECT open to all; INSERT/UPDATE/DELETE restricted to `is_admin()` |
 | `20260524000001_scan_training_eligible.sql` | `training_eligible boolean NOT NULL DEFAULT false` + `training_copied_at timestamptz NULL` on `public.scans`; partial index; `training-datasets` bucket admin INSERT/SELECT policies |
 | `20260525000000_readd_yerba_buena_browse_only.sql` | Yerba Buena (*Clinopodium douglasii*) re-inserted across all 8 catalog tables as browse-only DOH plant; `SELECT COUNT(*) FROM catalog_plants` = **30** |
+| `20260611000000_app_config_table.sql` | `public.app_config` table + RLS for remote configurable app and model versions |
+| `20260611000001_data_deletion_requests.sql` | `public.data_deletion_requests` table + RLS for tracking user account deletion requests |
+| `20260611000002_toxic_plants_catalog.sql` | `public.toxic_plants_catalog` table + RLS for DB-backed toxic plants |
+| `20260611000003_user_feedback_anonymous.sql` | Adds `is_anonymous` boolean column to `public.user_feedback` |
 
 ---
 
 ## Step-by-step: Run the migration (Dashboard method)
 
-> **Recommended:** Use the CLI (`npx supabase db push`) to apply all 19 migrations at once. The dashboard method below is for reference when you need to inspect or manually apply a single migration.
+> **Recommended:** Use the CLI (`npx supabase db push`) to apply all 23 migrations at once. The dashboard method below is for reference when you need to inspect or manually apply a single migration.
 
 This runs your `20260223000000_herbarium_schema.sql` file in Supabase **without** using the CLI.
 
@@ -460,9 +464,9 @@ Config in `supabase/config.toml`: `[functions.force-verify-user] verify_jwt = fa
 
 ## Using Supabase CLI (recommended)
 
-From project root, run once: `npx supabase login` (opens browser). Then: `npx supabase link --project-ref tsahfzmxqsgbxrrtbdnw` (use your project ref if different). Then: `npx supabase db push` to apply all **19 migrations** in order. If prompted for database password, use the one from Supabase Dashboard → Project Settings → Database.
+From project root, run once: `npx supabase login` (opens browser). Then: `npx supabase link --project-ref tsahfzmxqsgbxrrtbdnw` (use your project ref if different). Then: `npx supabase db push` to apply all **23 migrations** in order. If prompted for database password, use the one from Supabase Dashboard → Project Settings → Database.
 
-All 19 migrations are already applied to production. If any are reported as pending after linking a fresh CLI, repair the history with:
+All 23 migrations are already applied to production. If any are reported as pending after linking a fresh CLI, repair the history with:
 
 ```bash
 supabase migration repair --status applied <timestamp>

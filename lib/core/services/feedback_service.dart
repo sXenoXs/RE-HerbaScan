@@ -38,7 +38,9 @@ class FeedbackService {
     // Option B: insert to Supabase when configured (for admin view across users)
     if (isSupabaseConfigured) {
       try {
-        final userId = Supabase.instance.client.auth.currentUser?.id;
+        final userId = feedback.isAnonymous
+            ? null
+            : Supabase.instance.client.auth.currentUser?.id;
         await Supabase.instance.client.from('user_feedback').insert({
           'id': feedback.id,
           'user_id': userId,
@@ -48,6 +50,7 @@ class FeedbackService {
           'feature_suggestion': feedback.featureSuggestion,
           'metadata': feedback.metadata,
           'created_at': feedback.createdAt.toIso8601String(),
+          'is_anonymous': feedback.isAnonymous,
         });
       } catch (e, st) {
         if (kDebugMode) {

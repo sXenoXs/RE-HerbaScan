@@ -9,12 +9,15 @@ import 'package:herbascan/features/auth/login_screen.dart';
 import 'package:herbascan/features/home/home_screen.dart';
 import 'package:herbascan/features/onboarding/onboarding_screen.dart';
 import 'package:herbascan/features/admin/admin_web_screen.dart';
+import 'package:herbascan/features/browse/browse_screen.dart';
+import 'package:herbascan/features/settings/settings_screen.dart';
 
 /// Returns initial location for the app. On web, respects URL path; otherwise /.
 String _initialLocation() {
   if (kIsWeb && Uri.base.hasAbsolutePath && Uri.base.path.isNotEmpty) {
     final path = Uri.base.path;
-    if (path == '/admin' || path == '/login' || path == '/home' || path == '/onboarding') {
+    if (path == '/admin' || path == '/login' || path == '/home' ||
+        path == '/onboarding' || path == '/browse' || path == '/settings') {
       return path;
     }
   }
@@ -36,7 +39,10 @@ GoRouter createAppRouter(GlobalKey<NavigatorState> navigatorKey) {
         await auth.refreshRole();
         if (!context.mounted) return null;
         final authAfter = context.read<AuthProvider>();
-        if (!authAfter.isAdmin) return '/home?unauthorized=1';
+        if (!authAfter.isAdmin) {
+          if (kIsWeb) return '/login';
+          return '/home?unauthorized=1';
+        }
       }
 
       return null;
@@ -71,6 +77,43 @@ GoRouter createAppRouter(GlobalKey<NavigatorState> navigatorKey) {
         path: '/admin',
         builder: (_, __) => const AdminWebScreen(),
       ),
+      GoRoute(
+        path: '/browse',
+        builder: (_, __) => kIsWeb
+            ? const _WebBrowseShell()
+            : const HomeScreen(),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (_, __) => const SettingsScreen(),
+      ),
     ],
   );
+}
+
+/// A minimal Scaffold wrapper for web-only Browse screen access.
+// Shows AppBar with HerbaScan logo/title and back arrow (→ /login).
+// Body: the Browse/plant catalog content widget (from HomeScreen).
+// No FAB, no BottomNavigationBar, no tab bar.
+class _WebBrowseShell extends StatelessWidget {
+  const _WebBrowseShell();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('HerbaScan'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          tooltip: 'Back to login',
+          onPressed: () => GoRouter.of(context).go('/login'),
+        ),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
+        elevation: 0,
+        scrolledUnderElevation: 1,
+      ),
+      body: const BrowseScreen(),
+    );
+  }
 }

@@ -5,6 +5,7 @@ import 'package:herbascan/core/services/herbarium_service.dart';
 import 'package:herbascan/core/services/training_dataset_service.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/features/admin/admin_new_plant_wizard.dart';
+import 'package:herbascan/features/admin/widgets/model_inference_tester_card.dart';
 
 /// Admin Dashboard Overview — landing screen of the admin portal.
 ///
@@ -25,10 +26,30 @@ class _AdminOverviewScreenState extends State<AdminOverviewScreen> {
   bool _loading = true;
   String? _error;
 
+  final _scrollController = ScrollController();
+  final _inferenceLabKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
     _loadMetrics();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToInferenceLab() {
+    final ctx = _inferenceLabKey.currentContext;
+    if (ctx == null) return;
+    Scrollable.ensureVisible(
+      ctx,
+      duration: const Duration(milliseconds: 420),
+      curve: Curves.easeOutCubic,
+      alignment: 0.12,
+    );
   }
 
   Future<void> _loadMetrics() async {
@@ -132,6 +153,7 @@ class _AdminOverviewScreenState extends State<AdminOverviewScreen> {
         onRefresh: _loadMetrics,
         color: AppTheme.botanicalPrimary,
         child: CustomScrollView(
+          controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             // ── App bar ────────────────────────────────────────────────────
@@ -215,6 +237,7 @@ class _AdminOverviewScreenState extends State<AdminOverviewScreen> {
                     _QuickActionsCard(
                       onAddPlant: _openNewPlantWizard,
                       onDeployModel: _openDeployModel,
+                      onTestInference: _scrollToInferenceLab,
                     ),
                     const SizedBox(height: 28),
 
@@ -225,6 +248,12 @@ class _AdminOverviewScreenState extends State<AdminOverviewScreen> {
                       currentModelVersion: _currentModelVersion,
                       pendingDrafts: _pendingDrafts,
                     ),
+                    const SizedBox(height: 28),
+
+                    // ── Section: Inference Testing Lab ────────────────────
+                    _SectionHeader(title: 'Inference Testing Lab'),
+                    const SizedBox(height: 12),
+                    ModelInferenceTesterCard(key: _inferenceLabKey),
                   ]),
                 ),
               ),
@@ -401,9 +430,11 @@ class _QuickActionsCard extends StatelessWidget {
   const _QuickActionsCard({
     required this.onAddPlant,
     required this.onDeployModel,
+    required this.onTestInference,
   });
   final VoidCallback onAddPlant;
   final VoidCallback onDeployModel;
+  final VoidCallback onTestInference;
 
   @override
   Widget build(BuildContext context) {
@@ -443,6 +474,15 @@ class _QuickActionsCard extends StatelessWidget {
             title: 'Deploy New Model',
             subtitle: 'Publish a retrained .tflite model via OTA update',
             onTap: onDeployModel,
+          ),
+          const Divider(height: 1),
+          // Test Inference
+          _ActionRow(
+            icon: Icons.science_rounded,
+            color: const Color(0xFF0D9488),
+            title: 'Test Inference',
+            subtitle: 'Test the Railway model with an image and see diagnostic output',
+            onTap: onTestInference,
           ),
         ],
       ),

@@ -31,6 +31,7 @@ class FeedbackFormContent extends StatefulWidget {
 class _FeedbackFormContentState extends State<FeedbackFormContent> {
   int _rating = 0;
   String? _selectedCategory;
+  bool _isAnonymous = false;
   final _commentSectionKey = GlobalKey();
   final _featureSectionKey = GlobalKey();
   late final FocusNode _commentFocusNode;
@@ -108,6 +109,7 @@ class _FeedbackFormContentState extends State<FeedbackFormContent> {
           : widget.featureSuggestionController.text.trim(),
       createdAt: DateTime.now(),
       metadata: meta,
+      isAnonymous: _isAnonymous,
     );
     widget.onSubmit(feedback);
   }
@@ -269,6 +271,17 @@ class _FeedbackFormContentState extends State<FeedbackFormContent> {
             ),
           ],
         ),
+      ),
+      const SizedBox(height: 16),
+      SwitchListTile(
+        title: const Text('Submit Anonymously'),
+        subtitle: const Text(
+          'Your identity will not be attached to this feedback.',
+        ),
+        value: _isAnonymous,
+        onChanged: (val) => setState(() => _isAnonymous = val),
+        contentPadding: EdgeInsets.zero,
+        secondary: const Icon(Icons.visibility_off_rounded),
       ),
     ];
   }

@@ -23,7 +23,7 @@ from typing import List, Optional
 import tensorflow as tf
 import jwt
 import numpy as np
-from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Header, Body, Request
+from fastapi import FastAPI, File, Query, UploadFile, HTTPException, Depends, Header, Body, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from PIL import Image
@@ -33,7 +33,12 @@ from slowapi.errors import RateLimitExceeded
 
 from utils.gradcam import generate_gradcam_for_image
 from utils.preprocessing import preprocess_image, array_to_pil_image
-from utils.validation_pipeline import run_pipeline, USE_TFLITE
+from utils.validation_pipeline import (
+    run_pipeline,
+    USE_TFLITE,
+    check_image_quality_scored,
+    _get_plant_name,
+)
 
 # ---------------------------------------------------------------------------
 # Global model state (loaded once at startup)
@@ -441,6 +446,193 @@ async def trigger_training(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to trigger training: {str(e)}")
+
+
+@app.post("/admin/test-inference")
+@limiter.limit("5/minute")
+async def admin_test_inference(
+    request: Request,
+    file: UploadFile = File(...),
+    temperature: float = Query(default=1.0, ge=0.1, le=5.0),
+    x_admin_secret: str = Header(None),
+):
+    """
+    Admin model inference testing endpoint.
+
+    Accepts an image upload and runs the same two-stage validation pipeline
+    used by /identify, but returns full diagnostic output including:
+      - OOD gate raw metric scores (brightness, blur, edge_density)
+      - Top-5 predictions with temperature-scaled confidences
+      - Confidence gate pass/fail
+      - Final result (plant name, scientific name) or rejection reason
+
+    Temperature scaling (0.1–5.0, default 1.0) calibrates confidence values.
+    T < 1.0 sharpens the distribution (lower entropy); T > 1.0 flattens it.
+
+    This endpoint does NOT generate Grad-CAM — it returns structured JSON only,
+    keeping the response fast and small for quick admin testing.
+    """
+    _verify_admin_secret(x_admin_secret)
+
+    # ---- Validate model is loaded ------------------------------------------
+    if mobilenetv2_model is None:
+        raise HTTPException(
+            status_code=503,
+            detail="MobileNetV2 model not loaded. Run /admin/reload-model first.",
+        )
+
+    try:
+        image_bytes = await file.read()
+
+        if not isinstance(image_bytes, bytes):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Expected bytes, got {type(image_bytes)}",
+            )
+
+        # ---- Get image dimensions from raw bytes ---------------------------
+        pil_img = Image.open(io.BytesIO(image_bytes))
+        img_width, img_height = pil_img.size
+        if pil_img.mode != "RGB":
+            pil_img = pil_img.convert("RGB")
+
+        # ---- Stage 1: Heuristic checks with scored output ------------------
+        ood_gate = check_image_quality_scored(image_bytes)
+
+        model_info = {
+            "path": str(MOBILENETV2_MODEL_PATH),
+            "temperature": temperature,
+            "num_classes": len(labels) if labels else 0,
+        }
+
+        image_info = {
+            "filename": file.filename or "unknown",
+            "width": img_width,
+            "height": img_height,
+        }
+
+        # ---- Default empty response fields ---------------------------------
+        top_5: list = []
+        confidence_gate: dict = {
+            "value": 0.0,
+            "threshold": 0.0,
+            "passed": False,
+        }
+        result: dict | None = None
+        ood_rejected = not ood_gate["overall_pass"]
+        stage1_rejected = not ood_gate["overall_pass"]
+
+        # ---- Stage 2: ML inference (only if Stage 1 passed) ----------------
+        if ood_gate["overall_pass"]:
+            # Reuse the same preprocess + inference chain as /identify
+            pipeline_result = run_pipeline(
+                image_bytes,
+                model=mobilenetv2_model,
+                labels=labels,
+            )
+
+            if pipeline_result["status"] == "fail":
+                ood_rejected = True
+                stage1_rejected = False
+                confidence_gate["threshold"] = 0.0
+                confidence_gate["value"] = 0.0
+                confidence_gate["passed"] = False
+
+                # Build empty top_5 as fallback
+                top_5 = [
+                    {
+                        "rank": i + 1,
+                        "label": "-",
+                        "confidence": 0.0,
+                        "bar_fraction": 0.0,
+                    }
+                    for i in range(5)
+                ]
+            else:
+                _res = pipeline_result["result"]
+                img_array = _res["img_array"]
+
+                # Run raw inference via the model directly to get logits
+                # for temperature scaling (run_pipeline already applied softmax)
+                if USE_TFLITE:
+                    from utils.validation_pipeline import _run_tflite_inference, TFLITE_MODEL_PATH
+                    raw_preds = _run_tflite_inference(TFLITE_MODEL_PATH, img_array)
+                else:
+                    preds = mobilenetv2_model.predict(img_array, verbose=0)
+                    raw_preds = np.array(preds[0], dtype=np.float32)
+
+                # ---- Temperature scaling ------------------------------------
+                if temperature != 1.0:
+                    log_probs = np.log(np.clip(raw_preds, 1e-9, 1.0))
+                    scaled = log_probs / temperature
+                    scaled -= np.max(scaled)  # numerical stability
+                    exp_scaled = np.exp(scaled)
+                    raw_preds = exp_scaled / exp_scaled.sum()
+
+                # ---- Top-5 construction -------------------------------------
+                top_5_indices = np.argsort(raw_preds)[-5:][::-1]
+                max_conf = float(raw_preds[top_5_indices[0]])
+
+                top_5 = [
+                    {
+                        "rank": i + 1,
+                        "label": _get_plant_name(int(idx), labels or {}),
+                        "confidence": round(float(raw_preds[idx]), 4),
+                        "bar_fraction": (
+                            round(float(raw_preds[idx]) / max_conf, 4)
+                            if max_conf > 0
+                            else 0.0
+                        ),
+                    }
+                    for i, idx in enumerate(top_5_indices)
+                ]
+
+                # ---- Confidence gate ----------------------------------------
+                from utils.validation_pipeline import load_ood_config
+                ood_config = load_ood_config()
+                ood_threshold = float(
+                    ood_config.get("confidence_threshold_ood", 0.4)
+                )
+                top1_conf = float(raw_preds[top_5_indices[0]])
+                confidence_passed = top1_conf >= ood_threshold
+
+                confidence_gate = {
+                    "value": round(top1_conf, 4),
+                    "threshold": ood_threshold,
+                    "passed": confidence_passed,
+                }
+
+                if confidence_passed:
+                    top1_idx = int(top_5_indices[0])
+                    top1_name = _get_plant_name(top1_idx, labels or {})
+                    result = {
+                        "plant_name": top1_name,
+                        "scientific_name": top1_name,
+                    }
+                else:
+                    ood_rejected = True
+
+        # ---- Build final response -------------------------------------------
+        response_data = {
+            "model_info": model_info,
+            "image_info": image_info,
+            "ood_gate": ood_gate,
+            "top_5": top_5,
+            "confidence_gate": confidence_gate,
+            "result": result,
+            "ood_rejected": ood_rejected,
+            "stage1_rejected": stage1_rejected,
+        }
+
+        return JSONResponse(content=response_data)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error processing test inference: {str(e)}",
+        )
 
 
 if __name__ == "__main__":

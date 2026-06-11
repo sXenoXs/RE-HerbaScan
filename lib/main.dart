@@ -18,7 +18,6 @@ import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/services/performance_monitor.dart';
 import 'package:herbascan/core/widgets/auth_deeplink_handler.dart';
 import 'package:herbascan/core/services/preparation_notification_service.dart';
-import 'package:herbascan/core/services/ota_model_service.dart';
 // Desktop-only: init SQLite FFI so DB works on Windows/Linux/macOS. Mobile and web unchanged.
 import 'package:herbascan/core/init_database_factory_stub.dart'
     if (dart.library.ffi) 'package:herbascan/core/init_database_factory_ffi.dart' as db_factory;
@@ -45,7 +44,7 @@ void main() async {
   if (isSupabaseConfigured) {
     await Supabase.initialize(
       url: supabaseUrl,
-      anonKey: supabaseAnonKey,
+      publishableKey: supabaseAnonKey,
     );
   }
 

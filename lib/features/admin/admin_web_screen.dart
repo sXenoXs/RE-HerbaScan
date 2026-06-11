@@ -10,6 +10,7 @@ import 'package:herbascan/features/admin/admin_user_management_screen.dart';
 import 'package:herbascan/features/admin/admin_system_health_screen.dart';
 import 'package:herbascan/features/admin/admin_feedback_screen.dart';
 import 'package:herbascan/features/admin/admin_toxic_plants_screen.dart';
+import 'package:herbascan/features/admin/admin_app_config_screen.dart';
 
 /// Admin web dashboard: desktop layout with NavigationRail and three modules.
 /// RBAC guard ensures only admins reach this screen.
@@ -32,6 +33,7 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
   static const int _feedbackIndex = 5;
   static const int _submissionTriageIndex = 6;
   static const int _toxicPlantsIndex = 7;
+  static const int _appConfigIndex = 8;
 
   static const _destinations = [
     (
@@ -73,6 +75,11 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
       icon: Icons.warning_amber_outlined,
       selectedIcon: Icons.warning_amber_rounded,
       label: 'Toxic Plants',
+    ),
+    (
+      icon: Icons.tune_outlined,
+      selectedIcon: Icons.tune_rounded,
+      label: 'App Config',
     ),
   ];
 
@@ -256,7 +263,7 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
           child: Padding(
             padding: isExtended
                 ? const EdgeInsets.symmetric(horizontal: 16, vertical: 12)
-                : const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                : const EdgeInsets.fromLTRB(14, 12, 0, 12),
             child: isExtended
                 ? Row(
                     children: [
@@ -420,6 +427,8 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
         return const AdminDashboardScreen();
       case _toxicPlantsIndex:
         return const AdminToxicPlantsScreen();
+      case _appConfigIndex:
+        return const AdminAppConfigScreen();
       default:
         return const Center(child: Text('Select a module'));
     }

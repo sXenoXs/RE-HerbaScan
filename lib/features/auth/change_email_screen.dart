@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:herbascan/core/providers/auth_provider.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
@@ -69,9 +70,13 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           child: Form(
             key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+            child: CallbackShortcuts(
+              bindings: {
+                const SingleActivator(LogicalKeyboardKey.enter): _submit,
+              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                 Text(
                   'Email Address',
                   style: theme.textTheme.headlineSmall?.copyWith(
@@ -147,6 +152,8 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
                     labelText: 'New email address',
                     hintText: 'you@example.com',
                   ),
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) => _submit(),
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) {
                       return 'Enter a new email';
@@ -189,8 +196,9 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
           ),
         ),
       ),
-        ),
-      ),
+    ),
+  ),
+),
     );
   }
 }

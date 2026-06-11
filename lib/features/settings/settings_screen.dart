@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/foundation.dart';
 import 'package:herbascan/core/providers/app_provider.dart';
 import 'package:herbascan/core/providers/auth_provider.dart';
 import 'package:herbascan/core/providers/language_provider.dart';
@@ -13,6 +14,7 @@ import 'package:herbascan/features/auth/change_email_screen.dart';
 import 'package:herbascan/features/offline/system_diagnostics_screen.dart';
 import 'package:herbascan/features/help/help_tutorial_screen.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
+import 'package:herbascan/core/services/data_deletion_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -49,23 +51,28 @@ class SettingsScreen extends StatelessWidget {
               _buildSoftDivider(theme),
               _buildLanguageTile(context, theme),
               _buildSoftDivider(theme),
-              _buildAutoSaveTile(context, theme),
+              // ── Hide Auto-Save on web (no device gallery) ──
+              if (!kIsWeb) ...[
+                _buildAutoSaveTile(context, theme),
+              ],
             ],
           ),
 
           const SizedBox(height: 24),
 
           // 3. Scanning & AI
-          _buildSectionLabel(context, theme, 'Scanning & Recognition'),
-          const SizedBox(height: 8),
-          _buildGroupedCard(
-            theme,
-            children: [
-              _buildConfidenceScoresTile(context, theme),
-              _buildSoftDivider(theme),
-              _buildTop3ResultsTile(context, theme),
-            ],
-          ),
+          if (!kIsWeb) ...[
+            _buildSectionLabel(context, theme, 'Scanning & Recognition'),
+            const SizedBox(height: 8),
+            _buildGroupedCard(
+              theme,
+              children: [
+                _buildConfidenceScoresTile(context, theme),
+                _buildSoftDivider(theme),
+                _buildTop3ResultsTile(context, theme),
+              ],
+            ),
+          ],
 
           const SizedBox(height: 24),
 
@@ -86,7 +93,9 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 32),
 
           // 5. Developer Options (visually separated)
-          _buildDeveloperOptionsBlock(context, theme),
+          if (!kIsWeb) ...[
+            _buildDeveloperOptionsBlock(context, theme),
+          ],
 
           const SizedBox(height: 24),
         ],
@@ -279,6 +288,26 @@ class SettingsScreen extends StatelessWidget {
               trailing:
                   const Icon(Icons.arrow_forward_ios_rounded, size: 16),
               onTap: () => _showDeleteAccountDialog(context, auth),
+            ),
+            _buildSoftDivider(theme),
+            ListTile(
+              leading: Icon(
+                Icons.privacy_tip_outlined,
+                color: theme.colorScheme.error.withOpacity(0.8),
+              ),
+              title: Text(
+                'Request Data Deletion',
+                style: TextStyle(
+                  color: theme.colorScheme.error.withOpacity(0.8),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              subtitle: const Text(
+                'Submit a request to delete your personal data',
+              ),
+              trailing:
+                  const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+              onTap: () => _showDataDeletionRequestDialog(context),
             ),
           ],
         );
@@ -626,15 +655,126 @@ class SettingsScreen extends StatelessWidget {
 
   void _showDeleteAccountDialog(BuildContext context, AuthProvider auth) {
     final theme = Theme.of(context);
+    final confirmationController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          icon: Icon(Icons.warning_amber_rounded,
+              color: theme.colorScheme.error, size: 48),
+          title: const Text('Delete account?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'This will permanently delete your Personal Herbarium account and all cloud data. '
+                'Your device scan history will not be affected. This action cannot be undone.',
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Type "DELETE" to confirm:',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: confirmationController,
+                autofocus: true,
+                onChanged: (_) => setDialogState(() {}),
+                decoration: InputDecoration(
+                  hintText: 'DELETE',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: confirmationController.text.trim() == 'DELETE'
+                  ? () async {
+                      Navigator.of(dialogContext).pop();
+                      try {
+                        await auth.deleteAccount();
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Account deleted')),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                  e.toString().replaceFirst('Exception: ', '')),
+                              backgroundColor: theme.colorScheme.error,
+                            ),
+                          );
+                        }
+                      }
+                    }
+                  : null,
+              style: FilledButton.styleFrom(
+                backgroundColor: theme.colorScheme.error,
+                foregroundColor: theme.colorScheme.onError,
+              ),
+              child: const Text('Delete account'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDataDeletionRequestDialog(BuildContext context) {
+    final theme = Theme.of(context);
+    final reasonController = TextEditingController();
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        icon: Icon(Icons.warning_amber_rounded,
-            color: theme.colorScheme.error, size: 48),
-        title: const Text('Delete account?'),
-        content: const Text(
-          'This will permanently delete your Personal Herbarium account and all cloud data. '
-          'Your device scan history will not be affected. This action cannot be undone.',
+        icon: Icon(Icons.privacy_tip_rounded,
+            color: theme.colorScheme.error.withOpacity(0.8), size: 48),
+        title: const Text('Request Data Deletion'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Submit a request to have your personal data deleted from HerbaScan\'s servers. '
+              'Your request will be reviewed by an administrator.',
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Reason (optional)',
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: reasonController,
+              maxLines: 3,
+              maxLength: 500,
+              decoration: InputDecoration(
+                hintText: 'Tell us why you\'d like your data deleted...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.all(12),
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -644,30 +784,24 @@ class SettingsScreen extends StatelessWidget {
           FilledButton(
             onPressed: () async {
               Navigator.of(dialogContext).pop();
-              try {
-                await auth.deleteAccount();
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Account deleted')),
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                          e.toString().replaceFirst('Exception: ', '')),
-                      backgroundColor: theme.colorScheme.error,
-                    ),
-                  );
-                }
+              final ok = await DataDeletionService()
+                  .submitRequest(reason: reasonController.text.trim());
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(ok
+                        ? 'Data deletion request submitted. An admin will review it shortly.'
+                        : 'Failed to submit request. Please try again later.'),
+                    backgroundColor: ok ? AppTheme.botanicalPrimary : theme.colorScheme.error,
+                  ),
+                );
               }
             },
             style: FilledButton.styleFrom(
-              backgroundColor: theme.colorScheme.error,
+              backgroundColor: theme.colorScheme.error.withOpacity(0.8),
               foregroundColor: theme.colorScheme.onError,
             ),
-            child: const Text('Delete account'),
+            child: const Text('Submit Request'),
           ),
         ],
       ),

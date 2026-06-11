@@ -9,6 +9,8 @@ class UserFeedback {
   final Map<String, dynamic>
       metadata; // Additional context (app version, device, etc.)
 
+  final bool isAnonymous;
+
   UserFeedback({
     required this.id,
     required this.rating,
@@ -17,6 +19,7 @@ class UserFeedback {
     this.featureSuggestion,
     required this.createdAt,
     this.metadata = const {},
+    this.isAnonymous = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -27,6 +30,7 @@ class UserFeedback {
         'feature_suggestion': featureSuggestion,
         'created_at': createdAt.toIso8601String(),
         'metadata': metadata,
+        'is_anonymous': isAnonymous,
       };
 
   factory UserFeedback.fromJson(Map<String, dynamic> json) => UserFeedback(
@@ -37,6 +41,7 @@ class UserFeedback {
         featureSuggestion: json['feature_suggestion'] as String?,
         createdAt: DateTime.parse(json['created_at'] as String),
         metadata: json['metadata'] as Map<String, dynamic>? ?? {},
+        isAnonymous: json['is_anonymous'] as bool? ?? false,
       );
 }
 

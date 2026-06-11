@@ -178,9 +178,8 @@ class _AdminPlantMetadataScreenState extends State<AdminPlantMetadataScreen> {
   void _openNewPlantWizard() {
     Navigator.of(context)
         .push<bool>(
-          MaterialPageRoute(
-              builder: (_) => const AdminNewPlantWizard()),
-        )
+      MaterialPageRoute(builder: (_) => const AdminNewPlantWizard()),
+    )
         .then((created) {
       if (created == true) _load();
     });
@@ -204,8 +203,7 @@ class _AdminPlantMetadataScreenState extends State<AdminPlantMetadataScreen> {
               onPressed: () => Navigator.pop(ctx, false),
               child: const Text('Cancel')),
           FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(label)),
+              onPressed: () => Navigator.pop(ctx, true), child: Text(label)),
         ],
       ),
     );
@@ -289,7 +287,8 @@ class _AdminPlantMetadataScreenState extends State<AdminPlantMetadataScreen> {
       _load();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Remove failed. Check connection and try again.')),
+        const SnackBar(
+            content: Text('Remove failed. Check connection and try again.')),
       );
     }
   }
@@ -508,8 +507,7 @@ class _AdminPlantMetadataScreenState extends State<AdminPlantMetadataScreen> {
 
         if (_resetting)
           const LinearProgressIndicator(
-              valueColor:
-                  AlwaysStoppedAnimation(AppTheme.botanicalPrimary)),
+              valueColor: AlwaysStoppedAnimation(AppTheme.botanicalPrimary)),
 
         // ── List ─────────────────────────────────────────────────────────
         if (_filtered.isEmpty)
@@ -528,14 +526,12 @@ class _AdminPlantMetadataScreenState extends State<AdminPlantMetadataScreen> {
             child: ListView.separated(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               itemCount: _filtered.length,
-              separatorBuilder: (_, __) =>
-                  const Divider(height: 1, indent: 68),
+              separatorBuilder: (_, __) => const Divider(height: 1, indent: 68),
               itemBuilder: (context, index) {
                 final plant = _filtered[index];
                 final cloudEntry = _cloudById[plant.id];
                 final status = cloudEntry?.status ?? 'active';
-                final trainingCount =
-                    cloudEntry?.trainingImageCount ?? 0;
+                final trainingCount = cloudEntry?.trainingImageCount ?? 0;
                 return ListTile(
                   contentPadding:
                       const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
@@ -552,8 +548,7 @@ class _AdminPlantMetadataScreenState extends State<AdminPlantMetadataScreen> {
                       Expanded(
                         child: Text(
                           plant.commonName,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w500),
+                          style: const TextStyle(fontWeight: FontWeight.w500),
                         ),
                       ),
                       const SizedBox(width: 6),
@@ -579,84 +574,81 @@ class _AdminPlantMetadataScreenState extends State<AdminPlantMetadataScreen> {
                     ],
                   ),
                   trailing: PopupMenuButton<String>(
-                        icon: Icon(Icons.more_vert_rounded,
-                            color: Colors.grey.shade400),
-                        onSelected: (action) {
-                          switch (action) {
-                            case 'edit':
-                              _openEditor(plant);
-                            case 'training_images':
-                              _openTrainingImages(plant);
-                            case 'toggle_status':
-                              _toggleStatus(plant);
-                            case 'delete':
-                              _deletePlant(plant);
-                          }
-                        },
-                        itemBuilder: (ctx) => [
-                          const PopupMenuItem(
-                            value: 'edit',
-                            child: Row(children: [
-                              Icon(Icons.edit_rounded, size: 18),
-                              SizedBox(width: 12),
-                              Text('Edit Catalog Data'),
-                            ]),
-                          ),
-                          PopupMenuItem(
-                            value: 'training_images',
-                            child: Row(children: [
-                              Icon(Icons.add_photo_alternate_rounded,
-                                  size: 18,
-                                  color: const Color(0xFF6366F1)),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Training Images',
-                                style: TextStyle(
-                                    color: const Color(0xFF6366F1)),
-                              ),
-                            ]),
-                          ),
-                          PopupMenuItem(
-                            value: 'toggle_status',
-                            child: Row(children: [
-                              Icon(
-                                status == 'active'
-                                    ? Icons.visibility_off_outlined
-                                    : Icons.visibility_outlined,
-                                size: 18,
-                                color: status == 'active'
-                                    ? AppTheme.warningAmber
-                                    : AppTheme.botanicalPrimary,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                status == 'active'
-                                    ? 'Unpublish (→ Draft)'
-                                    : 'Publish (→ Active)',
-                                style: TextStyle(
-                                  color: status == 'active'
-                                      ? AppTheme.warningAmber
-                                      : AppTheme.botanicalPrimary,
-                                ),
-                              ),
-                            ]),
-                          ),
-                          PopupMenuItem(
-                            value: 'delete',
-                            child: Row(children: [
-                              Icon(Icons.delete_forever_rounded,
-                                  size: 18,
-                                  color: Theme.of(ctx).colorScheme.error),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Remove Plant',
-                                style: TextStyle(
-                                    color: Theme.of(ctx).colorScheme.error),
-                              ),
-                            ]),
-                          ),
-                        ],
+                    icon: Icon(Icons.more_vert_rounded,
+                        color: Colors.grey.shade400),
+                    onSelected: (action) {
+                      switch (action) {
+                        case 'edit':
+                          _openEditor(plant);
+                        case 'training_images':
+                          _openTrainingImages(plant);
+                        case 'toggle_status':
+                          _toggleStatus(plant);
+                        case 'delete':
+                          _deletePlant(plant);
+                      }
+                    },
+                    itemBuilder: (ctx) => [
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Row(children: [
+                          Icon(Icons.edit_rounded, size: 18),
+                          SizedBox(width: 12),
+                          Text('Edit Catalog Data'),
+                        ]),
                       ),
+                      PopupMenuItem(
+                        value: 'training_images',
+                        child: Row(children: [
+                          Icon(Icons.add_photo_alternate_rounded,
+                              size: 18, color: const Color(0xFF6366F1)),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Training Images',
+                            style: TextStyle(color: const Color(0xFF6366F1)),
+                          ),
+                        ]),
+                      ),
+                      PopupMenuItem(
+                        value: 'toggle_status',
+                        child: Row(children: [
+                          Icon(
+                            status == 'active'
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                            size: 18,
+                            color: status == 'active'
+                                ? AppTheme.warningAmber
+                                : AppTheme.botanicalPrimary,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            status == 'active'
+                                ? 'Unpublish (→ Draft)'
+                                : 'Publish (→ Active)',
+                            style: TextStyle(
+                              color: status == 'active'
+                                  ? AppTheme.warningAmber
+                                  : AppTheme.botanicalPrimary,
+                            ),
+                          ),
+                        ]),
+                      ),
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Row(children: [
+                          Icon(Icons.delete_forever_rounded,
+                              size: 18, color: Theme.of(ctx).colorScheme.error),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Remove Plant',
+                            style: TextStyle(
+                                color: Theme.of(ctx).colorScheme.error),
+                          ),
+                        ]),
+                      ),
+                    ],
+                  ),
                   onTap: () => _openEditor(plant),
                 );
               },
@@ -680,6 +672,7 @@ class _TrainingImagesSheet extends StatefulWidget {
 
   final String plantName;
   final String plantSlug;
+
   /// Called with the new total image count after a successful upload.
   final void Function(int totalCount) onUploaded;
 
@@ -713,8 +706,8 @@ class _TrainingImagesSheetState extends State<_TrainingImagesSheet> {
   }
 
   Future<void> _fetchApprovedScanCount() async {
-    final scans = await HerbariumService()
-        .getTrainingEligibleScans(widget.plantSlug);
+    final scans =
+        await HerbariumService().getTrainingEligibleScans(widget.plantSlug);
     if (mounted) setState(() => _approvedScanCount = scans.length);
   }
 
@@ -744,10 +737,11 @@ class _TrainingImagesSheetState extends State<_TrainingImagesSheet> {
       widget.plantSlug,
       _selected,
       onProgress: (p, u, _) {
-        if (mounted) setState(() {
-          _progress = p;
-          _uploadedCount = u;
-        });
+        if (mounted)
+          setState(() {
+            _progress = p;
+            _uploadedCount = u;
+          });
       },
     );
 
@@ -834,9 +828,7 @@ class _TrainingImagesSheetState extends State<_TrainingImagesSheet> {
                 child: Text(
                   '$_existingCount images already uploaded',
                   style: const TextStyle(
-                      fontSize: 11,
-                      color: purple,
-                      fontWeight: FontWeight.w600),
+                      fontSize: 11, color: purple, fontWeight: FontWeight.w600),
                 ),
               ),
             ),
@@ -1017,8 +1009,7 @@ class _TrainingImagesSheetState extends State<_TrainingImagesSheet> {
                   color: AppTheme.botanicalPrimary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                      color:
-                          AppTheme.botanicalPrimary.withValues(alpha: 0.25)),
+                      color: AppTheme.botanicalPrimary.withValues(alpha: 0.25)),
                 ),
                 child: Row(
                   children: [
@@ -1149,7 +1140,8 @@ class _FilterBar extends StatelessWidget {
             icon: Icons.pending_actions_rounded,
           ),
           const SizedBox(width: 12),
-          const VerticalDivider(width: 1, thickness: 1, indent: 4, endIndent: 4),
+          const VerticalDivider(
+              width: 1, thickness: 1, indent: 4, endIndent: 4),
           const SizedBox(width: 12),
           // Image count filter
           _FilterChip(
@@ -1216,8 +1208,7 @@ class _FilterChip extends StatelessWidget {
               style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 12,
-                fontWeight:
-                    selected ? FontWeight.w600 : FontWeight.w400,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                 color: selected
                     ? selectedColor
                     : theme.colorScheme.onSurface.withValues(alpha: 0.65),
@@ -1237,8 +1228,7 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDraft = status == 'draft';
-    final color =
-        isDraft ? AppTheme.warningAmber : AppTheme.botanicalPrimary;
+    final color = isDraft ? AppTheme.warningAmber : AppTheme.botanicalPrimary;
     final label = isDraft ? 'Draft' : 'Active';
     final icon =
         isDraft ? Icons.pending_actions_rounded : Icons.visibility_rounded;

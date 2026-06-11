@@ -2,18 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 
 /// Shared botanical header used across auth screens.
-/// Shows a leaf icon in a circular container, a bold title, and a subtitle.
+/// Shows a leaf icon or optional image in a circular container, a bold title,
+/// and a subtitle.
 class BotanicalAuthHeader extends StatelessWidget {
   const BotanicalAuthHeader({
     super.key,
     required this.title,
     required this.subtitle,
     this.icon = Icons.eco_rounded,
+    this.imageAsset,
   });
 
   final String title;
   final String subtitle;
   final IconData icon;
+  final String? imageAsset;
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +29,18 @@ class BotanicalAuthHeader extends StatelessWidget {
             shape: BoxShape.circle,
             color: AppTheme.botanicalPrimary.withOpacity(0.10),
           ),
-          child: Icon(icon, size: 40, color: AppTheme.botanicalPrimary),
+          child: imageAsset != null
+              ? ClipOval(
+                  child: Image.asset(
+                    imageAsset!,
+                    width: 56,
+                    height: 56,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) =>
+                        Icon(icon, size: 40, color: AppTheme.botanicalPrimary),
+                  ),
+                )
+              : Icon(icon, size: 40, color: AppTheme.botanicalPrimary),
         ),
         const SizedBox(height: 20),
         Text(

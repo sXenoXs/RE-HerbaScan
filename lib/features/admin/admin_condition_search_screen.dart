@@ -559,6 +559,7 @@ class _ConditionFormDialogState extends State<_ConditionFormDialog> {
     if (!keys.contains(_iconKey)) _iconKey = keys.first;
 
     return AlertDialog(
+      insetPadding: const EdgeInsets.all(24),
       title: Text(widget.isEdit ? 'Edit condition' : 'Add condition'),
       content: SingleChildScrollView(
         child: Column(
@@ -574,17 +575,16 @@ class _ConditionFormDialogState extends State<_ConditionFormDialog> {
             const Text('Icon',
                 style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
-            SizedBox(
-              height: 48,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: keys.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 4),
-                itemBuilder: (ctx, i) {
-                  final k = keys[i];
-                  final isSelected = _iconKey == k;
-                  return GestureDetector(
-                    onTap: () => setState(() => _iconKey = k),
+            // All icons in a vertical wrap grid — no hidden overflow on web
+            Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              children: keys.map((k) {
+                final isSelected = _iconKey == k;
+                return GestureDetector(
+                  onTap: () => setState(() => _iconKey = k),
+                  child: Tooltip(
+                    message: k, // show icon name on hover (useful on web)
                     child: Container(
                       width: 44,
                       height: 44,
@@ -594,19 +594,16 @@ class _ConditionFormDialogState extends State<_ConditionFormDialog> {
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                         border: isSelected
-                            ? Border.all(
-                                color: AppTheme.botanicalPrimary, width: 2)
+                            ? Border.all(color: AppTheme.botanicalPrimary, width: 2)
                             : null,
                       ),
                       child: Icon(conditionIconRegistry[k],
                           size: 22,
-                          color: isSelected
-                              ? AppTheme.botanicalPrimary
-                              : null),
+                          color: isSelected ? AppTheme.botanicalPrimary : null),
                     ),
-                  );
-                },
-              ),
+                  ),
+                );
+              }).toList(),
             ),
             const SizedBox(height: 16),
             const Text('Color',

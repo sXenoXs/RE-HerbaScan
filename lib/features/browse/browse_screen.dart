@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:herbascan/core/providers/plant_provider.dart';
 import 'package:herbascan/core/models/plant.dart';
 import 'package:herbascan/core/models/toxic_plant_entry.dart';
+import 'package:herbascan/core/services/toxic_plant_catalog_service.dart';
 import 'package:herbascan/core/services/toxic_plant_image_service.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/core/widgets/plant_image.dart';
@@ -15,159 +16,8 @@ import 'package:herbascan/core/services/usage_analytics.dart';
 
 enum BrowseFilter { all, doh, toxic }
 
-// ---------------------------------------------------------------------------
-// Static toxic / harmful plant data
-// ---------------------------------------------------------------------------
-const _toxicPlants = [
-  ToxicPlantEntry(
-    slug: 'dumb-cane',
-    commonName: 'Dumb Cane',
-    scientificName: 'Dieffenbachia picta',
-    harm: 'Heavy toxins',
-    toxin: 'Calcium oxalate crystals',
-    symptoms:
-        'Intense oral burning, swollen tongue and throat, impaired speech, difficulty swallowing',
-    appearance:
-        'Large tropical shrub with broad, glossy leaves patterned in green and white or yellow. Stems are thick and cane-like, reaching up to 1.5 m indoors.',
-    habitat:
-        'Native to tropical Americas; widely cultivated as an indoor ornamental plant in the Philippines and worldwide.',
-  ),
-  ToxicPlantEntry(
-    slug: 'physic-nut-tuba-tuba',
-    commonName: 'Physic Nut / Tuba-tuba',
-    scientificName: 'Jatropha curcas',
-    localName: 'Tuba-tuba',
-    harm: 'Poisoning in children',
-    toxin: 'Curcin (toxalbumin), phorbol esters',
-    symptoms:
-        'Nausea, vomiting, severe diarrhea, abdominal pain; potentially fatal in children',
-    appearance:
-        'Small deciduous tree or large shrub with smooth, pale-grey bark. Leaves are broadly ovate with 3–5 lobes; flowers are small and yellowish-green. Seeds resemble edible nuts.',
-    habitat:
-        'Thrives in tropical and subtropical areas. Found along roadsides, farm borders, and abandoned lots throughout the Philippines.',
-  ),
-  ToxicPlantEntry(
-    slug: 'snake-plant',
-    commonName: 'Snake Plant',
-    scientificName: 'Dracaena trifasciata',
-    localName: 'Espada',
-    harm: 'Mild toxins',
-    toxin: 'Steroidal saponins',
-    symptoms: 'Nausea, vomiting, excessive salivation, mild mouth irritation',
-    appearance:
-        'Stiff, upright sword-shaped leaves with dark green banding and yellow margins. Grows in rosette clumps up to 1 m tall.',
-    habitat:
-        'Native to West Africa; extremely common as a low-maintenance indoor and outdoor ornamental plant in Filipino homes and offices.',
-  ),
-  ToxicPlantEntry(
-    slug: 'cycads',
-    commonName: 'Cycads',
-    scientificName: 'Cycadophyta',
-    localName: 'Pitogo',
-    harm: 'Heavy toxins',
-    toxin: 'Cycasin, BMAA neurotoxin',
-    symptoms:
-        'Vomiting, liver damage, neurological deterioration; potentially fatal',
-    appearance:
-        'Palm-like plants with a stout trunk topped by a crown of stiff, pinnate fronds. Seeds are large, orange-red, and nut-like in appearance.',
-    habitat:
-        'Found in tropical and subtropical forests, coastal areas, and rocky slopes. Several species are native to the Philippines (e.g., Cycas riuminiana).',
-  ),
-  ToxicPlantEntry(
-    slug: 'daphne',
-    commonName: 'Daphne',
-    scientificName: 'Daphne laureola',
-    harm: 'Blistering, irritation',
-    toxin: 'Daphnetoxin, mezerein',
-    symptoms:
-        'Severe mouth and skin blistering, vomiting; convulsions in large doses',
-    appearance:
-        'Evergreen shrub with glossy, dark-green leathery leaves. Produces small tubular flowers (white, pink, or yellow) and bright red or black berries.',
-    habitat:
-        'Native to Europe and Asia; grown as an ornamental shrub in gardens. Prefers cool, well-drained soils in partial shade.',
-  ),
-  ToxicPlantEntry(
-    slug: 'angels-trumpet',
-    commonName: "Angel's Trumpet",
-    scientificName: 'Brugmansia spp.',
-    localName: 'Kampanilya',
-    harm: 'Toxic',
-    toxin: 'Scopolamine, atropine, hyoscyamine',
-    symptoms:
-        'Hallucinations, delirium, rapid heartbeat, dilated pupils, respiratory failure',
-    appearance:
-        'Large woody shrub or small tree with pendulous, trumpet-shaped flowers up to 50 cm long in white, yellow, pink, or orange. Large, oval, softly hairy leaves.',
-    habitat:
-        'Grown as an ornamental in Philippine gardens and parks. Prefers warm, humid climates with well-drained soil.',
-  ),
-  ToxicPlantEntry(
-    slug: 'lantana',
-    commonName: 'Lantana',
-    scientificName: 'Lantana camara',
-    localName: 'Kambantiling',
-    harm: 'Toxic berries',
-    toxin: 'Lantadene A & B',
-    symptoms:
-        'Vomiting, diarrhea, liver damage from unripe berries; photosensitization',
-    appearance:
-        'Woody shrub with rough, aromatic leaves. Bears small clustered flowers that change colour as they mature (yellow to orange to red). Unripe berries are green, ripening to black.',
-    habitat:
-        'Invasive weed throughout the Philippines; common along roadsides, forest edges, and disturbed lands in tropical lowland areas.',
-  ),
-  ToxicPlantEntry(
-    slug: 'calla-lily',
-    commonName: 'Calla Lily',
-    scientificName: 'Zantedeschia spp.',
-    localName: 'Calla',
-    harm: 'Toxic',
-    toxin: 'Calcium oxalate crystals',
-    symptoms:
-        'Intense oral burning, lip and tongue swelling, difficulty swallowing',
-    appearance:
-        'Elegant perennial with large, arrow-shaped glossy leaves and a distinctive funnel-shaped spathe (usually white) surrounding a yellow spike (spadix).',
-    habitat:
-        'Native to southern Africa; commonly grown as a garden and cut-flower ornamental in the Philippines, preferring moist, fertile soils.',
-  ),
-  ToxicPlantEntry(
-    slug: 'poinsettia',
-    commonName: 'Poinsettia',
-    scientificName: 'Euphorbia pulcherrima',
-    localName: 'Pascua',
-    harm: 'Irritant sap',
-    toxin: 'Euphorbol esters, saponins',
-    symptoms: 'Skin and eye irritation; mild nausea and vomiting if ingested',
-    appearance:
-        'Shrub with dark green leaves and vivid red (or pink/white) bracts surrounding small yellow flowers. White milky sap is released when stems are cut.',
-    habitat:
-        'Native to Mexico; popular Christmas ornamental widely sold and planted in Philippine homes and gardens throughout the holiday season.',
-  ),
-  ToxicPlantEntry(
-    slug: 'cacti-and-succulents',
-    commonName: 'Cacti and Succulents',
-    scientificName: 'Various',
-    localName: 'Kaktus',
-    harm: 'Physical harm (thorns)',
-    toxin: 'Spines; alkaloids in select species',
-    symptoms: 'Puncture wounds; certain species cause nausea or hallucinations',
-    appearance:
-        'Highly variable; typically thick, fleshy stems or leaves adapted to store water. Spines replace leaves in true cacti. Shapes range from globular to columnar to paddle-like.',
-    habitat:
-        'Popular pot plants and garden ornamentals across the Philippines. In the wild, cacti are native to the Americas; succulents occur globally in arid and semi-arid regions.',
-  ),
-  ToxicPlantEntry(
-    slug: 'rhus-wax-tree',
-    commonName: 'Rhus / Wax Tree',
-    scientificName: 'Toxicodendron spp.',
-    harm: 'Allergic reactions',
-    toxin: 'Urushiol (phenolic resin)',
-    symptoms:
-        'Severe allergic contact dermatitis, intense itching, fluid-filled blisters',
-    appearance:
-        'Deciduous shrubs or small trees with compound leaves of 3–13 leaflets. Produces small whitish-green flowers and waxy, pale berries. Leaves turn vivid red in autumn.',
-    habitat:
-        'Native to temperate North America and East Asia. Occasionally encountered as an ornamental or naturalized plant; all plant parts exude urushiol sap.',
-  ),
-];
+// Toxic plant data now loaded from Supabase toxic_plants_catalog table.
+// Falls back to empty list when offline or on error.
 
 Color _harmColor(String harm) {
   final h = harm.toLowerCase();
@@ -197,12 +47,17 @@ class _BrowseScreenState extends State<BrowseScreen> {
   final UsageAnalytics _analytics = UsageAnalytics();
   final ToxicPlantImageService _toxicImageService = ToxicPlantImageService();
 
+  final ToxicPlantCatalogService _catalogService = ToxicPlantCatalogService();
+
   late BrowseFilter _selectedFilter;
   String _searchQuery = '';
   bool _isGridView = true;
 
   // slug → imageUrl, loaded from Supabase
   Map<String, String> _toxicPlantImages = {};
+  // Toxic plants loaded from Supabase catalog; falls back to empty on error.
+  List<ToxicPlantEntry> _toxicPlants = [];
+  bool _loadingToxicPlants = false;
 
   @override
   void initState() {
@@ -214,11 +69,37 @@ class _BrowseScreenState extends State<BrowseScreen> {
       plantProvider.refreshPlants();
     });
     _loadToxicPlantImages();
+    _loadToxicPlants();
   }
 
   Future<void> _loadToxicPlantImages() async {
     final images = await _toxicImageService.getImageUrls();
     if (mounted) setState(() => _toxicPlantImages = images);
+  }
+
+  Future<void> _loadToxicPlants() async {
+    if (_loadingToxicPlants) return;
+    setState(() => _loadingToxicPlants = true);
+    try {
+      final raw = await _catalogService.fetchAllActive();
+      if (!mounted) return;
+      setState(() {
+        _toxicPlants = raw.map((m) => ToxicPlantEntry(
+          slug: m['slug'] as String? ?? '',
+          commonName: m['common_name'] as String? ?? '',
+          scientificName: m['scientific_name'] as String? ?? '',
+          localName: m['local_name'] as String? ?? '',
+          harm: m['harm'] as String? ?? '',
+          toxin: m['toxin'] as String? ?? '',
+          symptoms: m['symptoms'] as String? ?? '',
+          appearance: m['appearance'] as String? ?? '',
+          habitat: m['habitat'] as String? ?? '',
+        )).toList();
+        _loadingToxicPlants = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loadingToxicPlants = false);
+    }
   }
 
   @override
@@ -279,7 +160,10 @@ class _BrowseScreenState extends State<BrowseScreen> {
         body: RefreshIndicator(
           onRefresh: () async {
             if (isToxic) {
-              await _loadToxicPlantImages();
+              await Future.wait([
+                _loadToxicPlantImages(),
+                _loadToxicPlants(),
+              ]);
             } else {
               await context.read<PlantProvider>().refreshPlants();
             }

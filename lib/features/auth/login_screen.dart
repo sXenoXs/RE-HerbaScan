@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:herbascan/core/providers/auth_provider.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
@@ -70,11 +72,55 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  void _showWebBackMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.local_florist_rounded),
+              title: const Text('Browse Plants'),
+              onTap: () {
+                Navigator.of(context).pop(); // Close bottom sheet
+                GoRouter.of(context).go('/browse');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings_rounded),
+              title: const Text('Settings'),
+              onTap: () {
+                Navigator.of(context).pop(); // Close bottom sheet
+                GoRouter.of(context).go('/settings');
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(automaticallyImplyLeading: false, toolbarHeight: 0),
+      appBar: AppBar(
+        title: const Text('Sign In'),
+        centerTitle: true,
+        automaticallyImplyLeading: false,
+        toolbarHeight: kIsWeb ? kToolbarHeight : 0,
+        leading: kIsWeb
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_rounded),
+                tooltip: 'Back to app',
+                onPressed: () => _showWebBackMenu(context),
+              )
+            : null,
+      ),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 450),
@@ -83,13 +129,18 @@ class _LoginScreenState extends State<LoginScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
           child: Form(
             key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const BotanicalAuthHeader(
+            child: CallbackShortcuts(
+              bindings: {
+                const SingleActivator(LogicalKeyboardKey.enter): _submit,
+              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                BotanicalAuthHeader(
                   title: 'Personal Herbarium',
                   subtitle:
                       'Sign in to sync your scan history and images to the cloud.',
+                  imageAsset: 'assets/icons/HerbaScan_Icon1.svg',
                 ),
                 const SizedBox(height: 28),
 
@@ -126,6 +177,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     labelText: 'Email',
                     hintText: 'you@example.com',
                   ),
+                  textInputAction: TextInputAction.next,
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) {
                       return 'Enter your email';
@@ -152,6 +204,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           setState(() => _obscurePassword = !_obscurePassword),
                     ),
                   ),
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) => _submit(),
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Enter your password';
                     return null;
@@ -230,8 +284,9 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
-        ),
-      ),
+    ),
+  ),
+),
     );
   }
 }

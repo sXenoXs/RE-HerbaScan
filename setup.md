@@ -125,7 +125,7 @@ The following files are bundled in the repo and require no separate download for
 
 Supabase credentials are set in `lib/core/config/supabase_config.dart`. The project is already configured for `tsahfzmxqsgbxrrtbdnw.supabase.co`.
 
-**Apply all 19 migrations via CLI (recommended):**
+**Apply all 23 migrations via CLI (recommended):**
 
 ```bash
 # Link project (run once)
