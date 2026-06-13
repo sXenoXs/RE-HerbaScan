@@ -514,7 +514,9 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
 
   Widget _buildBottomControls() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.6,
+      ),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         border: Border(
@@ -523,9 +525,11 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
           ),
         ),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
           if (_traceError != null) ...[
             Container(
               padding: const EdgeInsets.all(8),
@@ -549,6 +553,7 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
           const SizedBox(height: 8),
           _buildActionButtons(),
         ],
+        ),
       ),
     );
   }
