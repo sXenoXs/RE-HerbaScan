@@ -15,7 +15,12 @@ enum _TracerState { idle, picking, resizing, tracing, preview }
 
 /// A full-screen dialog for tracing images into SVG paths.
 class ImageTracerDialog extends StatefulWidget {
-  const ImageTracerDialog({super.key});
+  final Color fillColor;
+
+  const ImageTracerDialog({
+    super.key,
+    this.fillColor = const Color(0xFF4CAF50), // Default green
+  });
 
   @override
   State<ImageTracerDialog> createState() => _ImageTracerDialogState();
@@ -541,6 +546,7 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
                       showPoints: _showPoints,
                       fadeImage: _fadeImage,
                       showOriginal: _showOriginal,
+                      fillColor: widget.fillColor,
                     ),
                   ),
                 );
@@ -966,6 +972,7 @@ class _TracedPathPainter extends CustomPainter {
   final bool showPoints;
   final bool fadeImage;
   final bool showOriginal;
+  final Color fillColor;
 
   _TracedPathPainter({
     required this.svgPathData,
@@ -974,6 +981,7 @@ class _TracedPathPainter extends CustomPainter {
     required this.showPoints,
     required this.fadeImage,
     required this.showOriginal,
+    required this.fillColor,
   });
 
   @override
@@ -1000,11 +1008,11 @@ class _TracedPathPainter extends CustomPainter {
       
       if (showPath) {
         canvas.drawPath(path, Paint()
-          ..color = AppTheme.botanicalPrimary.withValues(alpha: 0.7)
+          ..color = fillColor.withValues(alpha: 0.7)
           ..style = PaintingStyle.fill);
         // Stroke outline
         canvas.drawPath(path, Paint()
-          ..color = AppTheme.botanicalPrimary
+          ..color = fillColor
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1.5);
       }

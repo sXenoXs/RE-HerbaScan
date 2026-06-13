@@ -2008,6 +2008,7 @@ class _EditAnatomyPartScreenState extends State<_EditAnatomyPartScreen> {
   late TextEditingController _svgPathController;
   late TextEditingController _titleController;
   late TextEditingController _descriptionController;
+  late TextEditingController _colorHexController;
   late List<String> _conditions;
 
   @override
@@ -2022,6 +2023,8 @@ class _EditAnatomyPartScreenState extends State<_EditAnatomyPartScreen> {
         TextEditingController(text: m?['title'] as String? ?? '');
     _descriptionController =
         TextEditingController(text: m?['description'] as String? ?? '');
+    _colorHexController =
+        TextEditingController(text: m?['color_hex'] as String? ?? '4CAF50');
     if (m?['conditions'] is List) {
       _conditions =
           (m!['conditions'] as List).map((e) => e.toString()).toList();
@@ -2036,13 +2039,22 @@ class _EditAnatomyPartScreenState extends State<_EditAnatomyPartScreen> {
     _svgPathController.dispose();
     _titleController.dispose();
     _descriptionController.dispose();
+    _colorHexController.dispose();
     super.dispose();
   }
 
   Future<void> _openImageTracer() async {
+    final hex = _colorHexController.text.trim().replaceAll('#', '');
+    Color fillCol = const Color(0xFF4CAF50);
+    if (hex.isNotEmpty) {
+      try {
+        fillCol = Color(int.parse(hex, radix: 16) | 0xFF000000);
+      } catch (_) {}
+    }
+
     final result = await showDialog<String>(
       context: context,
-      builder: (_) => const ImageTracerDialog(),
+      builder: (_) => ImageTracerDialog(fillColor: fillCol),
     );
     if (result != null && result.isNotEmpty && mounted) {
       setState(() => _svgPathController.text = result);
@@ -2072,7 +2084,7 @@ class _EditAnatomyPartScreenState extends State<_EditAnatomyPartScreen> {
       'title': _titleController.text.trim(),
       'description': _descriptionController.text.trim(),
       'conditions': conditionsList,
-      'color_hex': widget.initial?['color_hex'] as String? ?? '4CAF50',
+      'color_hex': _colorHexController.text.replaceAll('#', '').toUpperCase(),
       'z_index': widget.initial?['z_index'] is int
           ? widget.initial!['z_index'] as int
           : int.tryParse(widget.initial?['z_index'].toString() ?? '0') ?? 0,
@@ -2166,10 +2178,99 @@ class _EditAnatomyPartScreenState extends State<_EditAnatomyPartScreen> {
               minLines: 2,
             ),
             const SizedBox(height: 12),
+            _buildColorPicker(),
+            const SizedBox(height: 12),
             _buildConditionsSection(theme),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildColorPicker() {
+    final theme = Theme.of(context);
+    final palette = [
+      ('Leaf Green', '4CAF50'),
+      ('Stem/Bark Brown', '795548'),
+      ('Root Yellow-Brown', 'A1887F'),
+      ('Garlic/Onion White', 'F5F5F5'),
+      ('Flower Red', 'F44336'),
+      ('Flower Pink', 'E91E63'),
+    ];
+
+    Color currentColor = const Color(0xFF4CAF50);
+    try {
+      if (_colorHexController.text.isNotEmpty) {
+        currentColor = Color(int.parse(_colorHexController.text.replaceAll('#', ''), radix: 16) | 0xFF000000);
+      }
+    } catch (_) {}
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Silhouette Color', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: palette.map((p) {
+            final color = Color(int.parse(p.$2, radix: 16) | 0xFF000000);
+            final isSelected = _colorHexController.text.replaceAll('#', '').toUpperCase() == p.$2.toUpperCase();
+            return Tooltip(
+              message: p.$1,
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _colorHexController.text = p.$2;
+                  });
+                },
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected ? AppTheme.botanicalPrimary : Colors.grey.withValues(alpha: 0.3),
+                      width: isSelected ? 3 : 1,
+                    ),
+                    boxShadow: isSelected ? [
+                      BoxShadow(color: AppTheme.botanicalPrimary.withValues(alpha: 0.3), blurRadius: 4, spreadRadius: 1)
+                    ] : null,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: currentColor,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.grey.withValues(alpha: 0.5)),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextField(
+                controller: _colorHexController,
+                decoration: const InputDecoration(
+                  labelText: 'Custom Hex Color',
+                  hintText: 'e.g. 4CAF50',
+                  isDense: true,
+                  prefixText: '#',
+                ),
+                onChanged: (v) => setState(() {}),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
