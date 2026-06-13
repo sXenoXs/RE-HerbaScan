@@ -205,6 +205,8 @@ The table below documents every migration file in `supabase/migrations/` in chro
 | `20260524000000_model_versions_rls.sql` | RLS enabled on `public.model_versions`; SELECT open to all; INSERT/UPDATE/DELETE restricted to `is_admin()` |
 | `20260524000001_scan_training_eligible.sql` | `training_eligible boolean NOT NULL DEFAULT false` + `training_copied_at timestamptz NULL` on `public.scans`; partial index; `training-datasets` bucket admin INSERT/SELECT policies |
 | `20260525000000_readd_yerba_buena_browse_only.sql` | Yerba Buena (*Clinopodium douglasii*) re-inserted across all 8 catalog tables as browse-only DOH plant; `SELECT COUNT(*) FROM catalog_plants` = **30** |
+| `20260607000000_security_hardening_rls.sql` | `scans.training_eligible` admin RLS; `user_feedback` update deny |
+| `20260607000001_app_versions.sql` | `app_versions` table for OTA App Updates |
 | `20260611000000_app_config_table.sql` | `public.app_config` table + RLS for remote configurable app and model versions |
 | `20260611000001_data_deletion_requests.sql` | `public.data_deletion_requests` table + RLS for tracking user account deletion requests |
 | `20260611000002_toxic_plants_catalog.sql` | `public.toxic_plants_catalog` table + RLS for DB-backed toxic plants |
@@ -294,6 +296,15 @@ Run `supabase/migrations/20260525000000_readd_yerba_buena_browse_only.sql` (or `
 - `catalog_plant_anatomy` — leaves part (`WHERE NOT EXISTS` guard)
 
 Post-migration: `SELECT COUNT(*) FROM catalog_plants` = **30**. **Already applied to production.**
+
+### Step 6j – Security Hardening & OTA App Updates *(v1.0.26 – June 07, 2026)*
+
+Run `supabase/migrations/20260607000000_security_hardening_rls.sql` to restrict access to `scans.training_eligible` and prevent updates to `user_feedback`.
+Run `supabase/migrations/20260607000001_app_versions.sql` to create the `app_versions` table and policies for in-app OTA updates.
+
+### Step 6k – Remote Config, Data Deletion, & Toxic Plants *(v1.0.28 – June 11, 2026)*
+
+Run the four `20260611*` migrations to add `app_config` (remote versions/help content), `data_deletion_requests` (account deletion tracking), `toxic_plants_catalog` (DB-backed toxic plants), and an `is_anonymous` boolean to `user_feedback`.
 
 ### If you get an error
 

@@ -1,7 +1,7 @@
 # HerbaScan Backend API
 
 **Last Updated:** June 11, 2026
-**Backend Version:** 1.0.7 (aligned with app v1.0.7 — 31-class model, Grad-CAM Flutter-side removed)
+**Backend Version:** 1.0.7 (aligned with app v1.0.28 — 31-class model, Grad-CAM Flutter-side removed)
 
 > **Architecture note:** Plant identification runs **fully offline** on-device via TFLite.
 > The Flutter app does **not** call this backend during scanning.

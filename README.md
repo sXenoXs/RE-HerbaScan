@@ -64,22 +64,29 @@ HerbaScan is a Flutter-based mobile application that uses a MobileNetV2 Convolut
 - **Admin routing**: Admins go directly to `/admin` from splash; `/home` redirects to `/admin` for admin users
 - **Image Review** — Approve (Approve only / Approve + Add to Training Data), Reject, Delete; "Training eligible" badge on approved scans; `_CopyingProgressDialog` during storage copy
 - **Plant Metadata Editor** — 6-tab form (Identity, Ecology, Medicinal, Preparations, Safety, Anatomy); cloud-first; instant local sync after save
+- **App Config Editor** — Remote configurable app version, model version, and help content.
+- **Toxic Plants DB Catalog** — Full DB-backed CRUD for the Toxic Plants warning screen.
+- **Image Tracer (Figma-style)** — In-app image tracer converts anatomy images to SVG paths.
+- **Inference Testing Lab** — Advanced diagnostic lab for model testing (OOD metrics, confidence gates, top-5).
 - **Training Images Sheet** — manual upload + approved scan count with "Include in next training run" toggle; `TriggerTrainingWidget` for one-tap Modal GPU training
 - **Condition Search Management** — add / edit / delete conditions + plant mapping
 - **User Management** — make admin / remove admin, force activate email (OTP bypass), deactivate, delete
 - **System Health** — enhanced error logs with filter chips (All / Camera / AI / Database / Network), expandable list, individual `ExpansionTile` entries with full message + stack trace; Export modal bottom sheet (JSON / MD / CSV / Text) with clipboard copy and file download via `share_plus`
-- **Feedback** — view and delete user feedback entries
+- **Feedback** — view and delete user feedback entries (supports anonymous submissions)
+- **Data Deletion Requests** — view and manage account deletion requests.
 - **Factory Reset** — re-seeds catalog to Supabase
 - **Supabase Realtime sync** — `PlantProvider` subscribes to 8 catalog tables; admin edits appear in-app instantly via `syncSinglePlant` / `syncConditionsOnly`
-- **Theme-aware UI** — all admin screens (Overview, New Plant Wizard, sidebar rail/drawer, Toxic Plants cards, System Health export) adapt to light and dark mode
+- **Theme-aware UI** — all admin screens adapt to light and dark mode
 
 ### Settings & Offline
 
+- **OTA App Update System** — In-app APK updates for Android devices.
 - **System Diagnostics** (renamed from Offline Demo) — 2×2 stat cards, connection banner, Force Sync / Wipe Cache
 - **Offline storage info + refresh** — wipes device scan history on demand
 - **Persistent user preferences** — SharedPreferences; show_confidence, show_top3, auto_save_scans
 - **English / Filipino localization** — runtime switching
-- **Medical Disclaimer screen** — one-time first-launch overlay (acknowledged state persisted to SharedPreferences); routes to `/disclaimer` with destination as `extra`
+- **Legal Onboarding Wizard** — mandatory "Scroll-to-Unlock" Medical Disclaimer, ToS, and EULA screens on first launch.
+- **Data Deletion Request** — Request account data deletion directly from settings.
 
 ### UI / UX
 
@@ -93,6 +100,23 @@ HerbaScan is a Flutter-based mobile application that uses a MobileNetV2 Convolut
 ---
 
 ## Recent Changes
+
+### v1.0.28 — June 11, 2026
+
+- **Legal Onboarding & Documents** — Scroll-to-Unlock Medical Disclaimer wizard on first launch (Disclaimer, ToS, EULA) with settings integration and Privacy Policy external link.
+- **Admin App Config Editor** — Fully refactored Help & Tutorial content editor with structured JSON UI and dynamic fetching.
+- **Admin Layout Refinements** — Improved Toxic Plants responsiveness, removed redundant layout wrappers, simplified Dashboard header.
+- **Admin Inference Testing Lab** — Extracted to a dedicated screen with advanced diagnostics, scored OOD metrics, and a Top-5 breakdown.
+- **Admin Image Tracer (Figma-style)** — Advanced path trace controls (show points, fade image) dynamically matching light/dark mode.
+- **Tablet Responsiveness** — `Center` + `ConstrainedBox(maxWidth: 800)` logic applied to all new Admin Console screens for ultra-wide desktop and tablet UX.
+- **Various Bug Fixes** — Corrected `kIsWeb` scope, image package discrepancies, and missing parens in Auth screens.
+
+### v1.0.26 — June 07, 2026
+
+- **Security Hardening** — RLS applied to `scans.training_eligible` and `user_feedback` update. Admin REST API timings secured, rate limits applied (5/min). `SUPABASE_ANON_KEY` forced into build step.
+- **OTA App Update System** — In-app OTA updates for Android APKs pulling from Supabase `app_versions`.
+- **Web Admin Portal Support** — Added `package:tflite_flutter` Web Stub for successful `flutter build web --release` without failing FFI linking.
+- **Database Additions** — Four new migrations for data deletion, anonymous feedback, app config remote fetching, and toxic plants catalog.
 
 ### v1.0.22 — May 25, 2026
 
@@ -365,6 +389,12 @@ See `backend/README.md` → "Phase 2: Model Extraction & Conversion" for full de
 | `20260524000000_model_versions_rls.sql` | RLS on `model_versions` (SELECT open; CUD admins only) |
 | `20260524000001_scan_training_eligible.sql` | `training_eligible` + `training_copied_at` on `scans`; training storage policies |
 | `20260525000000_readd_yerba_buena_browse_only.sql` | Yerba Buena re-inserted across all 8 catalog tables as browse-only |
+| `20260607000000_security_hardening_rls.sql` | `scans.training_eligible` admin RLS; `user_feedback` update deny |
+| `20260607000001_app_versions.sql` | `app_versions` table for OTA App Updates |
+| `20260611000000_app_config_table.sql` | `app_config` table for remote versions/tutorials |
+| `20260611000001_data_deletion_requests.sql` | `data_deletion_requests` tracking table |
+| `20260611000002_toxic_plants_catalog.sql` | `toxic_plants_catalog` DB table |
+| `20260611000003_user_feedback_anonymous.sql` | `is_anonymous` column on `user_feedback` |
 
 ### Edge Functions
 
@@ -394,6 +424,10 @@ UPDATE public.profiles SET role = 'admin' WHERE id = 'YOUR_USER_UUID';
 | `safety_profiles` | Contraindication data (synced from `catalog_safety`); includes `needs_strict_contraindications` |
 | `plant_habitats` | Coordinates, region names, climate notes |
 | `catalog_plant_anatomy` | SVG path data for 2D interactive silhouette |
+| `app_versions` | OTA App Updates info |
+| `app_config` | App versions, model versions, and help/tutorial text |
+| `data_deletion_requests` | Account data deletion tracking |
+| `toxic_plants_catalog` | DB-backed toxic plant definitions |
 
 Seeded from `PlantDataService.getAllMedicinalPlantsData()` on first launch. All catalog tables created on every open via `CREATE TABLE IF NOT EXISTS` for fresh-install safety.
 

@@ -157,7 +157,7 @@ UPDATE public.profiles SET role = 'admin' WHERE id = 'YOUR_USER_UUID';
 
 The SQLite database is created automatically on first app launch. No manual setup is required.
 
-**9 tables auto-created and seeded:**
+**13 tables auto-created and seeded:**
 
 | Table | Purpose |
 | --- | --- |
@@ -170,6 +170,10 @@ The SQLite database is created automatically on first app launch. No manual setu
 | `safety_profiles` | Contraindication data; includes `needs_strict_contraindications` |
 | `plant_habitats` | Coordinates, region names, climate notes |
 | `catalog_plant_anatomy` | SVG path data for 2D interactive silhouette |
+| `app_versions` | OTA App Updates info |
+| `app_config` | App versions, model versions, and help/tutorial text |
+| `data_deletion_requests` | Account data deletion tracking |
+| `toxic_plants_catalog` | DB-backed toxic plant definitions |
 
 Seeded from `PlantDataService.getAllMedicinalPlantsData()` on first launch (30 plants). When online, `CatalogSyncService` overwrites catalog tables from Supabase on every app open.
 
