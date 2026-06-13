@@ -18,20 +18,31 @@ class DisclaimerScreen extends StatefulWidget {
 }
 
 class _DisclaimerScreenState extends State<DisclaimerScreen> {
-  String _disclaimerText = '';
+  final List<String> _assetPaths = [
+    'assets/data/legal/Disclaimer.md',
+    'assets/data/legal/Terms of Service.md',
+    'assets/data/legal/End-User License Agreement.md',
+  ];
+
+  final List<String> _checkboxLabels = [
+    'I have read and agree to the Medical Disclaimer',
+    'I have read and agree to the Terms of Service',
+    'I have read and agree to the End-User License Agreement (EULA)',
+  ];
+
+  List<String> _markdownTexts = ['', '', ''];
   bool _isLoading = true;
-  
+
   final ScrollController _scrollController = ScrollController();
-  
-  bool _hasScrolledToBottom = false;
-  bool _agreedToDisclaimer = false;
-  bool _agreedToToS = false;
-  bool _agreedToEULA = false;
+
+  int _currentStep = 0;
+  List<bool> _hasScrolledToBottom = [false, false, false];
+  List<bool> _agreed = [false, false, false];
 
   @override
   void initState() {
     super.initState();
-    _loadDisclaimer();
+    _loadAllTexts();
     _scrollController.addListener(_onScroll);
   }
 
@@ -41,44 +52,79 @@ class _DisclaimerScreenState extends State<DisclaimerScreen> {
     super.dispose();
   }
 
-  Future<void> _loadDisclaimer() async {
+  Future<void> _loadAllTexts() async {
     try {
-      final text = await rootBundle.loadString('assets/data/legal/Disclaimer.md');
+      for (int i = 0; i < _assetPaths.length; i++) {
+        _markdownTexts[i] = await rootBundle.loadString(_assetPaths[i]);
+      }
       if (mounted) {
         setState(() {
-          _disclaimerText = text;
           _isLoading = false;
         });
-        // If text is too short to scroll, unlock immediately
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (_scrollController.hasClients &&
-              _scrollController.position.maxScrollExtent <= 0) {
-            setState(() {
-              _hasScrolledToBottom = true;
-            });
-          }
-        });
+        _checkIfShortText();
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _disclaimerText = 'Error loading disclaimer. Please try again later.';
+          _markdownTexts[0] = 'Error loading documents. Please try again later.';
           _isLoading = false;
         });
       }
     }
   }
 
+  void _checkIfShortText() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients &&
+          _scrollController.position.maxScrollExtent <= 0) {
+        setState(() {
+          _hasScrolledToBottom[_currentStep] = true;
+        });
+      }
+    });
+  }
+
   void _onScroll() {
     if (_scrollController.hasClients) {
       if (_scrollController.position.pixels >=
           _scrollController.position.maxScrollExtent - 20) {
-        if (!_hasScrolledToBottom) {
+        if (!_hasScrolledToBottom[_currentStep]) {
           setState(() {
-            _hasScrolledToBottom = true;
+            _hasScrolledToBottom[_currentStep] = true;
           });
         }
       }
+    }
+  }
+
+  void _nextStep() {
+    if (_currentStep < 2) {
+      setState(() {
+        _currentStep++;
+      });
+      // Scroll to top for the new text
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.jumpTo(0);
+        }
+        _checkIfShortText();
+      });
+    } else {
+      _onContinue();
+    }
+  }
+
+  void _prevStep() {
+    if (_currentStep > 0) {
+      setState(() {
+        _currentStep--;
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.jumpTo(0);
+        }
+        _checkIfShortText();
+      });
     }
   }
 
@@ -95,17 +141,19 @@ class _DisclaimerScreenState extends State<DisclaimerScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final bgColor = isDark ? AppTheme.darkScaffold : AppTheme.surfaceColor;
-    
-    final bool canCheckToS = _agreedToDisclaimer;
-    final bool canCheckEULA = _agreedToToS;
-    final bool allChecked = _agreedToDisclaimer && _agreedToToS && _agreedToEULA;
 
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
-        title: const Text('Terms & Conditions'),
+        title: Text('Terms & Conditions (${_currentStep + 1}/3)'),
         centerTitle: true,
         automaticallyImplyLeading: false,
+        leading: _currentStep > 0
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: _prevStep,
+              )
+            : null,
       ),
       body: Center(
         child: ConstrainedBox(
@@ -120,7 +168,7 @@ class _DisclaimerScreenState extends State<DisclaimerScreen> {
                       ? const Center(child: CircularProgressIndicator())
                       : Markdown(
                           controller: _scrollController,
-                          data: _disclaimerText,
+                          data: _markdownTexts[_currentStep],
                           styleSheet: MarkdownStyleSheet(
                             p: theme.textTheme.bodyMedium?.copyWith(
                               color: isDark ? Colors.white70 : Colors.black87,
@@ -131,75 +179,32 @@ class _DisclaimerScreenState extends State<DisclaimerScreen> {
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: Column(
-                  children: [
-                    if (!_hasScrolledToBottom)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 12.0),
-                        child: Text(
-                          'Please scroll to the bottom to unlock the checkboxes.',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.error,
-                            fontWeight: FontWeight.w600,
+                child: SizedBox(
+                  // Fixed height to prevent layout jumps when checkbox appears
+                  height: 60,
+                  child: Center(
+                    child: !_hasScrolledToBottom[_currentStep]
+                        ? Text(
+                            'Please scroll to the bottom to unlock the agreement.',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.error,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          )
+                        : CheckboxListTile(
+                            value: _agreed[_currentStep],
+                            onChanged: (val) {
+                              setState(() {
+                                _agreed[_currentStep] = val ?? false;
+                              });
+                            },
+                            title: Text(
+                              _checkboxLabels[_currentStep],
+                              style: theme.textTheme.bodyMedium,
+                            ),
+                            controlAffinity: ListTileControlAffinity.leading,
                           ),
-                        ),
-                      ),
-                    CheckboxListTile(
-                      enabled: _hasScrolledToBottom,
-                      value: _agreedToDisclaimer,
-                      onChanged: _hasScrolledToBottom
-                          ? (val) {
-                              setState(() {
-                                _agreedToDisclaimer = val ?? false;
-                                if (!_agreedToDisclaimer) {
-                                  _agreedToToS = false;
-                                  _agreedToEULA = false;
-                                }
-                              });
-                            }
-                          : null,
-                      title: Text(
-                        'I have read and agree to the Medical Disclaimer',
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                      controlAffinity: ListTileControlAffinity.leading,
-                    ),
-                    CheckboxListTile(
-                      enabled: canCheckToS,
-                      value: _agreedToToS,
-                      onChanged: canCheckToS
-                          ? (val) {
-                              setState(() {
-                                _agreedToToS = val ?? false;
-                                if (!_agreedToToS) {
-                                  _agreedToEULA = false;
-                                }
-                              });
-                            }
-                          : null,
-                      title: Text(
-                        'I have read and agree to the Terms of Service',
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                      controlAffinity: ListTileControlAffinity.leading,
-                    ),
-                    CheckboxListTile(
-                      enabled: canCheckEULA,
-                      value: _agreedToEULA,
-                      onChanged: canCheckEULA
-                          ? (val) {
-                              setState(() {
-                                _agreedToEULA = val ?? false;
-                              });
-                            }
-                          : null,
-                      title: Text(
-                        'I have read and agree to the End-User License Agreement (EULA)',
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                      controlAffinity: ListTileControlAffinity.leading,
-                    ),
-                  ],
+                  ),
                 ),
               ),
               Padding(
@@ -208,18 +213,20 @@ class _DisclaimerScreenState extends State<DisclaimerScreen> {
                   width: double.infinity,
                   height: 50,
                   child: FilledButton(
-                    onPressed: allChecked ? _onContinue : null,
+                    onPressed: _agreed[_currentStep] ? _nextStep : null,
                     style: FilledButton.styleFrom(
                       backgroundColor: AppTheme.botanicalPrimary,
-                      disabledBackgroundColor: AppTheme.botanicalPrimary.withOpacity(0.3),
+                      disabledBackgroundColor:
+                          AppTheme.botanicalPrimary.withOpacity(0.3),
                       disabledForegroundColor: Colors.white70,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text(
-                      'Continue',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    child: Text(
+                      _currentStep < 2 ? 'Next' : 'Continue',
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ),
