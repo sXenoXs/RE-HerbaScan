@@ -445,10 +445,17 @@ class SettingsScreen extends StatelessWidget {
   Widget _buildPrivacyPolicyTile(BuildContext context, ThemeData theme) {
     return ListTile(
       leading: const Icon(Icons.privacy_tip_outlined),
-      title: const Text('Privacy Policy'),
+      title: Text(
+        'Privacy Policy',
+        style: TextStyle(
+          color: theme.colorScheme.primary,
+          decoration: TextDecoration.underline,
+          decorationColor: theme.colorScheme.primary,
+        ),
+      ),
       trailing: const Icon(Icons.open_in_new_rounded, size: 16),
       onTap: () async {
-        final Uri url = Uri.parse('https://sxenoxs.github.io/RE-HerbaScan/privacy-policy');
+        final Uri url = Uri.parse('https://sxenoxs.github.io/RE-HerbaScan/');
         if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
