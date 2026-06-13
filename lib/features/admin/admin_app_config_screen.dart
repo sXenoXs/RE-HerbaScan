@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:herbascan/core/services/app_config_service.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
@@ -23,7 +24,11 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
 
   final _appVersionController = TextEditingController();
   final _modelVersionController = TextEditingController();
-  final _helpContentController = TextEditingController();
+
+  final List<Map<String, TextEditingController>> _tipsControllers = [];
+  final List<Map<String, TextEditingController>> _issuesControllers = [];
+  final List<Map<String, TextEditingController>> _featuresControllers = [];
+  final TextEditingController _oodExplanationController = TextEditingController();
 
   bool _loading = true;
   bool _saving = false;
@@ -39,7 +44,19 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
   void dispose() {
     _appVersionController.dispose();
     _modelVersionController.dispose();
-    _helpContentController.dispose();
+    for (final map in _tipsControllers) {
+      map['title']?.dispose();
+      map['body']?.dispose();
+    }
+    for (final map in _issuesControllers) {
+      map['title']?.dispose();
+      map['body']?.dispose();
+    }
+    for (final map in _featuresControllers) {
+      map['title']?.dispose();
+      map['body']?.dispose();
+    }
+    _oodExplanationController.dispose();
     super.dispose();
   }
 
@@ -53,7 +70,35 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
       if (mounted) {
         _appVersionController.text = config['app_version'] ?? '';
         _modelVersionController.text = config['model_version'] ?? '';
-        _helpContentController.text = config['help_content'] ?? '';
+        
+        _tipsControllers.clear();
+        _issuesControllers.clear();
+        _featuresControllers.clear();
+        _oodExplanationController.text = '';
+
+        final rawJson = config['help_content'] ?? '{}';
+        try {
+          final Map<String, dynamic> parsed = jsonDecode(rawJson);
+          
+          void populateList(String key, List<Map<String, TextEditingController>> controllers) {
+            if (parsed[key] is List) {
+              for (final item in parsed[key]) {
+                controllers.add({
+                  'title': TextEditingController(text: item['title']?.toString() ?? ''),
+                  'body': TextEditingController(text: item['body']?.toString() ?? ''),
+                });
+              }
+            }
+          }
+
+          populateList('tips', _tipsControllers);
+          populateList('issues', _issuesControllers);
+          populateList('features', _featuresControllers);
+          _oodExplanationController.text = parsed['ood_explanation']?.toString() ?? '';
+        } catch (e) {
+          // If parsing fails, ignore and start with empty lists
+        }
+
         setState(() => _loading = false);
       }
     } catch (e) {
@@ -73,7 +118,24 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
           description: 'Current app version displayed in Settings → Support & About');
       await _service.upsert('model_version', _modelVersionController.text.trim(),
           description: 'Current ML model version displayed in Settings → Support & About');
-      await _service.upsert('help_content', _helpContentController.text.trim(),
+
+      List<Map<String, String>> extractList(List<Map<String, TextEditingController>> controllers) {
+        return controllers.map((map) => {
+          'title': map['title']!.text.trim(),
+          'body': map['body']!.text.trim(),
+        }).toList();
+      }
+
+      final helpContentMap = {
+        'tips': extractList(_tipsControllers),
+        'issues': extractList(_issuesControllers),
+        'features': extractList(_featuresControllers),
+        'ood_explanation': _oodExplanationController.text.trim(),
+      };
+      
+      final helpContentJson = jsonEncode(helpContentMap);
+
+      await _service.upsert('help_content', helpContentJson,
           description:
               'Help & Tutorial content — JSON with tips, issues, features, ood_explanation');
 
@@ -133,16 +195,6 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: AppTheme.botanicalPrimary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.tune_rounded,
-                color: AppTheme.botanicalPrimary, size: 24),
-          ),
-          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -162,6 +214,12 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
             ),
           ),
           const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            tooltip: 'Reload from server',
+            onPressed: _saving ? null : _load,
+          ),
+          const SizedBox(width: 4),
           FilledButton.icon(
             onPressed: _saving ? null : _save,
             icon: _saving
@@ -178,12 +236,6 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
             style: FilledButton.styleFrom(
               backgroundColor: AppTheme.botanicalPrimary,
             ),
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            tooltip: 'Reload from server',
-            onPressed: _saving ? null : _load,
           ),
         ],
       ),
@@ -215,11 +267,14 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
   }
 
   Widget _buildForm(ThemeData theme) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 800),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
           // App Version
           _buildFieldLabel(theme, 'App Version'),
           const SizedBox(height: 8),
@@ -257,25 +312,22 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
           const SizedBox(height: 24),
 
           // Help Content
-          _buildFieldLabel(theme, 'Help & Tutorial Content (JSON)'),
+          _buildFieldLabel(theme, 'Help & Tutorial Content'),
+          const SizedBox(height: 16),
+          _buildDynamicSection(theme, 'Tips', _tipsControllers),
+          const SizedBox(height: 24),
+          _buildDynamicSection(theme, 'Issues', _issuesControllers),
+          const SizedBox(height: 24),
+          _buildDynamicSection(theme, 'Features', _featuresControllers),
+          const SizedBox(height: 24),
+          _buildFieldLabel(theme, 'Out-of-Distribution (OOD) Explanation'),
           const SizedBox(height: 8),
           TextFormField(
-            controller: _helpContentController,
-            minLines: 12,
+            controller: _oodExplanationController,
+            minLines: 4,
             maxLines: null,
-            decoration: _inputDecoration('{ "tips": [...], "issues": [...], ... }'),
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontFamily: 'monospace',
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'JSON object with keys: tips, issues, features, ood_explanation. '
-            'Each array entry has "title" and "body" fields. The ood_explanation is a plain string.',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: AppTheme.textSecondary,
-            ),
+            decoration: _inputDecoration('Explanation for unknown plant confidence...'),
+            style: theme.textTheme.bodyMedium,
           ),
 
           const SizedBox(height: 32),
@@ -304,6 +356,83 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
           ),
         ],
       ),
+    ),
+  ),
+);
+  }
+
+  Widget _buildDynamicSection(ThemeData theme, String title, List<Map<String, TextEditingController>> controllers) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+            TextButton.icon(
+              onPressed: () {
+                setState(() {
+                  controllers.add({
+                    'title': TextEditingController(),
+                    'body': TextEditingController(),
+                  });
+                });
+              },
+              icon: const Icon(Icons.add, size: 16),
+              label: Text('Add $title'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (controllers.isEmpty)
+          Text('No items added.', style: theme.textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary)),
+        for (int i = 0; i < controllers.length; i++)
+          Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: theme.dividerColor.withOpacity(0.5)),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: controllers[i]['title'],
+                          decoration: _inputDecoration('Title'),
+                          style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+                        onPressed: () {
+                          setState(() {
+                            controllers[i]['title']?.dispose();
+                            controllers[i]['body']?.dispose();
+                            controllers.removeAt(i);
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: controllers[i]['body'],
+                    minLines: 2,
+                    maxLines: null,
+                    decoration: _inputDecoration('Body text'),
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 

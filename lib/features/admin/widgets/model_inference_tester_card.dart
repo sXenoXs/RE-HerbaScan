@@ -606,13 +606,15 @@ class _OodGatePanel extends StatelessWidget {
             const SizedBox(height: 4),
             Row(
               children: [
-                Text(
-                  ood.overallPass
-                      ? 'OOD gate PASSED'
-                      : 'OOD gate FAILED — ${ood.failReason ?? "Unknown reason"}',
-                  style: TextStyle(
-                    color: ood.overallPass ? green : red,
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Text(
+                    ood.overallPass
+                        ? 'OOD gate PASSED'
+                        : 'OOD gate FAILED — ${ood.failReason ?? "Unknown reason"}',
+                    style: TextStyle(
+                      color: ood.overallPass ? green : red,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 6),
@@ -651,36 +653,40 @@ class _GateMetricRow extends StatelessWidget {
   Widget build(BuildContext context) {
     // Pad label to fixed width for alignment
     final padded = label.padRight(13);
-    return Row(
-      children: [
-        Text('$padded: '),
-        Text(
-          score.padRight(9),
-          style: TextStyle(
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerLeft,
+      child: Row(
+        children: [
+          Text('$padded: '),
+          Text(
+            score.padRight(9),
+            style: TextStyle(
+              color: passed ? green : red,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Text(
+            passed ? 'PASS ' : 'FAIL ',
+            style: TextStyle(
+              color: passed ? green : red,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Icon(
+            passed ? Icons.check : Icons.close,
+            size: 13,
             color: passed ? green : red,
-            fontWeight: FontWeight.bold,
           ),
-        ),
-        Text(
-          passed ? 'PASS ' : 'FAIL ',
-          style: TextStyle(
-            color: passed ? green : red,
-            fontWeight: FontWeight.bold,
+          const SizedBox(width: 4),
+          Text(
+            '(min $threshold)',
+            style: TextStyle(
+              color: green.withValues(alpha: 0.5),
+            ),
           ),
-        ),
-        Icon(
-          passed ? Icons.check : Icons.close,
-          size: 13,
-          color: passed ? green : red,
-        ),
-        const SizedBox(width: 4),
-        Text(
-          '(min $threshold)',
-          style: TextStyle(
-            color: green.withValues(alpha: 0.5),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

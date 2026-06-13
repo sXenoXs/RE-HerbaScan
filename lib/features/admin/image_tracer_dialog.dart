@@ -36,6 +36,13 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
   int _blur = 2; // 0-15
   double _simplify = 1.5; // 0.5-5.0
   bool _invert = false;
+  int _ignoreLessThan = 20; // 0-100
+  int _smoothness = 0; // 0-5
+
+  // ── Preview Toggles ──────────────────────────────────────────────────────
+  bool _showPath = true;
+  bool _showPoints = true;
+  bool _fadeImage = false;
 
   // ── Tracing Results ──────────────────────────────────────────────────────
   String? _tracedSvgPath;
@@ -157,8 +164,7 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
   }
 
   Future<void> _traceImage() async {
-    if (_resizedImageBytes == null ||
-        _state != _TracerState.tracing) return;
+    if (_resizedImageBytes == null) return;
 
     setState(() => _isTracing = true);
 
@@ -169,6 +175,8 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
         blur: _blur,
         invert: _invert,
         simplify: _simplify,
+        ignoreLessThan: _ignoreLessThan,
+        smoothness: _smoothness,
       );
 
       if (!mounted) return;
@@ -264,7 +272,7 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
         top: false,
         bottom: false,
         child: Scaffold(
-          backgroundColor: Colors.black.withValues(alpha: 0.8),
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           body: _buildBody(),
         ),
       ),
@@ -300,7 +308,7 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
           Text(
             'Image Tracer',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.w600,
                 ),
           ),
@@ -308,7 +316,7 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
           Text(
             'Upload a plant part image to auto-generate the SVG path',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.white70,
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
             textAlign: TextAlign.center,
           ),
@@ -354,7 +362,7 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
           Text(
             'Tracing image...',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
           ),
         ],
@@ -382,26 +390,26 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.6),
+        color: Theme.of(context).colorScheme.surface,
         border: Border(
           bottom: BorderSide(
-            color: Colors.white.withValues(alpha: 0.1),
+            color: Theme.of(context).dividerColor,
           ),
         ),
       ),
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
             onPressed: _cancel,
           ),
-          const Expanded(
+          Expanded(
             child: Text(
               'Image Tracer',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
               textAlign: TextAlign.center,
             ),
@@ -422,9 +430,9 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
           flex: 1,
           child: _buildImagePanel(),
         ),
-        const VerticalDivider(
+        VerticalDivider(
           width: 1,
-          color: Colors.white24,
+          color: Theme.of(context).dividerColor,
         ),
         Expanded(
           flex: 1,
@@ -439,7 +447,7 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
       margin: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: Colors.white.withValues(alpha: 0.1),
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
@@ -449,11 +457,11 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
                 fit: BoxFit.contain,
               )
             : Container(
-                color: Colors.white.withValues(alpha: 0.05),
-                child: const Icon(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
+                child: Icon(
                   Icons.image,
                   size: 48,
-                  color: Colors.white38,
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38),
                 ),
               ),
       ),
@@ -465,7 +473,7 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
       margin: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: Colors.white.withValues(alpha: 0.1),
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
@@ -478,11 +486,11 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
 
   Widget _buildEmptyPreview() {
     return Container(
-      color: Colors.white.withValues(alpha: 0.05),
-      child: const Icon(
+      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
+      child: Icon(
         Icons.image_not_supported,
         size: 48,
-        color: Colors.white38,
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38),
       ),
     );
   }
@@ -495,6 +503,9 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
           painter: _TracedPathPainter(
             svgPathData: _tracedSvgPath!,
             sourceImage: _previewImage,
+            showPath: _showPath,
+            showPoints: _showPoints,
+            fadeImage: _fadeImage,
           ),
         );
       },
@@ -505,10 +516,10 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.6),
+        color: Theme.of(context).colorScheme.surface,
         border: Border(
           top: BorderSide(
-            color: Colors.white.withValues(alpha: 0.1),
+            color: Theme.of(context).dividerColor,
           ),
         ),
       ),
@@ -547,104 +558,90 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.2),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2),
         ),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'TRACING SETTINGS',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Colors.white70,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
-                ),
-          ),
+          _buildSectionHeader('PREVIEW'),
+          _buildCheckbox('Show path', _showPath, (v) => setState(() => _showPath = v)),
+          _buildCheckbox('Show points', _showPoints, (v) => setState(() => _showPoints = v)),
+          _buildCheckbox('Fade image', _fadeImage, (v) => setState(() => _fadeImage = v)),
+          
+          Divider(color: Theme.of(context).dividerColor, height: 24),
+          _buildSectionHeader('PRE-PROCESSING'),
+          _buildCheckbox('Invert image', _invert, (v) {
+            setState(() { _invert = v; _debouncedTrace(); });
+          }),
           const SizedBox(height: 8),
           _buildSlider(
-            label: 'Threshold',
-            value: _threshold.toDouble(),
-            min: 0,
-            max: 255,
-            onChanged: (value) {
-              setState(() {
-                _threshold = value.round();
-                if (_state == _TracerState.preview &&
-                    _resizedImageBytes != null &&
-                    !_isTracing) {
-                  _debouncedTrace();
-                }
-              });
-            },
-            labelSuffix: '',
-            valueFormatter: (value) => value.round().toString(),
+            label: 'Blur', value: _blur.toDouble(), min: 0, max: 15,
+            onChanged: (v) { setState(() { _blur = v.round(); _debouncedTrace(); }); },
+            valueFormatter: (v) => v.round().toString(),
           ),
           const SizedBox(height: 4),
           _buildSlider(
-            label: 'Blur',
-            value: _blur.toDouble(),
-            min: 0,
-            max: 15,
-            onChanged: (value) {
-              setState(() {
-                _blur = value.round();
-                if (_state == _TracerState.preview &&
-                    _resizedImageBytes != null &&
-                    !_isTracing) {
-                  _debouncedTrace();
-                }
-              });
-            },
-            labelSuffix: '',
-            valueFormatter: (value) => value.round().toString(),
+            label: 'Threshold', value: _threshold.toDouble(), min: 0, max: 255,
+            onChanged: (v) { setState(() { _threshold = v.round(); _debouncedTrace(); }); },
+            valueFormatter: (v) => v.round().toString(),
+          ),
+
+          Divider(color: Theme.of(context).dividerColor, height: 24),
+          _buildSectionHeader('TRACING'),
+          _buildSlider(
+            label: 'Ignore less than', value: _ignoreLessThan.toDouble(), min: 0, max: 100,
+            onChanged: (v) { setState(() { _ignoreLessThan = v.round(); _debouncedTrace(); }); },
+            valueFormatter: (v) => v.round().toString(),
           ),
           const SizedBox(height: 4),
           _buildSlider(
-            label: 'Simplify',
-            value: _simplify,
-            min: 0.5,
-            max: 5.0,
-            onChanged: (value) {
-              setState(() {
-                _simplify = value;
-                if (_state == _TracerState.preview &&
-                    _resizedImageBytes != null &&
-                    !_isTracing) {
-                  _debouncedTrace();
-                }
-              });
-            },
-            labelSuffix: '',
-            valueFormatter: (value) => value.toStringAsFixed(1),
+            label: 'Smoothness', value: _smoothness.toDouble(), min: 0, max: 5,
+            onChanged: (v) { setState(() { _smoothness = v.round(); _debouncedTrace(); }); },
+            valueFormatter: (v) => v.round().toString(),
           ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Checkbox(
-                value: _invert,
-                onChanged: (value) {
-                  setState(() {
-                    _invert = value ?? false;
-                    if (_state == _TracerState.preview &&
-                        _resizedImageBytes != null &&
-                        !_isTracing) {
-                      _debouncedTrace();
-                    }
-                  });
-                },
-                activeColor: AppTheme.botanicalPrimary,
-              ),
-              const SizedBox(height: 8),
-              const Expanded(
-                child: Text(
-                  'Invert (trace light areas instead of dark)',
-                  style: TextStyle(color: Colors.white70),
-                ),
-              ),
-            ],
+          const SizedBox(height: 4),
+          _buildSlider(
+            label: 'Curve optimisation', value: _simplify, min: 0.5, max: 5.0,
+            onChanged: (v) { setState(() { _simplify = v; _debouncedTrace(); }); },
+            valueFormatter: (v) => v.toStringAsFixed(1),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Text(
+        title,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+            ),
+      ),
+    );
+  }
+
+  Widget _buildCheckbox(String title, bool value, ValueChanged<bool> onChanged) {
+    return SizedBox(
+      height: 32,
+      child: Row(
+        children: [
+          SizedBox(
+            width: 24,
+            child: Checkbox(
+              value: value,
+              onChanged: (v) => onChanged(v ?? false),
+              activeColor: AppTheme.botanicalPrimary,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(title, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7))),
         ],
       ),
     );
@@ -656,7 +653,6 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
     required double min,
     required double max,
     required ValueChanged<double> onChanged,
-    required String labelSuffix,
     required String Function(double) valueFormatter,
   }) {
     return Column(
@@ -666,14 +662,14 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
           children: [
             Expanded(
               child: Text(
-                '$label$labelSuffix',
-                style: TextStyle(color: Colors.white70),
+                label,
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7)),
               ),
             ),
             Text(
               valueFormatter(value),
               style: TextStyle(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -697,7 +693,7 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.2),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2),
         ),
         borderRadius: BorderRadius.circular(8),
       ),
@@ -707,14 +703,14 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
           Text(
             'Generated path (d="..." value):',
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: Colors.white70,
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
           ),
           const SizedBox(height: 4),
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(4),
             ),
             child: SelectableText(
@@ -732,7 +728,7 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
             label: const Text('Copy to Clipboard'),
             style: TextButton.styleFrom(
               foregroundColor: _tracedSvgPath == null
-                  ? Colors.white38
+                  ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38)
                   : AppTheme.botanicalPrimary,
             ),
           ),
@@ -749,7 +745,7 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
             onPressed: _cancel,
             style: OutlinedButton.styleFrom(
               side: BorderSide(
-                color: Colors.white.withValues(alpha: 0.5),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
               ),
             ),
             child: const Text('Cancel'),
@@ -761,12 +757,12 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
             onPressed:
                 _isTracing || _tracedSvgPath == null ? null : _useThisPath,
             child: _isTracing
-                ? const SizedBox(
+                ? SizedBox(
                     height: 20,
                     width: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onPrimary,
                     ),
                   )
                 : const Text('Use This Path'),
@@ -781,10 +777,16 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
 class _TracedPathPainter extends CustomPainter {
   final String svgPathData; // the d="..." string
   final ui.Image? sourceImage; // 300×300 decoded image for background
+  final bool showPath;
+  final bool showPoints;
+  final bool fadeImage;
 
   _TracedPathPainter({
     required this.svgPathData,
     required this.sourceImage,
+    required this.showPath,
+    required this.showPoints,
+    required this.fadeImage,
   });
 
   @override
@@ -793,7 +795,7 @@ class _TracedPathPainter extends CustomPainter {
     if (sourceImage != null) {
       canvas.saveLayer(
         Rect.largest,
-        Paint()..color = Colors.white.withAlpha(128),
+        Paint()..color = Colors.white.withAlpha(fadeImage ? 76 : 255),
       );
       canvas.drawImage(sourceImage!, Offset.zero, Paint());
       canvas.restore();
@@ -802,14 +804,31 @@ class _TracedPathPainter extends CustomPainter {
     // Parse and draw SVG path
     try {
       final path = parseSvgPathData(svgPathData);
-      canvas.drawPath(path, Paint()
-        ..color = AppTheme.botanicalPrimary.withValues(alpha: 0.7)
-        ..style = PaintingStyle.fill);
-      // Stroke outline
-      canvas.drawPath(path, Paint()
-        ..color = AppTheme.botanicalPrimary
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5);
+      
+      if (showPath) {
+        canvas.drawPath(path, Paint()
+          ..color = AppTheme.botanicalPrimary.withValues(alpha: 0.7)
+          ..style = PaintingStyle.fill);
+        // Stroke outline
+        canvas.drawPath(path, Paint()
+          ..color = AppTheme.botanicalPrimary
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5);
+      }
+
+      if (showPoints) {
+        final regex = RegExp(r'[ML]\s+([0-9.]+)\s+([0-9.]+)');
+        final matches = regex.allMatches(svgPathData);
+        final pointPaint = Paint()
+          ..color = Colors.red
+          ..style = PaintingStyle.fill;
+        
+        for (final match in matches) {
+          final x = double.tryParse(match.group(1)!) ?? 0;
+          final y = double.tryParse(match.group(2)!) ?? 0;
+          canvas.drawCircle(Offset(x, y), 2.0, pointPaint);
+        }
+      }
     } catch (e) {
       // If parsing fails, show error in preview
       final textPainter = TextPainter(
@@ -834,6 +853,9 @@ class _TracedPathPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _TracedPathPainter oldDelegate) {
     return oldDelegate.svgPathData != svgPathData ||
-        oldDelegate.sourceImage != sourceImage;
+        oldDelegate.sourceImage != sourceImage ||
+        oldDelegate.showPath != showPath ||
+        oldDelegate.showPoints != showPoints ||
+        oldDelegate.fadeImage != fadeImage;
   }
 }

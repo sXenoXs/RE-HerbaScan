@@ -342,16 +342,6 @@ class _AdminToxicPlantsScreenState extends State<AdminToxicPlantsScreen> {
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.red.shade50,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(Icons.warning_amber_rounded,
-                color: Colors.red.shade700, size: 24),
-          ),
-          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -416,10 +406,13 @@ class _AdminToxicPlantsScreenState extends State<AdminToxicPlantsScreen> {
   }
 
   Widget _buildList(ThemeData theme) {
-    return ListView.separated(
-      padding: const EdgeInsets.all(20),
-      itemCount: _plants.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 800),
+        child: ListView.separated(
+          padding: const EdgeInsets.all(20),
+          itemCount: _plants.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (_, index) {
         final plant = _plants[index];
         final slug = plant['slug'] as String? ?? '';
@@ -427,7 +420,9 @@ class _AdminToxicPlantsScreenState extends State<AdminToxicPlantsScreen> {
         final isUploading = _uploading[slug] == true;
         return _buildPlantCard(theme, plant, entry, isUploading);
       },
-    );
+    ),
+  ),
+);
   }
 
   Widget _buildPlantCard(
@@ -571,8 +566,11 @@ class _AdminToxicPlantsScreenState extends State<AdminToxicPlantsScreen> {
             ),
             const SizedBox(height: 12),
             // ── Bottom row: action buttons ───────────────────────────────
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+            Wrap(
+              alignment: WrapAlignment.end,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 IconButton(
                   icon: Icon(
@@ -581,7 +579,6 @@ class _AdminToxicPlantsScreenState extends State<AdminToxicPlantsScreen> {
                   tooltip: isActive ? 'Hide from browse' : 'Show on browse',
                   onPressed: () => _toggleActive(plant),
                 ),
-                const SizedBox(width: 4),
                 FilledButton.icon(
                   onPressed: isUploading
                       ? null
@@ -597,8 +594,7 @@ class _AdminToxicPlantsScreenState extends State<AdminToxicPlantsScreen> {
                     minimumSize: const Size(100, 36),
                   ),
                 ),
-                if (hasImage) ...[
-                  const SizedBox(width: 8),
+                if (hasImage)
                   TextButton.icon(
                     onPressed: isUploading
                         ? null
@@ -610,8 +606,6 @@ class _AdminToxicPlantsScreenState extends State<AdminToxicPlantsScreen> {
                       visualDensity: VisualDensity.compact,
                     ),
                   ),
-                ],
-                const SizedBox(width: 8),
                 IconButton(
                   icon: const Icon(Icons.edit_outlined, size: 18),
                   tooltip: 'Edit entry',

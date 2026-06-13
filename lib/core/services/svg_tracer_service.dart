@@ -27,6 +27,8 @@ class SvgTracerService {
     int blur = 2,
     bool invert = false,
     double simplify = 1.5,
+    int ignoreLessThan = 20,
+    int smoothness = 0,
   }) async {
     return compute(_traceToSvgPath, {
       'imageBytes': imageBytes,
@@ -34,6 +36,8 @@ class SvgTracerService {
       'blur': blur,
       'invert': invert,
       'simplify': simplify,
+      'ignoreLessThan': ignoreLessThan,
+      'smoothness': smoothness,
     });
   }
 }
@@ -54,6 +58,8 @@ String _traceToSvgPath(Map<String, dynamic> args) {
   final blur = args['blur'] as int;
   final invert = args['invert'] as bool;
   final simplify = args['simplify'] as double;
+  final ignoreLessThan = args['ignoreLessThan'] as int;
+  final smoothness = args['smoothness'] as int;
 
   try {
     // Step 1: Decode & resize to 300×300 using `image` package
@@ -74,15 +80,19 @@ String _traceToSvgPath(Map<String, dynamic> args) {
     // Returns List<List<int>> of 0/1 values (302×302 with 1-pixel border of 0)
 
     // Step 4: Boundary trace (Moore neighbourhood contour following)
-    final contours = _traceContours(bitmask);
-    // Returns List<List<(int x, int y)>> — one list per closed contour
+    final contours = _traceContours(bitmask, ignoreLessThan);
 
     // Step 5: Ramer-Douglas-Peucker simplification
     final simplified =
         contours.map((c) => _simplify(c, simplify)).toList();
 
+    // Step 5b: Smoothness (Laplacian filter on path)
+    final smoothed = smoothness > 0
+        ? simplified.map((c) => _smooth(c, smoothness)).toList()
+        : simplified;
+
     // Step 6: Convert to SVG path commands
-    return _toSvgPathString(simplified);
+    return _toSvgPathString(smoothed);
     // Returns: "M x y L x y ... Z M x y L x y ... Z"
   } on SvgTracerException {
     rethrow;
@@ -115,7 +125,7 @@ List<List<int>> _buildBitmask(
 
 /// Step 4: Boundary walk (Moore neighborhood contour tracing).
 /// Returns list of contours, where each contour is a list of (x,y) points.
-List<List<({int x, int y})>> _traceContours(List<List<int>> bitmask) {
+List<List<({int x, int y})>> _traceContours(List<List<int>> bitmask, int ignoreLessThan) {
   final height = bitmask.length;
   final width = bitmask[0].length;
   final visited = List.generate(
@@ -178,7 +188,7 @@ List<List<({int x, int y})>> _traceContours(List<List<int>> bitmask) {
         } while (!(curX == startX && curY == startY));
 
         // Only add contour if it has enough points
-        if (contour.length >= 3) {
+        if (contour.length >= max(3, ignoreLessThan)) {
           contours.add(contour);
         }
       }
@@ -285,4 +295,24 @@ String _toSvgPathString(List<List<({int x, int y})>> contours) {
   }
 
   return pathBuffers.join(' ');
+}
+
+/// Step 5b: Laplacian smoothing
+List<({int x, int y})> _smooth(List<({int x, int y})> points, int iterations) {
+  if (points.length < 3) return points;
+  var current = points;
+  for (int i = 0; i < iterations; i++) {
+    final next = <({int x, int y})>[];
+    for (int j = 0; j < current.length; j++) {
+      int prev = (j - 1) % current.length;
+      if (prev < 0) prev += current.length;
+      int nextIdx = (j + 1) % current.length;
+      
+      int nx = (current[prev].x + current[j].x + current[nextIdx].x) ~/ 3;
+      int ny = (current[prev].y + current[j].y + current[nextIdx].y) ~/ 3;
+      next.add((x: nx, y: ny));
+    }
+    current = next;
+  }
+  return current;
 }

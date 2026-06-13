@@ -5,7 +5,7 @@ import 'package:herbascan/core/services/herbarium_service.dart';
 import 'package:herbascan/core/services/training_dataset_service.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/features/admin/admin_new_plant_wizard.dart';
-import 'package:herbascan/features/admin/widgets/model_inference_tester_card.dart';
+import 'package:herbascan/features/admin/admin_inference_test_screen.dart';
 
 /// Admin Dashboard Overview — landing screen of the admin portal.
 ///
@@ -27,7 +27,6 @@ class _AdminOverviewScreenState extends State<AdminOverviewScreen> {
   String? _error;
 
   final _scrollController = ScrollController();
-  final _inferenceLabKey = GlobalKey();
 
   @override
   void initState() {
@@ -39,17 +38,6 @@ class _AdminOverviewScreenState extends State<AdminOverviewScreen> {
   void dispose() {
     _scrollController.dispose();
     super.dispose();
-  }
-
-  void _scrollToInferenceLab() {
-    final ctx = _inferenceLabKey.currentContext;
-    if (ctx == null) return;
-    Scrollable.ensureVisible(
-      ctx,
-      duration: const Duration(milliseconds: 420),
-      curve: Curves.easeOutCubic,
-      alignment: 0.12,
-    );
   }
 
   Future<void> _loadMetrics() async {
@@ -143,16 +131,27 @@ class _AdminOverviewScreenState extends State<AdminOverviewScreen> {
     });
   }
 
+  void _openInferenceLab() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const AdminInferenceTestScreen(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: RefreshIndicator(
-        onRefresh: _loadMetrics,
-        color: AppTheme.botanicalPrimary,
-        child: CustomScrollView(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: RefreshIndicator(
+            onRefresh: _loadMetrics,
+            color: AppTheme.botanicalPrimary,
+            child: CustomScrollView(
           controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
@@ -237,7 +236,7 @@ class _AdminOverviewScreenState extends State<AdminOverviewScreen> {
                     _QuickActionsCard(
                       onAddPlant: _openNewPlantWizard,
                       onDeployModel: _openDeployModel,
-                      onTestInference: _scrollToInferenceLab,
+                      onTestInference: _openInferenceLab,
                     ),
                     const SizedBox(height: 28),
 
@@ -248,19 +247,15 @@ class _AdminOverviewScreenState extends State<AdminOverviewScreen> {
                       currentModelVersion: _currentModelVersion,
                       pendingDrafts: _pendingDrafts,
                     ),
-                    const SizedBox(height: 28),
-
-                    // ── Section: Inference Testing Lab ────────────────────
-                    _SectionHeader(title: 'Inference Testing Lab'),
-                    const SizedBox(height: 12),
-                    ModelInferenceTesterCard(key: _inferenceLabKey),
                   ]),
                 ),
               ),
           ],
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 }
 

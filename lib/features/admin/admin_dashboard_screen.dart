@@ -337,9 +337,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 ),
               ),
       ),
-      body: _showDeletionRequests
-          ? _buildDeletionRequestsBody(theme)
-          : GestureDetector(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: _showDeletionRequests
+              ? _buildDeletionRequestsBody(theme)
+              : GestureDetector(
               onHorizontalDragEnd: (details) {
                 final velocity = details.primaryVelocity ?? 0;
                 if (velocity < -300 && _pendingOnly) {
@@ -406,6 +409,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                               ),
                             ),
             ),
+          ),
+        ),
     );
   }
 
