@@ -98,6 +98,7 @@ dependencies:
   open_file: ^3.3.2           # Trigger Android APK install intent
   dio: ^5.7.0                 # Chunked download with progress callback
   permission_handler: ^12.0.3
+  url_launcher: ^6.3.2
 
 
 dev_dependencies:
@@ -122,6 +123,7 @@ flutter:
     - assets/images/
     - assets/models/
     - assets/data/
+    - assets/data/legal/
     - assets/animations/
     - assets/icons/
 

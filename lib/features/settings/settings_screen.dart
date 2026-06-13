@@ -16,6 +16,9 @@ import 'package:herbascan/features/help/help_tutorial_screen.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/services/data_deletion_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -76,13 +79,19 @@ class SettingsScreen extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          // 4. Support & About
-          _buildSectionLabel(context, theme, 'Support & About'),
+          // 4. Support, Legal & About
+          _buildSectionLabel(context, theme, 'Support, Legal & About'),
           const SizedBox(height: 8),
           _buildGroupedCard(
             theme,
             children: [
               _buildHelpTutorialTile(context, theme),
+              _buildSoftDivider(theme),
+              _buildTermsOfServiceTile(context, theme),
+              _buildSoftDivider(theme),
+              _buildEULATile(context, theme),
+              _buildSoftDivider(theme),
+              _buildPrivacyPolicyTile(context, theme),
               _buildSoftDivider(theme),
               _buildAppVersionTile(context, theme),
               _buildSoftDivider(theme),
@@ -410,6 +419,84 @@ class SettingsScreen extends StatelessWidget {
           MaterialPageRoute(
             builder: (context) => const HelpTutorialScreen(),
           ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTermsOfServiceTile(BuildContext context, ThemeData theme) {
+    return ListTile(
+      leading: const Icon(Icons.gavel_rounded),
+      title: const Text('Terms of Service'),
+      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+      onTap: () => _showLegalDocumentDialog(context, 'Terms of Service', 'assets/data/legal/Terms of Service.md'),
+    );
+  }
+
+  Widget _buildEULATile(BuildContext context, ThemeData theme) {
+    return ListTile(
+      leading: const Icon(Icons.policy_rounded),
+      title: const Text('End-User License Agreement'),
+      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+      onTap: () => _showLegalDocumentDialog(context, 'End-User License Agreement (EULA)', 'assets/data/legal/End-User License Agreement.md'),
+    );
+  }
+
+  Widget _buildPrivacyPolicyTile(BuildContext context, ThemeData theme) {
+    return ListTile(
+      leading: const Icon(Icons.privacy_tip_outlined),
+      title: const Text('Privacy Policy'),
+      trailing: const Icon(Icons.open_in_new_rounded, size: 16),
+      onTap: () async {
+        final Uri url = Uri.parse('https://sxenoxs.github.io/RE-HerbaScan/privacy-policy');
+        if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Could not launch \$url')),
+            );
+          }
+        }
+      },
+    );
+  }
+
+  void _showLegalDocumentDialog(BuildContext context, String title, String assetPath) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final theme = Theme.of(context);
+        final isDark = theme.brightness == Brightness.dark;
+        return AlertDialog(
+          title: Text(title),
+          content: SizedBox(
+            width: double.maxFinite,
+            height: MediaQuery.of(context).size.height * 0.7,
+            child: FutureBuilder<String>(
+              future: rootBundle.loadString(assetPath),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  return const Text('Error loading document.');
+                } else {
+                  return Markdown(
+                    data: snapshot.data ?? '',
+                    styleSheet: MarkdownStyleSheet(
+                      p: theme.textTheme.bodyMedium?.copyWith(
+                        color: isDark ? Colors.white70 : Colors.black87,
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
         );
       },
     );
