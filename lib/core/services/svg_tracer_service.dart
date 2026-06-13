@@ -128,68 +128,66 @@ List<List<int>> _buildBitmask(
 List<List<({int x, int y})>> _traceContours(List<List<int>> bitmask, int ignoreLessThan) {
   final height = bitmask.length;
   final width = bitmask[0].length;
-  final visited = List.generate(
-      height, (_) => List.filled(width, false));
+  final visited = List.generate(height, (_) => List.filled(width, false));
   final contours = <List<({int x, int y})>>[];
 
-  // Moore neighborhood offsets (8-connected)
+  // 8-connected offsets in clockwise order
   final List<({int dx, int dy})> moore = [
-    (dx: -1, dy: -1),
-    (dx: 0, dy: -1),
-    (dx: 1, dy: -1),
-    (dx: 1, dy: 0),
-    (dx: 1, dy: 1),
-    (dx: 0, dy: 1),
-    (dx: -1, dy: 1),
-    (dx: -1, dy: 0)
+    (dx: -1, dy: -1), // 0: Top-Left
+    (dx: 0, dy: -1),  // 1: Top
+    (dx: 1, dy: -1),  // 2: Top-Right
+    (dx: 1, dy: 0),   // 3: Right
+    (dx: 1, dy: 1),   // 4: Bottom-Right
+    (dx: 0, dy: 1),   // 5: Bottom
+    (dx: -1, dy: 1),  // 6: Bottom-Left
+    (dx: -1, dy: 0)   // 7: Left
   ];
 
   for (int y = 1; y < height - 1; y++) {
     for (int x = 1; x < width - 1; x++) {
-      // Find an unvisited foreground pixel to start a new contour
-      if (bitmask[y][x] == 1 && !visited[y - 1][x - 1]) {
+      // Find an unvisited boundary pixel (1 with a 0 to its left)
+      if (bitmask[y][x] == 1 && bitmask[y][x - 1] == 0 && !visited[y][x]) {
         final contour = <({int x, int y})>[];
-        int curX = x - 1;
-        int curY = y - 1;
+        int curX = x;
+        int curY = y;
+        
+        // We entered from the left (0), which is direction 7
+        int backtrackDir = 7; 
+        
         int startX = curX;
         int startY = curY;
-        int? prevDir;
 
         do {
           visited[curY][curX] = true;
           contour.add((x: curX, y: curY));
 
-          // Find next pixel in contour using Moore neighborhood tracing
           int nextDir = -1;
-          int checkStart = (prevDir == null) ? 0 : ((prevDir! + 6) % 8);
-
-          for (int i = 0; i < 8; i++) {
-            int dir = (checkStart + i) % 8;
+          // Look clockwise for the next 1
+          for (int i = 1; i <= 8; i++) {
+            int dir = (backtrackDir + i) % 8;
             int nx = curX + moore[dir].dx;
             int ny = curY + moore[dir].dy;
 
-            // Check bounds (accounting for 1-pixel border)
-            if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-              if (bitmask[ny][nx] == 1 && !visited[ny][nx]) {
-                nextDir = dir;
-                break;
-              }
+            if (bitmask[ny][nx] == 1) {
+              nextDir = dir;
+              break;
             }
           }
 
-          if (nextDir == -1) {
-            // No more pixels in this contour
-            break;
-          }
+          if (nextDir == -1) break; // Isolated pixel
 
           curX += moore[nextDir].dx;
           curY += moore[nextDir].dy;
-          prevDir = nextDir;
+          
+          // Backtrack direction is opposite of nextDir
+          backtrackDir = (nextDir + 4) % 8;
+
         } while (!(curX == startX && curY == startY));
 
-        // Only add contour if it has enough points
         if (contour.length >= max(3, ignoreLessThan)) {
-          contours.add(contour);
+          // Adjust coordinates back to original image space
+          final adjustedContour = contour.map((p) => (x: p.x - 1, y: p.y - 1)).toList();
+          contours.add(adjustedContour);
         }
       }
     }
