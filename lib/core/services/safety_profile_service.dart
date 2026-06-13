@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:herbascan/core/models/plant.dart';
 import 'package:herbascan/core/models/safety_profile.dart';
@@ -53,8 +54,14 @@ class SafetyProfileService {
   /// Get safety profile by Plant (uses id then commonName).
   /// Resolves from SQLite (synced from Supabase) first; if missing, falls back to asset JSON.
   Future<SafetyProfile?> getSafetyProfile(Plant plant) async {
-    final fromDb = await _db.getSafetyProfile(plant.id);
-    if (fromDb != null) return fromDb;
+    if (!kIsWeb) {
+      try {
+        final fromDb = await _db.getSafetyProfile(plant.id);
+        if (fromDb != null) return fromDb;
+      } catch (e) {
+        debugPrint('[SafetyProfileService] SQLite error: $e');
+      }
+    }
     await _ensureLoaded();
     if (_byPlantId == null || _byKey == null) return null;
     final byId = _byPlantId![plant.id];
@@ -66,8 +73,14 @@ class SafetyProfileService {
   /// Get safety profile by plant id (e.g. lagundi-001).
   /// SQLite first, then asset fallback.
   Future<SafetyProfile?> getSafetyProfileByPlantId(String plantId) async {
-    final fromDb = await _db.getSafetyProfile(plantId);
-    if (fromDb != null) return fromDb;
+    if (!kIsWeb) {
+      try {
+        final fromDb = await _db.getSafetyProfile(plantId);
+        if (fromDb != null) return fromDb;
+      } catch (e) {
+        debugPrint('[SafetyProfileService] SQLite error: $e');
+      }
+    }
     await _ensureLoaded();
     return _byPlantId?[plantId];
   }

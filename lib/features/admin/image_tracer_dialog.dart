@@ -43,12 +43,16 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
   bool _showPath = true;
   bool _showPoints = true;
   bool _fadeImage = false;
+  bool _showOriginal = false; // Toggle for single preview overlay
 
   // ── Tracing Results ──────────────────────────────────────────────────────
   String? _tracedSvgPath;
   ui.Image? _previewImage; // For CustomPaint background
   bool _isTracing = false;
   String? _traceError;
+  
+  // ── Histogram Data ───────────────────────────────────────────────────────
+  List<double> _histogram = List.filled(256, 0.0);
 
   // ── UI Helpers ───────────────────────────────────────────────────────────
   final _picker = ImagePicker();
@@ -142,9 +146,20 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
         return;
       }
 
+      // Proportional resizing: max dimension is 300px
+      int newW = 300;
+      int newH = 300;
+      if (decoded.width > decoded.height) {
+        newH = (decoded.height * 300 / decoded.width).round();
+      } else {
+        newW = (decoded.width * 300 / decoded.height).round();
+      }
+
       final img.Image resized =
-          img.copyResize(decoded, width: 300, height: 300);
+          img.copyResize(decoded, width: newW, height: newH);
       final resizedBytes = Uint8List.fromList(img.encodePng(resized));
+      
+      _calculateHistogram(resized);
 
       if (!mounted) return;
       setState(() {
@@ -160,6 +175,24 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
         _state = _TracerState.idle;
         _traceError = 'Failed to resize image: $e';
       });
+    }
+  }
+
+  void _calculateHistogram(img.Image image) {
+    final hist = List<int>.filled(256, 0);
+    int maxCount = 0;
+    
+    // image package v4 pixel iteration
+    for (final p in image) {
+      final lum = (0.299 * p.r + 0.587 * p.g + 0.114 * p.b).round().clamp(0, 255);
+      hist[lum]++;
+      if (hist[lum] > maxCount) maxCount = hist[lum];
+    }
+
+    if (maxCount > 0) {
+      _histogram = hist.map((c) => c / maxCount).toList();
+    } else {
+      _histogram = List.filled(256, 0.0);
     }
   }
 
@@ -424,51 +457,55 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
   }
 
   Widget _buildMainContent() {
-    return Row(
+    return Stack(
       children: [
-        Expanded(
-          flex: 1,
-          child: _buildImagePanel(),
+        Positioned.fill(
+          child: _buildPreviewArea(),
         ),
-        VerticalDivider(
-          width: 1,
-          color: Theme.of(context).dividerColor,
-        ),
-        Expanded(
-          flex: 1,
-          child: _buildSvgPreviewPanel(),
+        Positioned(
+          top: 16,
+          right: 16,
+          child: _buildViewToggle(),
         ),
       ],
     );
   }
 
-  Widget _buildImagePanel() {
+  Widget _buildViewToggle() {
     return Container(
-      margin: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: _previewImage != null
-            ? RawImage(
-                image: _previewImage!,
-                fit: BoxFit.contain,
-              )
-            : Container(
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
-                child: Icon(
-                  Icons.image,
-                  size: 48,
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38),
-                ),
-              ),
+      child: ToggleButtons(
+        isSelected: [_showOriginal, !_showOriginal],
+        onPressed: (index) {
+          setState(() {
+            _showOriginal = index == 0;
+          });
+        },
+        borderRadius: BorderRadius.circular(8),
+        constraints: const BoxConstraints(minHeight: 36, minWidth: 80),
+        children: const [
+          Text('Original', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+          Text('Traced', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+        ],
       ),
     );
   }
 
-  Widget _buildSvgPreviewPanel() {
+  Widget _buildPreviewArea() {
+    if (_tracedSvgPath == null || _tracedSvgPath!.isEmpty) {
+      return _buildEmptyPreview();
+    }
+    
     return Container(
       margin: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -477,38 +514,58 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
-        child: _tracedSvgPath == null || _tracedSvgPath!.isEmpty
-            ? _buildEmptyPreview()
-            : _buildSvgPreview(),
+        child: InteractiveViewer(
+          minScale: 0.5,
+          maxScale: 5.0,
+          constrained: true,
+          boundaryMargin: const EdgeInsets.all(double.infinity),
+          child: Center(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // Determine the size of the previewImage
+                double w = 300;
+                double h = 300;
+                if (_previewImage != null) {
+                  w = _previewImage!.width.toDouble();
+                  h = _previewImage!.height.toDouble();
+                }
+                return SizedBox(
+                  width: w,
+                  height: h,
+                  child: CustomPaint(
+                    size: Size(w, h),
+                    painter: _TracedPathPainter(
+                      svgPathData: _tracedSvgPath!,
+                      sourceImage: _previewImage,
+                      showPath: _showPath,
+                      showPoints: _showPoints,
+                      fadeImage: _fadeImage,
+                      showOriginal: _showOriginal,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildEmptyPreview() {
     return Container(
-      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
-      child: Icon(
-        Icons.image_not_supported,
-        size: 48,
-        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38),
+      margin: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
       ),
-    );
-  }
-
-  Widget _buildSvgPreview() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return CustomPaint(
-          size: Size(constraints.maxWidth, constraints.maxHeight),
-          painter: _TracedPathPainter(
-            svgPathData: _tracedSvgPath!,
-            sourceImage: _previewImage,
-            showPath: _showPath,
-            showPoints: _showPoints,
-            fadeImage: _fadeImage,
-          ),
-        );
-      },
+      child: Center(
+        child: Icon(
+          Icons.image_not_supported,
+          size: 48,
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38),
+        ),
+      ),
     );
   }
 
@@ -581,34 +638,28 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
             setState(() { _invert = v; _debouncedTrace(); });
           }),
           const SizedBox(height: 8),
-          _buildSlider(
-            label: 'Blur', value: _blur.toDouble(), min: 0, max: 15,
+          _buildNumberStepper(
+            label: 'Blur', value: _blur.toDouble(), min: 0, max: 15, step: 1,
             onChanged: (v) { setState(() { _blur = v.round(); _debouncedTrace(); }); },
             valueFormatter: (v) => v.round().toString(),
           ),
-          const SizedBox(height: 4),
-          _buildSlider(
-            label: 'Threshold', value: _threshold.toDouble(), min: 0, max: 255,
-            onChanged: (v) { setState(() { _threshold = v.round(); _debouncedTrace(); }); },
-            valueFormatter: (v) => v.round().toString(),
-          ),
+          const SizedBox(height: 12),
+          _buildThresholdSlider(),
 
           Divider(color: Theme.of(context).dividerColor, height: 24),
           _buildSectionHeader('TRACING'),
-          _buildSlider(
-            label: 'Ignore less than', value: _ignoreLessThan.toDouble(), min: 0, max: 100,
+          _buildNumberStepper(
+            label: 'Ignore less than', value: _ignoreLessThan.toDouble(), min: 0, max: 100, step: 1,
             onChanged: (v) { setState(() { _ignoreLessThan = v.round(); _debouncedTrace(); }); },
             valueFormatter: (v) => v.round().toString(),
           ),
-          const SizedBox(height: 4),
-          _buildSlider(
-            label: 'Smoothness', value: _smoothness.toDouble(), min: 0, max: 5,
+          _buildNumberStepper(
+            label: 'Smoothness', value: _smoothness.toDouble(), min: 0, max: 5, step: 1,
             onChanged: (v) { setState(() { _smoothness = v.round(); _debouncedTrace(); }); },
             valueFormatter: (v) => v.round().toString(),
           ),
-          const SizedBox(height: 4),
-          _buildSlider(
-            label: 'Curve optimisation', value: _simplify, min: 0.5, max: 5.0,
+          _buildNumberStepper(
+            label: 'Curve optimisation', value: _simplify, min: 0.5, max: 5.0, step: 0.1,
             onChanged: (v) { setState(() { _simplify = v; _debouncedTrace(); }); },
             valueFormatter: (v) => v.toStringAsFixed(1),
           ),
@@ -652,14 +703,7 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
     );
   }
 
-  Widget _buildSlider({
-    required String label,
-    required double value,
-    required double min,
-    required double max,
-    required ValueChanged<double> onChanged,
-    required String Function(double) valueFormatter,
-  }) {
+  Widget _buildThresholdSlider() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -667,12 +711,12 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
           children: [
             Expanded(
               child: Text(
-                label,
+                'Threshold',
                 style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7)),
               ),
             ),
             Text(
-              valueFormatter(value),
+              _threshold.toString(),
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.w600,
@@ -680,17 +724,153 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
             ),
           ],
         ),
-        const SizedBox(height: 4),
-          Slider(
-            value: value,
-            min: min,
-            max: max,
-            onChanged: onChanged,
-            activeColor: AppTheme.botanicalPrimary,
-            thumbColor: AppTheme.botanicalPrimary,
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 48,
+          child: Stack(
+            alignment: Alignment.bottomCenter,
+            children: [
+              // Histogram
+              Positioned.fill(
+                bottom: 24, // Leave space for slider track
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: CustomPaint(
+                    painter: _HistogramPainter(
+                      histogram: _histogram,
+                      color: const Color(0xFF4285F4), // Blue mountain graph
+                    ),
+                  ),
+                ),
+              ),
+              // Slider
+              Slider(
+                value: _threshold.toDouble(),
+                min: 0,
+                max: 255,
+                onChanged: (v) {
+                  setState(() {
+                    _threshold = v.round();
+                    _debouncedTrace();
+                  });
+                },
+                activeColor: Theme.of(context).colorScheme.onSurface,
+                inactiveColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+                thumbColor: Theme.of(context).colorScheme.onSurface,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNumberStepper({
+    required String label,
+    required double value,
+    required double min,
+    required double max,
+    required double step,
+    required ValueChanged<double> onChanged,
+    required String Function(double) valueFormatter,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7)),
+            ),
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.remove, size: 16),
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                onPressed: value > min ? () => onChanged((value - step).clamp(min, max)) : null,
+              ),
+              InkWell(
+                onTap: () {
+                  _showNumberInputDialog(
+                    label: label,
+                    initialValue: value,
+                    min: min,
+                    max: max,
+                    onChanged: onChanged,
+                    valueFormatter: valueFormatter,
+                  );
+                },
+                child: Container(
+                  constraints: const BoxConstraints(minWidth: 40),
+                  alignment: Alignment.center,
+                  child: Text(
+                    valueFormatter(value),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.add, size: 16),
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                onPressed: value < max ? () => onChanged((value + step).clamp(min, max)) : null,
+              ),
+            ],
           ),
         ],
-      );
+      ),
+    );
+  }
+
+  Future<void> _showNumberInputDialog({
+    required String label,
+    required double initialValue,
+    required double min,
+    required double max,
+    required ValueChanged<double> onChanged,
+    required String Function(double) valueFormatter,
+  }) async {
+    final controller = TextEditingController(text: valueFormatter(initialValue));
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(label),
+          content: TextField(
+            controller: controller,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              helperText: 'Range: ${valueFormatter(min)} - ${valueFormatter(max)}',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final val = double.tryParse(controller.text);
+                if (val != null) {
+                  onChanged(val.clamp(min, max));
+                }
+                Navigator.pop(context);
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Widget _buildPathDisplay() {
@@ -785,6 +965,7 @@ class _TracedPathPainter extends CustomPainter {
   final bool showPath;
   final bool showPoints;
   final bool fadeImage;
+  final bool showOriginal;
 
   _TracedPathPainter({
     required this.svgPathData,
@@ -792,19 +973,26 @@ class _TracedPathPainter extends CustomPainter {
     required this.showPath,
     required this.showPoints,
     required this.fadeImage,
+    required this.showOriginal,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Draw faded source image
+    // Draw source image
     if (sourceImage != null) {
-      canvas.saveLayer(
-        Rect.largest,
-        Paint()..color = Colors.white.withAlpha(fadeImage ? 76 : 255),
-      );
-      canvas.drawImage(sourceImage!, Offset.zero, Paint());
-      canvas.restore();
+      if (showOriginal || !fadeImage) {
+        canvas.drawImage(sourceImage!, Offset.zero, Paint());
+      } else {
+        canvas.saveLayer(
+          Rect.largest,
+          Paint()..color = Colors.white.withAlpha(76),
+        );
+        canvas.drawImage(sourceImage!, Offset.zero, Paint());
+        canvas.restore();
+      }
     }
+
+    if (showOriginal) return;
 
     // Parse and draw SVG path
     try {
@@ -822,7 +1010,7 @@ class _TracedPathPainter extends CustomPainter {
       }
 
       if (showPoints) {
-        final regex = RegExp(r'[ML]\s+([0-9.]+)\s+([0-9.]+)');
+        final regex = RegExp(r'[ML]\s+([0-9.-]+)\s+([0-9.-]+)');
         final matches = regex.allMatches(svgPathData);
         final pointPaint = Paint()
           ..color = Colors.red
@@ -861,6 +1049,43 @@ class _TracedPathPainter extends CustomPainter {
         oldDelegate.sourceImage != sourceImage ||
         oldDelegate.showPath != showPath ||
         oldDelegate.showPoints != showPoints ||
-        oldDelegate.fadeImage != fadeImage;
+        oldDelegate.fadeImage != fadeImage ||
+        oldDelegate.showOriginal != showOriginal;
+  }
+}
+
+class _HistogramPainter extends CustomPainter {
+  final List<double> histogram;
+  final Color color;
+
+  _HistogramPainter({required this.histogram, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (histogram.isEmpty) return;
+
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    final path = Path();
+    path.moveTo(0, size.height);
+
+    final double step = size.width / (histogram.length - 1);
+    for (int i = 0; i < histogram.length; i++) {
+      final double x = i * step;
+      final double y = size.height - (histogram[i] * size.height);
+      path.lineTo(x, y);
+    }
+
+    path.lineTo(size.width, size.height);
+    path.close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _HistogramPainter oldDelegate) {
+    return oldDelegate.histogram != histogram || oldDelegate.color != color;
   }
 }

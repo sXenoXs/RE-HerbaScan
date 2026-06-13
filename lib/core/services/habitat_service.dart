@@ -60,13 +60,19 @@ class HabitatService {
       if (kDebugMode) debugPrint('[HabitatService] getHabitatByPlantId: plantId is empty');
       return null;
     }
-    final fromDb = await _db.getPlantHabitat(plantId);
-    if (fromDb != null) {
-      if (kDebugMode) {
-        debugPrint(
-            '[HabitatService] Found habitat for "$plantId" from DB: coords=${fromDb.knownCoordinates.length}, regions=${fromDb.regionNames.length}');
+    if (!kIsWeb) {
+      try {
+        final fromDb = await _db.getPlantHabitat(plantId);
+        if (fromDb != null) {
+          if (kDebugMode) {
+            debugPrint(
+                '[HabitatService] Found habitat for "$plantId" from DB: coords=${fromDb.knownCoordinates.length}, regions=${fromDb.regionNames.length}');
+          }
+          return fromDb;
+        }
+      } catch (e) {
+        if (kDebugMode) debugPrint('[HabitatService] SQLite error: $e');
       }
-      return fromDb;
     }
     await _ensureLoaded();
     final habitat = _byPlantId?[plantId];

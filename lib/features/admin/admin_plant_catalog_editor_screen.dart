@@ -82,32 +82,37 @@ class _AdminPlantCatalogEditorScreenState
 
   Future<void> _loadCatalog() async {
     setState(() => _loading = true);
-    final fromCatalog = await _adminService.getCatalogPlant(
-      widget.plant.id,
-      defaultImagePath: widget.plant.imagePath,
-    );
-    var safety = await _adminService.getCatalogSafety(widget.plant.id);
-    safety ??= await SafetyProfileService().getSafetyProfile(widget.plant);
-    var habitat = await _adminService.getCatalogHabitat(widget.plant.id);
-    habitat ??= await HabitatService().getHabitat(widget.plant);
-    if (mounted) {
-      setState(() {
-        if (fromCatalog != null) _plant = fromCatalog;
-        if (safety != null) {
-          _isGenerallySafe = safety.isGenerallySafe;
-          _pregnancyWarning = safety.pregnancyWarning;
-          _needsStrictContraindications = safety.needsStrictContraindications;
-          _knownSideEffects = List.from(safety.knownSideEffects);
-          _drugInteractions = List.from(safety.drugInteractions);
-          _strictContraindications = List.from(safety.strictContraindications);
-        }
-        if (habitat != null) {
-          _habitatCoordinates = List.from(habitat.knownCoordinates);
-          _habitatRegionNames = List.from(habitat.regionNames);
-          _habitatClimateNotes = habitat.climateNotes;
-        }
-        _loading = false;
-      });
+    try {
+      final fromCatalog = await _adminService.getCatalogPlant(
+        widget.plant.id,
+        defaultImagePath: widget.plant.imagePath,
+      );
+      var safety = await _adminService.getCatalogSafety(widget.plant.id);
+      safety ??= await SafetyProfileService().getSafetyProfile(widget.plant);
+      var habitat = await _adminService.getCatalogHabitat(widget.plant.id);
+      habitat ??= await HabitatService().getHabitat(widget.plant);
+      if (mounted) {
+        setState(() {
+          if (fromCatalog != null) _plant = fromCatalog;
+          if (safety != null) {
+            _isGenerallySafe = safety.isGenerallySafe;
+            _pregnancyWarning = safety.pregnancyWarning;
+            _needsStrictContraindications = safety.needsStrictContraindications;
+            _knownSideEffects = List.from(safety.knownSideEffects);
+            _drugInteractions = List.from(safety.drugInteractions);
+            _strictContraindications = List.from(safety.strictContraindications);
+          }
+          if (habitat != null) {
+            _habitatCoordinates = List.from(habitat.knownCoordinates);
+            _habitatRegionNames = List.from(habitat.regionNames);
+            _habitatClimateNotes = habitat.climateNotes;
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('[AdminEditor] _loadCatalog error: $e');
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
     _loadAnatomy();
   }
