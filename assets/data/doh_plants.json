@@ -261,5 +261,105 @@
     "imagePath": "assets/images/ampalaya.jpg",
     "createdAt": "2024-01-01T00:00:00Z",
     "updatedAt": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "10",
+    "commonName": "Yerba Buena",
+    "scientificName": "Clinopodium douglasii",
+    "localName": "Yerba Buena",
+    "family": "Lamiaceae",
+    "genus": "Clinopodium",
+    "species": "C. douglasii",
+    "isDOHApproved": true,
+    "morphology": "Creeping, aromatic herb with slender, branching stems 10–40 cm long. Leaves are opposite, ovate to orbicular, 1–3 cm long, with crenate margins and a distinctive minty fragrance. Stems are square in cross-section.",
+    "ecology": "Native to the Philippines and Southeast Asia. Thrives in moist, partially shaded environments. Widely cultivated in home gardens.",
+    "habitat": "Found in highland areas 600–2000 masl in the Philippines, particularly in Cordillera Administrative Region, Tagaytay, Benguet, and Mountain Province. Also cultivated at lower elevations.",
+    "medicinalUses": [
+      {
+        "condition": "Headache",
+        "description": "Hot mint tea or crushed leaves applied to temples for headache and fever relief",
+        "effectiveness": "Moderate",
+        "activeCompounds": ["Menthol", "Carvone", "Flavonoids"],
+        "dosage": "1 cup warm tea 2–3 times daily",
+        "duration": "As needed"
+      },
+      {
+        "condition": "Toothache",
+        "description": "Crushed fresh leaves applied topically to aching tooth or gum",
+        "effectiveness": "Moderate",
+        "activeCompounds": ["Menthol", "Rosmarinic acid"],
+        "dosage": "Small amount of crushed leaves applied topically",
+        "duration": "10–15 minutes per application"
+      },
+      {
+        "condition": "Nausea and Stomach Problems",
+        "description": "Hot mint tea relieves nausea, stomach cramps, and indigestion",
+        "effectiveness": "Moderate to High",
+        "activeCompounds": ["Menthol", "Carvone", "Limonene"],
+        "dosage": "1 cup warm tea 2–3 times daily",
+        "duration": "As needed"
+      },
+      {
+        "condition": "Cough and Colds",
+        "description": "Hot decoction for cough, colds, and steam inhalation for congestion",
+        "effectiveness": "Moderate",
+        "activeCompounds": ["Menthol", "Cineole", "Flavonoids"],
+        "dosage": "1 cup warm tea 3 times daily",
+        "duration": "3–5 days or until resolved"
+      }
+    ],
+    "preparationMethods": [
+      {
+        "id": "10a",
+        "condition": "Headache",
+        "title": "Yerba Buena Mint Tea",
+        "description": "Hot decoction for headache, fever, nausea, and colds relief",
+        "steps": [
+          "Gather 10–15 fresh yerba buena leaves",
+          "Wash leaves thoroughly under running water",
+          "Place leaves in 1 cup (250 ml) of clean water",
+          "Bring to a boil, then reduce heat and simmer 10 minutes",
+          "Strain and serve warm"
+        ],
+        "dosage": "1 cup warm tea (250 ml)",
+        "frequency": "2–3 times daily",
+        "duration": "As needed; up to 1 week",
+        "warnings": [
+          "Let cool slightly before drinking",
+          "Pregnant women should limit intake and avoid prolonged daily use"
+        ],
+        "preparationType": "decoction"
+      },
+      {
+        "id": "10b",
+        "condition": "Toothache",
+        "title": "Yerba Buena Topical Compress",
+        "description": "Fresh leaf poultice applied to aching tooth or gum",
+        "steps": [
+          "Select 3–5 fresh, clean yerba buena leaves",
+          "Wash thoroughly",
+          "Lightly crush leaves to release essential oils",
+          "Apply directly to aching tooth or gum",
+          "Hold for 10–15 minutes, then rinse"
+        ],
+        "dosage": "3–5 crushed leaves",
+        "frequency": "As needed, up to 3–4 times daily",
+        "duration": "Short-term relief only",
+        "warnings": [
+          "For topical use only — do not swallow",
+          "Seek dental care for persistent toothache"
+        ],
+        "preparationType": "topical poultice"
+      }
+    ],
+    "safetyWarnings": [
+      "Generally safe at recommended amounts",
+      "Avoid high doses during pregnancy — may act as emmenagogue at excessive intake",
+      "Do not apply pure menthol oil to the face of infants or young children",
+      "Not a substitute for medical treatment"
+    ],
+    "imagePath": "assets/images/yerba_buena.jpg",
+    "createdAt": "2024-01-01T00:00:00Z",
+    "updatedAt": "2024-01-01T00:00:00Z"
   }
 ]

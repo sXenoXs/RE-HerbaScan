@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- FileProvider path configuration for OTA APK downloads.
+     Maps the app's cache directory so OtaAppUpdateService can share the
+     downloaded APK file with the Android installer via a content:// URI.
+     See: OtaAppUpdateService.downloadAndInstall() -->
+<paths>
+    <!-- Covers getTemporaryDirectory() (app cache dir) where APKs are saved -->
+    <cache-path name="apk_cache" path="." />
+</paths>

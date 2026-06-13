@@ -219,7 +219,15 @@ class OfflineStatusCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<OfflineProvider>(
       builder: (context, offlineProvider, child) {
-        return Card(
+        final theme = Theme.of(context);
+        return Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: theme.colorScheme.outline.withOpacity(0.2),
+            ),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -234,16 +242,16 @@ class OfflineStatusCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(
                       'Connection Status',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Text(
                   offlineProvider.getOfflineStatusMessage(),
-                  style: Theme.of(context).textTheme.bodyMedium,
+                  style: theme.textTheme.bodyMedium,
                 ),
                 if (offlineProvider.hasPendingSync) ...[
                   const SizedBox(height: 12),
