@@ -291,10 +291,7 @@ class _PreparationFocusModeScreenState
           child: _buildProgressBar(steps.length, theme),
         ),
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800),
-          child: Stack(
+      body: Stack(
         children: [
           PageView.builder(
             controller: _pageController,
@@ -310,8 +307,6 @@ class _PreparationFocusModeScreenState
           // Completion overlay
           if (_showCompletion) _buildCompletionOverlay(theme),
         ],
-      ),
-        ),
       ),
     );
   }

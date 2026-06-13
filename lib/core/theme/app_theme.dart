@@ -198,6 +198,25 @@ class AppTheme {
         elevation: 4,
         shape: CircleBorder(),
       ),
+      navigationRailTheme: NavigationRailThemeData(
+        backgroundColor: surfaceColor,
+        useIndicator: true,
+        indicatorColor: primaryColor.withOpacity(0.15),
+        selectedIconTheme: const IconThemeData(color: primaryColor),
+        unselectedIconTheme: const IconThemeData(color: textTertiary),
+        selectedLabelTextStyle: const TextStyle(
+          color: primaryColor,
+          fontFamily: 'Inter',
+          fontWeight: FontWeight.w600,
+          fontSize: 12,
+        ),
+        unselectedLabelTextStyle: const TextStyle(
+          color: textTertiary,
+          fontFamily: 'Inter',
+          fontWeight: FontWeight.w500,
+          fontSize: 12,
+        ),
+      ),
       chipTheme: ChipThemeData(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(100),
@@ -365,6 +384,25 @@ class AppTheme {
         foregroundColor: Colors.white,
         elevation: 4,
         shape: CircleBorder(),
+      ),
+      navigationRailTheme: NavigationRailThemeData(
+        backgroundColor: darkScaffold,
+        useIndicator: true,
+        indicatorColor: primaryLight.withOpacity(0.20),
+        selectedIconTheme: const IconThemeData(color: primaryLight),
+        unselectedIconTheme: const IconThemeData(color: Color(0xFF9CA3AF)),
+        selectedLabelTextStyle: const TextStyle(
+          color: primaryLight,
+          fontFamily: 'Inter',
+          fontWeight: FontWeight.w600,
+          fontSize: 12,
+        ),
+        unselectedLabelTextStyle: const TextStyle(
+          color: Color(0xFF9CA3AF),
+          fontFamily: 'Inter',
+          fontWeight: FontWeight.w500,
+          fontSize: 12,
+        ),
       ),
       chipTheme: ChipThemeData(
         shape: RoundedRectangleBorder(

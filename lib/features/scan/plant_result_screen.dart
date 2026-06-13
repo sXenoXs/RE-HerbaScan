@@ -192,10 +192,7 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800),
-          child: NestedScrollView(
+      body: NestedScrollView(
         headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
           return [
             // Edge-to-edge hero SliverAppBar
@@ -234,8 +231,6 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
         },
         body: _buildInsightsTab(
             context, topPrediction, plantName, scientificName, confidence),
-      ),
-        ),
       ),
     );
   }

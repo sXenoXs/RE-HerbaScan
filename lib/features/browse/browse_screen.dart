@@ -413,10 +413,10 @@ class _BrowseScreenState extends State<BrowseScreen> {
                     ),
                     gridDelegate:
                         const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 200,
+                      maxCrossAxisExtent: 240,
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
-                      childAspectRatio: 0.72,
+                      childAspectRatio: 0.68,
                     ),
                   ),
                 )
@@ -453,10 +453,10 @@ class _BrowseScreenState extends State<BrowseScreen> {
                     ),
                     gridDelegate:
                         const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 200,
+                      maxCrossAxisExtent: 240,
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
-                      childAspectRatio: 1.0,
+                      childAspectRatio: 0.9,
                     ),
                   ),
                 )

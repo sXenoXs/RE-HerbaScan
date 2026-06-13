@@ -57,13 +57,7 @@ void main() async {
   final performanceMonitor = PerformanceMonitor();
   performanceMonitor.startTimer(PerformanceOperation.appStart);
 
-  // Lock app to portrait orientation (skip on web)
-  if (!kIsWeb) {
-    await SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-    ]);
-  }
+
 
   runApp(const HerbaScanApp());
 }

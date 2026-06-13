@@ -393,10 +393,7 @@ class _PreparationInstructionsScreenState
         tooltip: 'Focus Mode',
         child: const Icon(Icons.fullscreen, size: 28),
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800),
-          child: SingleChildScrollView(
+      body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -705,8 +702,6 @@ class _PreparationInstructionsScreenState
               ),
             ),
           ],
-        ),
-      ),
         ),
       ),
     );

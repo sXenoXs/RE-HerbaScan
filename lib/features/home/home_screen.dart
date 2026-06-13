@@ -141,7 +141,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   });
                 },
                 labelType: NavigationRailLabelType.all,
-                backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
                 leading: Padding(
                   padding: const EdgeInsets.only(bottom: 16.0, top: 8.0),
                   child: FloatingActionButton(
@@ -176,7 +175,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
-              const VerticalDivider(thickness: 1, width: 1),
+              VerticalDivider(
+                thickness: 1, 
+                width: 1, 
+                color: theme.dividerColor.withOpacity(0.05),
+              ),
               Expanded(
                 child: IndexedStack(
                   index: _currentIndex,

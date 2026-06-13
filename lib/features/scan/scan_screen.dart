@@ -878,21 +878,7 @@ class _ScanScreenState extends State<ScanScreen>
       ],
     );
 
-    return ResponsiveLayout(
-      mobile: (context) => cameraStack,
-      tablet: (context) => Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(24),
-            child: AspectRatio(
-              aspectRatio: 3 / 4,
-              child: cameraStack,
-            ),
-          ),
-        ),
-      ),
-    );
+    return cameraStack;
   }
 
   void _showScanningTips() {

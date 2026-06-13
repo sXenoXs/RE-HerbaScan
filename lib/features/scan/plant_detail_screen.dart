@@ -122,13 +122,10 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
       backgroundColor: theme.brightness == Brightness.dark 
           ? Colors.black 
           : theme.colorScheme.surfaceContainerHighest,
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800),
-          child: Container(
-            color: theme.colorScheme.surface,
-            child: NestedScrollView(
-              controller: _scrollController,
+      body: Container(
+        color: theme.colorScheme.surface,
+        child: NestedScrollView(
+          controller: _scrollController,
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
             // ── Immersive SliverAppBar (320 px expanded) ──────────────────
@@ -341,8 +338,6 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
           ],
         ),
       ),
-          ),
-        ),
       ),
     );
   }

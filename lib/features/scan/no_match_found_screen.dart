@@ -72,12 +72,9 @@ class NoMatchFoundScreen extends StatelessWidget {
           // 2. Dark scrim
           Container(color: Colors.black.withOpacity(0.45)),
 
-          // 3. Glassmorphic center card
-          Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 800),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Center(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(24),
                 child: BackdropFilter(
@@ -247,7 +244,6 @@ class NoMatchFoundScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                ),
                 ),
               ),
             ),
