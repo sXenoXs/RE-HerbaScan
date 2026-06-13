@@ -80,26 +80,27 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 24),
 
           // 4. Support, Legal & About
-          _buildSectionLabel(context, theme, 'Support, Legal & About'),
-          const SizedBox(height: 8),
-          _buildGroupedCard(
-            theme,
-            children: [
-              _buildHelpTutorialTile(context, theme),
-              _buildSoftDivider(theme),
-              _buildTermsOfServiceTile(context, theme),
-              _buildSoftDivider(theme),
-              _buildEULATile(context, theme),
-              _buildSoftDivider(theme),
-              _buildPrivacyPolicyTile(context, theme),
-              _buildSoftDivider(theme),
-              _buildAppVersionTile(context, theme),
-              _buildSoftDivider(theme),
-              _buildModelVersionTile(context, theme),
-            ],
-          ),
-
-          const SizedBox(height: 32),
+          if (!kIsWeb) ...[
+            _buildSectionLabel(context, theme, 'Support, Legal & About'),
+            const SizedBox(height: 8),
+            _buildGroupedCard(
+              theme,
+              children: [
+                _buildHelpTutorialTile(context, theme),
+                _buildSoftDivider(theme),
+                _buildTermsOfServiceTile(context, theme),
+                _buildSoftDivider(theme),
+                _buildEULATile(context, theme),
+                _buildSoftDivider(theme),
+                _buildPrivacyPolicyTile(context, theme),
+                _buildSoftDivider(theme),
+                _buildAppVersionTile(context, theme),
+                _buildSoftDivider(theme),
+                _buildModelVersionTile(context, theme),
+              ],
+            ),
+            const SizedBox(height: 32),
+          ],
 
           // 5. Developer Options (visually separated)
           if (!kIsWeb) ...[
@@ -278,46 +279,48 @@ class SettingsScreen extends StatelessWidget {
               ),
               onTap: () => _showSignOutDialog(context, auth),
             ),
-            _buildSoftDivider(theme),
-            ListTile(
-              leading: Icon(
-                Icons.delete_forever_outlined,
-                color: theme.colorScheme.error,
-              ),
-              title: Text(
-                'Delete Account',
-                style: TextStyle(
+            if (!kIsWeb) ...[
+              _buildSoftDivider(theme),
+              ListTile(
+                leading: Icon(
+                  Icons.delete_forever_outlined,
                   color: theme.colorScheme.error,
-                  fontWeight: FontWeight.w600,
                 ),
+                title: Text(
+                  'Delete Account',
+                  style: TextStyle(
+                    color: theme.colorScheme.error,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: const Text(
+                  'Permanently delete your account and cloud data',
+                ),
+                trailing:
+                    const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+                onTap: () => _showDeleteAccountDialog(context, auth),
               ),
-              subtitle: const Text(
-                'Permanently delete your account and cloud data',
-              ),
-              trailing:
-                  const Icon(Icons.arrow_forward_ios_rounded, size: 16),
-              onTap: () => _showDeleteAccountDialog(context, auth),
-            ),
-            _buildSoftDivider(theme),
-            ListTile(
-              leading: Icon(
-                Icons.privacy_tip_outlined,
-                color: theme.colorScheme.error.withOpacity(0.8),
-              ),
-              title: Text(
-                'Request Data Deletion',
-                style: TextStyle(
+              _buildSoftDivider(theme),
+              ListTile(
+                leading: Icon(
+                  Icons.privacy_tip_outlined,
                   color: theme.colorScheme.error.withOpacity(0.8),
-                  fontWeight: FontWeight.w600,
                 ),
+                title: Text(
+                  'Request Data Deletion',
+                  style: TextStyle(
+                    color: theme.colorScheme.error.withOpacity(0.8),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: const Text(
+                  'Submit a request to delete your personal data',
+                ),
+                trailing:
+                    const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+                onTap: () => _showDataDeletionRequestDialog(context),
               ),
-              subtitle: const Text(
-                'Submit a request to delete your personal data',
-              ),
-              trailing:
-                  const Icon(Icons.arrow_forward_ios_rounded, size: 16),
-              onTap: () => _showDataDeletionRequestDialog(context),
-            ),
+            ],
           ],
         );
       },

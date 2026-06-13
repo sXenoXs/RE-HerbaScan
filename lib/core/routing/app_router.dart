@@ -83,4 +83,3 @@ GoRouter createAppRouter(GlobalKey<NavigatorState> navigatorKey) {
     ],
   );
 }
-

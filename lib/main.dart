@@ -96,6 +96,7 @@ class _HerbaScanAppState extends State<HerbaScanApp> {
             navigatorKey: _rootNavigatorKey,
             child: MaterialApp.router(
               routerConfig: _router,
+              scrollBehavior: const MaterialScrollBehavior().copyWith(scrollbars: false),
               // Key by locale only so theme toggle does not replace the whole tree (avoids _dependents.isEmpty).
               key: ValueKey(languageProvider.locale.toString()),
               title: 'HerbaScan',

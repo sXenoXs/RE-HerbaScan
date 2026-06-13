@@ -79,6 +79,10 @@ class _LoginScreenState extends State<LoginScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -87,7 +91,9 @@ class _LoginScreenState extends State<LoginScreen> {
               title: const Text('Settings'),
               onTap: () {
                 Navigator.of(context).pop(); // Close bottom sheet
-                GoRouter.of(context).go('/settings');
+                Future.delayed(const Duration(milliseconds: 150), () {
+                  if (context.mounted) context.push('/settings');
+                });
               },
             ),
           ],
@@ -132,7 +138,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         title: 'Personal Herbarium',
                         subtitle:
                             'Sign in to sync your scan history and images to the cloud.',
-                        imageAsset: 'assets/icons/HerbaScan_Icon1.svg',
+                        imageAsset: 'assets/icons/HerbaScan_Icon1.png',
                       ),
                       const SizedBox(height: 28),
 

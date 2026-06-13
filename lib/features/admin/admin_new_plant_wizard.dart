@@ -498,7 +498,14 @@ class _AdminNewPlantWizardState extends State<AdminNewPlantWizard> {
 
           // Image grid preview
           if (_selectedImages.isNotEmpty) ...[
-            _ImagePreviewGrid(images: _selectedImages),
+            _ImagePreviewGrid(
+              images: _selectedImages,
+              onRemove: (index) {
+                setState(() {
+                  _selectedImages.removeAt(index);
+                });
+              },
+            ),
             const SizedBox(height: 16),
           ],
 
@@ -1164,8 +1171,9 @@ class _MedicinalEntryWidget extends StatelessWidget {
 }
 
 class _ImagePreviewGrid extends StatelessWidget {
-  const _ImagePreviewGrid({required this.images});
+  const _ImagePreviewGrid({required this.images, this.onRemove});
   final List<XFile> images;
+  final void Function(int index)? onRemove;
 
   @override
   Widget build(BuildContext context) {
@@ -1179,17 +1187,39 @@ class _ImagePreviewGrid extends StatelessWidget {
         mainAxisSpacing: 6,
       ),
       itemBuilder: (ctx, i) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Image.network(
-            images[i].path,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
-              color: AppTheme.darkCard,
-              child: const Icon(Icons.image_rounded,
-                  size: 24, color: Colors.white38),
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                images[i].path,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  color: AppTheme.darkCard,
+                  child: const Icon(Icons.image_rounded,
+                      size: 24, color: Colors.white38),
+                ),
+              ),
             ),
-          ),
+            if (onRemove != null)
+              Positioned(
+                top: 4,
+                right: 4,
+                child: Material(
+                  color: Colors.black54,
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    onTap: () => onRemove!(i),
+                    customBorder: const CircleBorder(),
+                    child: const Padding(
+                      padding: EdgeInsets.all(4.0),
+                      child: Icon(Icons.close_rounded, size: 16, color: Colors.white),
+                    ),
+                  ),
+                ),
+              ),
+          ],
         );
       },
     );

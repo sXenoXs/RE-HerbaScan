@@ -25,20 +25,14 @@ class BotanicalAuthHeader extends StatelessWidget {
         Container(
           width: 80,
           height: 80,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: AppTheme.botanicalPrimary.withOpacity(0.10),
-          ),
           child: imageAsset != null
-              ? ClipOval(
-                  child: Image.asset(
-                    imageAsset!,
-                    width: 56,
-                    height: 56,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) =>
-                        Icon(icon, size: 40, color: AppTheme.botanicalPrimary),
-                  ),
+              ? Image.asset(
+                  imageAsset!,
+                  width: 80,
+                  height: 80,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) =>
+                      Icon(icon, size: 40, color: AppTheme.botanicalPrimary),
                 )
               : Icon(icon, size: 40, color: AppTheme.botanicalPrimary),
         ),

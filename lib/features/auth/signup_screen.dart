@@ -158,6 +158,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   title: 'Personal Herbarium',
                   subtitle:
                       'Create an account to back up your scans to the cloud.',
+                  imageAsset: 'assets/icons/HerbaScan_Icon1.png',
                 ),
                 const SizedBox(height: 28),
 

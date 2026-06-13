@@ -191,6 +191,7 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
           ),
           Expanded(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: _destinations.asMap().entries.map((entry) {
                 final i = entry.key;
                 final dest = entry.value;
@@ -218,13 +219,13 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
                     label: const Text('Exit Admin Console',
                         style: TextStyle(
                             color: AppTheme.errorLight, fontSize: 13)),
-                    onPressed: () => context.go('/home'),
+                    onPressed: () => context.go('/settings'),
                   )
                 : IconButton(
                     icon: const Icon(Icons.exit_to_app,
                         color: AppTheme.errorLight, size: 22),
                     tooltip: 'Exit Admin Console',
-                    onPressed: () => context.go('/home'),
+                    onPressed: () => context.go('/settings'),
                   ),
           ),
           const SizedBox(height: 8),
@@ -354,7 +355,7 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
                   style: TextStyle(color: AppTheme.errorLight, fontSize: 14)),
               onPressed: () {
                 Navigator.pop(context);
-                context.go('/home');
+                context.go('/settings');
               },
             ),
           ),

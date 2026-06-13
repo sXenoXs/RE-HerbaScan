@@ -350,3 +350,6 @@ node_modules/
 CHANGELOG.md
 .cursor/
 *.hprof
+
+.vercel
+deploy_admin.bat
