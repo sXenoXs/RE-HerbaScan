@@ -333,77 +333,133 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
   }
 
   Widget _buildIdleState() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.image,
-            size: 64,
-            color: AppTheme.botanicalPrimary,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Image Tracer',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Upload a plant part image to auto-generate the SVG path',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: _pickImage,
-            icon: const Icon(Icons.image),
-            label: const Text('Pick Image'),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppTheme.botanicalPrimary,
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          tooltip: 'Cancel',
+          onPressed: _cancel,
+        ),
+        title: const Text('Image Tracer'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
+        elevation: 0,
+      ),
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.image,
+              size: 64,
+              color: AppTheme.botanicalPrimary,
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            Text(
+              'Image Tracer',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Upload a plant part image to auto-generate the SVG path',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: _pickImage,
+              icon: const Icon(Icons.image),
+              label: const Text('Pick Image'),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppTheme.botanicalPrimary,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildPickingState() {
-    return const Center(
-      child: CircularProgressIndicator(
-        valueColor: AlwaysStoppedAnimation<Color>(AppTheme.botanicalPrimary),
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          tooltip: 'Cancel',
+          onPressed: _cancel,
+        ),
+        title: const Text('Image Tracer'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
+        elevation: 0,
+      ),
+      body: const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.botanicalPrimary),
+        ),
       ),
     );
   }
 
   Widget _buildResizingState() {
-    return const Center(
-      child: CircularProgressIndicator(
-        valueColor: AlwaysStoppedAnimation<Color>(AppTheme.botanicalPrimary),
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          tooltip: 'Cancel',
+          onPressed: _cancel,
+        ),
+        title: const Text('Image Tracer'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
+        elevation: 0,
+      ),
+      body: const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.botanicalPrimary),
+        ),
       ),
     );
   }
 
   Widget _buildTracingState() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.botanicalPrimary),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Tracing image...',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-          ),
-        ],
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          tooltip: 'Cancel',
+          onPressed: _cancel,
+        ),
+        title: const Text('Image Tracer'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
+        elevation: 0,
+      ),
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.botanicalPrimary),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Tracing image...',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -710,6 +766,11 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
   }
 
   Widget _buildThresholdSlider() {
+    // The Flutter Slider widget reserves 16dp of padding at each end for the
+    // thumb so it never clips the track endpoints. We mirror that padding on
+    // the histogram so the bars align exactly with the slider track.
+    const double _sliderEndPadding = 16.0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -730,42 +791,35 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
             ),
           ],
         ),
-        const SizedBox(height: 8),
-        SizedBox(
-          height: 48,
-          child: Stack(
-            alignment: Alignment.bottomCenter,
-            children: [
-              // Histogram
-              Positioned.fill(
-                bottom: 24, // Leave space for slider track
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: CustomPaint(
-                    painter: _HistogramPainter(
-                      histogram: _histogram,
-                      color: const Color(0xFF4285F4), // Blue mountain graph
-                    ),
-                  ),
-                ),
+        const SizedBox(height: 4),
+        // Histogram sits directly above the slider track, padded to match it.
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: _sliderEndPadding),
+          child: SizedBox(
+            height: 32,
+            child: CustomPaint(
+              size: const Size(double.infinity, 32),
+              painter: _HistogramPainter(
+                histogram: _histogram,
+                color: const Color(0xFF4285F4),
               ),
-              // Slider
-              Slider(
-                value: _threshold.toDouble(),
-                min: 0,
-                max: 255,
-                onChanged: (v) {
-                  setState(() {
-                    _threshold = v.round();
-                    _debouncedTrace();
-                  });
-                },
-                activeColor: Theme.of(context).colorScheme.onSurface,
-                inactiveColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
-                thumbColor: Theme.of(context).colorScheme.onSurface,
-              ),
-            ],
+            ),
           ),
+        ),
+        // Slider
+        Slider(
+          value: _threshold.toDouble(),
+          min: 0,
+          max: 255,
+          onChanged: (v) {
+            setState(() {
+              _threshold = v.round();
+              _debouncedTrace();
+            });
+          },
+          activeColor: Theme.of(context).colorScheme.onSurface,
+          inactiveColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+          thumbColor: Theme.of(context).colorScheme.onSurface,
         ),
       ],
     );

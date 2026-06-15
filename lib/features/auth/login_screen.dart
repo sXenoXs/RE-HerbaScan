@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/foundation.dart';
@@ -24,14 +25,40 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   String? _errorMessage;
 
+  // ── Brute-force throttle (S-02 / S-13 fix) ────────────────────────────
+  static const int _maxAttempts = 5;
+  static const int _cooldownDurationSeconds = 30;
+  int _failedAttempts = 0;
+  int _cooldownSeconds = 0;
+  Timer? _cooldownTimer;
+
+  bool get _isCoolingDown => _cooldownSeconds > 0;
+
   @override
   void dispose() {
+    _cooldownTimer?.cancel();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
+  void _startCooldown() {
+    setState(() => _cooldownSeconds = _cooldownDurationSeconds);
+    _cooldownTimer?.cancel();
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) { t.cancel(); return; }
+      setState(() {
+        _cooldownSeconds--;
+        if (_cooldownSeconds <= 0) {
+          _cooldownSeconds = 0;
+          t.cancel();
+        }
+      });
+    });
+  }
+
   Future<void> _submit() async {
+    if (_isCoolingDown) return; // hard-block during cooldown
     setState(() {
       _errorMessage = null;
       _isLoading = true;
@@ -45,6 +72,8 @@ class _LoginScreenState extends State<LoginScreen> {
             email: _emailController.text.trim(),
             password: _passwordController.text,
           );
+      // Reset on success
+      _failedAttempts = 0;
       if (mounted) {
         if (context.canPop()) {
           Navigator.of(context).pop(true);
@@ -53,6 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
     } catch (e) {
+      _failedAttempts++;
       setState(() {
         final raw = e.toString();
         if (raw.contains('invalid_credentials') ||
@@ -69,6 +99,13 @@ class _LoginScreenState extends State<LoginScreen> {
         }
         _isLoading = false;
       });
+      // After max attempts, enforce client-side cooldown.
+      if (_failedAttempts >= _maxAttempts) {
+        _failedAttempts = 0;
+        _startCooldown();
+        setState(() => _errorMessage =
+            'Too many failed attempts. Please wait $_cooldownDurationSeconds seconds.');
+      }
     }
   }
 
@@ -233,7 +270,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: FilledButton(
-                          onPressed: _isLoading ? null : _submit,
+                          onPressed: (_isLoading || _isCoolingDown) ? null : _submit,
                           child: _isLoading
                               ? const SizedBox(
                                   height: 20,
@@ -241,7 +278,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                   child:
                                       CircularProgressIndicator(strokeWidth: 2),
                                 )
-                              : const Text('Sign In'),
+                              : _isCoolingDown
+                                  ? Text('Wait ${_cooldownSeconds}s')
+                                  : const Text('Sign In'),
                         ),
                       ),
                       const SizedBox(height: 16),

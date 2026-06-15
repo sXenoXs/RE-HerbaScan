@@ -11,6 +11,7 @@ import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/features/auth/login_screen.dart';
 import 'package:herbascan/features/auth/change_password_screen.dart';
 import 'package:herbascan/features/auth/change_email_screen.dart';
+import 'package:herbascan/features/feedback/feedback_screen.dart';
 import 'package:herbascan/features/offline/system_diagnostics_screen.dart';
 import 'package:herbascan/features/help/help_tutorial_screen.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
@@ -87,6 +88,8 @@ class SettingsScreen extends StatelessWidget {
               theme,
               children: [
                 _buildHelpTutorialTile(context, theme),
+                _buildSoftDivider(theme),
+                _buildSendFeedbackTile(context, theme),
                 _buildSoftDivider(theme),
                 _buildTermsOfServiceTile(context, theme),
                 _buildSoftDivider(theme),
@@ -421,6 +424,22 @@ class SettingsScreen extends StatelessWidget {
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => const HelpTutorialScreen(),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSendFeedbackTile(BuildContext context, ThemeData theme) {
+    return ListTile(
+      leading: const Icon(Icons.feedback_outlined),
+      title: const Text('Send Feedback'),
+      subtitle: const Text('Share your thoughts or report an issue'),
+      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => const FeedbackScreen(),
           ),
         );
       },

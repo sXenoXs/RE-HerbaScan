@@ -18,6 +18,7 @@ import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/services/performance_monitor.dart';
 import 'package:herbascan/core/widgets/auth_deeplink_handler.dart';
 import 'package:herbascan/core/services/preparation_notification_service.dart';
+import 'package:herbascan/core/services/inactivity_timer_service.dart';
 // Desktop-only: init SQLite FFI so DB works on Windows/Linux/macOS. Mobile and web unchanged.
 import 'package:herbascan/core/init_database_factory_stub.dart'
     if (dart.library.ffi) 'package:herbascan/core/init_database_factory_ffi.dart' as db_factory;
@@ -74,6 +75,60 @@ class _HerbaScanAppState extends State<HerbaScanApp> {
   late final GoRouter _router = createAppRouter(_rootNavigatorKey);
 
   @override
+  void dispose() {
+    InactivityTimerService().stop();
+    super.dispose();
+  }
+
+  // ── Inactivity timeout handler ─────────────────────────────────────────────
+
+  /// Called when the user has been inactive for 60 minutes while signed in.
+  /// Signs the user out and navigates to the login screen.
+  void _handleInactivityTimeout(BuildContext context) {
+    final auth = context.read<AuthProvider>();
+    if (!auth.isLoggedIn) return;
+    auth.signOut();
+    final navigator = _rootNavigatorKey.currentContext;
+    if (navigator == null) return;
+    if (kIsWeb) {
+      // On web (admin portal), go directly to /login.
+      _router.go('/login');
+    } else {
+      // On mobile, show a non-dismissible dialog informing the user.
+      showDialog<void>(
+        context: navigator,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Session Expired'),
+          content: const Text(
+            'You have been signed out due to 60 minutes of inactivity. '
+            'Please sign in again to continue.',
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  // ── Start / stop timer based on auth state ────────────────────────────────
+
+  void _syncInactivityTimer(BuildContext context, AuthProvider auth) {
+    if (auth.isLoggedIn && !InactivityTimerService().isActive) {
+      InactivityTimerService().start(
+        onTimeout: () => _handleInactivityTimeout(context),
+        duration: InactivityTimerService.defaultTimeout, // 60 min
+      );
+    } else if (!auth.isLoggedIn && InactivityTimerService().isActive) {
+      InactivityTimerService().stop();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
@@ -110,14 +165,27 @@ class _HerbaScanAppState extends State<HerbaScanApp> {
                 Locale('fil', 'PH'), // Filipino
               ],
               builder: (context, child) {
-                return MediaQuery(
-                  data: MediaQuery.of(context).copyWith(
-                    textScaler: MediaQuery.of(context).textScaler.clamp(
-                      minScaleFactor: 0.85,
-                      maxScaleFactor: 1.15,
-                    ),
-                  ),
-                  child: child!,
+                // ── Inactivity wrapper ──────────────────────────────────────
+                // Listen to AuthProvider; start/stop timer when login state changes.
+                return Consumer<AuthProvider>(
+                  builder: (ctx, auth, _) {
+                    _syncInactivityTimer(ctx, auth);
+                    // Listener intercepts every pointer-down event (tap, scroll, drag start)
+                    // and resets the inactivity countdown.
+                    return Listener(
+                      behavior: HitTestBehavior.translucent,
+                      onPointerDown: (_) => InactivityTimerService().reset(),
+                      child: MediaQuery(
+                        data: MediaQuery.of(ctx).copyWith(
+                          textScaler: MediaQuery.of(ctx).textScaler.clamp(
+                            minScaleFactor: 0.85,
+                            maxScaleFactor: 1.15,
+                          ),
+                        ),
+                        child: child!,
+                      ),
+                    );
+                  },
                 );
               },
             ),

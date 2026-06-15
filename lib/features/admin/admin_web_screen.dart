@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:herbascan/core/providers/auth_provider.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/features/admin/admin_condition_search_screen.dart';
 import 'package:herbascan/features/admin/admin_dashboard_screen.dart';
@@ -24,6 +26,27 @@ class AdminWebScreen extends StatefulWidget {
 class _AdminWebScreenState extends State<AdminWebScreen> {
   int _selectedIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  @override
+  void initState() {
+    super.initState();
+    // Re-validate admin role on every portal load (S-04 fix).
+    WidgetsBinding.instance.addPostFrameCallback((_) => _assertAdminRole());
+  }
+
+  /// Confirms the current session still has the admin role. If not, redirect
+  /// to /login immediately. Called on init and on every tab switch.
+  Future<void> _assertAdminRole() async {
+    if (!mounted) return;
+    final auth = context.read<AuthProvider>();
+    // Refresh the Supabase session + role from the server.
+    await auth.refreshRole();
+    if (!mounted) return;
+    if (!auth.isAdmin) {
+      if (kDebugMode) debugPrint('[AdminWebScreen] Role check failed — redirecting to /login');
+      context.go('/login');
+    }
+  }
 
   static const int _overviewIndex = 0;
   static const int _plantMetadataIndex = 1;

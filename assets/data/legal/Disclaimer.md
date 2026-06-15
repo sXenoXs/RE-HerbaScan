@@ -1,48 +1,35 @@
-# PART I: MEDICAL DISCLAIMER
+# Medical Disclaimer
 
-> **READ THIS BEFORE USING HERBÁSCAN. THIS DISCLAIMER IS A CONDITION OF USE.**
-
-## THIS APP DOES NOT PROVIDE MEDICAL ADVICE
-
-**HerbaScan is NOT a medical device. It is NOT a diagnostic tool. It does NOT
-provide medical advice, medical diagnosis, or medical treatment of any kind.**
-
-All plant identification results, herbal medicine descriptions, preparation
-guides, safety profiles, and any other content displayed within HerbaScan are
-provided **strictly for general educational and informational purposes only**.
-Nothing in this application constitutes, or should be construed as, the
-practice of medicine, nursing, pharmacy, or any other licensed healthcare
-profession.
-
-### You Must Consult a Licensed Medical Professional
-
-**Before ingesting, applying, inhaling, or otherwise using any plant or
-plant-derived substance for any medicinal, therapeutic, or health-related
-purpose, you MUST consult a licensed and certified medical doctor,
-pharmacist, herbalist, or other qualified healthcare professional.**
-
-Do not use HerbaScan as a substitute for professional medical advice,
-diagnosis, or treatment. Do not disregard, delay, or avoid seeking
-professional medical advice because of anything you have read, seen, or
-learned through this application.
-
-### AI Models Make Mistakes — Including Potentially Fatal Ones
-
-HerbaScan uses an experimental artificial intelligence (AI) model to identify
-plants from photographs. **This AI model is not perfect and WILL make errors.**
-The model may:
-
-- Misidentify a **toxic, poisonous, or lethal plant** as a safe medicinal herb.
-- Provide incorrect confidence scores.
-- Fail entirely to identify a plant correctly under certain lighting, angle,
-  or image quality conditions.
-
-**A plant that the app identifies as safe may, in fact, be deadly. Never
-consume, handle, or use any plant solely on the basis of this app's output.**
-
-### If You Are Experiencing a Medical Emergency
-
-**Call emergency services (911 or your local emergency number) immediately.**
-Do not consult this app during a medical emergency.
+Read this before using HerbaScan. By continuing to use the app, you accept this disclaimer.
 
 ---
+
+## HerbaScan Is Not a Medical Tool
+
+HerbaScan is an educational reference app. It is not a medical device, a diagnostic tool, or a substitute for professional healthcare. Everything shown in the app — plant identification results, confidence scores, herbal descriptions, preparation guides, and safety profiles — is for general informational purposes only.
+
+Nothing in this app is medical advice.
+
+---
+
+## See a Doctor or Pharmacist First
+
+Before ingesting, applying, or using any plant or plant-derived substance for any health purpose, consult a licensed doctor, pharmacist, or qualified healthcare professional. Do not rely on this app in place of that consultation, and do not delay or avoid seeking professional medical advice because of something you read here.
+
+---
+
+## AI Makes Mistakes
+
+HerbaScan uses an experimental AI model to identify plants from photographs. This model is not infallible. It can and does make errors, including:
+
+- Misidentifying a toxic or lethal plant as a safe medicinal herb.
+- Returning incorrect confidence percentages.
+- Failing to identify a plant correctly due to lighting, angle, or image quality.
+
+A plant this app shows as safe may still be dangerous. Never consume, apply, or handle any plant based solely on what this app tells you.
+
+---
+
+## In a Medical Emergency
+
+Call emergency services immediately. Do not consult this app during a medical emergency.

@@ -278,18 +278,19 @@ class _AdminPlantMetadataScreenState extends State<AdminPlantMetadataScreen> {
         debugPrint('[AdminPlantMetadata] Local delete failed: $e');
       }
     }
-    if (!mounted) return;
-    setState(() => _resetting = false);
-    if (ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('"${plant.commonName}" removed.')),
-      );
-      _load();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Remove failed. Check connection and try again.')),
-      );
+    if (mounted) {
+      setState(() => _resetting = false);
+      if (ok) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('"${plant.commonName}" removed.')),
+        );
+        _load();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Could not remove plant. Check your connection and try again.')),
+        );
+      }
     }
   }
 

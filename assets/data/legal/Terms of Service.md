@@ -1,369 +1,194 @@
-# PART II: TERMS OF SERVICE
+# Terms of Service
 
 **Effective Date:** May 29, 2026
-**Last Updated:** May 29, 2026
-**Governing Entity:** HerbaScan Development Team, Lyceum of the Philippines
-University — Cavite, College of Information Technology and Computer Science
-("we," "us," "our," or "Developers")
+**Last Updated:** June 15, 2026
+**Governing Entity:** HerbaScan Development Team, Lyceum of the Philippines University — Cavite, College of Information Technology and Computer Science ("Developers")
+
+---
 
 ## 1. Acceptance of Terms
 
-By downloading, installing, accessing, or using the HerbaScan mobile
-application ("App," "Service"), you ("User," "you," "your") acknowledge that
-you have read, understood, and agree to be legally bound by these Terms of
-Service ("Terms"), our End-User License Agreement ("EULA"), and our Medical
-Disclaimer (collectively, "Agreement").
+By downloading, installing, or using the HerbaScan mobile application ("App" or "Service"), you agree to be bound by these Terms of Service ("Terms"), our End-User License Agreement, and our Medical Disclaimer. If you do not agree, you may not use this App.
 
-**IF YOU DO NOT AGREE TO ALL OF THESE TERMS IN THEIR ENTIRETY, YOU ARE NOT
-AUTHORIZED TO USE THIS APP AND MUST IMMEDIATELY UNINSTALL IT.**
-
-Your continued use of the App constitutes your ongoing acceptance of any
-amendments to these Terms.
+Your continued use after we publish changes means you accept the updated Terms.
 
 ---
 
-## 2. Description of the Service
+## 2. What HerbaScan Does
 
-HerbaScan is a mobile application that uses an offline convolutional neural
-network (CNN) AI model to analyze photographs of plants and provide:
+HerbaScan uses an AI model running entirely on your device to photograph and identify Philippine medicinal plants. The App provides:
 
-- Plant identification results with a confidence percentage.
-- General informational content about the identified plant's traditional,
-  alternative, or ethnobotanical uses.
-- Safety profiles and general preparation guides drawn from publicly available
-  ethnobotanical and Department of Health (DOH) reference data.
+- Plant identification with a confidence percentage.
+- General reference information about traditional and ethnobotanical uses.
+- Safety notes and preparation guides drawn from publicly available data, including Philippine Department of Health reference materials.
 
-The App operates in an **offline-first** mode. Plant identification is
-performed entirely on your device and does not require an internet connection.
+All identification happens offline. No internet connection is required to scan a plant.
 
 ---
 
-## 3. Extreme Medical Disclaimer and No Medical Advice
+## 3. Medical Disclaimer
 
-### 3.1 Not Medical Advice
-All content generated, displayed, or communicated by HerbaScan — including
-but not limited to plant identifications, confidence scores, medicinal use
-descriptions, preparation instructions, safety warnings, contraindication
-profiles, and habitat data — constitutes **general informational and
-educational content only**. It does not constitute medical advice, clinical
-guidance, diagnosis, prognosis, or treatment recommendation of any kind.
+### 3.1 For Information Only
 
-### 3.2 Mandatory Professional Consultation
-You are expressly and unambiguously required to **consult a licensed medical
-doctor, pharmacist, toxicologist, or qualified healthcare professional** before
-taking any action based on information provided by this App, including but not
-limited to:
+Everything HerbaScan shows you — plant names, confidence scores, medicinal uses, preparation guides, safety warnings — is general reference information, not medical advice. It does not replace a consultation with a doctor, pharmacist, or other licensed health professional.
 
-- Consuming any plant or plant-derived product internally.
-- Applying any plant material topically to skin, wounds, or mucous membranes.
-- Administering any plant-based preparation to another person, including
-  children, elderly individuals, or pregnant women.
-- Replacing, supplementing, or modifying any prescribed medical treatment or
-  medication.
+### 3.2 Consult a Professional First
 
-### 3.3 No Doctor-Patient Relationship
-Use of this App does not create a doctor-patient relationship, a
-pharmacist-patient relationship, or any other professional healthcare
-relationship between you and the Developers, any affiliated institution, or
-any content contributor.
+Before doing anything based on the App's output, you must consult a qualified healthcare professional. This includes consuming any plant or plant-derived product, applying plant material to skin or wounds, giving plant preparations to other people, or changing any prescribed treatment.
+
+### 3.3 No Professional Relationship
+
+Using this App does not create a doctor-patient or any other healthcare relationship between you and the Developers.
 
 ---
 
-## 4. AI and Machine Learning Inaccuracy — Assumption of Risk
+## 4. AI Limitations and Assumption of Risk
 
-### 4.1 Inherent Limitations of AI
-HerbaScan employs an experimental MobileNetV2-based convolutional neural
-network trained on a finite dataset. **You expressly acknowledge and agree
-that:**
+### 4.1 AI Makes Mistakes
 
-(a) AI plant identification is an imperfect, probabilistic technology that
-    produces errors under routine operating conditions.
+HerbaScan uses an experimental MobileNetV2 model trained on a limited dataset. You acknowledge that:
 
-(b) The App **may misidentify a toxic, poisonous, dangerous, or lethal plant
-    as a safe, edible, or medicinal species.** This is a known and inherent
-    risk of current computer vision technology applied to botanical
-    classification.
+(a) AI plant identification is probabilistic and will produce errors under normal conditions.
 
-(c) Factors including image quality, lighting conditions, camera angle, plant
-    maturity, regional variation, seasonal variation, and image obstructions
-    can and do affect identification accuracy.
+(b) The App may misidentify a toxic or poisonous plant as safe or medicinal. This is a known limitation of current computer vision technology.
 
-(d) A stated confidence percentage is a statistical model output, **not a
-    guarantee of correctness.** A 99% confidence result may still be wrong.
+(c) Image quality, lighting, camera angle, plant maturity, and regional variation all affect accuracy.
 
-(e) The App's out-of-distribution (OOD) detection mechanisms, quality gates,
-    and safety blacklists are provided as best-effort safeguards only and do
-    not eliminate the risk of misidentification.
+(d) A confidence percentage is a statistical estimate, not a guarantee. Even a high confidence result can be wrong.
 
-### 4.2 Full Assumption of Risk
-**YOU EXPRESSLY, KNOWINGLY, AND VOLUNTARILY ASSUME 100% OF ALL RISKS**
-associated with:
+(e) The App's safety filters and blacklists are best-effort protections and do not eliminate misidentification risk.
 
-- Using HerbaScan to identify any plant, whether in the wild, cultivated, or
-  in processed form.
-- Interacting with, handling, harvesting, preparing, consuming, or applying
-  any plant or plant substance.
-- Relying on any information provided by the App, including identification
-  results, safety profiles, preparation guides, and medicinal use descriptions.
-- Encountering plants in natural environments, including the risks of
-  accidental contact with toxic, allergenic, or otherwise hazardous species.
+### 4.2 You Accept the Risk
 
-This assumption of risk applies regardless of whether the Developers were
-negligent in the design, training, testing, or deployment of the AI model or
-any other component of the App.
+By using this App you voluntarily accept all risks associated with using plant identification results, handling or consuming any plant, relying on App content, and encountering plants in natural environments.
 
 ---
 
-## 5. Limitation of Liability — Zero Liability for Harm
+## 5. Limitation of Liability
 
-### 5.1 Absolute Limitation
-**TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE DEVELOPERS, THEIR
-AFFILIATES, OFFICERS, DIRECTORS, EMPLOYEES, AGENTS, ACADEMIC INSTITUTIONS,
-RESEARCH PARTNERS, AND ANY THIRD-PARTY CONTENT CONTRIBUTORS (COLLECTIVELY,
-"RELEASED PARTIES") SHALL BEAR ABSOLUTELY ZERO LIABILITY — WHETHER IN
-CONTRACT, TORT (INCLUDING NEGLIGENCE OR STRICT LIABILITY), STATUTE, OR ANY
-OTHER LEGAL THEORY — FOR ANY HARM, LOSS, INJURY, ILLNESS, DEATH, PROPERTY
-DAMAGE, OR OTHER DAMAGE OF ANY KIND ARISING FROM OR RELATED TO:**
+### 5.1 No Liability for Harm
 
-(a) Your use of or reliance on any plant identification result produced by the
-    App, whether correct or incorrect.
-
-(b) Your ingestion, inhalation, topical application, or any other use of any
-    plant or plant-derived substance, whether or not identified by the App.
-
-(c) The misidentification of any plant by the App's AI model, including the
-    misidentification of a toxic, poisonous, allergenic, or lethal plant as
-    a safe or medicinal species.
-
-(d) Your failure to consult a licensed medical professional before acting on
-    information provided by the App.
-
-(e) Any allergic reaction, poisoning, toxicological event, drug interaction,
-    or adverse health outcome resulting from plant use based on or related to
-    the App's content.
-
-(f) Any interaction with plants in natural environments, including accidental
-    contact with or ingestion of hazardous species.
-
-(g) Technical errors, App malfunctions, data corruption, incorrect outputs,
-    or unavailability of the Service.
+To the fullest extent permitted by law, the Developers and their affiliates bear no liability of any kind for any harm, loss, injury, illness, or death arising from your use of this App or any action taken based on its output.
 
 ### 5.2 No Consequential Damages
-In no event shall the Released Parties be liable for any indirect, incidental,
-special, consequential, punitive, or exemplary damages, including but not
-limited to loss of profits, loss of data, personal injury, bodily injury, or
-death, even if the Released Parties have been advised of the possibility of
-such damages.
 
-### 5.3 Maximum Aggregate Liability
-To the extent any liability is found to exist notwithstanding the above
-limitations, the Released Parties' maximum aggregate liability to you for all
-claims arising out of or relating to the App shall not exceed **Philippine
-Peso One Hundred (₱100.00)** or the equivalent in applicable currency,
-regardless of the nature of the claim.
+The Developers are not liable for indirect, incidental, special, consequential, or punitive damages, including loss of data, personal injury, or death.
 
-### 5.4 Basis of the Bargain
-You acknowledge that the limitations of liability set forth in this Section 5
-are a fundamental element of the basis of the bargain between you and the
-Developers, and that the Developers would not provide the App to you absent
-such limitations.
+### 5.3 Maximum Liability Cap
+
+If any liability is established despite the above, the Developers' total liability to you for all claims combined shall not exceed Philippine Peso One Hundred (₱100.00).
+
+### 5.4 Basis of the Agreement
+
+These liability limits are a fundamental condition of offering this App at no charge. The Developers would not provide the App without them.
 
 ---
 
 ## 6. Indemnification
 
-**You agree to fully defend, indemnify, and hold harmless** the Released
-Parties from and against any and all claims, demands, actions, lawsuits,
-proceedings, investigations, liabilities, damages, losses, costs, and
-expenses (including reasonable attorneys' fees and court costs) arising out of
-or relating to:
-
-(a) Your use of or access to the App.
-
-(b) Any plant you identify, handle, harvest, prepare, consume, or otherwise
-    use based in whole or in part on the App's output.
-
-(c) Your violation of these Terms, the EULA, or any applicable law or
-    regulation.
-
-(d) Any claim by a third party (including family members, dependents, or
-    other persons) arising from actions you took based on the App's content.
-
-(e) Your negligence or willful misconduct.
-
-(f) Any bodily injury, death, or property damage caused by you in connection
-    with your use of the App.
-
-This indemnification obligation will survive the termination of these Terms
-and your discontinuation of use of the App.
+You agree to defend and hold harmless the Developers from any claims, damages, or expenses arising from your use of the App, your use or handling of any plant, your violation of these Terms, or claims brought by other people because of actions you took based on the App's content.
 
 ---
 
 ## 7. Prohibited Uses
 
-You agree that you will NOT use HerbaScan to:
+You may not use HerbaScan to:
 
-(a) Diagnose, treat, cure, or prevent any disease or medical condition in
-    yourself or others.
+(a) Diagnose, treat, or attempt to cure any disease or medical condition.
 
-(b) Identify plants for the purpose of foraging for food without independent
-    expert verification.
+(b) Forage for food without independent expert confirmation.
 
-(c) Identify plants for the purpose of self-medication or the medication of
-    others without consulting a licensed healthcare professional.
+(c) Self-medicate or medicate others without professional guidance.
 
-(d) Advise, instruct, or encourage any other person to consume or apply any
-    plant based solely on the App's identification.
+(d) Advise another person to consume or apply a plant solely on the basis of the App's identification.
 
-(e) Identify or source plants for the purpose of manufacturing, distributing,
-    or selling herbal remedies, supplements, or preparations to others.
+(e) Source plants for the manufacture or sale of herbal remedies or supplements to others.
 
-(f) Engage in any illegal activity, including the harvest of protected plant
-    species.
+(f) Harvest protected plant species or engage in any illegal activity.
 
-(g) Attempt to reverse-engineer, decompile, disassemble, or extract the
-    AI model or any proprietary component of the App.
+(g) Reverse-engineer, decompile, or extract the AI model or any proprietary component of the App.
 
 ---
 
 ## 8. Intellectual Property
 
 ### 8.1 Ownership
-All content within HerbaScan, including but not limited to the AI model
-architecture and weights, source code, user interface design, plant
-photographs, botanical data, text descriptions, safety profiles, preparation
-guides, the HerbaScan name, and logo, are the exclusive intellectual property
-of the Developers and/or their respective licensors and are protected by
-applicable intellectual property laws.
 
-### 8.2 License Grant
-Subject to your compliance with these Terms, the Developers grant you a
-limited, non-exclusive, non-transferable, revocable license to install and
-use the App on your personal mobile device solely for your personal,
-non-commercial, informational purposes.
+All content within HerbaScan, including the AI model, source code, interface design, plant data, safety profiles, and the HerbaScan name and logo, belongs to the Developers or their licensors.
+
+### 8.2 Your License
+
+Subject to these Terms, the Developers grant you a limited, non-exclusive, non-transferable, revocable license to install and use the App on your personal device for personal, non-commercial purposes.
 
 ### 8.3 Restrictions
-You may not copy, modify, distribute, sell, sublicense, rent, lease, or create
-derivative works of the App or any of its components without prior written
-consent from the Developers.
+
+You may not copy, modify, distribute, sell, sublicense, or create derivative works of the App or any of its parts without prior written permission from the Developers.
 
 ---
 
 ## 9. User Accounts
 
 ### 9.1 Account Responsibility
-If you create an account within the App, you are responsible for maintaining
-the confidentiality of your credentials and for all activities that occur
-under your account.
 
-### 9.2 Account Termination
-The Developers reserve the right, at their sole discretion, to suspend or
-permanently terminate your account and access to the App at any time, with or
-without notice, for any reason, including but not limited to:
+If you create an account, you are responsible for keeping your credentials secure and for all activity under your account.
 
-- Violation of these Terms.
-- Suspected fraudulent, abusive, or illegal activity.
-- Extended periods of account inactivity.
+### 9.2 Termination
 
-Upon termination, your license to use the App immediately ceases.
+The Developers may suspend or terminate your account at any time, with or without notice, for violation of these Terms, suspected abuse, or extended inactivity. Your license ends immediately on termination.
 
-### 9.3 Effect of Termination
-Termination of your account does not release you from any obligations or
-liabilities accrued prior to termination, including indemnification
-obligations.
+### 9.3 Survival
+
+Termination does not release you from obligations or liabilities incurred before termination, including indemnification obligations.
 
 ---
 
 ## 10. Data and Privacy
 
-Your use of HerbaScan may involve the collection, storage, and processing of
-certain personal and usage data. The collection and use of your data are
-governed by our **Privacy Policy**, which is incorporated into these Terms
-by reference. By using the App, you consent to the data practices described
-in our Privacy Policy.
+How we collect and use your data is described in our Privacy Policy, which forms part of this agreement. By using the App, you agree to those practices.
 
-The App performs plant identification **offline on your device**. Photographs
-used for identification are processed locally and are not automatically
-transmitted to external servers unless you explicitly choose to upload a scan
-to your personal herbarium cloud backup.
+Plant photographs are processed locally on your device and are not sent to any server unless you choose to upload a scan to your personal herbarium cloud backup.
 
 ---
 
-## 11. Third-Party Content and References
+## 11. Third-Party References
 
-HerbaScan may reference or display information derived from third-party
-sources, including the Philippine Department of Health (DOH), published
-ethnobotanical literature, and the PhilMedic dataset. The Developers do not
-warrant the accuracy, completeness, or currentness of any such third-party
-information. Reference to any specific plant use, traditional remedy, or
-health claim from a third-party source does not constitute an endorsement or
-validation of that claim by the Developers.
+HerbaScan may display information from third-party sources, including the Philippine Department of Health, published ethnobotanical literature, and the PhilMedic dataset. We do not warrant the accuracy of that information. Reference to a traditional plant use does not mean we endorse or validate that use.
 
 ---
 
 ## 12. Disclaimer of Warranties
 
-**THE APP IS PROVIDED "AS IS" AND "AS AVAILABLE," WITHOUT WARRANTY OF ANY
-KIND, EXPRESS OR IMPLIED.** THE RELEASED PARTIES EXPRESSLY DISCLAIM ALL
-WARRANTIES, INCLUDING BUT NOT LIMITED TO:
-
-- IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-- WARRANTIES THAT THE APP WILL BE UNINTERRUPTED, ERROR-FREE, OR SECURE.
-- WARRANTIES OF ACCURACY, COMPLETENESS, OR RELIABILITY OF ANY PLANT
-  IDENTIFICATION RESULT OR INFORMATIONAL CONTENT.
-- WARRANTIES THAT THE APP WILL CORRECTLY IDENTIFY ANY PLANT, OR THAT IT
-  WILL CORRECTLY FLAG ANY PLANT AS TOXIC OR DANGEROUS.
+The App is provided "as is" and "as available," without any warranty. We specifically disclaim all implied warranties of merchantability and fitness for a particular purpose, and we do not warrant that the App will be error-free, secure, uninterrupted, or accurate in its plant identifications.
 
 ---
 
-## 13. Governing Law and Dispute Resolution
+## 13. Governing Law
 
-These Terms shall be governed by and construed in accordance with the laws of
-the **Republic of the Philippines**, without regard to its conflict of law
-provisions.
-
-Any dispute, controversy, or claim arising out of or relating to these Terms
-or the App shall first be subject to good-faith negotiation between the
-parties. If negotiation fails, disputes shall be submitted to the exclusive
-jurisdiction of the appropriate courts of **Cavite, Philippines**.
+These Terms are governed by the laws of the Republic of the Philippines. Any dispute that cannot be resolved through good-faith negotiation will be submitted to the courts of Cavite, Philippines.
 
 ---
 
 ## 14. Changes to These Terms
 
-The Developers reserve the right to modify these Terms at any time. Updated
-Terms will be posted within the App with a revised effective date. Your
-continued use of the App after such modifications constitutes your acceptance
-of the updated Terms. If you do not agree to the modified Terms, you must
-discontinue use and uninstall the App.
+We may update these Terms at any time. The revised version will be posted in the App with a new effective date. Continuing to use the App after changes are posted means you accept them. If you do not agree, stop using the App.
 
 ---
 
 ## 15. Severability
 
-If any provision of these Terms is found to be invalid, illegal, or
-unenforceable by a court of competent jurisdiction, the remaining provisions
-shall continue in full force and effect. The invalid provision shall be
-modified to the minimum extent necessary to make it enforceable.
+If any part of these Terms is found unenforceable, the remaining parts continue in effect. The unenforceable part will be modified to the minimum extent needed to make it valid.
 
 ---
 
 ## 16. Entire Agreement
 
-These Terms, together with the EULA, Medical Disclaimer, and Privacy Policy,
-constitute the entire agreement between you and the Developers regarding your
-use of HerbaScan and supersede all prior agreements, representations, and
-understandings.
+These Terms, together with the EULA, Medical Disclaimer, and Privacy Policy, are the complete agreement between you and the Developers regarding HerbaScan.
 
 ---
 
 ## 17. Contact
 
-For questions regarding these Terms, contact:
-
 **HerbaScan Development Team**
 College of Information Technology and Computer Science
 Lyceum of the Philippines University — Cavite
 Email: herbascan.official@gmail.com
-
----

@@ -6,10 +6,22 @@
 import * as jose from "jsr:@panva/jose@6";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// Allowed origins: Vercel admin portal + localhost for local dev.
+// Set ALLOWED_ORIGIN env variable in Supabase to override (e.g. custom domain).
+const ALLOWED_ORIGIN =
+  Deno.env.get("ALLOWED_ORIGIN") ??
+  "https://herbascan-admin.vercel.app";
+
+function buildCorsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get("origin") ?? "";
+  const allowedOrigins = [ALLOWED_ORIGIN, "http://localhost:8080", "http://localhost:3000"];
+  const responseOrigin = allowedOrigins.includes(origin) ? origin : ALLOWED_ORIGIN;
+  return {
+    "Access-Control-Allow-Origin": responseOrigin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Vary": "Origin",
+  };
+}
 
 const SUPABASE_JWT_ISSUER =
   Deno.env.get("SB_JWT_ISSUER") ?? Deno.env.get("SUPABASE_URL") + "/auth/v1";
@@ -34,6 +46,7 @@ async function verifyJwtAndGetSub(token: string): Promise<string> {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = buildCorsHeaders(req);
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -89,6 +102,7 @@ Deno.serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
+    const corsHeaders = buildCorsHeaders(req);
     const msg = e instanceof Error ? e.message : "Internal server error";
     const status = msg.includes("Authorization") || msg.includes("JWT") || msg.includes("token") ? 401 : 500;
     return new Response(

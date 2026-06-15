@@ -748,8 +748,20 @@ class _HistoryScreenState extends State<HistoryScreen>
                   } else {
                     _selectedDeviceIds.add(scan.id);
                   }
+                  // Exit select mode only when both sets are empty (Option B)
+                  if (_selectedDeviceIds.isEmpty && _selectedCloudIds.isEmpty) {
+                    _selectMode = false;
+                  }
                 });
               },
+              onLongPress: _selectMode
+                  ? null
+                  : () {
+                      setState(() {
+                        _selectMode = true;
+                        _selectedDeviceIds.add(scan.id);
+                      });
+                    },
             ),
           );
         },
@@ -926,8 +938,20 @@ class _HistoryScreenState extends State<HistoryScreen>
                   } else {
                     _selectedCloudIds.add(cloud.id);
                   }
+                  // Exit select mode only when both sets are empty (Option B)
+                  if (_selectedDeviceIds.isEmpty && _selectedCloudIds.isEmpty) {
+                    _selectMode = false;
+                  }
                 });
               },
+              onLongPress: _selectMode
+                  ? null
+                  : () {
+                      setState(() {
+                        _selectMode = true;
+                        _selectedCloudIds.add(cloud.id);
+                      });
+                    },
             ),
           );
         },
@@ -1042,6 +1066,7 @@ class _HistoryScreenState extends State<HistoryScreen>
     bool isSelectMode = false,
     bool isSelected = false,
     VoidCallback? onToggleSelect,
+    VoidCallback? onLongPress,
   }) {
     final dateFormat = DateFormat('MMM dd, yyyy • HH:mm');
     final confidence = _cloudScanConfidence(cloud);
@@ -1087,6 +1112,7 @@ class _HistoryScreenState extends State<HistoryScreen>
           }
           if (mounted) _loadCloudScans();
         },
+        onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(12.0),
@@ -1349,6 +1375,7 @@ class _HistoryScreenState extends State<HistoryScreen>
     bool isSelectMode = false,
     bool isSelected = false,
     VoidCallback? onToggleSelect,
+    VoidCallback? onLongPress,
   }) {
     final dateFormat = DateFormat('MMM dd, yyyy • HH:mm');
     final methodIcon = _getMethodIcon(scan);
@@ -1394,6 +1421,7 @@ class _HistoryScreenState extends State<HistoryScreen>
           }
           if (mounted) _loadCloudScans();
         },
+        onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(12.0),

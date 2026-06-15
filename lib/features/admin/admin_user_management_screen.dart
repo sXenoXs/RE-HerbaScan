@@ -177,9 +177,10 @@ class _AdminUserManagementScreenState
         rethrow;
       }
     } catch (e) {
+      if (kDebugMode) debugPrint('[AdminUserManagement] Force verify error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Force verify failed: $e')),
+          const SnackBar(content: Text('Could not verify email. Please try again.')),
         );
       }
     } finally {
@@ -271,7 +272,7 @@ class _AdminUserManagementScreenState
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Delete failed: $e')),
+          const SnackBar(content: Text('Could not delete user. Please try again.')),
         );
       }
     } finally {
