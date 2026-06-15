@@ -239,29 +239,23 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: isExtended
                 ? TextButton.icon(
-                    icon: const Icon(Icons.exit_to_app,
+                    icon: const Icon(Icons.logout_rounded,
                         color: AppTheme.errorLight, size: 20),
-                    label: const Text('Exit Admin Console',
+                    label: const Text('Sign Out',
                         style: TextStyle(
                             color: AppTheme.errorLight, fontSize: 13)),
                     onPressed: () {
-                      if (context.canPop()) {
-                        context.pop();
-                      } else {
-                        context.go('/home');
-                      }
+                      context.read<AuthProvider>().signOut();
+                      context.go('/login');
                     },
                   )
                 : IconButton(
-                    icon: const Icon(Icons.exit_to_app,
+                    icon: const Icon(Icons.logout_rounded,
                         color: AppTheme.errorLight, size: 22),
-                    tooltip: 'Exit Admin Console',
+                    tooltip: 'Sign Out',
                     onPressed: () {
-                      if (context.canPop()) {
-                        context.pop();
-                      } else {
-                        context.go('/home');
-                      }
+                      context.read<AuthProvider>().signOut();
+                      context.go('/login');
                     },
                   ),
           ),
@@ -386,17 +380,14 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
             child: TextButton.icon(
-              icon: const Icon(Icons.exit_to_app,
+              icon: const Icon(Icons.logout_rounded,
                   color: AppTheme.errorLight, size: 20),
-              label: const Text('Exit Admin Console',
+              label: const Text('Sign Out',
                   style: TextStyle(color: AppTheme.errorLight, fontSize: 14)),
               onPressed: () {
                 Navigator.pop(context); // Close drawer
-                if (context.canPop()) {
-                  context.pop();
-                } else {
-                  context.go('/home');
-                }
+                context.read<AuthProvider>().signOut();
+                context.go('/login');
               },
             ),
           ),
