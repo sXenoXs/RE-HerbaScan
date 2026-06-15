@@ -304,16 +304,8 @@ class _ImageTracerDialogState extends State<ImageTracerDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      type: MaterialType.transparency,
-      child: SafeArea(
-        top: false,
-        bottom: false,
-        child: Scaffold(
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          body: _buildBody(),
-        ),
-      ),
+    return Dialog.fullscreen(
+      child: _buildBody(),
     );
   }
 

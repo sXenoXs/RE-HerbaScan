@@ -72,13 +72,19 @@ class _LoginScreenState extends State<LoginScreen> {
             email: _emailController.text.trim(),
             password: _passwordController.text,
           );
+      // Await role refresh before routing to ensure isAdmin is up-to-date
+      await context.read<AuthProvider>().refreshRole();
+      
       // Reset on success
       _failedAttempts = 0;
       if (mounted) {
-        if (context.canPop()) {
+        final authAfter = context.read<AuthProvider>();
+        if (kIsWeb && authAfter.isAdmin) {
+          context.go('/admin');
+        } else if (context.canPop()) {
           Navigator.of(context).pop(true);
         } else {
-          context.go('/admin');
+          context.go(authAfter.isAdmin ? '/admin' : '/home');
         }
       }
     } catch (e) {
