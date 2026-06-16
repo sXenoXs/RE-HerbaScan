@@ -116,7 +116,40 @@ class _PreparationFocusModeScreenState
       'timerRemainingSeconds': _timerRemainingSeconds ?? 0,
       'timerPaused': _timerPaused,
     };
+    if (_activeTimerStepIndex != null && !_timerPaused && _timer != null && _timerRemainingSeconds != null) {
+      map['timerEndEpochMs'] =
+          DateTime.now()
+              .add(Duration(seconds: _timerRemainingSeconds!))
+              .millisecondsSinceEpoch;
+    }
     await prefs.setString(key, jsonEncode(map));
+  }
+
+  Future<void> _resetProgress() async {
+    _timer?.cancel();
+    _timer = null;
+    final stepCount = widget.preparationMethod.stepInstructions.length;
+    for (int i = 0; i < stepCount; i++) {
+      await PreparationNotificationService().cancelTimer(_stepId(i));
+    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_prefsKey(widget.preparationMethod));
+    setState(() {
+      _stepCompleted = List.filled(stepCount, false);
+      _activeTimerStepIndex = null;
+      _timerRemainingSeconds = null;
+      _timerPaused = false;
+      _currentPage = 0;
+      _showCompletion = false;
+    });
+    if (_pageController.hasClients) {
+      _pageController.jumpToPage(0);
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Progress reset')),
+      );
+    }
   }
 
   String _stepId(int index) => '${widget.preparationMethod.id}_$index';
@@ -285,6 +318,32 @@ class _PreparationFocusModeScreenState
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Reset Progress',
+            onPressed: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Reset Progress?'),
+                  content: const Text('This will clear all completed steps and stop any running timer.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: const Text('Reset'),
+                    ),
+                  ],
+                ),
+              );
+              if (confirm == true) await _resetProgress();
+            },
+          ),
+        ],
         // Segmented progress bar replaces "Step X of Y" chip
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(4),

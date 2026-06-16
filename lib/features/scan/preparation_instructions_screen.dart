@@ -68,6 +68,15 @@ class _PreparationInstructionsScreenState
       final remaining = map['timerRemainingSeconds'] as int? ?? 0;
       final paused = map['timerPaused'] as bool? ?? false;
       final endEpochMs = map['timerEndEpochMs'] as int?;
+
+      _timer?.cancel();
+      _timer = null;
+      setState(() {
+        _activeTimerStepIndex = null;
+        _timerRemainingSeconds = 0;
+        _timerPaused = false;
+      });
+
       if (activeIndex != null && activeIndex >= 0 && activeIndex < stepCount) {
         int remainingToUse = remaining;
         if (!paused && endEpochMs != null) {
@@ -377,8 +386,8 @@ class _PreparationInstructionsScreenState
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.of(context).push(
+        onPressed: () async {
+          await Navigator.of(context).push(
             MaterialPageRoute<void>(
               builder:
                   (context) => PreparationFocusModeScreen(
@@ -387,6 +396,7 @@ class _PreparationInstructionsScreenState
                   ),
             ),
           );
+          _loadState();
         },
         backgroundColor: AppTheme.botanicalPrimary,
         foregroundColor: Colors.white,
