@@ -16,6 +16,7 @@ import 'package:herbascan/core/widgets/anatomy_interactive_view.dart';
 import 'package:herbascan/core/widgets/contraindication_engine_widget.dart';
 import 'package:herbascan/features/scan/habitat_map_screen.dart';
 import 'package:herbascan/features/scan/preparation_instructions_screen.dart';
+import 'package:herbascan/features/scan/anatomy_full_screen_screen.dart';
 
 class PlantDetailScreen extends StatefulWidget {
   final Plant plant;
@@ -602,22 +603,51 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
                           child: Container(
                             height: 400,
                             color: theme.colorScheme.surfaceContainerLow,
-                            child: parts.length == 1
-                                ? AnatomyInteractiveView(
-                                    parts: parts,
-                                    height: 400,
-                                    onPartTapped: (part) =>
-                                        _showAnatomyPartBottomSheet(
-                                            context, part, theme),
-                                  )
-                                : _AnatomyPartCarousel(
-                                    parts: parts,
-                                    height: 400,
-                                    onPartTapped: (part) =>
-                                        _showAnatomyPartBottomSheet(
-                                            context, part, theme),
-                                    l10n: l10n,
+                            child: Stack(
+                              children: [
+                                Positioned.fill(
+                                  child: parts.length == 1
+                                      ? AnatomyInteractiveView(
+                                          parts: parts,
+                                          height: 400,
+                                          onPartTapped: (part) =>
+                                              _showAnatomyPartBottomSheet(
+                                                  context, part, theme),
+                                        )
+                                      : _AnatomyPartCarousel(
+                                          parts: parts,
+                                          height: 400,
+                                          onPartTapped: (part) =>
+                                              _showAnatomyPartBottomSheet(
+                                                  context, part, theme),
+                                          l10n: l10n,
+                                        ),
+                                ),
+                                Positioned(
+                                  top: 8,
+                                  right: 8,
+                                  child: IconButton(
+                                    icon: const Icon(Icons.open_in_full_rounded),
+                                    color: AppTheme.botanicalPrimary,
+                                    onPressed: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => AnatomyFullScreenScreen(
+                                            plant: widget.plant,
+                                            parts: parts,
+                                            isCarousel: parts.length > 1,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    tooltip: 'Expand to full screen',
+                                    style: IconButton.styleFrom(
+                                      backgroundColor: theme.colorScheme.surface.withOpacity(0.8),
+                                    ),
                                   ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],

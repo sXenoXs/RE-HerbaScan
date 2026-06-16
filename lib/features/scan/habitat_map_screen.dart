@@ -34,6 +34,7 @@ class _HabitatMapScreenState extends State<HabitatMapScreen> {
   PlantHabitat? _habitat;
   bool _loading = true;
   String? _error;
+  int? _selectedMarkerIndex;
 
   @override
   void initState() {
@@ -190,11 +191,19 @@ class _HabitatMapScreenState extends State<HabitatMapScreen> {
           : '${ll.latitude.toStringAsFixed(2)}, ${ll.longitude.toStringAsFixed(2)}';
       return Marker(
         point: ll,
-        width: 44,
-        height: 44,
-        child: Tooltip(
-          message: label,
-          child: _GreenPlantMarker(),
+        width: 54,
+        height: 54,
+        child: GestureDetector(
+          onTap: () {
+            setState(() {
+              _selectedMarkerIndex = i;
+            });
+            _mapController.move(ll, 8.0);
+          },
+          child: Tooltip(
+            message: label,
+            child: _GreenPlantMarker(isSelected: _selectedMarkerIndex == i),
+          ),
         ),
       );
     }).toList();
@@ -283,6 +292,16 @@ class _HabitatMapScreenState extends State<HabitatMapScreen> {
                 habitat: _habitat!,
                 l10n: l10n,
                 scrollController: scrollController,
+                onRegionSelected: (index) {
+                  if (_habitat!.hasCoordinates && index < _habitat!.knownCoordinates.length) {
+                    final point = _habitat!.knownCoordinates[index];
+                    final ll = LatLng(point.lat, point.lng);
+                    setState(() {
+                      _selectedMarkerIndex = index;
+                    });
+                    _mapController.move(ll, 8.0);
+                  }
+                },
               );
             },
           ),
@@ -293,26 +312,31 @@ class _HabitatMapScreenState extends State<HabitatMapScreen> {
 
 /// Custom green plant marker with eco icon and shadow.
 class _GreenPlantMarker extends StatelessWidget {
+  final bool isSelected;
+
+  const _GreenPlantMarker({this.isSelected = false});
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 44,
-      height: 44,
+      width: isSelected ? 54 : 44,
+      height: isSelected ? 54 : 44,
       decoration: BoxDecoration(
         color: AppTheme.botanicalPrimary,
         shape: BoxShape.circle,
+        border: isSelected ? Border.all(color: Colors.white, width: 3) : null,
         boxShadow: [
           BoxShadow(
             color: AppTheme.botanicalPrimary.withOpacity(0.45),
-            blurRadius: 8,
+            blurRadius: isSelected ? 12 : 8,
             offset: const Offset(0, 3),
           ),
         ],
       ),
-      child: const Icon(
+      child: Icon(
         Icons.eco_rounded,
         color: Colors.white,
-        size: 24,
+        size: isSelected ? 28 : 24,
       ),
     );
   }
@@ -359,12 +383,14 @@ class _HabitatInfoSheet extends StatelessWidget {
   final PlantHabitat habitat;
   final AppLocalizations l10n;
   final ScrollController scrollController;
+  final ValueChanged<int>? onRegionSelected;
 
   const _HabitatInfoSheet({
     required this.plant,
     required this.habitat,
     required this.l10n,
     required this.scrollController,
+    this.onRegionSelected,
   });
 
   @override
@@ -477,7 +503,7 @@ class _HabitatInfoSheet extends StatelessWidget {
                   final chipBg = isDark
                       ? theme.colorScheme.surfaceContainerHighest
                       : AppTheme.safeBgLight;
-                  return Chip(
+                  return ActionChip(
                     label: Text(
                       habitat.regionNames[index],
                       style: theme.textTheme.labelSmall?.copyWith(
@@ -492,6 +518,7 @@ class _HabitatInfoSheet extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     visualDensity: VisualDensity.compact,
+                    onPressed: () => onRegionSelected?.call(index),
                   );
                 },
               ),
