@@ -19,9 +19,14 @@ import 'package:herbascan/core/widgets/responsive_layout.dart';
 import 'dart:io';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, this.showUnauthorizedSnackBar = false});
+  const HomeScreen({
+    super.key,
+    this.showUnauthorizedSnackBar = false,
+    this.initialTabIndex = 0,
+  });
 
   final bool showUnauthorizedSnackBar;
+  final int initialTabIndex;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -30,13 +35,24 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   // 4 real tabs: 0=Home, 1=Browse, 2=History, 3=Settings
   // Index 2 in the BottomAppBar row is the FAB slot (camera), not a tab
-  int _currentIndex = 0;
+  late int _currentIndex;
 
   late final List<Widget> _screens;
 
   @override
+  void didUpdateWidget(HomeScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialTabIndex != widget.initialTabIndex) {
+      setState(() {
+        _currentIndex = widget.initialTabIndex;
+      });
+    }
+  }
+
+  @override
   void initState() {
     super.initState();
+    _currentIndex = widget.initialTabIndex;
     if (widget.showUnauthorizedSnackBar) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {

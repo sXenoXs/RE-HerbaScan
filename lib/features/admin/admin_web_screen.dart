@@ -43,7 +43,9 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
     await auth.refreshRole();
     if (!mounted) return;
     if (!auth.isAdmin) {
-      if (kDebugMode) debugPrint('[AdminWebScreen] Role check failed — redirecting to /login');
+      if (kDebugMode)
+        debugPrint(
+            '[AdminWebScreen] Role check failed — redirecting to /login');
       context.go('/login');
     }
   }
@@ -239,8 +241,12 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: isExtended
                 ? TextButton.icon(
-                    icon: Icon(kIsWeb ? Icons.logout_rounded : Icons.exit_to_app_rounded,
-                        color: AppTheme.errorLight, size: 20),
+                    icon: Icon(
+                        kIsWeb
+                            ? Icons.logout_rounded
+                            : Icons.exit_to_app_rounded,
+                        color: AppTheme.errorLight,
+                        size: 20),
                     label: Text(kIsWeb ? 'Sign Out' : 'Exit Admin Console',
                         style: const TextStyle(
                             color: AppTheme.errorLight, fontSize: 13)),
@@ -249,28 +255,24 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
                         context.read<AuthProvider>().signOut();
                         context.go('/login');
                       } else {
-                        if (context.canPop()) {
-                          context.pop();
-                        } else {
-                          context.go('/home');
-                        }
+                        context.go('/home?tab=3');
                       }
                     },
                   )
                 : IconButton(
-                    icon: Icon(kIsWeb ? Icons.logout_rounded : Icons.exit_to_app_rounded,
-                        color: AppTheme.errorLight, size: 22),
+                    icon: Icon(
+                        kIsWeb
+                            ? Icons.logout_rounded
+                            : Icons.exit_to_app_rounded,
+                        color: AppTheme.errorLight,
+                        size: 22),
                     tooltip: kIsWeb ? 'Sign Out' : 'Exit Admin Console',
                     onPressed: () {
                       if (kIsWeb) {
                         context.read<AuthProvider>().signOut();
                         context.go('/login');
                       } else {
-                        if (context.canPop()) {
-                          context.pop();
-                        } else {
-                          context.go('/home');
-                        }
+                        context.go('/home?tab=3');
                       }
                     },
                   ),
@@ -315,7 +317,8 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
             child: isExtended
                 ? Row(
                     children: [
-                      Icon(isSelected ? selectedIcon : icon, color: fg, size: 22),
+                      Icon(isSelected ? selectedIcon : icon,
+                          color: fg, size: 22),
                       const SizedBox(width: 12),
                       Text(label,
                           style: TextStyle(
@@ -396,21 +399,20 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
             child: TextButton.icon(
-              icon: Icon(kIsWeb ? Icons.logout_rounded : Icons.exit_to_app_rounded,
-                  color: AppTheme.errorLight, size: 20),
+              icon: Icon(
+                  kIsWeb ? Icons.logout_rounded : Icons.exit_to_app_rounded,
+                  color: AppTheme.errorLight,
+                  size: 20),
               label: Text(kIsWeb ? 'Sign Out' : 'Exit Admin Console',
-                  style: const TextStyle(color: AppTheme.errorLight, fontSize: 14)),
+                  style: const TextStyle(
+                      color: AppTheme.errorLight, fontSize: 14)),
               onPressed: () {
                 Navigator.pop(context); // Close drawer
                 if (kIsWeb) {
                   context.read<AuthProvider>().signOut();
                   context.go('/login');
                 } else {
-                  if (context.canPop()) {
-                    context.pop();
-                  } else {
-                    context.go('/home');
-                  }
+                  context.go('/home?tab=3');
                 }
               },
             ),
@@ -456,7 +458,8 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
             ),
           ),
           selected: isSelected,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
           onTap: () {
             setState(() => _selectedIndex = index);
             Navigator.pop(context);
@@ -491,4 +494,3 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
     }
   }
 }
-

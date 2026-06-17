@@ -59,7 +59,12 @@ GoRouter createAppRouter(GlobalKey<NavigatorState> navigatorKey) {
         path: '/home',
         builder: (context, state) {
           final unauthorized = state.uri.queryParameters['unauthorized'] == '1';
-          return HomeScreen(showUnauthorizedSnackBar: unauthorized);
+          final tabIndexStr = state.uri.queryParameters['tab'];
+          final tabIndex = tabIndexStr != null ? int.tryParse(tabIndexStr) ?? 0 : 0;
+          return HomeScreen(
+            showUnauthorizedSnackBar: unauthorized,
+            initialTabIndex: tabIndex,
+          );
         },
       ),
       GoRoute(
