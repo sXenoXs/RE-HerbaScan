@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:herbascan/core/config/supabase_config.dart';
 import 'package:herbascan/core/providers/auth_provider.dart';
 import 'package:herbascan/features/auth/change_password_screen.dart';
+import 'package:herbascan/features/auth/auth_callback_screen.dart';
 
 /// Handles auth deep links (herbascan://auth/callback) for password reset and
 /// change-email flows. When the app is opened from such a link, recovers the
@@ -72,9 +73,26 @@ class _AuthDeepLinkHandlerState extends State<AuthDeepLinkHandler> {
             ),
           );
         });
+      } else {
+        // Handle other auth callbacks like email change confirmations
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          widget.navigatorKey.currentState?.push<void>(
+            MaterialPageRoute(
+              builder: (_) => AuthCallbackScreen(uri: uri),
+            ),
+          );
+        });
       }
     } catch (_) {
-      // Session recovery failed; user can request a new link
+      // If session recovery failed (e.g., just a message in the fragment without a token),
+      // we still want to show the callback screen to display the message!
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        widget.navigatorKey.currentState?.push<void>(
+          MaterialPageRoute(
+            builder: (_) => AuthCallbackScreen(uri: uri),
+          ),
+        );
+      });
     }
   }
 

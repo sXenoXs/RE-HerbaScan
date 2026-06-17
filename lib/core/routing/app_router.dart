@@ -29,6 +29,18 @@ GoRouter createAppRouter(GlobalKey<NavigatorState> navigatorKey) {
   return GoRouter(
     navigatorKey: navigatorKey,
     initialLocation: _initialLocation(),
+    errorBuilder: (context, state) {
+      final uriStr = state.uri.toString();
+      if (uriStr.contains('auth/callback')) {
+        return AuthCallbackScreen(uri: state.uri);
+      }
+      return Scaffold(
+        appBar: AppBar(title: const Text('Page Not Found')),
+        body: const Center(
+          child: Text('The requested page could not be found.'),
+        ),
+      );
+    },
     redirect: (BuildContext context, GoRouterState state) async {
       final loc = state.matchedLocation;
       final auth = context.read<AuthProvider>();
