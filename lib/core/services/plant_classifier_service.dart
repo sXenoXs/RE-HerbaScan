@@ -1,7 +1,9 @@
 // lib/core/services/plant_classifier_service.dart
+import 'dart:convert';
 import 'package:tflite_flutter/tflite_flutter.dart';
 import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
+import 'package:herbascan/core/platform_utils_stub.dart' if (dart.library.io) 'package:herbascan/core/platform_utils_io.dart' as platform_utils;
 // Old GradCAM service removed - replaced with AdaptiveGradCAMService
 // import 'package:herbascan/core/services/gradcam_service.dart';
 
@@ -13,49 +15,38 @@ class PlantClassifierService {
   
   // Model input/output shapes
   static const int _inputSize = 224;
-  static const int _numClasses = 41; // Based on your labels.txt
+  static const int _numClasses = 42; // From class_indices.json (42 plants)
+
+  /// Load label list from class_indices.json (format: {"PlantName": index}).
+  /// Returns labels in index order [0..N-1].
+  static Future<List<String>> _loadLabelsFromClassIndices() async {
+    final jsonString = await rootBundle.loadString('assets/models/class_indices.json');
+    final Map<String, dynamic> map = jsonDecode(jsonString) as Map<String, dynamic>;
+    final entries = map.entries.map((e) => MapEntry(e.key, (e.value as num).toInt())).toList();
+    entries.sort((a, b) => a.value.compareTo(b.value));
+    return entries.map((e) => e.key).toList();
+  }
   
   Future<void> loadModels() async {
+    if (platform_utils.isDesktop()) return;
     try {
-      print('🔄 Loading AI models...');
-      
-      // Load labels first
-      final labelsData = await rootBundle.loadString('assets/models/labels.txt');
-      _labels = labelsData.split('\n').where((line) => line.isNotEmpty).toList();
-      print('🏷️ Loaded ${_labels.length} labels');
-      
-      // Load MobileNet V2 model
+      _labels = await _loadLabelsFromClassIndices();
       try {
         _mobilenetInterpreter = await Interpreter.fromAsset('assets/models/mobilenetv2_feature_extractor.tflite');
-        print('📊 MobileNet V2 loaded successfully');
-        print('📊 MobileNet V2 input shape: ${_mobilenetInterpreter.getInputTensor(0).shape}');
-      } catch (e) {
-        print('❌ Error loading MobileNet V2: $e');
-        // Create a dummy interpreter for testing
-        _mobilenetInterpreter = await Interpreter.fromAsset('assets/models/mobilenetv2_feature_extractor.tflite');
-      }
-      
-      // Load Random Forest model
-      try {
-        _randomForestInterpreter = await Interpreter.fromAsset('assets/models/random_forest_distilled.tflite');
-        print('📊 Random Forest loaded successfully');
-        print('📊 Random Forest input shape: ${_randomForestInterpreter.getInputTensor(0).shape}');
-      } catch (e) {
-        print('❌ Error loading Random Forest: $e');
-        print('⚠️ Random Forest model not compatible, using MobileNet only');
-        // Don't create dummy interpreter, just skip Random Forest
-        _isInitialized = true; // Allow MobileNet-only mode
+      } catch (_) {
+        // Asset not in bundle (app uses mobilenetv2_multi_output.tflite via TflitePlantService)
+        _isInitialized = false;
         return;
       }
-      
+      try {
+        _randomForestInterpreter = await Interpreter.fromAsset('assets/models/random_forest_distilled.tflite');
+      } catch (_) {
+        _isInitialized = true; // MobileNet-only mode
+        return;
+      }
       _isInitialized = true;
-      print('✅ Models loaded successfully');
-      
-    } catch (e) {
-      print('❌ Error loading models: $e');
+    } catch (_) {
       _isInitialized = false;
-      // Don't rethrow, just set initialized to false
-      // This allows the app to continue without crashing
     }
   }
   

@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:herbascan/core/providers/offline_provider.dart';
-import 'package:herbascan/core/widgets/offline_indicator.dart';
+import 'package:herbascan/core/theme/app_theme.dart';
 
 class OfflineDemoScreen extends StatefulWidget {
   const OfflineDemoScreen({super.key});
@@ -15,7 +15,6 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
   @override
   void initState() {
     super.initState();
-    // Refresh offline data when screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<OfflineProvider>(context, listen: false).refreshOfflineData();
     });
@@ -23,48 +22,32 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Offline Processing Demo'),
-        actions: [
-          OfflineIndicator(),
-        ],
+        title: const Text('System Diagnostics'),
       ),
       body: Consumer<OfflineProvider>(
         builder: (context, offlineProvider, child) {
           if (!offlineProvider.isInitialized) {
-            return _buildLoadingState(theme);
+            return _buildLoadingState(context);
           }
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.only(bottom: 32),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Status Overview
-                _buildStatusOverview(context, theme, offlineProvider),
-
+                _buildStatusBanner(context, offlineProvider),
+                const SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _buildStatsGrid(context, offlineProvider),
+                ),
                 const SizedBox(height: 24),
-
-                // Feature Status
-                _buildFeatureStatus(context, theme, offlineProvider),
-
-                const SizedBox(height: 24),
-
-                // Storage Information
-                _buildStorageInfo(context, theme, offlineProvider),
-
-                const SizedBox(height: 24),
-
-                // Actions
-                _buildActions(context, theme, offlineProvider),
-
-                const SizedBox(height: 24),
-
-                // Statistics
-                _buildStatistics(context, theme, offlineProvider),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _buildActionButtons(context, offlineProvider),
+                ),
               ],
             ),
           );
@@ -73,7 +56,8 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
     );
   }
 
-  Widget _buildLoadingState(ThemeData theme) {
+  Widget _buildLoadingState(BuildContext context) {
+    final theme = Theme.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -93,348 +77,174 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
     );
   }
 
-  Widget _buildStatusOverview(
-      BuildContext context, ThemeData theme, OfflineProvider offlineProvider) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  offlineProvider.getConnectivityIcon(),
-                  color: offlineProvider.getConnectivityColor(context),
-                  size: 24,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Connection Status',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              offlineProvider.getOfflineStatusMessage(),
-              style: theme.textTheme.bodyLarge,
-            ),
-            if (offlineProvider.lastError.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.errorContainer,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      color: theme.colorScheme.onErrorContainer,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        offlineProvider.lastError,
-                        style: TextStyle(
-                          color: theme.colorScheme.onErrorContainer,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
+  Widget _buildStatusBanner(
+      BuildContext context, OfflineProvider offlineProvider) {
+    final isOffline = offlineProvider.isFullyOffline;
+    final bgColor = isOffline ? AppTheme.warningBgLight : AppTheme.safeBgLight;
+    final iconColor =
+        isOffline ? AppTheme.warningAmber : AppTheme.botanicalPrimary;
+    final icon = isOffline ? Icons.cloud_off_rounded : Icons.cloud_done_rounded;
+    final message = isOffline
+        ? 'System Offline • Operating via Local SQLite'
+        : 'System Online • Connected to Supabase Cloud';
 
-  Widget _buildFeatureStatus(
-      BuildContext context, ThemeData theme, OfflineProvider offlineProvider) {
-    final features = offlineProvider.getOfflineFeatureStatus();
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Offline Features',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            ...features.entries.map((entry) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Row(
-                  children: [
-                    Icon(
-                      entry.value ? Icons.check_circle : Icons.cancel,
-                      color: entry.value ? Colors.green : Colors.red,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        _getFeatureDisplayName(entry.key),
-                        style: theme.textTheme.bodyLarge,
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: entry.value ? Colors.green : Colors.red,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        entry.value ? 'Available' : 'Unavailable',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStorageInfo(
-      BuildContext context, ThemeData theme, OfflineProvider offlineProvider) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Storage Information',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            _buildInfoRow('Total Scans',
-                '${offlineProvider.offlineStats['totalScans'] ?? 0}'),
-            _buildInfoRow('Total Plants',
-                '${offlineProvider.offlineStats['totalPlants'] ?? 0}'),
-            _buildInfoRow('DOH Plants',
-                '${offlineProvider.offlineStats['dohPlants'] ?? 0}'),
-            _buildInfoRow('Pending Sync',
-                '${offlineProvider.offlineStats['pendingSync'] ?? 0}'),
-            _buildInfoRow(
-                'AI Models',
-                offlineProvider.offlineStats['aiInitialized'] == true
-                    ? 'Loaded'
-                    : 'Not Available'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+    return Container(
+      color: bgColor,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label),
-          Text(
-            value,
-            style: const TextStyle(fontWeight: FontWeight.w600),
+          Icon(icon, color: iconColor, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: iconColor,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildActions(
-      BuildContext context, ThemeData theme, OfflineProvider offlineProvider) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Actions',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            _buildActionButton(
-              context,
-              theme,
-              'Refresh Data',
-              Icons.refresh,
-              () async {
-                try {
-                  await offlineProvider.refreshOfflineData();
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Data refreshed successfully'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  }
-                } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Error refreshing data: $e'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                }
-              },
-            ),
-            _buildActionButton(
-              context,
-              theme,
-              'Toggle Offline Mode',
-              Icons.offline_bolt,
-              () async {
-                await offlineProvider.toggleOfflineMode();
-              },
-            ),
-            _buildActionButton(
-              context,
-              theme,
-              'Clear Offline Data',
-              Icons.delete_forever,
-              () {
-                _showClearDataDialog(context, offlineProvider);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget _buildStatsGrid(
+      BuildContext context, OfflineProvider offlineProvider) {
+    final totalPlants = offlineProvider.offlineStats['totalPlants'] ?? 0;
+    final totalScans = offlineProvider.offlineStats['totalScans'] ?? 0;
+    final pendingSync = offlineProvider.offlineStats['pendingSync'] ?? 0;
+    final aiModelLoaded = offlineProvider.offlineStats['aiModelLoaded'] == true;
+    final aiLabelsLoaded =
+        offlineProvider.offlineStats['aiLabelsLoaded'] == true;
+    final aiLabelCount = offlineProvider.offlineStats['aiLabelCount'] ?? 0;
+    final aiReady = aiModelLoaded && aiLabelsLoaded;
 
-  Widget _buildActionButton(
-    BuildContext context,
-    ThemeData theme,
-    String title,
-    IconData icon,
-    VoidCallback onTap,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: ListTile(
-        leading: Icon(icon),
-        title: Text(title),
-        onTap: onTap,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-        tileColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-      ),
-    );
-  }
+    final pendingColor =
+        pendingSync == 0 ? AppTheme.textSecondary : AppTheme.warningAmber;
 
-  Widget _buildStatistics(
-      BuildContext context, ThemeData theme, OfflineProvider offlineProvider) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Statistics',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            _buildStatCard(
-              context,
-              theme,
-              'Offline Scans',
-              '${offlineProvider.offlineStats['totalScans'] ?? 0}',
-              Icons.camera_alt,
-              Colors.blue,
-            ),
-            const SizedBox(height: 12),
-            _buildStatCard(
-              context,
-              theme,
-              'Plant Database',
-              '${offlineProvider.offlineStats['totalPlants'] ?? 0}',
-              Icons.local_florist,
-              Colors.green,
-            ),
-            const SizedBox(height: 12),
-            _buildStatCard(
-              context,
-              theme,
-              'Pending Sync',
-              '${offlineProvider.offlineStats['pendingSync'] ?? 0}',
-              Icons.sync,
-              Colors.orange,
-            ),
-          ],
+    final aiValue = aiReady
+        ? 'Loaded'
+        : aiModelLoaded
+            ? 'Partial'
+            : 'Not Loaded';
+    final aiSubtitle = aiReady
+        ? 'TFLite model ready ($aiLabelCount labels)'
+        : aiModelLoaded
+            ? 'Model loaded, labels missing'
+            : 'Local TFLite model unavailable';
+    final aiColor = aiReady
+        ? AppTheme.botanicalPrimary
+        : aiModelLoaded
+            ? AppTheme.warningAmber
+            : AppTheme.errorDeep;
+    final aiBg = aiReady
+        ? AppTheme.safeBgLight
+        : aiModelLoaded
+            ? AppTheme.warningBgLight
+            : AppTheme.errorBgLight;
+
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 1.3,
+      children: [
+        _buildStatCard(
+          context,
+          value: '$totalPlants / 42 Plants',
+          subtitle: 'Secured in local cache',
+          icon: Icons.local_florist_rounded,
+          iconColor: AppTheme.botanicalPrimary,
+          bgColor: AppTheme.safeBgLight,
         ),
-      ),
+        _buildStatCard(
+          context,
+          value: aiValue,
+          subtitle: aiSubtitle,
+          icon: Icons.memory_rounded,
+          iconColor: aiColor,
+          bgColor: aiBg,
+        ),
+        _buildStatCard(
+          context,
+          value: '$totalScans Scans',
+          subtitle: 'Saved to device',
+          icon: Icons.camera_alt_rounded,
+          iconColor: AppTheme.botanicalPrimary,
+          bgColor: AppTheme.safeBgLight,
+        ),
+        _buildStatCard(
+          context,
+          value: '$pendingSync Pending',
+          subtitle: 'Waiting to backup to cloud',
+          icon: Icons.cloud_upload_rounded,
+          iconColor: pendingColor,
+          bgColor:
+              pendingSync == 0 ? AppTheme.safeBgLight : AppTheme.warningBgLight,
+        ),
+      ],
     );
   }
 
   Widget _buildStatCard(
-    BuildContext context,
-    ThemeData theme,
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
+    BuildContext context, {
+    required String value,
+    required String subtitle,
+    required IconData icon,
+    required Color iconColor,
+    required Color bgColor,
+  }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        color: bgColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: theme.textTheme.bodyMedium,
-                ),
-                Text(
-                  value,
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
+          Align(
+            alignment: Alignment.center,
+            child: Icon(icon, color: iconColor, size: 20),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: iconColor,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+          const SizedBox(height: 3),
+          Flexible(
+            child: Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 10.5,
+                fontWeight: FontWeight.w400,
+                color: AppTheme.textSecondary,
+              ),
             ),
           ),
         ],
@@ -442,69 +252,123 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
     );
   }
 
-  void _showClearDataDialog(
+  Widget _buildActionButtons(
       BuildContext context, OfflineProvider offlineProvider) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        OutlinedButton.icon(
+          icon: const Icon(Icons.sync_rounded),
+          label: const Text('Force Cloud Sync'),
+          onPressed: () => _handleForceSync(offlineProvider),
+        ),
+        const SizedBox(height: 10),
+        Consumer<OfflineProvider>(
+          builder: (context, provider, _) {
+            return SwitchListTile(
+              title: const Text(
+                'Simulate Offline Mode',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              subtitle: const Text(
+                'Forces the app to operate without network',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 12,
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+              value: provider.isOfflineMode,
+              activeThumbColor: AppTheme.botanicalPrimary,
+              onChanged: (_) async {
+                await provider.toggleOfflineMode();
+              },
+              contentPadding: EdgeInsets.zero,
+            );
+          },
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          icon: const Icon(Icons.delete_sweep_rounded),
+          label: const Text('Wipe Local Cache'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppTheme.errorColor,
+            side: const BorderSide(color: AppTheme.errorColor, width: 2),
+          ),
+          onPressed: () => _showWipeCacheDialog(offlineProvider),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _handleForceSync(OfflineProvider offlineProvider) async {
+    try {
+      await offlineProvider.refreshOfflineData();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sync complete'),
+          backgroundColor: AppTheme.botanicalPrimary,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Sync failed: $e'),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+    }
+  }
+
+  void _showWipeCacheDialog(OfflineProvider offlineProvider) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Clear Offline Data'),
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Wipe Local Cache'),
         content: const Text(
-          'This will permanently delete all offline scan history and cached data. '
-          'This action cannot be undone. Are you sure you want to continue?',
+          'This will permanently delete all offline scan history and cached '
+          'data. This action cannot be undone.',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () async {
-              Navigator.of(context).pop();
+              Navigator.of(dialogContext).pop();
               try {
                 await offlineProvider.clearOfflineData();
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Offline data cleared successfully'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                }
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Local cache wiped'),
+                    backgroundColor: AppTheme.botanicalPrimary,
+                  ),
+                );
               } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Error clearing data: $e'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error wiping cache: $e'),
+                    backgroundColor: AppTheme.errorColor,
+                  ),
+                );
               }
             },
             child: const Text(
-              'Clear',
-              style: TextStyle(color: Colors.red),
+              'Wipe',
+              style: TextStyle(color: AppTheme.errorColor),
             ),
           ),
         ],
       ),
     );
-  }
-
-  String _getFeatureDisplayName(String feature) {
-    switch (feature) {
-      case 'plant_identification':
-        return 'Plant Identification';
-      case 'plant_database':
-        return 'Plant Database';
-      case 'scan_history':
-        return 'Scan History';
-      case 'doh_plants':
-        return 'DOH Approved Plants';
-      case 'search':
-        return 'Plant Search';
-      default:
-        return feature;
-    }
   }
 }
