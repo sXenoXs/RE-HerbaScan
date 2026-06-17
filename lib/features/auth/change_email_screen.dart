@@ -192,7 +192,8 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
                     if (v == null || v.trim().isEmpty) {
                       return 'Enter a new email';
                     }
-                    if (!v.trim().contains('@')) {
+                    final emailRegex = RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+");
+                    if (!emailRegex.hasMatch(v.trim())) {
                       return 'Enter a valid email';
                     }
                     if (v.trim() == currentEmail) {
