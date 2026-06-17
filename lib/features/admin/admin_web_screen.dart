@@ -239,23 +239,31 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: isExtended
                 ? TextButton.icon(
-                    icon: const Icon(Icons.logout_rounded,
+                    icon: Icon(kIsWeb ? Icons.logout_rounded : Icons.exit_to_app_rounded,
                         color: AppTheme.errorLight, size: 20),
-                    label: const Text('Sign Out',
-                        style: TextStyle(
+                    label: Text(kIsWeb ? 'Sign Out' : 'Exit Admin Console',
+                        style: const TextStyle(
                             color: AppTheme.errorLight, fontSize: 13)),
                     onPressed: () {
-                      context.read<AuthProvider>().signOut();
-                      context.go('/login');
+                      if (kIsWeb) {
+                        context.read<AuthProvider>().signOut();
+                        context.go('/login');
+                      } else {
+                        context.go('/settings');
+                      }
                     },
                   )
                 : IconButton(
-                    icon: const Icon(Icons.logout_rounded,
+                    icon: Icon(kIsWeb ? Icons.logout_rounded : Icons.exit_to_app_rounded,
                         color: AppTheme.errorLight, size: 22),
-                    tooltip: 'Sign Out',
+                    tooltip: kIsWeb ? 'Sign Out' : 'Exit Admin Console',
                     onPressed: () {
-                      context.read<AuthProvider>().signOut();
-                      context.go('/login');
+                      if (kIsWeb) {
+                        context.read<AuthProvider>().signOut();
+                        context.go('/login');
+                      } else {
+                        context.go('/settings');
+                      }
                     },
                   ),
           ),
@@ -380,14 +388,18 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
             child: TextButton.icon(
-              icon: const Icon(Icons.logout_rounded,
+              icon: Icon(kIsWeb ? Icons.logout_rounded : Icons.exit_to_app_rounded,
                   color: AppTheme.errorLight, size: 20),
-              label: const Text('Sign Out',
-                  style: TextStyle(color: AppTheme.errorLight, fontSize: 14)),
+              label: Text(kIsWeb ? 'Sign Out' : 'Exit Admin Console',
+                  style: const TextStyle(color: AppTheme.errorLight, fontSize: 14)),
               onPressed: () {
                 Navigator.pop(context); // Close drawer
-                context.read<AuthProvider>().signOut();
-                context.go('/login');
+                if (kIsWeb) {
+                  context.read<AuthProvider>().signOut();
+                  context.go('/login');
+                } else {
+                  context.go('/settings');
+                }
               },
             ),
           ),

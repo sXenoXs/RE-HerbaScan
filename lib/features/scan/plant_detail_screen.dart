@@ -601,7 +601,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
                         ClipRRect(
                           borderRadius: BorderRadius.circular(16),
                           child: Container(
-                            height: 400,
+                            height: parts.length == 1 ? 400 : 464,
                             color: theme.colorScheme.surfaceContainerLow,
                             child: Stack(
                               children: [
