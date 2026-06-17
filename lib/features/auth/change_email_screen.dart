@@ -14,12 +14,15 @@ class ChangeEmailScreen extends StatefulWidget {
 class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
   final _formKey = GlobalKey<FormState>();
   final _newEmailController = TextEditingController();
+  final _currentPasswordController = TextEditingController();
+  bool _obscureCurrent = true;
   bool _isLoading = false;
   String? _errorMessage;
 
   @override
   void dispose() {
     _newEmailController.dispose();
+    _currentPasswordController.dispose();
     super.dispose();
   }
 
@@ -33,7 +36,9 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
       return;
     }
     final newEmail = _newEmailController.text.trim();
+    final currentPassword = _currentPasswordController.text;
     try {
+      await context.read<AuthProvider>().verifyCurrentPassword(currentPassword);
       await context.read<AuthProvider>().updateEmail(newEmail);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -48,7 +53,12 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = e.toString().replaceFirst('AuthException: ', '');
+          final errStr = e.toString();
+          if (errStr.contains('Invalid login credentials')) {
+            _errorMessage = 'The current password you entered is incorrect.';
+          } else {
+            _errorMessage = errStr.replaceFirst('AuthException: ', '');
+          }
           _isLoading = false;
         });
       }
@@ -142,6 +152,30 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
                         )
                       : const SizedBox.shrink(),
                 ),
+
+                // Current password
+                TextFormField(
+                  controller: _currentPasswordController,
+                  obscureText: _obscureCurrent,
+                  decoration: InputDecoration(
+                    labelText: 'Current password',
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscureCurrent
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                      ),
+                      onPressed: () =>
+                          setState(() => _obscureCurrent = !_obscureCurrent),
+                    ),
+                  ),
+                  textInputAction: TextInputAction.next,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'Enter your current password';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
 
                 // New email — no prefixIcon
                 TextFormField(
