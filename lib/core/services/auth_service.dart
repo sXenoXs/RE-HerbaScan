@@ -86,6 +86,21 @@ class AuthService {
     );
   }
 
+  /// Check the OTP rate limiting status for a given email.
+  Future<Map<String, dynamic>> checkOtpStatus(String email) async {
+    final res = await _client.rpc('check_otp_status', params: {'target_email': email.trim()});
+    return res as Map<String, dynamic>;
+  }
+
+  /// Record an OTP attempt (success or failure) and return the updated status.
+  Future<Map<String, dynamic>> recordOtpAttempt(String email, bool isSuccess) async {
+    final res = await _client.rpc('record_otp_attempt', params: {
+      'target_email': email.trim(),
+      'is_success': isSuccess,
+    });
+    return res as Map<String, dynamic>;
+  }
+
   /// Update current user's password. User must be signed in.
   Future<void> updatePassword(String newPassword) async {
     await _client.auth.updateUser(UserAttributes(password: newPassword));

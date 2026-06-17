@@ -186,6 +186,16 @@ class AuthProvider extends ChangeNotifier {
     await _auth.resendOtpSignup(email);
   }
 
+  /// Check the OTP rate limiting status.
+  Future<Map<String, dynamic>> checkOtpStatus(String email) async {
+    return _auth.checkOtpStatus(email);
+  }
+
+  /// Record an OTP attempt (success or failure) and return updated status.
+  Future<Map<String, dynamic>> recordOtpAttempt(String email, bool isSuccess) async {
+    return _auth.recordOtpAttempt(email, isSuccess);
+  }
+
   /// Update current user's password. Requires sign-in.
   Future<void> updatePassword(String newPassword) async {
     await _auth.updatePassword(newPassword);
