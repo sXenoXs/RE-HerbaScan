@@ -99,7 +99,7 @@ class _EnterResetCodeScreenState extends State<EnterResetCodeScreen> {
       await context.read<AuthProvider>().recordOtpAttempt(widget.email, true);
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute<void>(builder: (_) => const ChangePasswordScreen()),
+        MaterialPageRoute<void>(builder: (_) => const ChangePasswordScreen(isRecovery: true)),
       );
     } catch (e) {
       if (mounted) {

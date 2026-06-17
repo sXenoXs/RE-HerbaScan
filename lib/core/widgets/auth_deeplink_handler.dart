@@ -63,7 +63,7 @@ class _AuthDeepLinkHandlerState extends State<AuthDeepLinkHandler> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         widget.navigatorKey.currentState?.push<void>(
           MaterialPageRoute(
-            builder: (_) => const ChangePasswordScreen(),
+            builder: (_) => const ChangePasswordScreen(isRecovery: true),
           ),
         );
       });

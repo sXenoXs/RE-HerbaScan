@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:herbascan/core/providers/auth_provider.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/core/widgets/password_requirements_widget.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
-  const ChangePasswordScreen({super.key});
+  final bool isRecovery;
+  const ChangePasswordScreen({super.key, this.isRecovery = false});
 
   @override
   State<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
@@ -84,7 +86,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Password updated successfully')),
         );
-        Navigator.of(context).pop(true);
+        if (widget.isRecovery) {
+          final auth = context.read<AuthProvider>();
+          context.go(auth.isAdmin ? '/admin' : '/home');
+        } else {
+          Navigator.of(context).pop(true);
+        }
       }
     } catch (e) {
       if (mounted) {
