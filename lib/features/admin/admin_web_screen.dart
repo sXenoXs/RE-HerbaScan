@@ -249,7 +249,11 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
                         context.read<AuthProvider>().signOut();
                         context.go('/login');
                       } else {
-                        context.go('/settings');
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          context.go('/home');
+                        }
                       }
                     },
                   )
@@ -262,7 +266,11 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
                         context.read<AuthProvider>().signOut();
                         context.go('/login');
                       } else {
-                        context.go('/settings');
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          context.go('/home');
+                        }
                       }
                     },
                   ),
@@ -398,7 +406,11 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
                   context.read<AuthProvider>().signOut();
                   context.go('/login');
                 } else {
-                  context.go('/settings');
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go('/home');
+                  }
                 }
               },
             ),
