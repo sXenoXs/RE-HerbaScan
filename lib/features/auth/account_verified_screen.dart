@@ -31,8 +31,8 @@ class _AccountVerifiedScreenState extends State<AccountVerifiedScreen> {
         _countdown--;
         if (_countdown <= 0) {
           timer.cancel();
-          // Navigate to dashboard
-          context.go('/home');
+          // Navigate to Settings tab
+          context.go('/home?tab=3');
         }
       });
     });
@@ -106,7 +106,7 @@ class _AccountVerifiedScreenState extends State<AccountVerifiedScreen> {
 
                   // Countdown indicator
                   Text(
-                    'Redirecting to dashboard in $_countdown...',
+                    'Redirecting to settings in $_countdown...',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface.withOpacity(0.45),
                     ),
@@ -135,7 +135,7 @@ class _AccountVerifiedScreenState extends State<AccountVerifiedScreen> {
                     child: FilledButton(
                       onPressed: () {
                         _timer?.cancel();
-                        context.go('/home');
+                        context.go('/home?tab=3');
                       },
                       style: FilledButton.styleFrom(
                         backgroundColor: AppTheme.botanicalPrimary,
@@ -145,7 +145,7 @@ class _AccountVerifiedScreenState extends State<AccountVerifiedScreen> {
                         ),
                       ),
                       child: const Text(
-                        'Go to Dashboard',
+                        'Go to Settings',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
