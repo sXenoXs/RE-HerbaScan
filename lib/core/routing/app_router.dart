@@ -10,6 +10,7 @@ import 'package:herbascan/features/home/home_screen.dart';
 import 'package:herbascan/features/onboarding/onboarding_screen.dart';
 import 'package:herbascan/features/admin/admin_web_screen.dart';
 import 'package:herbascan/features/settings/settings_screen.dart';
+import 'package:herbascan/features/auth/auth_callback_screen.dart';
 
 /// Returns initial location for the app. On web, respects URL path; otherwise /.
 String _initialLocation() {
@@ -84,6 +85,10 @@ GoRouter createAppRouter(GlobalKey<NavigatorState> navigatorKey) {
       GoRoute(
         path: '/settings',
         builder: (_, __) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/auth/callback',
+        builder: (_, state) => AuthCallbackScreen(uri: state.uri),
       ),
     ],
   );

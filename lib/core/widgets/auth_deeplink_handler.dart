@@ -60,13 +60,19 @@ class _AuthDeepLinkHandlerState extends State<AuthDeepLinkHandler> {
     try {
       await Supabase.instance.client.auth.getSessionFromUrl(uri);
       if (!mounted) return;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        widget.navigatorKey.currentState?.push<void>(
-          MaterialPageRoute(
-            builder: (_) => const ChangePasswordScreen(isRecovery: true),
-          ),
-        );
-      });
+      
+      final fragmentParams = Uri.splitQueryString(uri.fragment);
+      final type = fragmentParams['type'];
+      
+      if (type == 'recovery') {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          widget.navigatorKey.currentState?.push<void>(
+            MaterialPageRoute(
+              builder: (_) => const ChangePasswordScreen(isRecovery: true),
+            ),
+          );
+        });
+      }
     } catch (_) {
       // Session recovery failed; user can request a new link
     }
