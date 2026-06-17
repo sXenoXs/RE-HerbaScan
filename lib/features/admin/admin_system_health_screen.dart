@@ -7,11 +7,12 @@ import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:herbascan/core/theme/app_theme.dart';
-import 'package:herbascan/core/services/ai_metrics_service.dart';
 import 'package:herbascan/core/services/error_logger.dart';
 import 'package:herbascan/core/services/ota_model_service.dart';
 import 'package:herbascan/core/services/performance_monitor.dart';
 import 'package:herbascan/core/services/usage_analytics.dart';
+import 'package:herbascan/core/services/plant_data_service.dart';
+import 'package:flutter/foundation.dart';
 
 /// Admin-only System Health: AI metrics, live usage, and error logs.
 /// Merges former Performance Metrics and Performance Dashboard.
@@ -31,13 +32,11 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
   final _performanceMonitor = PerformanceMonitor();
   final _usageAnalytics = UsageAnalytics();
   final _errorLogger = ErrorLogger();
-  final _aiMetricsService = AiMetricsService();
 
   // ── State ──────────────────────────────────────────────────────────────────
   Map<String, dynamic>? _performanceStats;
   Map<String, dynamic>? _usageStats;
   List<ErrorLog> _recentErrors = [];
-  AiMetrics _aiMetrics = AiMetricsService.defaults;
   bool _isLoading = true;
   bool _otaActive = false;
   String _otaVersion = '';
@@ -81,7 +80,6 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
       final usageStats = _usageAnalytics.getStatistics();
       final allErrors = await _errorLogger.getAllErrors();
       final recentErrors = allErrors.reversed.take(50).toList();
-      final aiMetrics = await _aiMetricsService.loadMetrics();
       final prefs = await SharedPreferences.getInstance();
       final otaVersion = prefs.getString('ota_model_version') ?? '';
 
@@ -90,7 +88,6 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
         _performanceStats = perfStats;
         _usageStats = usageStats;
         _recentErrors = recentErrors;
-        _aiMetrics = aiMetrics;
         _otaActive = OtaModelService.instance.isOtaAvailable;
         _otaVersion = otaVersion;
         _isLoading = false;
@@ -170,74 +167,8 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Text(
-              'AI Model Metrics',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface,
-              ),
-            ),
-            const Spacer(),
-            IconButton(
-              tooltip: 'Edit model metrics',
-              icon: const Icon(Icons.edit),
-              onPressed: _showEditMetricsDialog,
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatCard(
-                theme,
-                'Accuracy',
-                '${_aiMetrics.accuracy.toStringAsFixed(2)}%',
-                Icons.check_circle_outline,
-                AppTheme.botanicalPrimary,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildStatCard(
-                theme,
-                'Precision',
-                '${_aiMetrics.precision.toStringAsFixed(2)}%',
-                Icons.track_changes,
-                AppTheme.botanicalPrimary,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatCard(
-                theme,
-                'Recall',
-                '${_aiMetrics.recall.toStringAsFixed(2)}%',
-                Icons.search,
-                AppTheme.botanicalPrimary,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildStatCard(
-                theme,
-                'F1-Score',
-                '${_aiMetrics.f1Score.toStringAsFixed(2)}%',
-                Icons.balance,
-                AppTheme.botanicalPrimary,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
         Text(
-          'MobileNet V2 · 31 Philippine medicinal plants',
+          'MobileNet V2 · ${PlantDataService.getAllMedicinalPlantsData().length} Philippine medicinal plants',
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -300,6 +231,12 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
           if (!_otaActive)
             TextButton(
               onPressed: () async {
+                if (kIsWeb) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('OTA model updates are applied directly to mobile devices. Web Admin runs on the live cloud model.')),
+                  );
+                  return;
+                }
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Checking for model update…')),
                 );
@@ -1156,145 +1093,6 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
         SnackBar(
           content: Text('Error: $e'),
           backgroundColor: AppTheme.errorDeep,
-        ),
-      );
-    }
-  }
-
-  Future<void> _showEditMetricsDialog() async {
-    final formKey = GlobalKey<FormState>();
-    final accuracyController = TextEditingController(
-      text: _aiMetrics.accuracy.toStringAsFixed(2),
-    );
-    final precisionController = TextEditingController(
-      text: _aiMetrics.precision.toStringAsFixed(2),
-    );
-    final recallController = TextEditingController(
-      text: _aiMetrics.recall.toStringAsFixed(2),
-    );
-    final f1Controller = TextEditingController(
-      text: _aiMetrics.f1Score.toStringAsFixed(2),
-    );
-    bool isSaving = false;
-
-    String? validator(String? value) {
-      if (value == null || value.trim().isEmpty) return 'Required';
-      final parsed = double.tryParse(value.trim());
-      if (parsed == null) return 'Enter a valid number';
-      if (parsed < 0 || parsed > 100) return 'Use 0 to 100';
-      return null;
-    }
-
-    final saved = await showDialog<bool>(
-      context: context,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (dialogContext, setDialogState) {
-            return AlertDialog(
-              title: const Text('Edit AI Model Metrics'),
-              content: Form(
-                key: formKey,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextFormField(
-                        controller: accuracyController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        decoration:
-                            const InputDecoration(labelText: 'Accuracy (%)'),
-                        validator: validator,
-                      ),
-                      const SizedBox(height: 10),
-                      TextFormField(
-                        controller: precisionController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        decoration:
-                            const InputDecoration(labelText: 'Precision (%)'),
-                        validator: validator,
-                      ),
-                      const SizedBox(height: 10),
-                      TextFormField(
-                        controller: recallController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        decoration:
-                            const InputDecoration(labelText: 'Recall (%)'),
-                        validator: validator,
-                      ),
-                      const SizedBox(height: 10),
-                      TextFormField(
-                        controller: f1Controller,
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        decoration:
-                            const InputDecoration(labelText: 'F1-Score (%)'),
-                        validator: validator,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: isSaving
-                      ? null
-                      : () => Navigator.of(dialogContext).pop(false),
-                  child: const Text('Cancel'),
-                ),
-                FilledButton(
-                  onPressed: isSaving
-                      ? null
-                      : () async {
-                          if (!(formKey.currentState?.validate() ?? false)) {
-                            return;
-                          }
-                          setDialogState(() => isSaving = true);
-                          final metrics = AiMetrics(
-                            accuracy: double.parse(
-                                accuracyController.text.trim()),
-                            precision: double.parse(
-                                precisionController.text.trim()),
-                            recall:
-                                double.parse(recallController.text.trim()),
-                            f1Score:
-                                double.parse(f1Controller.text.trim()),
-                          );
-                          await _aiMetricsService.saveMetrics(metrics);
-                          if (!mounted) return;
-                          setState(() => _aiMetrics = metrics);
-                          if (dialogContext.mounted) {
-                            Navigator.of(dialogContext).pop(true);
-                          }
-                        },
-                  child: isSaving
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child:
-                              CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Save'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-
-    accuracyController.dispose();
-    precisionController.dispose();
-    recallController.dispose();
-    f1Controller.dispose();
-
-    if (saved == true && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('AI model metrics updated'),
-          backgroundColor: AppTheme.safeGreen,
         ),
       );
     }

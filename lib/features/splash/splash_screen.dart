@@ -65,6 +65,12 @@ class _SplashScreenState extends State<SplashScreen>
 
     if (!mounted) return;
 
+    // Fetch dynamic App Version and Model Version from Supabase
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
+    await appProvider.loadRemoteConfig();
+
+    if (!mounted) return;
+
     // ── Web: always splash → login (skip onboarding & disclaimer) ──
     if (kIsWeb) {
       final auth = Provider.of<AuthProvider>(context, listen: false);
@@ -77,7 +83,6 @@ class _SplashScreenState extends State<SplashScreen>
     }
     // ── Mobile: existing logic below ──────────────────────────────
 
-    final appProvider = Provider.of<AppProvider>(context, listen: false);
     final auth = Provider.of<AuthProvider>(context, listen: false);
 
     final String destination;

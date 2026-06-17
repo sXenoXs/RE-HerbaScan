@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/providers/app_provider.dart';
+import 'package:herbascan/core/services/plant_data_service.dart';
 import 'package:herbascan/core/services/usage_analytics.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 
@@ -28,12 +29,14 @@ class _HelpTutorialScreenState extends State<HelpTutorialScreen> {
   List<_FeatureData> _features = _defaultFeatures;
   String _oodExplanation = _defaultOodExplanation;
 
-  static const String _defaultOodExplanation =
-      'HerbaScan identifies only the 31 Philippine medicinal plants in its database. '
-      'When the identification confidence is too low (below 85%), the app does not show '
-      'safety information or preparation guides for your safety using the wrong plant can be harmful.\n\n'
-      'Tips: use a clear, single leaf; avoid shadows and blur; ensure the plant is one of the '
-      '31 supported species. You can browse the plant list in the app to see which plants are supported.';
+  static String get _defaultOodExplanation {
+    final count = PlantDataService.getAllMedicinalPlantsData().length;
+    return 'HerbaScan identifies only the $count Philippine medicinal plants in its database. '
+        'When the identification confidence is too low (below 85%), the app does not show '
+        'safety information or preparation guides — using the wrong plant can be harmful.\n\n'
+        'Tips: use a clear, single leaf; avoid shadows and blur; ensure the plant is one of the '
+        '$count supported species. You can browse the plant list in the app to see which plants are supported.';
+  }
 
   static const List<_TipData> _defaultTips = [
     _TipData(

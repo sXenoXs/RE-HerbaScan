@@ -51,11 +51,31 @@ class OtaModelService {
 
   /// Call this in `main()` before `runApp()`. Never throws.
   Future<void> initialize() async {
-    // OTA temporarily disabled: Supabase live-models holds a model whose
-    // class index order does not match the bundled class_indices.json,
-    // so we force the app to use bundled assets.
-    debugPrint('🚫 [OtaModelService] OTA disabled — using bundled assets.');
-    return;
+    try {
+      if (kIsWeb) return; // Web does not support dart:io
+      
+      final appDir = await getApplicationDocumentsDirectory();
+      _modelsDir = Directory('${appDir.path}/ota_models');
+      
+      // Check if we already have files locally first
+      if (await _allFilesExist()) {
+        _otaAvailable = true;
+      }
+      
+      // Then check for remote updates
+      await _checkAndUpdate();
+
+      // Final validation
+      if (await _allFilesExist()) {
+        _otaAvailable = true;
+      } else {
+        _otaAvailable = false;
+        await _cleanupTempFiles();
+      }
+    } catch (e) {
+      debugPrint('⚠️ [OtaModelService] Initialization error: $e');
+      _otaAvailable = false;
+    }
   }
 
   // ── Private helpers ───────────────────────────────────────────────────────

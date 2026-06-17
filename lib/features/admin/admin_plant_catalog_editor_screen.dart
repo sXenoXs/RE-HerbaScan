@@ -14,6 +14,7 @@ import 'package:herbascan/core/services/database_service.dart';
 import 'package:herbascan/core/services/default_anatomy_service.dart';
 import 'package:herbascan/core/services/habitat_service.dart';
 import 'package:herbascan/core/services/safety_profile_service.dart';
+import 'package:herbascan/core/services/plant_data_service.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/providers/plant_provider.dart';
 import 'package:herbascan/features/scan/habitat_map_screen.dart';
@@ -268,8 +269,8 @@ class _AdminPlantCatalogEditorScreenState
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Seed catalog from defaults?'),
-        content: const Text(
-          'This will upsert all 31 plants and default safety, habitat, conditions, and anatomy into Supabase. '
+        content: Text(
+          'This will upsert all ${PlantDataService.getAllMedicinalPlantsData().length} plants and default safety, habitat, conditions, and anatomy into Supabase. '
           'Existing catalog data will be overwritten. Anatomy is additive (missing parts only).',
         ),
         actions: [

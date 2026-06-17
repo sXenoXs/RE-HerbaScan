@@ -314,9 +314,9 @@ class _AdminPlantMetadataScreenState extends State<AdminPlantMetadataScreen> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Restore the entire Supabase catalog to bundled defaults. '
-                        'This will overwrite all 31 plants, safety, habitat, and conditions. '
+                        'This will overwrite all ${PlantDataService.getAllMedicinalPlantsData().length} plants, safety, habitat, and conditions. '
                         'Uploaded plant images in Storage will be removed.',
                       ),
                       const SizedBox(height: 16),

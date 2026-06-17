@@ -24,6 +24,8 @@ import 'package:herbascan/core/init_database_factory_stub.dart'
     if (dart.library.ffi) 'package:herbascan/core/init_database_factory_ffi.dart' as db_factory;
 import 'package:herbascan/core/platform_utils_stub.dart'
     if (dart.library.io) 'package:herbascan/core/platform_utils_io.dart' as platform_utils;
+import 'package:herbascan/core/services/web_session_storage.dart';
+import 'package:herbascan/core/services/ota_model_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,16 +45,20 @@ void main() async {
   }
 
   if (isSupabaseConfigured) {
+    final webStorage = getWebSessionStorage();
     await Supabase.initialize(
       url: supabaseUrl,
       publishableKey: supabaseAnonKey,
+      authOptions: webStorage != null
+          ? FlutterAuthClientOptions(
+              authFlowType: AuthFlowType.pkce,
+              localStorage: webStorage,
+            )
+          : const FlutterAuthClientOptions(),
     );
   }
 
-  // OTA disabled — Supabase live-models bucket holds a stale model whose
-  // class index order does not match the bundled class_indices.json.
-  // Force the app to use the bundled assets until Supabase is updated.
-  // await OtaModelService.instance.initialize();
+  await OtaModelService.instance.initialize();
 
   // Start tracking app start time
   final performanceMonitor = PerformanceMonitor();
