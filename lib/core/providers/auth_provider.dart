@@ -196,6 +196,13 @@ class AuthProvider extends ChangeNotifier {
     return _auth.recordOtpAttempt(email, isSuccess);
   }
 
+  /// Verify current password for reauthentication (e.g. before updating password).
+  Future<void> verifyCurrentPassword(String password) async {
+    final email = _user?.email;
+    if (email == null) throw const AuthException('No active session email found.');
+    await _auth.signInWithPassword(email: email, password: password);
+  }
+
   /// Update current user's password. Requires sign-in.
   Future<void> updatePassword(String newPassword) async {
     await _auth.updatePassword(newPassword);

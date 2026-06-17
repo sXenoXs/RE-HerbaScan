@@ -16,8 +16,10 @@ class ChangePasswordScreen extends StatefulWidget {
 
 class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  bool _obscureCurrent = true;
   bool _obscureNew = true;
   bool _obscureConfirm = true;
   bool _isLoading = false;
@@ -65,6 +67,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   void dispose() {
     _newPasswordController.removeListener(_onNewPasswordChanged);
     _confirmPasswordController.removeListener(_onConfirmPasswordChanged);
+    _currentPasswordController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -79,8 +82,15 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       setState(() => _isLoading = false);
       return;
     }
+    
+    final currentPassword = _currentPasswordController.text;
     final newPassword = _newPasswordController.text;
+    
     try {
+      if (!widget.isRecovery) {
+        await context.read<AuthProvider>().verifyCurrentPassword(currentPassword);
+      }
+      
       await context.read<AuthProvider>().updatePassword(newPassword);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -96,7 +106,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = e.toString().replaceFirst('AuthException: ', '');
+          final errStr = e.toString();
+          if (errStr.contains('Invalid login credentials')) {
+            _errorMessage = 'The current password you entered is incorrect.';
+          } else {
+            _errorMessage = errStr.replaceFirst('AuthException: ', '');
+          }
           _isLoading = false;
         });
       }
@@ -172,6 +187,31 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                             )
                           : const SizedBox.shrink(),
                     ),
+
+                    if (!widget.isRecovery) ...[
+                      TextFormField(
+                        controller: _currentPasswordController,
+                        obscureText: _obscureCurrent,
+                        decoration: InputDecoration(
+                          labelText: 'Current password',
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscureCurrent
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
+                            ),
+                            onPressed: () =>
+                                setState(() => _obscureCurrent = !_obscureCurrent),
+                          ),
+                        ),
+                        textInputAction: TextInputAction.next,
+                        validator: (v) {
+                          if (v == null || v.isEmpty) return 'Enter your current password';
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                    ],
 
                     // New password field — suffix only
                     TextFormField(
