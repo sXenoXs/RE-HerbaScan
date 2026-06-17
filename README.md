@@ -1,1115 +1,597 @@
 # HerbaScan - AI-Powered Plant Identification App
 
-HerbaScan is a Flutter-based mobile application that uses Convolutional Neural Networks (CNN) and Random Forest algorithms to identify Philippine medicinal plants. The app provides comprehensive information about DOH-approved herbal medicines and supports offline processing for rural areas.
+**Thesis Project**: HERBASCAN: A CONVOLUTIONAL NEURAL NETWORK-BASED MOBILE APPLICATION FOR PLANT IDENTIFICATION AND HERBAL MEDICINE INFORMATION
 
-## 🚀 Current Development Status
+HerbaScan is a Flutter-based mobile application that uses a MobileNetV2 Convolutional Neural Network to identify Philippine medicinal plants fully offline. The app provides comprehensive information about DOH-approved herbal medicines and supports offline processing for rural areas.
 
-**Version**: v0.5.2  
-**Last Updated**: November 8, 2025
-**Project Phase**: Phase 6 In Progress (Offline CAM Fix)  
-**Overall Progress**: 52% Complete - 
-
-### ✅ Added Features (Complete/Incomplete Features)
-
-- **Project Architecture**: ✅ Flutter project structure with MVVM pattern
-- **UI/UX Design**: ✅ All main screens implemented with Material Design 3
-- **State Management**: ✅ Provider pattern with 5 core providers (including OfflineProvider)
-- **Database Schema**: ✅ SQLite database with proper relationships
-- **Multi-language Support**: ✅ English/Filipino localization system
-- **Navigation**: ✅ Bottom navigation with 5 main sections
-- **Settings**: ✅ Comprehensive app configuration
-- **Plant Database**: ✅ **13 medicinal plants with comprehensive data** (9 DOH-approved + 4 additional)
-- **Offline Processing**: ✅ Full offline functionality
-- **AI Model Integration**: ✅ MobileNet V2 + Random Forest fully integrated (accuracy needs improvement)
-- **Offline AI Inference**: ✅ TensorFlow Lite models work offline
-- **Connectivity Monitoring**: ✅ Real-time network status detection
-- **Offline Data Management**: ✅ Local storage with optimization and cleanup
-- **Offline Sync Management**: ✅ Automatic data synchronization when online
-- **Offline UI Components**: ✅ Status indicators and management interface
-- **GradCAM Visualization**: ✅ Explainable AI heatmap system with working overlay controls (needs improvement)
-- **Plant Results Screen**: ✅ AI prediction results with functional GradCAM integration
-- **Interactive Heatmaps**: ✅ Working opacity controls and tabbed interface
-- **Plant Detail Screen**: ✅ **NEW** Comprehensive plant information with ecology & habitat
-- **Preparation Instructions**: ✅ **NEW** Step-by-step herbal medicine preparation guide
-- **Critical Bug Fixes**: ✅ All GradCAM-related bugs resolved
-- **Browse Screen**: ✅ Full plant browsing with search, filter (All/DOH/Condition), grid/list views
-- **DOH Approved Plants Screen**: ✅ Dedicated screen for 9 DOH plants with official branding
-- **Scan History Screen**: ✅ Complete history management with sort, delete, statistics
-- **Condition-based Search**: ✅ Browse by 15 medical conditions
-- **Poor Image Quality Screen**: ✅ Error handling with scanning tips
-- **No Match Found Screen**: ✅ User-friendly error state with alternatives
-- **Help & Tutorial Screen**: ✅ Comprehensive guide with best practices
-- **Performance Metrics Screen**: ✅ AI model metrics (Accuracy, Precision, Recall, F1-Score)
-- **Scanning Tips Bottom Sheet**: ✅ Interactive draggable tips on camera screen
-- **Page Transition Animations**: ✅ Smooth slide and fade transitions
-- **Loading Animations**: ✅ Shimmer effects and fade-in widgets
-- **Success Animations**: ✅ Elastic bounce for positive feedback
-- **User Feedback System**: ✅ **NEW** 5-star rating with comments and categories
-- **Performance Monitoring**: ✅ **NEW** Track app performance metrics automatically
-- **Usage Analytics**: ✅ **NEW** Scan success rate and feature usage tracking
-- **Error Logging**: ✅ **NEW** Comprehensive error tracking and reporting
-- **Performance Dashboard**: ✅ **NEW** View metrics, analytics, and error logs
-- **Testing Guide**: ✅ **NEW** Complete user testing documentation
-- **Backend API**: ✅ **NEW** Python FastAPI server for true Grad-CAM computation
-- **Backend Documentation**: ✅ **NEW** Comprehensive model management and deployment guides
-- **Postman Testing**: ✅ **NEW** Complete testing guide for VS Code and other IDEs
-
-### 🔄 In Progress (Phase 6: Offline CAM Fix)
-
-- **Offline CAM Inference Fix**: Fixed multiple output buffers shape mismatch error
-- **TFLite Multiple Outputs**: Corrected output buffer passing for multi-output models
-- **Testing**: Verifying offline CAM heatmap generation in offline mode
-- **Beta Testing**: User testing with TESTING_GUIDE.md
-- **Data Collection**: Gathering user feedback and metrics
-
-### ⏳ Pending (Future Updates)
-
-- **User Testing**: Real-world testing and feedback
-- **App Store Preparation**: Final deployment preparation
-
-## 📋 Development Progress Log
-
-### Phase 5: Testing & Optimization (✅ COMPLETED)
-
-**Date**: November 3, 2025
-
-#### User Feedback System
-- [x] **Feedback Screen** - 5-star rating with comments
-- [x] **6 Categories** - Accuracy, Usability, Performance, Features, Bugs, General
-- [x] **Feature Suggestions** - Optional improvement ideas
-- [x] **Local Storage** - Feedback saved for thesis research
-- [x] **Export Support** - JSON export for analysis
-
-#### Performance Monitoring
-- [x] **Performance Monitor Service** - Track operation durations
-- [x] **Automatic Logging** - Metrics saved automatically
-- [x] **Operation Stats** - Average, min, max, median times
-- [x] **Export Metrics** - JSON export for analysis
-
-#### Usage Analytics
-- [x] **Analytics Service** - Track user behavior patterns
-- [x] **Scan Tracking** - Total, successful, failed scans
-- [x] **Success Rate** - Automatic calculation
-- [x] **Feature Usage** - Track most used features
-- [x] **Plant Analytics** - Most scanned plants
-- [x] **Condition Analytics** - Most searched conditions
-
-#### Error Logging
-- [x] **Error Logger Service** - Comprehensive error tracking
-- [x] **8 Error Types** - Categorized error logging
-- [x] **Stack Traces** - Optional detailed logging
-- [x] **Error Statistics** - Total, by type, last 24h
-- [x] **Export Errors** - JSON export for debugging
-
-#### Performance Dashboard
-- [x] **Dashboard Screen** - View all metrics in one place
-- [x] **Usage Stats Cards** - Visual stat display
-- [x] **Performance Breakdown** - Operation timing details
-- [x] **Error Tracking** - Error logs and statistics
-- [x] **Export All** - Export complete dataset
-- [x] **Clear Data** - Reset for testing
-
-#### Testing Guide
-- [x] **Testing Documentation** - Complete TESTING_GUIDE.md
-- [x] **50+ Test Cases** - Comprehensive coverage
-- [x] **Performance Benchmarks** - Expected vs actual
-- [x] **Bug Reporting Template** - Structured reporting
-- [x] **User Feedback Forms** - Data collection templates
-
-### Phase 4: Final Polish (✅ COMPLETED)
-
-**Date**: October 28, 2025
-
-#### Camera UI Refinements
-- [x] **Tips Button** - Blue button with lightbulb icon in camera top bar
-- [x] **Draggable Bottom Sheet** - Swipeable scanning tips overlay
-- [x] **6 Scanning Tips** - Color-coded tips with icons and descriptions
-- [x] **Handle Bar** - Visual drag indicator
-- [x] **Smooth Animations** - Sheet slides up with ease-in-out transition
-
-#### Animation System
-- [x] **SlidePageRoute** - Slide transitions from any direction
-- [x] **FadePageRoute** - Clean fade transitions
-- [x] **ScalePageRoute** - Scale and fade for modals
-- [x] **FadeInWidget** - Configurable fade-in effects
-- [x] **SlideInWidget** - Configurable slide-in effects
-- [x] **ShimmerLoading** - Animated shimmer for loading states
-- [x] **SuccessAnimation** - Elastic bounce for success feedback
-
-#### Performance & Polish
-- [x] **Optimized Animations** - 200-500ms duration for smooth feel
-- [x] **Natural Curves** - easeInOutCubic, easeOut, elasticOut
-- [x] **Professional Feel** - Polished, app-store ready UI/UX
-- [x] **Utilities File** - Central animation management
-
-### Phase 3: Polish & Error States (✅ COMPLETED)
-
-**Date**: October 27, 2025
-
-#### Error State Screens
-- [x] **Poor Image Quality Screen** - Actionable error screen with 6 scanning tips
-- [x] **No Match Found Screen** - User-friendly error state with alternatives
-- [x] **Error Icon Design** - Clear visual indicators for different error types
-- [x] **Image Preview** - Show problematic image to user
-- [x] **Action Buttons** - Retake, Browse Manually, Search by Condition
-
-#### Help & Tutorial
-- [x] **Best Practices Section** - 6 detailed scanning tips with icons
-- [x] **Common Issues** - Solutions for 3 common problems
-- [x] **App Features Overview** - Guide to 5 main features
-- [x] **Medical Disclaimer** - Safety information for users
-- [x] **Settings Integration** - Direct access from Help & Support section
-
-#### Performance Metrics
-- [x] **Accuracy Display** - 89.23% model accuracy
-- [x] **Precision Display** - 87.56% precision
-- [x] **Recall Display** - 88.34% recall
-- [x] **F1-Score Display** - 87.95% F1-score
-- [x] **Metric Explanations** - Detailed descriptions for each metric
-- [x] **Model Information** - Architecture and dataset details
-- [x] **Visual Cards** - Color-coded 2x2 grid layout
-
-#### Enhanced Error Handling
-- [x] **Graceful Failures** - No more cryptic error messages
-- [x] **Actionable Feedback** - Users know exactly what to do next
-- [x] **Alternative Paths** - Multiple options when scanning fails
-- [x] **Localization** - 18+ new strings in English and Filipino
-
-### Phase 2: Browse & Search Features (✅ COMPLETED)
-
-**Date**: October 26, 2025
-
-#### Browse Screen
-- [x] **Search Functionality**: Real-time search by name, scientific name, local name, or condition
-- [x] **Filter Chips**: All Plants (13), DOH Approved (9), By Condition (15 categories)
-- [x] **Dual View Modes**: Grid view (2 columns) and List view with toggle
-- [x] **Plant Count**: Dynamic count indicator
-- [x] **Empty States**: Meaningful messages when no results
-- [x] **DOH Badges**: Visual indicators for DOH-approved plants
-- [x] **Navigation**: Tap to view plant details
-
-#### DOH Approved Plants Screen
-- [x] **Official Branding**: DOH header with gradient design
-- [x] **Grid Layout**: 2-column grid with 9 DOH plants
-- [x] **Verification Badges**: DOH badges on all plant cards
-- [x] **Medical Disclaimer**: Safety information section
-- [x] **Plant Count Display**: "9 clinically validated" indicator
-
-#### Scan History Screen
-- [x] **Chronological List**: All past scans with timestamps
-- [x] **Sort Options**: Most Recent, Oldest, Highest Confidence
-- [x] **Delete Functionality**: Individual scan deletion with confirmation
-- [x] **Clear All**: Delete entire history with confirmation
-- [x] **Statistics Dashboard**: Total scans and average confidence
-- [x] **Confidence Badges**: Color-coded (green ≥80%, orange ≥60%, red <60%)
-- [x] **Empty State**: "Start Scanning" prompt with action button
-- [x] **Date Formatting**: Human-readable timestamps (MMM dd, yyyy • HH:mm)
-
-#### Condition-based Search Screen
-- [x] **15 Medical Conditions**: Cough, Asthma, Fever, Pain, Diabetes, Hypertension, Diarrhea, Kidney Stones, Wound Healing, Digestive Issues, Skin Conditions, Gout, Respiratory Issues, Inflammation, Fungal Infections
-- [x] **Color-coded Cards**: Unique colors and icons per condition
-- [x] **Plant Filtering**: Show only plants that treat selected condition
-- [x] **Selected Banner**: Display selected condition with plant count
-- [x] **Clear Filter**: Easy return to condition selection
-- [x] **Relevant Uses**: Highlight matching medicinal uses
-
-#### Localization
-- [x] **30+ New Strings**: Added for Browse, History, and Condition Search
-- [x] **English & Filipino**: Full translations for all new features
-- [x] **Consistency**: Unified terminology across all screens
-
-### Phase 1: Plant Database Population (✅ COMPLETED)
-
-**Date**: October 25, 2025
-
-#### Plant Database Content
-
-- [x] **13 Medicinal Plants Data**: Complete information for 9 DOH-approved + 4 additional plants
-- [x] **PlantDataService**: Centralized service with all plant data
-- [x] **DatabaseInitService**: Automatic database initialization
-- [x] **Database Auto-Population**: Plants loaded on first app launch
-
-#### Comprehensive Plant Information
-
-- [x] **Taxonomy**: Kingdom, Family, Genus, Species for all plants
-- [x] **Morphology**: Detailed physical descriptions
-- [x] **Ecology**: Distribution, climate, environmental requirements
-- [x] **Habitat**: Specific growing conditions and locations
-- [x] **Medicinal Uses**: 20+ documented therapeutic applications
-- [x] **Active Compounds**: 50+ bioactive compounds documented
-- [x] **Preparation Methods**: 15+ traditional recipes with step-by-step instructions
-- [x] **Safety Warnings**: Comprehensive contraindications and precautions
-
-#### New UI Screens
-
-- [x] **Plant Detail Screen**: Tabbed interface (Taxonomy, Ecology, Medicinal, Safety)
-- [x] **Preparation Instructions Screen**: Step-by-step preparation guide
-- [x] **Interactive Navigation**: Clickable preparation methods
-- [x] **Safety Information Display**: Medical disclaimers and warnings
-
-#### DOH-Approved Plants Included
-
-- [x] **Lagundi** (Vitex negundo) - Cough, Asthma, Fever
-- [x] **Sambong** (Blumea balsamifera) - Kidney Stones, Hypertension
-- [x] **Akapulko** (Senna alata) - Fungal Infections, Skin Conditions
-- [x] **Ampalaya** (Momordica charantia) - Diabetes
-- [x] **Ulasimang-bato** (Peperomia pellucida) - Gout, High Uric Acid
-- [x] **Bayabas** (Psidium guajava) - Diarrhea, Wound Healing
-- [x] **Yerba Buena** (Mentha cordifolia) - Stomachache, Headache
-- [x] **Tawa-tawa** (Euphorbia hirta) - Dengue Support, Respiratory
-- [x] **Malunggay** (Moringa oleifera) - Nutrition, Lactation
-
-#### Additional Medicinal Plants
-
-- [x] **Oregano** (Origanum vulgare) - Cough, Respiratory, Digestive
-- [x] **Luya/Turmeric** (Curcuma longa) - Inflammation, Digestive Health
-- [x] **Gotu Kola** (Centella asiatica) - Wound Healing, Cognitive Support
-- [x] **Aloe Vera** (Aloe barbadensis) - Burns, Skin Health
+**Academic Context**: Undergraduate Thesis — College of Information Technology and Computer Science, Lyceum of the Philippines University-Cavite
+**Client/Partner**: Philippine Institute of Traditional and Alternative Health Care (PITAHC)
+**Dataset**: PhilMedic — 4,922 leaf images, medicinal plant classes native to the Philippines
 
 ---
 
-### Phase 1: Core Foundation (Added Features ✅)
+## Current Development Status
 
-**Date**: September 6, 2025
+**Version**: v1.0.22
+**Last Updated**: May 25, 2026
+**Overall Progress**: ~98% Complete — **PRODUCTION READY**
 
-#### Project Setup & Architecture
+---
 
-- [x] Created Flutter project structure
-- [x] Implemented MVVM architecture with Provider pattern
-- [x] Set up proper folder organization
-- [x] Added all necessary dependencies in pubspec.yaml
+## Core Features
 
-#### Core Models & Services
+### Plant Identification (Offline-First)
 
-- [x] **Plant Model**: Created a data structure for medicinal plants
-- [x] **ScanResult Model**: AI prediction results with metadata
-- [x] **DatabaseService**: SQLite operations with proper relationships
-- [x] **PlantService**: Business logic for plant operations
+- **MobileNetV2 TFLite** — 31-class model (29 plant classes + `Not_Plant`@19 + `UnknownPlant`@30), fully offline on-device
+- **Two-Stage Quality Gate** — Stage 1: brightness / blur / edge density; Stage 2: OOD confidence gate (0.85 threshold from `ood_safety_config.json`)
+- **Normalization**: `[-1, 1]` range per MobileNetV2 training convention
+- **Labels**: `assets/models/class_indices.json` (name→index format); no `labels.txt`
+- **Top-3 Predictions** with confidence percentages; OOD results show "Not identified" badge (no misleading confidence %)
+- **Toxic Plant Blacklist** (app-layer): Adelfa, IpilIpil, TubaTuba — dedicated warning screen, never auto-saved, never shown as a recommended result; handled by name match, not model index
+- **No GradCAM/CAM heatmap system** — removed in v1.0.7 for a classification-only pipeline
 
-#### State Management
+### Plant Knowledge & Information
 
-- [x] **AppProvider**: Global app settings and preferences
-- [x] **PlantProvider**: Plant data and scan history management
-- [x] **CameraProvider**: Camera functionality and image processing
-- [x] **LanguageProvider**: Multi-language support with persistence
+- **30-plant catalog** (29 ML output classes + Yerba Buena as browse-only DOH plant); 10 DOH-approved + additional medicinal plants
+- **Plant Detail Screen** — 4 tabs: Taxonomy, Ecology, Medicinal, Safety
+- **Interactive 2D Plant Silhouette** — SVG path hit-testing, DB-backed anatomy data
+- **Preparation Guide** (renamed from Instructions) — interactive checklist, contextual timers, Focus Mode, calendar add-to-device; step-type icon cards (boil → orange, herb → green, strain → teal, cool → blue, drink → amber) with 44 px animated circles
+- **Contraindication Engine** — deterministic safety assessment from `safety_profiles.json`; `needs_strict_contraindications` flag shows prominent "Use with strict caution" card (e.g. Kamias, Kamoteng Kahoy, Kakawate)
+- **XAI Explanation System** — fully offline, no live LLM; resolution chain: SharedPreferences cache → `plant_explanations.json` (29 classes, 4-section format) → fallback text
+- **Static Habitat Heatmap** — `flutter_map` + curated coordinates
+- **Condition-based Search** — 15+ medical conditions, DB-backed and admin-manageable
+- **Browse & Search** — SearchBar, SegmentedButton (All Plants / DOH Approved / By Condition), grid/list view, compact Medical Conditions ActionChip pill in toolbar
 
-#### UI/UX Implementation
+### Scan History & Cloud Sync
 
-- [x] **Splash Screen**: App launch with language selection
-- [x] **Onboarding**: 4-page feature introduction
-- [x] **Home Dashboard**: Main hub with quick actions and statistics
-- [x] **Settings Screen**: Comprehensive app configuration
-- [x] **Navigation**: Bottom navigation with 5 sections
+- **Device Tab** — SQLite `scan_history`; swipe export/delete; select mode with batch upload
+- **Cloud Tab** — Supabase `scans` table; pull-to-refresh; select mode with batch download; tap cloud card to open full Plant Result screen with correct cloud image rendering
+- **Auto-save toggle** — `auto_save_scans` preference (SharedPreferences); when OFF, new scans are not auto-saved until user saves from Plant Result or History
+- **Share** — "Share as Info Card" (rich PNG card: scan image, plant name, confidence, DOH status, medicinal uses, HerbaScan branding) and "Share as Text" via native OS share sheet
 
-#### Database Schema
+### Auth & Account
 
-- [x] **Plants Table**: Core plant information
-- [x] **Medicinal Uses Table**: Therapeutic applications
-- [x] **Preparation Methods Table**: Traditional preparation instructions
-- [x] **Scan History Table**: User scan results and AI predictions
-- [x] **Indexes**: Optimized database performance
+- Email + password sign-up with 6-digit OTP confirmation
+- 6-digit OTP password reset (bulletproof — avoids link-scanner issue)
+- Change password (with live requirements widget), change email
+- Delete account via `delete-user` Edge Function
+- RBAC: `user` / `admin` roles via `profiles.role` + `is_admin()` SECURITY DEFINER
+- Sign-out confirmation dialog before signing out
+- Friendly auth error messages for all failure states
 
-#### Multi-language Support
+### Admin Portal (all platforms — Android, Windows, Web)
 
-- [x] **Localization System**: English/Filipino language support
-- [x] **Dynamic Language Switching**: Runtime language changes
-- [x] **Persistent Settings**: Language preference storage
+- **Admin routing**: Admins go directly to `/admin` from splash; `/home` redirects to `/admin` for admin users
+- **Image Review** — Approve (Approve only / Approve + Add to Training Data), Reject, Delete; "Training eligible" badge on approved scans; `_CopyingProgressDialog` during storage copy
+- **Plant Metadata Editor** — 6-tab form (Identity, Ecology, Medicinal, Preparations, Safety, Anatomy); cloud-first; instant local sync after save
+- **Training Images Sheet** — manual upload + approved scan count with "Include in next training run" toggle; `TriggerTrainingWidget` for one-tap Modal GPU training
+- **Condition Search Management** — add / edit / delete conditions + plant mapping
+- **User Management** — make admin / remove admin, force activate email (OTP bypass), deactivate, delete
+- **System Health** — enhanced error logs with filter chips (All / Camera / AI / Database / Network), expandable list, individual `ExpansionTile` entries with full message + stack trace; Export modal bottom sheet (JSON / MD / CSV / Text) with clipboard copy and file download via `share_plus`
+- **Feedback** — view and delete user feedback entries
+- **Factory Reset** — re-seeds catalog to Supabase
+- **Supabase Realtime sync** — `PlantProvider` subscribes to 8 catalog tables; admin edits appear in-app instantly via `syncSinglePlant` / `syncConditionsOnly`
+- **Theme-aware UI** — all admin screens (Overview, New Plant Wizard, sidebar rail/drawer, Toxic Plants cards, System Health export) adapt to light and dark mode
 
-### Phase 2: AI Integration (Added ✅)
+### Settings & Offline
 
-**Date**: September 7, 2025
+- **System Diagnostics** (renamed from Offline Demo) — 2×2 stat cards, connection banner, Force Sync / Wipe Cache
+- **Offline storage info + refresh** — wipes device scan history on demand
+- **Persistent user preferences** — SharedPreferences; show_confidence, show_top3, auto_save_scans
+- **English / Filipino localization** — runtime switching
+- **Medical Disclaimer screen** — one-time first-launch overlay (acknowledged state persisted to SharedPreferences); routes to `/disclaimer` with destination as `extra`
 
-#### Camera Functionality
+### UI / UX
 
-- [x] **Camera Provider**: Implement a camera management system
-- [x] **Image Capture**: Photo capture with error handling
-- [x] **Image Processing**: Preprocessing for AI inference
-- [x] **Scan Screen**: Camera interface with overlay controls
-- [x] **Error Handling**: Comprehensive error states and recovery
+- **App icon & splash** — HerbaScan_Icon1 SVG splash icon; all five Android mipmap densities updated; native splash background `#F4F7F4` (Soft Sage) eliminates white flash
+- **Material Design 3** with Botanical Emerald theme (`#16A34A`), Inter font, dark Forest Black/slate-green surfaces
+- **BottomAppBar** + center camera FAB; FAB hides when keyboard is open
+- **Browse keyboard fix** — `resizeToAvoidBottomInset: false`; tap outside to dismiss search
+- **SnackBar** — floating behavior so camera FAB is not displaced
+- **Page transitions** — slide, fade, scale routes throughout
 
-#### AI Model Integration
+---
 
-- [x] **Model Architecture**: MobileNet V2 + Random Forest integrated
-- [x] **Asset Structure**: Models directory with proper organization
-- [x] **Model Conversion**: Converted .h5/.pkl to TensorFlow Lite
-- [x] **Model Integration**: Load and run inference implemented
-- [x] **Offline AI Processing**: Implement a offline inference pipeline
+## Recent Changes
 
-### Phase 3: Bug Fixes & Optimization (Added Features ✅)
+### v1.0.22 — May 25, 2026
 
-**Date**: September 7, 2025
+- **Yerba Buena re-added as browse-only DOH plant** — no model class (`class_indices.json` unchanged). Migration `20260525000000_readd_yerba_buena_browse_only.sql` applied. `_getYerbaBuenaData()` added to `plant_data_service.dart` as the 10th DOH-approved plant. Entries added to `plant_explanations.json`, `safety_profiles.json`, `plant_habitats.json`, `default_plant_anatomy.json`, `doh_plants.json`. Supabase catalog now has 30 rows.
 
-#### Bug Fixes
+### v1.0.21 — May 24, 2026
 
-- [x] **Theme Switching Errors**: Fixed GlobalKey conflicts causing red error screens
-- [x] **Theme Switching Performance**: Eliminated 1-second delay during mode changes
-- [x] **Flashlight Functionality**: Fixed flashlight/torch feature on physical devices
-- [x] **Quick Actions UI Overflow**: Resolved "BOTTOM OVERFLOWED BY 8.6 PIXELS" errors
-- [x] **AI Model Connection**: Fixed AI models not loading for image capture
-- [x] **Camera Error Handling**: Improved error handling and recovery
-- [x] **UI Layout Issues**: Fixed various UI layout problems from USB testing
+- **Toxic plant cards** — removed noisy symptoms / toxin text from browse grid and list cards (`_buildToxicGridCard`, `_buildToxicListCard`); overflow eliminated; harm badge retained.
 
-#### Device Testing
+### v1.0.20 — May 24, 2026
 
-- [x] **USB Device Testing**: Comprehensive testing on physical Android devices
-- [x] **Theme Stability**: Extensive dark/light mode switching testing
-- [x] **UI Responsiveness**: Layout testing across different screen sizes
-- [x] **Error Handling**: Comprehensive error scenario testing
+- **Export bottom sheet** — SegmentedButton JSON/MD/CSV/Text labels: fontSize 12→11, `expandedInsets` symmetric horizontal padding, `maxLines:1`/`overflow:ellipsis` to prevent label wrapping.
 
-### Phase 4: Offline Processing (Added Features ✅)
+### v1.0.19 — May 24, 2026
 
-**Date**: September 8, 2025
+- **Cloud scan image blank** — `_cloudScanToScanResult()` now injects `imageUrl` into `mergedMetadata`; `_buildHeroBackground()` detects HTTP URL and uses `Image.network` for cloud history, `Image.file` for local captures.
 
-#### Offline Service Architecture
+### v1.0.18 — May 24, 2026
 
-- [x] **OfflineService**: Central coordinator for all offline functionality
-- [x] **OfflineProvider**: State management with real-time connectivity updates
-- [x] **OfflineDataManager**: Local data storage, cleanup, and optimization
-- [x] **OfflineSyncManager**: Automatic data synchronization when online
+- **Browse toxic grid card overflow** — `childAspectRatio` 0.82 → 0.72; inner `Column` wrapped in `ClipRect`; `withOpacity` → `withValues(alpha:)` deprecation fixed.
 
-#### Connectivity Monitoring
+### v1.0.17 — May 24, 2026
 
-- [x] **Real-time Detection**: Network status monitoring using connectivity_plus
-- [x] **Automatic Switching**: Seamless online/offline mode transitions
-- [x] **Background Sync**: Data synchronization with retry logic
-- [x] **Error Handling**: Robust error handling for offline scenarios
+- **Admin System Health export section** — `Card` → `Container` with border; `SegmentedButton` in export sheet: `showSelectedIcon:false`, adaptive `backgroundColor`/`foregroundColor`, 12sp text.
 
-#### Offline UI Components
+### v1.0.16 — May 24, 2026
 
-- [x] **OfflineIndicator**: Connection status display component
-- [x] **OfflineStatusCard**: Comprehensive status information display
-- [x] **OfflineFeatureStatus**: Feature availability status display
-- [x] **OfflineDemoScreen**: Added a testing interface for offline capabilities
+- **Admin New Plant Wizard** — AppBar and `_StepIndicator` fully theme-aware (adaptive backgrounds, borders, circle fills, label colors for dark/light).
 
-#### Offline Data Management
+### v1.0.15 — May 24, 2026
 
-- [x] **Local Storage**: Efficient local data storage with optimization
-- [x] **Data Cleanup**: Automatic cleanup of old and unnecessary data
-- [x] **Storage Statistics**: Real-time storage usage monitoring
-- [x] **Export/Import**: Data export and import functionality
+- **Splash icon** — background circle removed (green disc was visible on both modes); Container replaced with SizedBox. Fixed `withOpacity` deprecation on `LinearProgressIndicator`.
+- **Admin Overview SliverAppBar** — seamless `scaffoldBackgroundColor`; adaptive title and icon colors; `scrolledUnderElevation: 1`.
 
-### Phase 5: GradCAM Visualization (Added Features ✅)
+### v1.0.14 — May 24, 2026
 
-**Date**: September 9, 2025
+- **Browse Medical Conditions Banner** — full-width SliverToBoxAdapter removed; replaced with compact `ActionChip` pill in toolbar row between count text and grid/list toggle; only shown when `!isToxic`.
 
-#### GradCAM System Implementation
+### v1.0.13 — May 24, 2026
 
-- [x] **GradCAMService**: Core service for generating attention heatmaps
-- [x] **GradCAMVisualization Widget**: Interactive UI component with working opacity controls
-- [x] **Plant Results Screen**: Enhanced with functional GradCAM display and tabbed interface
-- [x] **Camera Integration**: GradCAM generation in both camera capture and gallery selection flows
-- [x] **Interactive Heatmaps**: Working opacity slider and color-coded visualization with overlay functionality
-- [x] **Comprehensive Testing**: Unit, integration, and manual testing suite
-- [x] **File Management**: Automatic saving and cleanup of heatmap images
+- **Admin sidebar, rail, drawer** — fully theme-adaptive colors for light mode (surface, onSurface). Admin Toxic Plants card refactored to column layout — buttons on bottom row, prevents long name overflow on 360dp screens. Browse `SegmentedButton` label wrapping fixed (`showSelectedIcon: false` + 12sp).
 
-#### Critical Bug Fixes
+### v1.0.12 — May 24, 2026
 
-- [x] **Type Casting Issues**: Fixed ColorRgb8 to Pixel type casting errors preventing heatmap generation
-- [x] **Gallery Integration**: Fixed gallery image processing to use GradCAM-enabled classification
-- [x] **UI Overflow Issues**: Fixed "Right Overflowed by 44 pixels" error with responsive Wrap widget
-- [x] **Confidence Bar Overflow**: Fixed green confidence indicator overflow with proper value clamping
-- [x] **Overlay Controls**: Fixed "Show Heatmap Overlay" toggle and "Heatmap Opacity" slider functionality
-- [x] **Offline Processing**: Fixed offline processing path that was setting GradCAM paths to null
+- **Approved-image-to-training pipeline** — SQL migration `20260524000001_scan_training_eligible.sql` (`training_eligible`, `training_copied_at` columns on `scans` table, partial index, storage policies). `HerbariumService`: `approveForTraining`, `getTrainingEligibleScans`, `getTrainingEligibleScanCount`. Admin Submission Triage: `_ApproveActionSheet` (Approve only / Approve + Add to Training Data), `_CopyingProgressDialog`, "Training eligible" badge. Training Images sheet shows approved scan count + include toggle. Admin Overview metrics sum manual uploads + approved scans.
 
-### Phase 6: Beta Testing & Deployment (🔄 In Progress)
+### v1.0.11 — May 24, 2026
 
-**Date**: November 8, 2025
+- **Admin System Health** — error logs: filter chip row (All / Camera / AI / Database / Network), expandable list (default 5, "Show all N" toggle), individual `ExpansionTile` entries (message, stack trace, context), error type color coding. Export section: modal bottom sheet (JSON / MD / CSV / Text), clipboard copy, file download via `share_plus`.
 
-#### Current Status
+### v1.0.10 — May 24, 2026
 
-- [x] **Production Ready**: All core features implemented
-- [x] **Testing Framework**: Complete TESTING_GUIDE.md with 50+ test cases
-- [x] **Data Collection**: All systems operational for thesis research
-- [ ] **Beta Testing**: User testing with real devices
-- [ ] **Data Analysis**: Collect and analyze user feedback
-- [ ] **Performance Tuning**: Optimize based on metrics
-- [ ] **Final Polish**: Any remaining UI/UX improvements
-- [ ] **App Store Preparation**: Final deployment preparation
+- **OOD confidence display** — when top prediction is `Not_Plant` or `UnknownPlant`, confidence scores are hidden everywhere (badge shows "Not identified" in red; alternative match confidence % suppressed). `_isOODResult` getter + `_toDisplayName()` for human-readable labels.
 
-## 🛠️ Technical Implementation Details
+### v1.0.9 — May 24, 2026
 
-### Architecture
+- **Security** — RLS enabled on `public.model_versions`; 4 policies: SELECT open to all, INSERT/UPDATE/DELETE restricted to admins via `is_admin()`.
+
+### v1.0.8 — May 24, 2026
+
+- **Supabase catalog alignment** — migration `20260523000000_reduce_catalog_to_31_classes.sql` deleted 13 plant rows (child-first order) not in the 31-class model. `ai_vision_summary` column drop guard added. `user_feedback` migration idempotency fixed.
+
+### v1.0.7 — May 23, 2026
+
+- **GradCAM system fully removed** — `adaptive_gradcam_service.dart`, `online_gradcam_service.dart`, `offline_cam_service.dart`, `gradcam_visualization.dart` and all related test files deleted. `PlantResultScreen` simplified to classification-only (no heatmap tab). `AppProvider` `showGradCAM` preference removed. `aiVisionSummary` field removed from admin and metadata service.
+- **42 → 31 plant alignment** — 13 plants not in the TFLite model removed from `plant_explanations.json`, `safety_profiles.json`, `plant_habitats.json`, `default_plant_anatomy.json`, and `plant_data_service.dart`. Backend `range(42)` → `range(31)`.
+- **System Diagnostics** — renamed from Offline Demo (`OfflineDemoScreen` → `SystemDiagnosticsScreen`).
+
+### v1.0.6 — May 22, 2026
+
+- **FAB keyboard overlap** — camera FAB hidden when keyboard is open. Browse `resizeToAvoidBottomInset: false`. "Scanning & Recognition" section renamed in Settings. GradCAM toggle removed from Settings.
+
+### v1.0.5 — May 22, 2026
+
+- **Medical Disclaimer screen** (`/disclaimer` route) — one-time first-launch overlay; acknowledged state in SharedPreferences.
+- **Sign-out confirmation dialog** — requires explicit confirmation before signing out.
+- **Rich share card** — "Share as Info Card" renders a 380 px PNG card off-screen via `RenderRepaintBoundary`; "Share as Text" sends a structured plain-text payload.
+
+### v1.0.4 — May 22, 2026
+
+- **History kebab menu** — Sort and Select merged into single `PopupMenuButton`. Batch FAB labels renamed: "Upload Selected Images" / "Download Selected Images". Cloud card tap navigates to full Plant Result screen.
+
+### v1.0.3 — May 22, 2026
+
+- **App launcher icon** — all five Android mipmap densities updated to `HerbaScan_Icon1.png`.
+- **Splash screen icon** — `Icons.eco_rounded` replaced with `SvgPicture.asset('assets/icons/HerbaScan_Icon1.svg')`. `flutter_svg` dependency added.
+- **Native splash background** — `#F4F7F4` (Soft Sage) eliminates the white flash before Flutter renders.
+
+
+---
+
+## Technical Architecture
 
 - **Framework**: Flutter 3.9.2+
-- **State Management**: Provider pattern with 5 providers
-- **Database**: SQLite with proper relationships
-- **AI/ML**: TensorFlow Lite with a offline processing and GradCAM visualization
-- **Offline Processing**: Add a offline functionality for rural areas
-- **GradCAM**: Explainable AI heatmap generation with working interactive visualization and overlay controls
-- **Connectivity**: Real-time network monitoring with connectivity_plus
-- **Localization**: Flutter's built-in i18n system
+- **State Management**: Provider pattern — 6 providers: App, Auth, Plant, Camera, Language, Offline
+- **Local Database**: SQLite (`sqflite` on mobile, `sqflite_common_ffi` on desktop) — 9 tables, offline-first
+- **Cloud Database**: Supabase PostgreSQL — catalog master, scans, profiles, user_feedback
+- **AI/ML**: TensorFlow Lite (`tflite_flutter ^0.11.0`) — MobileNetV2 31-class, fully offline on-device
+- **Inference**: Classification-only pipeline (no heatmap); two-stage quality gate
+- **XAI Explanations**: Fully deterministic — `plant_explanations.json`, no live LLM
+- **Auth**: Supabase Auth — email + 6-digit OTP; RBAC via `is_admin()` SECURITY DEFINER
+- **Backend**: Python FastAPI on Railway — model retraining pipeline only (not used during scanning)
+- **Routing**: GoRouter (`go_router ^14.6.2`)
+- **Connectivity**: `connectivity_plus ^7.0.0`
+- **Localization**: Flutter i18n — English / Filipino
 
-### Key Dependencies
+### Routing Table
 
-```yaml
-# State Management
-provider: ^6.1.2
-
-# Database
-sqflite: ^2.4.0
-path: ^1.9.0
-
-# Camera & Image Processing
-camera: ^0.11.2+1
-image_picker: ^1.1.2
-image: ^4.5.4
-
-# AI/ML
-tflite_flutter: ^0.11.0
-
-# Localization
-flutter_localizations:
-  sdk: flutter
-intl: ^0.20.2
-
-# Connectivity & Offline
-connectivity_plus: ^7.0.0
-
-# File and Storage
-path_provider: ^2.1.5
-shared_preferences: ^2.3.2
-
-# UI Components
-flutter_staggered_grid_view: ^0.7.0
-shimmer: ^3.0.0
-lottie: ^3.3.2
-
-# Utilities
-uuid: ^4.5.1
-logger: ^2.5.0
-http: ^1.2.2
-```
+| Route | Screen | Guard |
+| --- | --- | --- |
+| `/` | `SplashScreen` | None |
+| `/disclaimer` | `DisclaimerScreen` | None |
+| `/login` | `LoginScreen` | None |
+| `/home` | `HomeScreen` | Redirects to `/admin` if admin |
+| `/onboarding` | `OnboardingScreen` | None |
+| `/admin` | `AdminWebScreen` | Login + admin role |
 
 ### File Structure
 
 ```
-herbascan/
-├── lib/                   ✅ (50+ files)
-│   ├── core/              ✅
-│   │   ├── models/        ✅ (Plant, ScanResult, UserFeedback)
-│   │   ├── providers/     ✅ (5 providers: App, Plant, Camera, Language, Offline)
-│   │   ├── services/      ✅ (13 services: Database, Plant, Offline, GradCAM, 
-│   │   │                     Performance, Analytics, Error Logger, Feedback, etc.)
-│   │   ├── widgets/       ✅ (Offline indicators, GradCAM visualization)
-│   │   ├── theme/         ✅ (Material Design 3)
-│   │   ├── localization/  ✅ (i18n - English/Filipino)
-│   │   └── utils/         ✅ (Page transitions, animations)
-│   └── features/          ✅ (15+ screens: Home, Scan, Browse, History, DOH,
-│                              Settings, Feedback, Dashboard, Help, etc.)
-├── assets/                ✅ (models, images, data, animations, icons, fonts)
-└── Configuration          ✅ (pubspec.yaml, analysis_options.yaml)
+RE-HerbaScan/
+├── lib/
+│   ├── core/
+│   │   ├── config/        (Supabase URL / anon key, auth redirect)
+│   │   ├── constants/     (condition_icons, toxic_plant_blacklist)
+│   │   ├── models/        (Plant, ScanResult, CloudScan, UserFeedback, SafetyProfile, …)
+│   │   ├── providers/     (App, Auth, Plant, Camera, Language, Offline)
+│   │   ├── services/      (Database, Plant, TFLite, XAI, Auth, Herbarium, CatalogSync,
+│   │   │                   OtaModel, TrainingDataset, CatalogPlantAdmin, Safety, Habitat,
+│   │   │                   Condition, Feedback, Performance, Analytics, ErrorLogger, …)
+│   │   ├── widgets/       (offline_indicator, auth_deeplink_handler,
+│   │   │                   botanical_auth_header, contraindication_engine_widget,
+│   │   │                   anatomy_interactive_view, plant_image, …)
+│   │   ├── routing/       (app_router.dart — GoRouter)
+│   │   ├── theme/         (app_theme.dart — Emerald botanical green, Material 3)
+│   │   ├── localization/  (app_localizations.dart)
+│   │   └── utils/         (page_transitions, preparation_step_parser, svg_path_parser, …)
+│   ├── features/
+│   │   ├── admin/         (dashboard, overview, plant catalog editor, toxic plants,
+│   │   │                   user management, system health, feedback, new plant wizard,
+│   │   │                   widgets/trigger_training_widget)
+│   │   ├── auth/          (login, signup, forgot password, OTP, change email/password)
+│   │   ├── browse/        (browse, condition search, condition results, toxic detail)
+│   │   ├── doh/           (doh_screen)
+│   │   ├── feedback/      (bottom sheet, form, screen)
+│   │   ├── help/          (help_tutorial_screen)
+│   │   ├── history/       (history_screen — Device + Cloud tabs)
+│   │   ├── home/          (home_screen)
+│   │   ├── offline/       (system_diagnostics_screen)
+│   │   ├── onboarding/    (onboarding_screen)
+│   │   ├── scan/          (scan, plant result, plant detail, habitat map,
+│   │   │                   preparation guide, focus mode, no match, poor quality)
+│   │   ├── settings/      (settings_screen)
+│   │   └── splash/        (splash_screen, disclaimer_screen)
+│   └── main.dart
+├── assets/
+│   ├── models/
+│   │   ├── mobilenetv2_multi_output.tflite   (31-class offline inference)
+│   │   └── class_indices.json                (name→index label map)
+│   ├── data/
+│   │   ├── plant_explanations.json           (4-section XAI for 29 plant classes + Yerba Buena)
+│   │   ├── safety_profiles.json              (Contraindication Engine data)
+│   │   ├── plant_habitats.json               (habitat coordinates)
+│   │   ├── doh_plants.json                   (DOH-approved plant metadata)
+│   │   ├── default_plant_anatomy.json        (2D anatomy parts)
+│   │   └── ood_safety_config.json            (OOD thresholds — num_classes=31, not_plant_index=19)
+│   ├── images/                               (50+ plant reference JPEGs)
+│   ├── icons/                                (HerbaScan_Icon1.svg, HerbaScan_Icon1.png)
+│   └── fonts/                                (Inter variable font)
+├── backend/                                  (Python FastAPI — retraining pipeline only)
+│   ├── main.py
+│   ├── modal_train.py                        (Modal T4 GPU training pipeline)
+│   ├── models/
+│   │   ├── MobileNetV2_model.keras           (source model for retraining)
+│   │   ├── labels.json
+│   │   └── ood_safety_config.json
+│   └── utils/  (preprocessing, validation_pipeline, gradcam — server-side only)
+└── supabase/
+    ├── migrations/  (19 SQL migrations)
+    └── functions/   (delete-user, force-verify-user — Deno Edge Functions)
 ```
 
-## 🎯 Next Steps
-
-### Immediate (Beta Testing Phase)
-
-1. **User Testing**: Distribute app to beta testers using TESTING_GUIDE.md
-2. **Data Collection**: Gather user feedback, performance metrics, and usage analytics
-3. **Bug Fixes**: Address any issues found during testing
-4. **Performance Optimization**: Fine-tune based on collected metrics
-
-### Short Term (1-2 weeks)
-
-1. **Data Analysis**: Analyze collected metrics and user feedback for thesis
-2. **Performance Tuning**: Optimize based on real-world usage data
-3. **Bug Resolution**: Fix any critical issues discovered
-4. **Documentation Updates**: Finalize user guides and technical documentation
-
-### Long Term (1-2 months)
-
-1. **Thesis Completion**: Integrate data analysis into thesis write-up
-2. **Final Deployment**: Prepare for Google Play Store release
-3. **App Store Submission**: Complete store listing and metadata
-4. **Post-Launch Support**: Monitor app performance and user feedback
-
-## 📊 Progress Metrics
-
-- **Version**: v0.5.2
-- **Code Files Created**: 50+ files
-- **Lines of Code**: 8,000+ lines
-- **Features Implemented**: 40+ core features
-- **Screens Created**: 15+ screens
-- **Providers**: 5 state management providers
-- **Services**: 13 services (Database, Plant, Offline, GradCAM, Performance, Analytics, Error Logger, Feedback, etc.)
-- **Models**: 3 data models (Plant, ScanResult, UserFeedback)
-- **Database Tables**: 4 tables with relationships
-- **Plant Database**: 13 medicinal plants (9 DOH-approved + 4 additional)
-- **Languages Supported**: 2 (English, Filipino)
-- **Documentation Files**: 8 comprehensive documentation files
-- **Test Cases**: 50+ test cases documented
-
-## 📊 Data Collection for Thesis Research
-
-HerbaScan includes comprehensive data collection capabilities designed for academic research and thesis analysis:
-
-### User Feedback
-- **5-Star Rating System**: Quantitative satisfaction ratings
-- **6 Feedback Categories**: AI Accuracy, Usability, Performance, Features, Bugs, General
-- **Qualitative Comments**: Open-ended feedback (500 characters)
-- **Feature Suggestions**: Improvement ideas from users
-
-### Performance Metrics
-- **Operation Timing**: App start, image capture, AI inference, GradCAM generation
-- **Statistics**: Average, min, max, median for each operation
-- **Automatic Logging**: All metrics saved automatically
-- **Export Format**: JSON export for analysis
-
-### Usage Analytics
-- **Scan Tracking**: Total, successful, failed, poor quality, no match
-- **Success Rate**: Automatic calculation of AI accuracy
-- **Feature Usage**: Track plants viewed, preparations viewed, screens accessed
-- **Plant Analytics**: Most scanned plants ranking
-- **Condition Analytics**: Most searched medical conditions
-- **Install Analytics**: First launch date, days since install
-
-### Error Logging
-- **8 Error Types**: Categorized error logging (camera, AI, database, network, etc.)
-- **Stack Traces**: Optional detailed error information
-- **Context Data**: Additional metadata for debugging
-- **Error Statistics**: Total errors, errors by type, last 24h
-
-### Export Capabilities
-- **Performance Dashboard**: Centralized view with export all functionality
-- **JSON Format**: Complete data export for thesis analysis
-- **Statistics & Raw Data**: Both summary and detailed data included
-
-All data is stored locally and can be exported as JSON for thesis research purposes.
-
-## 🌐 Offline Processing Capabilities
-
-HerbaScan is designed to work seamlessly in rural areas without internet connectivity, making it perfect for underserved communities in the Philippines.
-
-### Offline Functionality
-
-- **Offline AI Processing**: Complete plant identification functionality without internet using TensorFlow Lite models
-- **Offline Data Access**: Full plant database accessible without internet
-- **Offline Storage**: All scan results stored locally with optimization
-- **Connectivity Monitoring**: Real-time network status detection and management
-- **Automatic Sync**: Data synchronization when connectivity returns
-
-### Offline Service Architecture
-
-- **OfflineService**: Central coordinator for all offline functionality
-- **OfflineProvider**: State management with real-time connectivity updates
-- **OfflineDataManager**: Local data storage, cleanup, and optimization
-- **OfflineSyncManager**: Automatic data synchronization when online
-
-### Offline UI Components
-
-- **OfflineIndicator**: Connection status display in app header
-- **OfflineStatusCard**: Comprehensive status information display
-- **OfflineFeatureStatus**: Feature availability status display
-- **OfflineDemoScreen**: Add a testing interface for offline capabilities
-
-## 🔧 Development Notes
-
-### Recent Changes (Version v0.5.2)
-
-- **User Feedback System**: Complete 5-star rating system with 6 categories
-- **Performance Monitoring**: Automatic tracking of all key operations
-- **Usage Analytics**: Comprehensive user behavior tracking and analysis
-- **Error Logging**: Complete error tracking with 8 error types
-- **Performance Dashboard**: Centralized view of all metrics and analytics
-- **Testing Framework**: Complete TESTING_GUIDE.md with 50+ test cases
-- **Data Export**: JSON export capability for all metrics and feedback
-- **Integration Complete**: All services fully integrated with UI
-- **Version Update**: Updated from 0.1.3 to v0.5.2 across all files
-
-### Known Issues
-
-- **AI Model Accuracy**: May need improvement with more training data
-- **GradCAM Visualization**: Needs refinement for better explainability (marked as "Needs Improvement" in docs)
-- **Performance Optimization**: Final mobile deployment optimization pending based on real-world usage data
-
-### Recently Fixed
-
-- ✅ **Offline CAM Inference**: Fixed multiple output buffers shape mismatch error (v0.5.2)
-- ✅ **TFLite Multiple Outputs**: Corrected output buffer passing using `runForMultipleInputs()` with output map
-- ✅ **Feature Maps Extraction**: Verified correct extraction of `[1, 7, 7, 1280]` feature maps
-- ✅ **Predictions Extraction**: Verified correct extraction of `[1, 40]` predictions from 2D buffer
-
-### Technical Decisions
-
-- **State Management**: Chose Provider over Bloc for simplicity
-- **Database**: SQLite for offline-first approach
-- **UI Framework**: Material Design 3 for modern look
-- **Architecture**: MVVM pattern for maintainability
-- **Offline Processing**: Updated offline-first architecture for rural areas
-- **GradCAM Implementation**: Simplified attention-based heatmap approach for TensorFlow Lite
-
 ---
-
-## Features
-
-- 🌿 **AI-Powered Plant Recognition**: Uses MobileNet V2 + Random Forest for accurate plant identification
-- 📱 **Offline Processing**: Works without internet connection
-- 🏥 **DOH Integration**: Access to 9 clinically validated herbal medicines + 4 additional plants
-- 🔍 **Explainable AI**: GradCAM visualization shows how the AI identifies plants with interactive heatmaps
-- 🌐 **Multi-language Support**: English and Filipino language options
-- 📊 **Confidence Scoring**: Shows prediction confidence levels
-- 📚 **Comprehensive Database**: Detailed plant information including taxonomy, morphology, ecology, and medicinal uses
-- 🔎 **Browse & Search**: Advanced search, filtering, and condition-based browsing
-- 📜 **Scan History**: Complete history management with sorting and statistics
-- 📝 **User Feedback**: 5-star rating system with categories and comments
-- 📈 **Performance Monitoring**: Automatic tracking of app performance metrics
-- 📊 **Usage Analytics**: Track scans, success rates, and feature usage
-- 🐛 **Error Logging**: Comprehensive error tracking and reporting
-- 📉 **Performance Dashboard**: View all metrics in one place
-- 🧪 **Testing Framework**: Complete testing guide with 50+ test cases
-
-## Setup Instructions
-
-### Prerequisites
-
-1. **Flutter SDK**: Install Flutter 3.9.2 or later
-
-   - Download from: https://flutter.dev/docs/get-started/install
-   - Add Flutter to your PATH environment variable
-
-2. **Android Studio**: For Android development
-
-   - Download from: https://developer.android.com/studio
-   - Install Android SDK and emulator
-
-3. **VS Code** (Recommended): For Flutter development
-   - Install Flutter and Dart extensions
-
-### Installation
-
-1. **Clone the repository**:
-
-   ```bash
-   git clone <repository-url>
-   cd herbascan
-   ```
-
-2. **Install dependencies**:
-
-   ```bash
-   flutter pub get
-   ```
-
-3. **Run the app**:
-   ```bash
-   flutter run
-   ```
-
-### For Android Development
-
-1. **Enable Developer Options** on your Android device
-2. **Enable USB Debugging**
-3. **Connect your device** or start an emulator
-4. **Run the app**:
-   ```bash
-   flutter run
-   ```
 
 ## AI Model Integration
 
 ### Current Status
 
-- ✅ MobileNet V2 + Random Forest model trained
-- ✅ Model files: `.h5` and `.pkl` formats
-- ✅ Model conversion to TensorFlow Lite (complete)
-- ✅ GradCAM visualization with working overlay controls (all bugs resolved)
-- ✅ Android integration (fully functional)
-- ✅ Offline processing (complete offline AI inference)
-- ✅ Performance Metrics: Accuracy 89.23%, Precision 87.56%, Recall 88.34%, F1-Score 87.95%
-- ✅ **Backend API**: Python FastAPI server for true Grad-CAM computation (ready to deploy)
-- ✅ **Backend Documentation**: Comprehensive guides for model management, deployment, and testing
-
-### Backend API (Python FastAPI)
-
-HerbaScan includes a Python backend API for true gradient-based Grad-CAM computation:
-
-**Location**: `backend/` directory
-
-**Features**:
-- ✅ FastAPI server with 4 endpoints (/, /health, /test, /identify)
-- ✅ True Grad-CAM implementation using TensorFlow GradientTape
-- ✅ Docker configuration for Railway deployment
-- ✅ Comprehensive documentation (`backend/README.md`)
-- ✅ Postman collection for API testing
-- ✅ Model management guides
-
-**Documentation**:
-- **Backend README**: `backend/README.md` - Complete backend documentation (1,500+ lines)
-- **Quick Start**: `backend/QUICK_START.md` - Fast deployment guide
-- **Deployment Guide**: See `backend/README.md` → "🚀 Deployment to Railway"
-- **Model Management**: See `backend/README.md` → "🔄 Updating Models"
-- **Phase 2 Guide**: See `backend/README.md` → "Phase 2: Model Extraction & Conversion"
-- **Postman Testing**: See `backend/README.md` → "🧪 Testing with Postman"
-
-**Key Features**:
-- **Model Management**: Complete guide for updating models in backend and Flutter assets
-- **Phase 2 Scripts**: Detailed instructions for `extract_cam_weights.py` and `create_multi_output_tflite.py`
-- **Railway Deployment**: Step-by-step deployment guide with troubleshooting
-- **Postman Testing**: Comprehensive testing guide for VS Code and other IDEs
-
-**Quick Links**:
-- Model Updates: `backend/README.md` → "🔄 Updating Models"
-- Deployment: `backend/README.md` → "🚀 Deployment to Railway"
-- Testing: `backend/README.md` → "🧪 Testing with Postman"
-- Phase 2: `backend/README.md` → "Phase 2: Model Extraction & Conversion"
-
-### Model Conversion Steps
-
-1. **Convert H5 to TensorFlow Lite**:
-
-   ```python
-   import tensorflow as tf
-
-   # Convert MobileNet V2 model (.h5 to .tflite)
-   model_path = r"Your path file of the Model"
-
-   # Load the Keras model
-   model = tf.keras.models.load_model(model_path)
-
-   # Convert to TensorFlow Lite
-   converter = tf.lite.TFLiteConverter.from_keras_model(model)
-   converter.optimizations = [tf.lite.Optimize.DEFAULT]
-
-   # Optional: Set input/output types for better performance
-   converter.target_spec.supported_types = [tf.float16]
-
-   tflite_model = converter.convert()
-
-   # Save the converted model
-   with open("mobilenetv2_feature_extractor.tflite", "wb") as f:
-      f.write(tflite_model)
-
-   print("✅ MobileNet V2 conversion complete: mobilenetv2_feature_extractor.tflite")
-   ```
-
-2. **Convert Random Forest**:
-
-   ```python
-   # distill_rf_to_tflite.py
-   import pickle
-   import numpy as np
-   import tensorflow as tf
-   from sklearn.model_selection import train_test_split
-
-   # Paths — adjust
-   rf_path = r"Your path file of the Model"
-   features_path = r"Your path file of the Model"
-   # your features (recommended)
-   tflite_out = "random_forest_distilled.tflite"
-
-   # -------- load RF
-   with open(rf_path, "rb") as f:
-      rf = pickle.load(f)
-
-   # -------- load or synthesize features
-   try:
-      X = np.load(features_path)
-      print("Loaded features from", features_path, "shape:", X.shape)
-   except Exception as e:
-      print("Could not load features.npy — falling back to synthetic sampling. It's better to use real features.")
-      # fallback: sample from a simple normal distribution
-      # If you know ranges/means for each feature, replace this with better sampling
-      num_samples = 20000
-      feature_dim = getattr(rf, "n_features_in_", 2048)
-      X = np.random.normal(size=(num_samples, feature_dim)).astype(np.float32)
-      print("Generated synthetic features shape:", X.shape)
-
-   # -------- get RF predictions
-   # Prefer probabilities for richer supervision if RF supports it
-   if hasattr(rf, "predict_proba"):
-      y_rf = rf.predict_proba(X)  # shape (N, n_classes)
-      use_prob = True
-      n_classes = y_rf.shape[1]
-      print("RF predict_proba available — using probabilistic distillation, classes:", n_classes)
-   else:
-      y_rf = rf.predict(X)        # shape (N,)
-      use_prob = False
-      # convert to int labels
-      y_rf = np.asarray(y_rf)
-      n_classes = len(np.unique(y_rf))
-      print("RF predict_proba not available — using labels, estimated classes:", n_classes)
-
-   # -------- split
-   X_train, X_val, y_train, y_val = train_test_split(X, y_rf, test_size=0.12, random_state=42)
-
-   # -------- build a small Keras model
-   input_dim = X.shape[1]
-   if use_prob:
-      # train to match probability distribution (MSE or KL)
-      model = tf.keras.Sequential([
-         tf.keras.Input(shape=(input_dim,)),
-         tf.keras.layers.Dense(512, activation="relu"),
-         tf.keras.layers.Dropout(0.2),
-         tf.keras.layers.Dense(256, activation="relu"),
-         tf.keras.layers.Dense(n_classes, activation="softmax")
-      ])
-      loss = tf.keras.losses.KLDivergence()  # or 'mse'
-      metrics = [tf.keras.metrics.CategoricalAccuracy(name="cat_acc")]
-   else:
-      # train to match labels
-      model = tf.keras.Sequential([
-         tf.keras.Input(shape=(input_dim,)),
-         tf.keras.layers.Dense(512, activation="relu"),
-         tf.keras.layers.Dropout(0.2),
-         tf.keras.layers.Dense(256, activation="relu"),
-         tf.keras.layers.Dense(n_classes, activation="softmax")
-      ])
-      loss = tf.keras.losses.SparseCategoricalCrossentropy()
-      metrics = [tf.keras.metrics.SparseCategoricalAccuracy(name="sparse_acc")]
-
-   model.compile(optimizer=tf.keras.optimizers.Adam(1e-3), loss=loss, metrics=metrics)
-   model.summary()
-
-   # -------- Prepare targets for training
-   if use_prob:
-      y_train_target = y_train.astype(np.float32)
-      y_val_target = y_val.astype(np.float32)
-   else:
-      # ensure integer labels
-      # If rf.predict returns strings, map to integers
-      if y_train.dtype.kind in {"U", "S", "O"}:
-         # map unique labels
-         classes, inv = np.unique(y_train, return_inverse=True)
-         y_train_target = inv
-         classes_val_map = {c:i for i,c in enumerate(classes)}
-         y_val_target = np.array([classes_val_map[x] for x in y_val])
-      else:
-         y_train_target = y_train.astype(np.int32)
-         y_val_target = y_val.astype(np.int32)
-
-   # -------- train (adjust epochs/batch_size to your compute)
-   history = model.fit(
-      X_train, y_train_target,
-      validation_data=(X_val, y_val_target),
-      epochs=20,
-      batch_size=256,
-      callbacks=[tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)]
-   )
-
-   # -------- Evaluate
-   eval_res = model.evaluate(X_val, y_val_target, verbose=1)
-   print("Validation eval:", eval_res)
-
-   # -------- Convert to TFLite
-   converter = tf.lite.TFLiteConverter.from_keras_model(model)
-   converter.optimizations = [tf.lite.Optimize.DEFAULT]
-   # for quantization (optional), you'd need a representative dataset function
-   tflite_model = converter.convert()
-
-   with open(tflite_out, "wb") as f:
-      f.write(tflite_model)
-
-   print("✅ Saved TFLite to", tflite_out)
-   # Optionally save the Keras model
-   model.save("random_forest_distilled_keras.h5")
-   print("✅ Saved Keras model random_forest_distilled_keras.h5")
-   ```
-
-3. **Converting class_labels.pkl to labels.txt**:
-
-   ```python
-   import pickle
-   import json
-   from pathlib import Path
-
-   def convert_class_labels():
-      # === PATHS ===
-      pkl_path = Path(r"Your path file of the Model")
-      txt_path = Path(r"..\HerbaScan\herbascan\assets\models\labels.txt")
-      json_path = Path(r"..\HerbaScan\herbascan\assets\models\labels.json")
-
-      print("🔄 Loading class labels from pickle file...")
-
-      # === LOAD PICKLE ===
-      with open(pkl_path, 'rb') as f:
-         class_labels = pickle.load(f)
-
-      # Handle if it's a dict instead of list
-      if isinstance(class_labels, dict):
-         class_labels = list(class_labels.values())
-      elif not isinstance(class_labels, (list, tuple)):
-         raise TypeError(f"Unexpected type for labels: {type(class_labels)}")
-
-      print(f"✅ Loaded {len(class_labels)} class labels")
-      print(f"🧾 Sample labels: {class_labels[:5]}")
-
-      # === SAVE AS TXT ===
-      txt_path.parent.mkdir(parents=True, exist_ok=True)
-      with open(txt_path, 'w', encoding='utf-8') as f:
-         for label in class_labels:
-               f.write(f"{label}\n")
-
-      print(f"✅ Labels saved to TXT: {txt_path}")
-
-      # === SAVE AS JSON ===
-      labels_dict = {i: label for i, label in enumerate(class_labels)}
-
-      with open(json_path, 'w', encoding='utf-8') as f:
-         json.dump(labels_dict, f, indent=2, ensure_ascii=False)
-
-      print(f"✅ Labels saved to JSON: {json_path}")
-
-      # === SUMMARY ===
-      print("\n📋 Label Summary:")
-      for i, label in enumerate(class_labels):
-         print(f"{i:2d}: {label}")
-
-      return class_labels
-
-
-   if __name__ == "__main__":
-      try:
-         labels = convert_class_labels()
-         print("\n🎉 Conversion complete!")
-      except Exception as e:
-         print(f"❌ Error: {e}")
-   ```
-
-4. **Place model files** in `assets/models/` directory:
-   - `mobilenetv2_feature_extractor.tflite` (CNN feature extractor)
-   - `random_forest_distilled.tflite` (Random Forest classifier)
-   - `labels.json` (JSON format)
-   - `labels.txt` (Class labels - one per line)
-
-### Phase 2: Model Extraction for Offline CAM
-
-After converting your model, you need to extract CAM weights and create a multi-output TFLite model for offline CAM computation in the Flutter app.
-
-**For detailed instructions, see:**
-- **`backend/README.md`** → "Phase 2: Model Extraction & Conversion"
-- **Scripts**: `backend/extract_cam_weights.py` and `backend/create_multi_output_tflite.py`
-
-**Quick Workflow**:
-1. Extract CAM weights: `python backend/extract_cam_weights.py`
-2. Create multi-output TFLite: `python backend/create_multi_output_tflite.py`
-3. Copy to Flutter assets: `cp backend/models/cam_weights.json assets/models/`
-4. Update `pubspec.yaml` with new assets
-
-**For complete workflow, see `backend/README.md` → "Phase 2: Model Extraction & Conversion"**
-
-## Database Schema
-
-The app uses SQLite for local data storage with the following tables:
-
-- **plants**: Plant information and metadata
-- **medicinal_uses**: Medicinal applications for each plant
-- **preparation_methods**: Traditional preparation instructions
-- **scan_history**: User scan results and AI predictions
-
-## DOH-Approved Plants
-
-The app includes information about 13 DOH-approved herbal medicines:
-
-1. Lagundi (Vitex negundo) - Cough, Asthma
-2. Sambong (Blumea balsamifera) - Kidney stones
-3. Akapulko (Cassia alata) - Skin conditions
-4. Tsaang Gubat (Ehretia microphylla) - Diarrhea
-5. Ampalaya (Momordica charantia) - Diabetes
-6. Niyog-niyogan (Quisqualis indica) - Intestinal worms
-7. Ulasimang-bato (Peperomia pellucida) - Gout
-8. Bawang (Allium sativum) - Hypertension
-9. Bayabas (Psidium guajava) - Wound healing
-10. Yerba Buena (Mentha cordifolia) - Stomach ache
-11. Pansit-pansitan (Peperomia pellucida) - Gout
-12. Tawa-tawa (Euphorbia hirta) - Dengue fever
-13. Malunggay (Moringa oleifera) - Nutrition
-
-## Development Roadmap
-
-### Phase 1: Core Functionality ✅
-
-- [x] Project setup and architecture
-- [x] UI/UX design implementation
-- [x] Database schema and models
-- [x] State management setup
-- [x] Multi-language support
-- [x] Camera integration
-- [x] Image processing pipeline
-- [x] Comprehensive documentation
-
-### Phase 2: AI Integration ✅
-
-- [x] Camera integration
-- [x] Image processing pipeline
-- [x] Model conversion to TensorFlow Lite
-- [x] AI inference pipeline
-- [x] Offline processing
-- [x] GradCAM visualization
-
-### Phase 3: Advanced Features ✅
-
-- [x] Plant database population (13 plants)
-- [x] Search and filtering (multi-field search, condition-based)
-- [x] Scan history management (sort, delete, statistics)
-- [x] Error handling and help system
-- [x] Performance metrics display
-
-### Phase 4: Final Polish ✅
-
-- [x] UI/UX refinements (animations, transitions, tips)
-- [x] Camera UI enhancements (bottom sheet, tips button)
-- [x] Loading animations (shimmer effects)
-- [x] Page transition animations
-- [x] Professional polish and app-store ready UI
-
-### Phase 5: Testing & Optimization ✅
-
-- [x] User feedback system
-- [x] Performance monitoring
-- [x] Usage analytics
-- [x] Error logging
-- [x] Performance dashboard
-- [x] Testing framework and documentation
-
-### Phase 6: Backend API & Documentation ✅
-
-- [x] Python FastAPI backend for true Grad-CAM computation
-- [x] Backend documentation (`backend/README.md`)
-- [x] Model management guides
-- [x] Deployment documentation (Railway)
-- [x] Postman testing documentation
-- [x] Phase 2 model extraction guides
-- [x] **Offline CAM inference fix** - Fixed multiple output buffers shape mismatch
-- [ ] Backend deployment to Railway (pending user action)
-- [ ] Full offline CAM testing verification
-
-### Phase 7: Beta Testing & Deployment 🔄
-
-- [x] Production-ready app
-- [x] Backend API ready for deployment
-- [ ] Backend deployment to Railway
-- [ ] Beta testing with users
-- [ ] Data collection and analysis
-- [ ] Final performance optimization
-- [ ] App store preparation
-
-## 📚 Documentation
-
-### Main Documentation Files
-- **README.md** (this file) - Project overview and setup
-
-- **Setup.md** - Flutter setup instructions
-
-### Backend Documentation
-- **backend/README.md** - Complete backend documentation (1,500+ lines)
-  - Model management and updates
-  - Phase 2 model extraction
-  - Railway deployment guide
-  - Postman testing guide
-  - Troubleshooting
-- **backend/QUICK_START.md** - Quick deployment guide
-
-
-### Testing Documentation
-- **TESTING_GUIDE.md** - User testing guide (50+ test cases)
-- **backend/HerbaScan_API.postman_collection.json** - Postman collection for API testing
-
-### Key Documentation Sections
-- **Model Management**: `backend/README.md` → "🔄 Updating Models"
-- **Phase 2 Process**: `backend/README.md` → "Phase 2: Model Extraction & Conversion"
-- **Deployment**: `backend/README.md` → "🚀 Deployment to Railway"
-- **Postman Testing**: `backend/README.md` → "🧪 Testing with Postman"
-- **Troubleshooting**: `backend/README.md` → "🐛 Troubleshooting"
+- ✓ MobileNetV2 TFLite — 31 classes (29 plants + `Not_Plant`@19 + `UnknownPlant`@30)
+- ✓ Fully offline on-device inference via `assets/models/mobilenetv2_multi_output.tflite`
+- ✓ Two-stage image quality gate (brightness, blur, edge density) before inference
+- ✓ OOD confidence threshold: 0.85 (from `ood_safety_config.json`)
+- ✓ Normalization: `(pixel / 255.0) * 2.0 - 1.0` → `[-1, 1]`
+- ✓ Performance Metrics: Accuracy 89.23%, Precision 87.56%, Recall 88.34%, F1-Score 87.95%
+- ✓ Backend API — Python FastAPI on Railway for model retraining pipeline only
+- ✓ Modal T4 GPU automated training pipeline triggered from admin panel
+
+### Backend API (Python FastAPI — Model Retraining Only)
+
+Plant identification runs **fully offline on-device** via TFLite. The Railway backend is used exclusively for model retraining and model reload.
+
+**Location**: `backend/` — **URL**: `https://re-herbascan-production.up.railway.app`
+
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /health` | Server health + model load status |
+| `GET /test` | Debug / connectivity check |
+| `POST /identify` | Plant ID + server-side Grad-CAM (not called by Flutter during normal scanning) |
+| `POST /admin/trigger-training` | Validates admin secret, forwards to Modal GPU pipeline |
+| `POST /admin/reload-model` | Hot-swaps `MobileNetV2_model.keras` from Supabase storage |
+
+**Required environment variables**:
+
+| Variable | Required | Notes |
+| --- | --- | --- |
+| `ADMIN_RELOAD_SECRET` | Yes | Shared secret for admin endpoints |
+| `MODAL_TRAINING_URL` | Yes | Modal web endpoint for training trigger |
+| `SUPABASE_JWT_SECRET` | Not recommended | Leave unset — prevents 401 for anonymous users on `/identify` |
+
+### Phase 2: Multi-Output TFLite Extraction
+
+When the Keras model is retrained, regenerate Flutter offline assets:
+
+```bash
+cd backend
+
+# Option A: update scripts to reference .keras directly
+# Edit extract_cam_weights.py and create_multi_output_tflite.py:
+#   MODEL_PATH = Path("models/MobileNetV2_model.keras")
+
+# Extract weights matrix [1280, 31]
+python extract_cam_weights.py
+# → models/mobilenetv2_cam_weights.json
+
+# Create multi-output TFLite (outputs: [1,7,7,1280] features + [1,31] predictions)
+python create_multi_output_tflite.py
+# → models/mobilenetv2_multi_output.tflite
+
+# Copy to Flutter assets
+cp models/mobilenetv2_multi_output.tflite ../assets/models/
+# Update assets/models/class_indices.json if class mappings changed
+```
+
+See `backend/README.md` → "Phase 2: Model Extraction & Conversion" for full details.
+
+---
+
+## Supabase Configuration
+
+**Project**: `tsahfzmxqsgbxrrtbdnw.supabase.co`
+
+### Migrations (applied in order)
+
+| File | Purpose |
+| --- | --- |
+| `20260223000000_herbarium_schema.sql` | `profiles` + `scans` tables |
+| `20260228000000_profiles_admin_and_email.sql` | `is_active`, `email` on profiles |
+| `20260228000001_plant_metadata.sql` | `plant_metadata` table |
+| `20260301000000_fix_profiles_rls_recursion.sql` | `is_admin()` SECURITY DEFINER |
+| `20260302000000_storage_herbarium_policies.sql` | Storage RLS |
+| `20260302100000_catalog_plants_schema.sql` | Full plant catalog schema |
+| `20260302100001_storage_plant_catalog.sql` | Plant catalog storage bucket |
+| `20260302200000_catalog_plant_anatomy.sql` | `catalog_plant_anatomy` table |
+| `20260314000000_catalog_safety_strict_contraindications.sql` | `needs_strict_contraindications` column |
+| `20260316000000_user_feedback.sql` | `user_feedback` table + RLS |
+| `20260316000001_user_feedback_admin_delete.sql` | Admin delete policy on `user_feedback` |
+| `20260425000000_toxic_plant_images.sql` | Toxic plant image storage |
+| `20260502000000_admin_toxic_storage.sql` | Admin toxic image policies |
+| `20260523000000_reduce_catalog_to_31_classes.sql` | Catalog aligned to 31-class model (42 → 29 rows) |
+| `20260524000000_model_versions_rls.sql` | RLS on `model_versions` (SELECT open; CUD admins only) |
+| `20260524000001_scan_training_eligible.sql` | `training_eligible` + `training_copied_at` on `scans`; training storage policies |
+| `20260525000000_readd_yerba_buena_browse_only.sql` | Yerba Buena re-inserted across all 8 catalog tables as browse-only |
+
+### Edge Functions
+
+```bash
+npx supabase functions deploy delete-user
+npx supabase functions deploy force-verify-user
+```
+
+### Make your account admin
+
+```sql
+UPDATE public.profiles SET role = 'admin' WHERE id = 'YOUR_USER_UUID';
+```
+
+---
+
+## Database Schema (SQLite Local)
+
+| Table | Purpose |
+| --- | --- |
+| `plants` | 30 medicinal plants (29 model-aligned + Yerba Buena browse-only); optional `image_url` from Supabase |
+| `medicinal_uses` | Therapeutic applications per plant |
+| `preparation_methods` | Preparation steps, `step_details_json`, `schedule_json` |
+| `scan_history` | Local scan results with predictions, metadata |
+| `catalog_conditions` | Condition list (synced from Supabase) |
+| `catalog_condition_plants` | Condition–plant mapping |
+| `safety_profiles` | Contraindication data (synced from `catalog_safety`); includes `needs_strict_contraindications` |
+| `plant_habitats` | Coordinates, region names, climate notes |
+| `catalog_plant_anatomy` | SVG path data for 2D interactive silhouette |
+
+Seeded from `PlantDataService.getAllMedicinalPlantsData()` on first launch. All catalog tables created on every open via `CREATE TABLE IF NOT EXISTS` for fresh-install safety.
+
+---
+
+## DOH-Approved Plants (10 Official)
+
+| # | Common Name | Scientific Name | Primary Use |
+| --- | --- | --- | --- |
+| 1 | Akapulko | *Senna alata* | Fungal infections |
+| 2 | Ampalaya | *Momordica charantia* | Asthma and coughs |
+| 3 | Bawang | *Allium sativum* | Wounds and toothaches |
+| 4 | Bayabas | *Psidium guajava* | Wounds and diarrhea |
+| 5 | Lagundi | *Vitex negundo* | Cough and asthma |
+| 6 | Niyog-niyogan | *Combretum indicum* | Expelling parasitic worms |
+| 7 | Sambong | *Blumea balsamifera* | Lowering uric acid, hypertension |
+| 8 | Tsaang Gubat | *Ehretia microphylla* | Stomachaches and diarrhea |
+| 9 | Ulasimang-bato | *Peperomia pellucida* | Gout and rheumatism |
+| 10 | Yerba Buena | *Clinopodium douglasii* | Muscle/joint pain, headaches (**browse-only** — no TFLite class yet) |
+
+### Additional ML Model Classes (19)
+
+AloeVera, Banaba, Calamansi, Gumamela, Guyabano, IndianMango, Kakwate, Kamias, Kamote, KamotengKahoy, Luya, Malunggay, Mayana, Oregano, PansitPansitan (= UlasimangBato / Peperomia pellucida), Pomelo, Saluyot, SampaSampalukan, Sampalok, SilingLabuyo, TawaTawa
+
+### Toxic Plant Blacklist (app-layer; NOT model output classes)
+
+Adelfa (*Nerium oleander*), Ipil-Ipil (*Leucaena leucocephala*), Tuba-Tuba (*Jatropha curcas*)
+
+---
+
+## Setup Instructions
+
+### Prerequisites
+
+1. **Flutter SDK** 3.9.2 or later — [flutter.dev](https://flutter.dev/docs/get-started/install)
+2. **Android Studio** — Android SDK API 21+; USB debugging for physical device
+3. **VS Code** (recommended) — Flutter + Dart extensions
+
+No API key is required for XAI explanations — they come from `plant_explanations.json` and fallback only (no live LLM).
+
+### Installation
+
+```bash
+git clone <repository-url>
+cd RE-HerbaScan
+flutter pub get
+flutter run
+```
+
+### Build Commands
+
+```bash
+# Android debug
+flutter run
+
+# Windows desktop (admin portal testing — no camera/TFLite)
+flutter run -d windows
+
+# Release APK
+flutter build apk --split-per-abi
+
+# Analyze
+flutter analyze
+```
+
+### Backend Setup (Optional — for model retraining)
+
+```bash
+cd backend
+python -m venv venv
+venv\Scripts\activate           # Windows
+# source venv/bin/activate      # Mac/Linux
+
+pip install -r requirements.txt
+
+# Place MobileNetV2_model.keras in backend/models/
+python main.py
+curl http://localhost:8000/health
+```
+
+See `backend/README.md` and `backend/QUICK_START.md` for Railway deployment.
+
+---
+
+## Key Dependencies
+
+| Package | Version | Purpose |
+| --- | --- | --- |
+| `provider` | ^6.1.2 | State management |
+| `go_router` | ^14.6.2 | Declarative routing + admin guard |
+| `supabase_flutter` | — | Auth, DB, Storage, Edge Functions |
+| `sqflite` | ^2.4.0 | Local SQLite (mobile) |
+| `sqflite_common_ffi` | ^2.3.7 | Local SQLite (desktop) |
+| `tflite_flutter` | ^0.11.0 | On-device ML inference |
+| `camera` | ^0.11.2+1 | Camera capture |
+| `image_picker` | ^1.1.2 | Gallery selection |
+| `image` | ^4.5.4 | Image preprocessing |
+| `flutter_map` | ^7.0.2 | OpenStreetMap habitat visualization |
+| `path_drawing` | ^1.0.1 | SVG path parsing for 2D silhouette |
+| `connectivity_plus` | ^7.0.0 | Network status monitoring |
+| `flutter_markdown` | ^0.6.18 | XAI explanation rendering |
+| `cached_network_image` | ^3.4.1 | Supabase Storage plant images |
+| `flutter_svg` | ^2.0.10+1 | SVG splash icon |
+| `share_plus` | ^10.0.0 | Native OS share (text + file) |
+| `gal` | ^2.3.0 | Export to gallery / camera roll |
+| `add_2_calendar` | ^2.2.5 | Calendar add-event for prep schedule |
+| `flutter_local_notifications` | ^18.0.0 | Preparation timer notifications |
+| `pinput` | ^5.0.0 | 6-box OTP input |
+| `http` | ^1.2.2 | Railway API calls |
+| `path_provider` | ^2.1.5 | File paths for export |
+| `shared_preferences` | ^2.3.2 | Persistent user preferences |
+
+---
+
+## Progress Metrics
+
+| Metric | Value |
+| --- | --- |
+| **Version** | v1.0.22 |
+| **Dart source files** | 114 |
+| **Lines of code** | 12,000+ |
+| **Core features** | 60+ |
+| **Screens** | 22+ |
+| **State management providers** | 6 |
+| **Core services** | 30+ |
+| **ML model classes** | 31 (29 plants + 2 OOD) |
+| **Catalog plants** | 30 (29 model-aligned + Yerba Buena browse-only) |
+| **DOH-approved plants** | 10 |
+| **Supabase migrations** | 19 |
+| **Languages supported** | 2 (English, Filipino) |
+| **Training pipeline** | Modal T4 GPU, triggered from admin panel |
+
+---
+
+## Data Collection for Thesis Research
+
+HerbaScan collects local data for academic research analysis:
+
+- **User Feedback** — 5-star rating, 6 categories (Accuracy, Usability, Performance, Features, Bugs, General), comments, feature suggestions; stored in Supabase `user_feedback` (admin-viewable, user-insertable)
+- **Performance Monitoring** — operation timing (app start, image capture, AI inference); average / min / max / median per operation; JSON export
+- **Usage Analytics** — scan tracking (total, successful, failed, poor quality, no match), success rate, feature usage, most scanned plants, most searched conditions
+- **Error Logging** — 8 error types (camera, AI, database, network, etc.), stack traces, context data, last-24h stats; Admin System Health provides filter/expand/export UI
+- **Export** — JSON / Markdown / CSV / Plain Text from Admin System Health export sheet; clipboard copy + file download
+
+---
+
+## Offline Processing Capabilities
+
+HerbaScan is designed for rural areas with limited connectivity:
+
+- **Offline plant identification** — TFLite inference fully on-device; no backend call during scanning
+- **Offline plant data** — full SQLite database with catalog, safety, habitat, anatomy, conditions
+- **Offline XAI explanations** — `plant_explanations.json` bundled in APK; no LLM call
+- **Offline safety assessment** — `safety_profiles.json` + SQLite `safety_profiles`
+- **Automatic sync** — `CatalogSyncService` syncs Supabase → SQLite on launch when online
+- **Offline indicator** — `OfflineProvider` monitors connectivity in real time
+
+---
+
+## Development Notes
+
+### Design System
+
+- **Theme file**: `lib/core/theme/app_theme.dart`
+- **Primary**: Botanical Emerald `#16A34A` (light) / `#4ADE80` (dark)
+- **Surfaces**: Soft Sage `#F4F7F4` (light scaffold) / Forest Black `#0F1714` (dark scaffold)
+- **Cards (dark)**: Deep Slate-Green `#1C2B22`
+- **Typography**: Inter variable font
+- **Spacing**: 4 px base unit; consistent 12 / 16 / 24 px rhythm
+- **Shapes**: `BorderRadius.circular(16)` for cards, `12` for buttons and inputs
+
+### Known Constraints
+
+| Item | Status | Notes |
+| --- | --- | --- |
+| Beta testing with real users | Pending | 50+ test cases documented |
+| App Store / Google Play prep | Pending | APK builds successfully |
+| 2D silhouette SVG data | Partial | Seed templates exist; real SVG paths needed per plant |
+| Railway cold start latency | Acceptable | 10–30 s cold; 2–4 s warm |
+| Supabase email rate limit | Dev only | 2 emails/hour; use custom SMTP for production |
+| `SUPABASE_JWT_SECRET` | Resolved | Recommended unset |
+| Live LLM / Gemini API | Removed | All explanations deterministic; thesis-defensible |
+| GradCAM / CAM heatmap | Removed (v1.0.7) | Classification-only pipeline |
+
+---
+
+## Documentation
+
+| File | Purpose |
+| --- | --- |
+| `README.md` | Project overview, setup, architecture (this file) |
+| `setup.md` | Quick-start Flutter setup guide |
+| `backend/README.md` | Complete backend documentation (Railway, model management, Postman) |
+| `backend/QUICK_START.md` | 15-minute Railway deployment guide |
+| `supabase/README.md` | Supabase setup, migrations, Edge Functions |
+| `backend/HerbaScan_API.postman_collection.json` | Postman collection for backend API testing |
+
+---
 
 ## Contributing
 
@@ -1119,15 +601,12 @@ The app includes information about 13 DOH-approved herbal medicines:
 4. Push to branch: `git push origin feature/new-feature`
 5. Submit a pull request
 
+---
+
 ## License
 
 This project is part of an undergraduate thesis at Lyceum of the Philippines University-Cavite.
 
-## Contact
-
-For questions or support, please contact the development team.
-
 ---
 
-**Note**: This app is for educational and informational purposes only. Always consult healthcare professionals before using any herbal remedies.
-
+> **Note**: This app is for educational and informational purposes only. Always consult healthcare professionals before using any herbal remedies.

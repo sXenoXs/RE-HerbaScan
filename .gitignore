@@ -144,7 +144,9 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+# Python lib directories (but not Flutter lib/)
+**/venv/lib/
+**/env/lib/
 lib64/
 parts/
 sdist/
@@ -254,6 +256,15 @@ migrate_working_dir/
 .env.test
 .env.production
 
+# API Keys and Secrets
+*_api_key*.dart
+*_secrets*.dart
+*_config_local*.dart
+api_keys.txt
+secrets.txt
+*.key
+*.pem
+
 # Railway deployment
 .railway/
 
@@ -331,3 +342,11 @@ test/*_test.dart.bak
 *.class
 .history
 .svn/
+
+# Node (Supabase CLI, etc.)
+node_modules/
+
+# Excluded from repo (e.g. for RE-HerbaScan)
+CHANGELOG.md
+.cursor/
+*.hprof

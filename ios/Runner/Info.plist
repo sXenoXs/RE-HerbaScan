@@ -45,5 +45,20 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>HerbaScan saves scan images to your photo library when you tap Export to Gallery.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>herbascan</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>Auth callback</string>
+		</dict>
+	</array>
 </dict>
 </plist>

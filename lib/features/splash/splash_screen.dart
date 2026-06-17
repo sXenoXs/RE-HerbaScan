@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:herbascan/core/providers/app_provider.dart';
-import 'package:herbascan/core/providers/language_provider.dart';
-import 'package:herbascan/core/localization/app_localizations.dart';
-import 'package:herbascan/features/home/home_screen.dart';
-import 'package:herbascan/features/onboarding/onboarding_screen.dart';
+import 'package:herbascan/core/providers/auth_provider.dart';
+import 'package:herbascan/core/services/ota_app_update_service.dart';
 import 'package:herbascan/core/services/performance_monitor.dart';
+import 'package:herbascan/core/theme/app_theme.dart';
+import 'package:herbascan/features/splash/disclaimer_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -29,7 +32,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   void _initializeAnimations() {
     _animationController = AnimationController(
-      duration: const Duration(seconds: 2),
+      duration: const Duration(milliseconds: 1200),
       vsync: this,
     );
 
@@ -38,7 +41,7 @@ class _SplashScreenState extends State<SplashScreen>
       end: 1.0,
     ).animate(CurvedAnimation(
       parent: _animationController,
-      curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
+      curve: const Interval(0.0, 0.6, curve: Curves.easeOutCubic),
     ));
 
     _scaleAnimation = Tween<double>(
@@ -46,7 +49,7 @@ class _SplashScreenState extends State<SplashScreen>
       end: 1.0,
     ).animate(CurvedAnimation(
       parent: _animationController,
-      curve: const Interval(0.2, 0.8, curve: Curves.elasticOut),
+      curve: const Interval(0.0, 0.7, curve: Curves.easeOutCubic),
     ));
 
     _animationController.forward();
@@ -59,18 +62,35 @@ class _SplashScreenState extends State<SplashScreen>
     final performanceMonitor = PerformanceMonitor();
     await performanceMonitor.stopTimer(PerformanceOperation.appStart);
 
-    if (mounted) {
-      final appProvider = Provider.of<AppProvider>(context, listen: false);
+    if (!mounted) return;
 
-      if (appProvider.isFirstLaunch) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const OnboardingScreen()),
-        );
-      } else {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-        );
-      }
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+
+    final String destination;
+    if (appProvider.isFirstLaunch) {
+      destination = 'onboarding';
+    } else if (auth.isLoggedIn && auth.isAdmin) {
+      destination = 'admin';
+    } else {
+      destination = 'home';
+    }
+
+    // OTA update check — runs before routing so mandatory updates block navigation.
+    // Safe: wrapped in try/catch inside checkAndPrompt; never crashes the app.
+    if (mounted) {
+      await OtaAppUpdateService().checkAndPrompt(context);
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final acknowledged = prefs.getBool(kDisclaimerAcknowledgedKey) ?? false;
+
+    if (!mounted) return;
+
+    if (acknowledged) {
+      context.go('/$destination');
+    } else {
+      context.go('/disclaimer', extra: destination);
     }
   }
 
@@ -83,211 +103,86 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final languageProvider = Provider.of<LanguageProvider>(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final bgColor = isDark ? AppTheme.darkScaffold : AppTheme.surfaceColor;
+    final textSecondary = isDark ? Colors.white60 : AppTheme.textSecondary;
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              theme.colorScheme.primary,
-              theme.colorScheme.primaryContainer,
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Language Toggle
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _buildLanguageButton(
-                            'EN',
-                            'en',
-                            languageProvider.isEnglish,
-                            () => languageProvider
-                                .changeLanguage(const Locale('en', 'US')),
+      backgroundColor: bgColor,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            // Centered hero content
+            Center(
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: ScaleTransition(
+                  scale: _scaleAnimation,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // App icon Container
+                      SizedBox(
+                        width: 112,
+                        height: 112,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: SvgPicture.asset(
+                            'assets/icons/HerbaScan_Icon1.svg',
                           ),
-                          _buildLanguageButton(
-                            'FIL',
-                            'fil',
-                            languageProvider.isFilipino,
-                            () => languageProvider
-                                .changeLanguage(const Locale('fil', 'PH')),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Main Content
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // App Icon
-                    AnimatedBuilder(
-                      animation: _animationController,
-                      builder: (context, child) {
-                        return FadeTransition(
-                          opacity: _fadeAnimation,
-                          child: ScaleTransition(
-                            scale: _scaleAnimation,
-                            child: Container(
-                              width: 120,
-                              height: 120,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(30),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.2),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 10),
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.eco,
-                                size: 60,
-                                color: Color(0xFF22C55E),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    // App Title
-                    AnimatedBuilder(
-                      animation: _fadeAnimation,
-                      builder: (context, child) {
-                        return FadeTransition(
-                          opacity: _fadeAnimation,
-                          child: Text(
-                            'HerbaScan',
-                            style: theme.textTheme.headlineLarge?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 2,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Subtitle
-                    AnimatedBuilder(
-                      animation: _fadeAnimation,
-                      builder: (context, child) {
-                        return FadeTransition(
-                          opacity: _fadeAnimation,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 32),
-                            child: Text(
-                              AppLocalizations.of(context).welcomeMessage,
-                              textAlign: TextAlign.center,
-                              style: theme.textTheme.bodyLarge?.copyWith(
-                                color: Colors.white.withOpacity(0.9),
-                                height: 1.5,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-
-                    const SizedBox(height: 48),
-
-                    // Loading Indicator
-                    AnimatedBuilder(
-                      animation: _fadeAnimation,
-                      builder: (context, child) {
-                        return FadeTransition(
-                          opacity: _fadeAnimation,
-                          child: const SizedBox(
-                            width: 40,
-                            height: 40,
-                            child: CircularProgressIndicator(
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(Colors.white),
-                              strokeWidth: 3,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-
-              // Version Info
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: AnimatedBuilder(
-                  animation: _fadeAnimation,
-                  builder: (context, child) {
-                    return FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: Text(
-                        'Version v0.5.2',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.white.withOpacity(0.7),
                         ),
                       ),
-                    );
-                  },
+
+                      const SizedBox(height: 32),
+
+                      // App title
+                      Text(
+                        'HerbaScan',
+                        style: theme.textTheme.headlineLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      // Tagline
+                      Text(
+                        'Discover Philippine medicinal plants',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+            ),
 
-  Widget _buildLanguageButton(
-    String label,
-    String languageCode,
-    bool isSelected,
-    VoidCallback onTap,
-  ) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected
-                ? Theme.of(context).colorScheme.primary
-                : Colors.white,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            fontSize: 14,
-          ),
+            // Linear progress indicator pinned to bottom edge
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 32,
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: Center(
+                  child: SizedBox(
+                    width: 200,
+                    child: LinearProgressIndicator(
+                      backgroundColor:
+                          AppTheme.botanicalPrimary.withValues(alpha: 0.15),
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        AppTheme.botanicalPrimary,
+                      ),
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
