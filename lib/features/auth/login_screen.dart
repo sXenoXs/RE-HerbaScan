@@ -94,13 +94,14 @@ class _LoginScreenState extends State<LoginScreen> {
         if (raw.contains('invalid_credentials') ||
             raw.contains('Invalid login credentials')) {
           _errorMessage = 'Email or password does not match.';
-        } else if (raw.contains('Email not confirmed')) {
-          _errorMessage = 'Please verify your email address before signing in.';
-        } else if (raw.contains('Too many requests')) {
-          _errorMessage = 'Too many attempts. Please try again later.';
         } else {
-          // Fallback to a generic message so no syntax ever shows up
-          _errorMessage = 'Sign in failed. Please check your credentials and try again.';
+          _errorMessage = raw
+              .replaceFirst('AuthException: ', '')
+              .replaceFirst('AuthApiException(message: ', '')
+              .replaceAll(RegExp(r', statusCode: \d+, code: \w+\)'), '');
+          if (_errorMessage!.isEmpty || _errorMessage == raw) {
+            _errorMessage = 'Sign in failed. Please try again.';
+          }
         }
         _isLoading = false;
       });
