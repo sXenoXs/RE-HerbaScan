@@ -139,7 +139,7 @@ class _HelpTutorialScreenState extends State<HelpTutorialScreen> {
             .map((t) => _TipData(
                   icon: _iconFromName(t['icon'] as String?) ?? Icons.eco_rounded,
                   title: (t['title'] as String?) ?? '',
-                  subtitle: (t['subtitle'] as String?) ?? '',
+                  subtitle: (t['subtitle'] as String?) ?? (t['body'] as String?) ?? '',
                 ))
             .toList();
         if (tips.isNotEmpty) _tips = tips;
@@ -150,7 +150,7 @@ class _HelpTutorialScreenState extends State<HelpTutorialScreen> {
             .whereType<Map<String, dynamic>>()
             .map((i) => _IssueData(
                   title: (i['title'] as String?) ?? '',
-                  content: (i['content'] as String?) ?? '',
+                  content: (i['content'] as String?) ?? (i['body'] as String?) ?? '',
                 ))
             .toList();
         if (issues.isNotEmpty) _issues = issues;
@@ -162,7 +162,7 @@ class _HelpTutorialScreenState extends State<HelpTutorialScreen> {
             .map((f) => _FeatureData(
                   icon: _iconFromName(f['icon'] as String?) ?? Icons.info_outline,
                   title: (f['title'] as String?) ?? '',
-                  subtitle: (f['subtitle'] as String?) ?? '',
+                  subtitle: (f['subtitle'] as String?) ?? (f['body'] as String?) ?? '',
                 ))
             .toList();
         if (features.isNotEmpty) _features = features;

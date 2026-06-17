@@ -25,10 +25,42 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
   final _appVersionController = TextEditingController();
   final _modelVersionController = TextEditingController();
 
-  final List<Map<String, TextEditingController>> _tipsControllers = [];
-  final List<Map<String, TextEditingController>> _issuesControllers = [];
-  final List<Map<String, TextEditingController>> _featuresControllers = [];
+  final List<Map<String, dynamic>> _tipsControllers = [];
+  final List<Map<String, dynamic>> _issuesControllers = [];
+  final List<Map<String, dynamic>> _featuresControllers = [];
   final TextEditingController _oodExplanationController = TextEditingController();
+
+  static const List<String> _supportedIcons = [
+    'wb_sunny',
+    'filter_center_focus',
+    'eco',
+    'center_focus_strong',
+    'crop_free',
+    'image',
+    'search',
+    'verified',
+    'medical_services',
+    'history',
+    'info',
+  ];
+
+  IconData? _iconFromName(String? name) {
+    if (name == null || name.isEmpty) return null;
+    switch (name) {
+      case 'wb_sunny': return Icons.wb_sunny_rounded;
+      case 'filter_center_focus': return Icons.filter_center_focus_rounded;
+      case 'eco': return Icons.eco_rounded;
+      case 'center_focus_strong': return Icons.center_focus_strong_rounded;
+      case 'crop_free': return Icons.crop_free_rounded;
+      case 'image': return Icons.image_rounded;
+      case 'search': return Icons.search_rounded;
+      case 'verified': return Icons.verified_rounded;
+      case 'medical_services': return Icons.medical_services_rounded;
+      case 'history': return Icons.history_rounded;
+      case 'info': return Icons.info_outline;
+      default: return Icons.eco_rounded;
+    }
+  }
 
   bool _loading = true;
   bool _saving = false;
@@ -45,16 +77,16 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
     _appVersionController.dispose();
     _modelVersionController.dispose();
     for (final map in _tipsControllers) {
-      map['title']?.dispose();
-      map['body']?.dispose();
+      (map['title'] as TextEditingController?)?.dispose();
+      (map['subtitle'] as TextEditingController?)?.dispose();
     }
     for (final map in _issuesControllers) {
-      map['title']?.dispose();
-      map['body']?.dispose();
+      (map['title'] as TextEditingController?)?.dispose();
+      (map['content'] as TextEditingController?)?.dispose();
     }
     for (final map in _featuresControllers) {
-      map['title']?.dispose();
-      map['body']?.dispose();
+      (map['title'] as TextEditingController?)?.dispose();
+      (map['subtitle'] as TextEditingController?)?.dispose();
     }
     _oodExplanationController.dispose();
     super.dispose();
@@ -80,20 +112,30 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
         try {
           final Map<String, dynamic> parsed = jsonDecode(rawJson);
           
-          void populateList(String key, List<Map<String, TextEditingController>> controllers) {
+          void populateList(String key, List<Map<String, dynamic>> controllers, List<String> fields) {
             if (parsed[key] is List) {
               for (final item in parsed[key]) {
-                controllers.add({
-                  'title': TextEditingController(text: item['title']?.toString() ?? ''),
-                  'body': TextEditingController(text: item['body']?.toString() ?? ''),
-                });
+                final map = <String, dynamic>{};
+                for (final field in fields) {
+                  if (field == 'icon') {
+                    map['icon'] = item['icon']?.toString() ?? 'eco';
+                  } else {
+                    String text = item[field]?.toString() ?? '';
+                    // Backward compatibility: if specific field is empty, fallback to 'body'
+                    if (text.isEmpty && (field == 'subtitle' || field == 'content')) {
+                      text = item['body']?.toString() ?? '';
+                    }
+                    map[field] = TextEditingController(text: text);
+                  }
+                }
+                controllers.add(map);
               }
             }
           }
 
-          populateList('tips', _tipsControllers);
-          populateList('issues', _issuesControllers);
-          populateList('features', _featuresControllers);
+          populateList('tips', _tipsControllers, ['title', 'subtitle', 'icon']);
+          populateList('issues', _issuesControllers, ['title', 'content']);
+          populateList('features', _featuresControllers, ['title', 'subtitle', 'icon']);
           _oodExplanationController.text = parsed['ood_explanation']?.toString() ?? '';
         } catch (e) {
           // If parsing fails, ignore and start with empty lists
@@ -119,17 +161,24 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
       await _service.upsert('model_version', _modelVersionController.text.trim(),
           description: 'Current ML model version displayed in Settings → Support & About');
 
-      List<Map<String, String>> extractList(List<Map<String, TextEditingController>> controllers) {
-        return controllers.map((map) => {
-          'title': map['title']!.text.trim(),
-          'body': map['body']!.text.trim(),
+      List<Map<String, String>> extractList(List<Map<String, dynamic>> controllers, List<String> fields) {
+        return controllers.map((map) {
+          final res = <String, String>{};
+          for (final field in fields) {
+            if (field == 'icon') {
+              res['icon'] = map['icon'] as String;
+            } else {
+              res[field] = (map[field] as TextEditingController).text.trim();
+            }
+          }
+          return res;
         }).toList();
       }
 
       final helpContentMap = {
-        'tips': extractList(_tipsControllers),
-        'issues': extractList(_issuesControllers),
-        'features': extractList(_featuresControllers),
+        'tips': extractList(_tipsControllers, ['title', 'subtitle', 'icon']),
+        'issues': extractList(_issuesControllers, ['title', 'content']),
+        'features': extractList(_featuresControllers, ['title', 'subtitle', 'icon']),
         'ood_explanation': _oodExplanationController.text.trim(),
       };
       
@@ -314,11 +363,11 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
           // Help Content
           _buildFieldLabel(theme, 'Help & Tutorial Content'),
           const SizedBox(height: 16),
-          _buildDynamicSection(theme, 'Tips', _tipsControllers),
+          _buildDynamicSection(theme, 'Tips', _tipsControllers, ['title', 'subtitle', 'icon']),
           const SizedBox(height: 24),
-          _buildDynamicSection(theme, 'Issues', _issuesControllers),
+          _buildDynamicSection(theme, 'Issues', _issuesControllers, ['title', 'content']),
           const SizedBox(height: 24),
-          _buildDynamicSection(theme, 'Features', _featuresControllers),
+          _buildDynamicSection(theme, 'Features', _featuresControllers, ['title', 'subtitle', 'icon']),
           const SizedBox(height: 24),
           _buildFieldLabel(theme, 'Out-of-Distribution (OOD) Explanation'),
           const SizedBox(height: 8),
@@ -361,7 +410,7 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
 );
   }
 
-  Widget _buildDynamicSection(ThemeData theme, String title, List<Map<String, TextEditingController>> controllers) {
+  Widget _buildDynamicSection(ThemeData theme, String title, List<Map<String, dynamic>> controllers, List<String> fields) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -372,10 +421,15 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
             TextButton.icon(
               onPressed: () {
                 setState(() {
-                  controllers.add({
-                    'title': TextEditingController(),
-                    'body': TextEditingController(),
-                  });
+                  final newItem = <String, dynamic>{};
+                  for (final field in fields) {
+                    if (field == 'icon') {
+                      newItem['icon'] = 'eco';
+                    } else {
+                      newItem[field] = TextEditingController();
+                    }
+                  }
+                  controllers.add(newItem);
                 });
               },
               icon: const Icon(Icons.add, size: 16),
@@ -412,8 +466,11 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
                         icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
                         onPressed: () {
                           setState(() {
-                            controllers[i]['title']?.dispose();
-                            controllers[i]['body']?.dispose();
+                            for (final field in fields) {
+                              if (field != 'icon') {
+                                (controllers[i][field] as TextEditingController?)?.dispose();
+                              }
+                            }
                             controllers.removeAt(i);
                           });
                         },
@@ -421,13 +478,41 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  TextFormField(
-                    controller: controllers[i]['body'],
-                    minLines: 2,
-                    maxLines: null,
-                    decoration: _inputDecoration('Body text'),
-                    style: theme.textTheme.bodyMedium,
-                  ),
+                  if (fields.contains('icon')) ...[
+                    DropdownButtonFormField<String>(
+                      value: _supportedIcons.contains(controllers[i]['icon']) ? controllers[i]['icon'] : 'eco',
+                      decoration: _inputDecoration('Icon'),
+                      items: _supportedIcons.map((iconName) {
+                        return DropdownMenuItem(
+                          value: iconName,
+                          child: Row(
+                            children: [
+                              Icon(_iconFromName(iconName), size: 18),
+                              const SizedBox(width: 8),
+                              Text(iconName),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() {
+                            controllers[i]['icon'] = val;
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  if (fields.contains('subtitle') || fields.contains('content')) ...[
+                    TextFormField(
+                      controller: controllers[i]['subtitle'] ?? controllers[i]['content'],
+                      minLines: 2,
+                      maxLines: null,
+                      decoration: _inputDecoration(fields.contains('subtitle') ? 'Subtitle text' : 'Content text'),
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ],
                 ],
               ),
             ),
