@@ -147,7 +147,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     if (v == null || v.trim().isEmpty) {
                       return 'Enter your email';
                     }
-                    if (!v.contains('@')) return 'Enter a valid email';
+                    final emailRegex = RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+");
+                    if (!emailRegex.hasMatch(v)) return 'Enter a valid email';
                     return null;
                   },
                 ),
