@@ -180,6 +180,12 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Resend the 6-digit OTP signup confirmation email.
+  Future<void> resendSignupOtp(String email) async {
+    _debugAuth('resendSignupOtp: starting for $email');
+    await _auth.resendOtpSignup(email);
+  }
+
   /// Update current user's password. Requires sign-in.
   Future<void> updatePassword(String newPassword) async {
     await _auth.updatePassword(newPassword);

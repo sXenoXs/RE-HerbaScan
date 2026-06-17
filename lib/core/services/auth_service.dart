@@ -78,6 +78,14 @@ class AuthService {
     );
   }
 
+  /// Resend the 6-digit signup confirmation code.
+  Future<void> resendOtpSignup(String email) async {
+    await _client.auth.resend(
+      type: OtpType.signup,
+      email: email.trim(),
+    );
+  }
+
   /// Update current user's password. User must be signed in.
   Future<void> updatePassword(String newPassword) async {
     await _client.auth.updateUser(UserAttributes(password: newPassword));

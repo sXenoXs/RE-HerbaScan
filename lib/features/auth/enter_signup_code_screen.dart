@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pinput/pinput.dart';
@@ -5,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:herbascan/core/providers/auth_provider.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/core/widgets/botanical_auth_header.dart';
+import 'package:herbascan/features/auth/account_verified_screen.dart';
 
 /// Screen for entering the 6-digit code from the signup confirmation email.
 /// On success, confirms the account and pops with [true].
@@ -29,6 +31,26 @@ class _EnterSignupCodeScreenState extends State<EnterSignupCodeScreen> {
   bool _isResending = false;
   String? _errorMessage;
 
+  int _cooldownSeconds = 0;
+  Timer? _cooldownTimer;
+
+  bool get _isCoolingDown => _cooldownSeconds > 0;
+
+  void _startCooldown() {
+    setState(() => _cooldownSeconds = 60);
+    _cooldownTimer?.cancel();
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) { t.cancel(); return; }
+      setState(() {
+        _cooldownSeconds--;
+        if (_cooldownSeconds <= 0) {
+          _cooldownSeconds = 0;
+          t.cancel();
+        }
+      });
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -39,6 +61,7 @@ class _EnterSignupCodeScreenState extends State<EnterSignupCodeScreen> {
 
   @override
   void dispose() {
+    _cooldownTimer?.cancel();
     _pinController.dispose();
     _pinFocusNode.dispose();
     _codeNotifier.dispose();
@@ -58,7 +81,11 @@ class _EnterSignupCodeScreenState extends State<EnterSignupCodeScreen> {
             token: code,
           );
       if (!mounted) return;
-      Navigator.of(context).pop(true);
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute<void>(
+          builder: (_) => AccountVerifiedScreen(email: widget.email),
+        ),
+      );
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -81,13 +108,15 @@ class _EnterSignupCodeScreenState extends State<EnterSignupCodeScreen> {
   }
 
   Future<void> _resend() async {
+    if (_isCoolingDown) return;
     setState(() {
       _isResending = true;
       _errorMessage = null;
     });
     try {
-      await context.read<AuthProvider>().requestPasswordReset(widget.email);
+      await context.read<AuthProvider>().resendSignupOtp(widget.email);
       if (mounted) {
+        _startCooldown();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('A new code has been sent to your email.')),
         );
@@ -253,14 +282,16 @@ class _EnterSignupCodeScreenState extends State<EnterSignupCodeScreen> {
               // Resend button
               Center(
                 child: TextButton(
-                  onPressed: (_isLoading || _isResending) ? null : _resend,
+                  onPressed: (_isLoading || _isResending || _isCoolingDown) ? null : _resend,
                   child: _isResending
                       ? const SizedBox(
                           height: 16,
                           width: 16,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text("Didn't receive the email? Resend"),
+                      : _isCoolingDown
+                          ? Text("Wait ${_cooldownSeconds}s to resend")
+                          : const Text("Didn't receive the email? Resend"),
                 ),
               ),
             ],
