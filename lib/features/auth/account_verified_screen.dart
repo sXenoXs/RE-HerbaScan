@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
+import 'package:herbascan/features/auth/login_screen.dart';
 
 /// Shown after successful OTP verification during sign-up.
 /// Displays a success animation, user's email, and a 5-second countdown
@@ -32,7 +32,10 @@ class _AccountVerifiedScreenState extends State<AccountVerifiedScreen> {
         if (_countdown <= 0) {
           timer.cancel();
           // Navigate to login, clearing the navigation stack
-          context.go('/login');
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
+            (route) => false,
+          );
         }
       });
     });
@@ -133,7 +136,13 @@ class _AccountVerifiedScreenState extends State<AccountVerifiedScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton(
-                      onPressed: () => context.go('/login'),
+                      onPressed: () {
+                        _timer?.cancel();
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(builder: (_) => const LoginScreen()),
+                          (route) => false,
+                        );
+                      },
                       style: FilledButton.styleFrom(
                         backgroundColor: AppTheme.botanicalPrimary,
                         padding: const EdgeInsets.symmetric(vertical: 14),
