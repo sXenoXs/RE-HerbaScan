@@ -1,9 +1,12 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:herbascan/core/models/plant.dart';
+import 'package:herbascan/core/models/plant_anatomy_part.dart';
 import 'package:herbascan/core/models/scan_result.dart';
 import 'package:herbascan/core/services/plant_service.dart';
 import 'package:herbascan/core/services/database_service.dart';
 import 'package:herbascan/core/services/database_init_service.dart';
+import 'package:herbascan/core/services/catalog_sync_service.dart';
 
 class PlantProvider extends ChangeNotifier {
   final PlantService _plantService = PlantService();
@@ -39,6 +42,7 @@ class PlantProvider extends ChangeNotifier {
   // Initialize data
   Future<void> _initializeData() async {
     // Initialize database with plant data on first run
+    // This will also check for and add any missing plants
     try {
       await _databaseInitService.initializeDatabase();
       print('✅ Database initialized successfully');
@@ -46,9 +50,57 @@ class PlantProvider extends ChangeNotifier {
       print('❌ Error initializing database: $e');
     }
 
+    // When online, sync catalog from Supabase (admin-editable master)
+    try {
+      final connectivity = await Connectivity().checkConnectivity();
+      final online = connectivity.any((c) =>
+          c == ConnectivityResult.mobile || c == ConnectivityResult.wifi);
+      if (online) {
+        final synced = await CatalogSyncService().syncFromSupabase();
+        if (synced) print('✅ Catalog synced from Supabase');
+      }
+    } catch (e) {
+      print('ℹ️ Catalog sync skipped or failed: $e');
+    }
+
     await loadPlants();
     await loadScanHistory();
     await loadDOHApprovedPlants();
+  }
+
+  // Refresh plants and check for database updates
+  Future<void> refreshPlants() async {
+    try {
+      print('🔄 Refreshing plants...');
+      // Check for and add any missing plants
+      await _databaseInitService.updateDatabaseWithMissingPlants();
+      print('✅ Database update check completed');
+      // Reload plants from database
+      await loadPlants();
+      await loadDOHApprovedPlants();
+      print(
+          '✅ Plants reloaded: ${_plants.length} total, ${_dohApprovedPlants.length} DOH');
+    } catch (e) {
+      print('❌ Error refreshing plants: $e');
+      rethrow;
+    }
+  }
+
+  // Force reinitialize database (clears and repopulates)
+  Future<void> forceReinitializeDatabase() async {
+    try {
+      print('🔄 Force reinitializing database...');
+      await _databaseInitService.repopulateDatabase();
+      print('✅ Database reinitialized');
+      // Reload plants from database
+      await loadPlants();
+      await loadDOHApprovedPlants();
+      print(
+          '✅ Plants reloaded: ${_plants.length} total, ${_dohApprovedPlants.length} DOH');
+    } catch (e) {
+      print('❌ Error force reinitializing database: $e');
+      rethrow;
+    }
   }
 
   // Load all plants
@@ -81,8 +133,15 @@ class PlantProvider extends ChangeNotifier {
   // Load scan history
   Future<void> loadScanHistory() async {
     try {
+      print('🔄 Loading scan history from database...');
       _scanHistory = await _databaseService.getScanHistory();
+      print('✅ Scan history loaded: ${_scanHistory.length} scans');
+      if (_scanHistory.isNotEmpty) {
+        print(
+            '   First scan: ${_scanHistory.first.plant?.commonName ?? _scanHistory.first.topPrediction?.plantName ?? "Unknown"} (${_scanHistory.first.confidenceScore})');
+      }
     } catch (e) {
+      print('❌ Error loading scan history: $e');
       _scanHistory = [];
     }
     notifyListeners();
@@ -149,6 +208,23 @@ class PlantProvider extends ChangeNotifier {
     }
   }
 
+  /// Returns anatomy parts for the plant (from local DB, synced from Supabase). Ordered by z_index.
+  /// Returns empty list if the anatomy table is missing (e.g. old DB before migration) or on error.
+  Future<List<PlantAnatomyPart>> getPlantAnatomy(String plantId) async {
+    try {
+      final rows = await _databaseService.getAnatomyForPlant(plantId);
+      return rows.map((row) => PlantAnatomyPart.fromMap(row)).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// Returns true if the plant has at least one anatomy part in the DB.
+  Future<bool> hasAnatomyData(String plantId) async {
+    final list = await getPlantAnatomy(plantId);
+    return list.isNotEmpty;
+  }
+
   // Get plants by condition
   List<Plant> getPlantsByCondition(String condition) {
     return _plants.where((plant) {
@@ -172,11 +248,23 @@ class PlantProvider extends ChangeNotifier {
   // Add scan result
   Future<void> addScanResult(ScanResult result) async {
     try {
+      print('💾 Saving scan result to database...');
+      print('   ID: ${result.id}');
+      print(
+          '   Plant: ${result.plant?.commonName ?? result.topPrediction?.plantName ?? "Unknown"}');
+      print('   Confidence: ${result.confidenceScore}');
+      print('   Predictions: ${result.predictions.length}');
+      print('   Metadata: ${result.metadata}');
+
       await _databaseService.saveScanResult(result);
       _scanHistory.insert(0, result);
       notifyListeners();
+
+      print(
+          '✅ Scan result saved successfully. Total scans: ${_scanHistory.length}');
     } catch (e) {
-      // Handle error
+      print('❌ Error saving scan result: $e');
+      rethrow;
     }
   }
 

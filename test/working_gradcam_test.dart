@@ -1,4 +1,5 @@
 // test/working_gradcam_test.dart
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'dart:io';
@@ -7,7 +8,7 @@ import 'dart:math';
 void main() {
   group('Working GradCAM Tests', () {
     test('should create and save heatmap image', () async {
-      print('🧪 Testing basic heatmap creation...');
+      debugPrint('🧪 Testing basic heatmap creation...');
 
       // Create a test image
       final testImage = _createTestImage();
@@ -23,8 +24,8 @@ void main() {
       final file = File('${directory.path}/test_gradcam.png');
       await file.writeAsBytes(img.encodePng(resultImage));
 
-      print('✅ Heatmap image created: ${file.path}');
-      print('📊 File size: ${await file.length()} bytes');
+      debugPrint('✅ Heatmap image created: ${file.path}');
+      debugPrint('📊 File size: ${await file.length()} bytes');
 
       // Verify the file was created
       expect(await file.exists(), isTrue);
@@ -38,15 +39,15 @@ void main() {
       expect(bytes[2], equals(0x4E)); // N
       expect(bytes[3], equals(0x47)); // G
 
-      print('✅ Valid PNG heatmap generated');
+      debugPrint('✅ Valid PNG heatmap generated');
 
       // Clean up
       await file.delete();
-      print('🗑️ Test file cleaned up');
+      debugPrint('🗑️ Test file cleaned up');
     });
 
     test('should create realistic plant heatmap', () async {
-      print('🧪 Testing realistic plant heatmap...');
+      debugPrint('🧪 Testing realistic plant heatmap...');
 
       // Create a plant-like image
       final plantImage = _createPlantImage();
@@ -62,23 +63,23 @@ void main() {
       final file = File('${directory.path}/plant_gradcam.png');
       await file.writeAsBytes(img.encodePng(resultImage));
 
-      print('✅ Plant GradCAM created: ${file.path}');
-      print('📊 File size: ${await file.length()} bytes');
+      debugPrint('✅ Plant GradCAM created: ${file.path}');
+      debugPrint('📊 File size: ${await file.length()} bytes');
 
       // Verify the file was created
       expect(await file.exists(), isTrue);
       final fileSize = await file.length();
       expect(fileSize, greaterThan(1000));
 
-      print('✅ Plant GradCAM generated successfully');
+      debugPrint('✅ Plant GradCAM generated successfully');
 
       // Clean up
       await file.delete();
-      print('🗑️ Test file cleaned up');
+      debugPrint('🗑️ Test file cleaned up');
     });
 
     test('should handle different attention patterns', () async {
-      print('🧪 Testing different attention patterns...');
+      debugPrint('🧪 Testing different attention patterns...');
 
       final plantImage = _createPlantImage();
 
@@ -99,7 +100,7 @@ void main() {
       ];
 
       for (final pattern in patterns) {
-        print('🔄 Testing ${pattern['name']}...');
+        debugPrint('🔄 Testing ${pattern['name']}...');
 
         final resultImage = _overlayHeatmap(
             plantImage, pattern['pattern'] as List<List<double>>);
@@ -111,7 +112,7 @@ void main() {
         final file = File('${directory.path}/$fileName');
         await file.writeAsBytes(img.encodePng(resultImage));
 
-        print('✅ ${pattern['name']} GradCAM created: ${file.path}');
+        debugPrint('✅ ${pattern['name']} GradCAM created: ${file.path}');
 
         // Verify the file was created
         expect(await file.exists(), isTrue);
@@ -121,7 +122,7 @@ void main() {
         await file.delete();
       }
 
-      print('✅ All attention patterns tested successfully');
+      debugPrint('✅ All attention patterns tested successfully');
     });
   });
 }

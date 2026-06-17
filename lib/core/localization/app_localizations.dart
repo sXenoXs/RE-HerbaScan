@@ -112,6 +112,89 @@ class AppLocalizations {
       _localizedValues[locale.languageCode]!['activeCompounds']!;
   String get consultHealthcareDisclaimer =>
       _localizedValues[locale.languageCode]!['consultHealthcareDisclaimer']!;
+  String get startPreparationFocusMode =>
+      _localizedValues[locale.languageCode]!['startPreparationFocusMode']!;
+  String get addScheduleToCalendar =>
+      _localizedValues[locale.languageCode]!['addScheduleToCalendar']!;
+  String get timerFinished =>
+      _localizedValues[locale.languageCode]!['timerFinished']!;
+  String get openingCalendar =>
+      _localizedValues[locale.languageCode]!['openingCalendar']!;
+  String get preparationGuide =>
+      _localizedValues[locale.languageCode]!['preparationGuide']!;
+
+  // Contraindication Engine (Safety Informatics)
+  String get drugInteractions =>
+      _localizedValues[locale.languageCode]!['drugInteractions']!;
+  String get notSafeForPregnancy =>
+      _localizedValues[locale.languageCode]!['notSafeForPregnancy']!;
+  String get knownSideEffects =>
+      _localizedValues[locale.languageCode]!['knownSideEffects']!;
+  String get strictContraindications =>
+      _localizedValues[locale.languageCode]!['strictContraindications']!;
+  String get useWithStrictCaution =>
+      _localizedValues[locale.languageCode]!['useWithStrictCaution']!;
+  String get useWithStrictCautionBody =>
+      _localizedValues[locale.languageCode]!['useWithStrictCautionBody']!;
+  String get generallySafeForConsumption =>
+      _localizedValues[locale.languageCode]!['generallySafeForConsumption']!;
+  String get safetyDisclaimerEducational =>
+      _localizedValues[locale.languageCode]!['safetyDisclaimerEducational']!;
+  String get noStructuredSafetyData =>
+      _localizedValues[locale.languageCode]!['noStructuredSafetyData']!;
+  String get safetyInformationUnavailable =>
+      _localizedValues[locale.languageCode]!['safetyInformationUnavailable']!;
+  String get safetyInformationUnavailableBody =>
+      _localizedValues[locale.languageCode]!['safetyInformationUnavailableBody']!;
+  String get plantNotRecognized =>
+      _localizedValues[locale.languageCode]!['plantNotRecognized']!;
+  String get uncertainMatchBody =>
+      _localizedValues[locale.languageCode]!['uncertainMatchBody']!;
+  String get whyCantAppIdentify =>
+      _localizedValues[locale.languageCode]!['whyCantAppIdentify']!;
+  String get avoidUseWith =>
+      _localizedValues[locale.languageCode]!['avoidUseWith']!;
+
+  // Static Habitat Heatmap
+  String get viewHabitatMap =>
+      _localizedValues[locale.languageCode]!['viewHabitatMap']!;
+  String get noHabitatData =>
+      _localizedValues[locale.languageCode]!['noHabitatData']!;
+  String get noHabitatDataSubtitle =>
+      _localizedValues[locale.languageCode]!['noHabitatDataSubtitle']!;
+  String get knownHabitatRegions =>
+      _localizedValues[locale.languageCode]!['knownHabitatRegions']!;
+  String get climateNotes =>
+      _localizedValues[locale.languageCode]!['climateNotes']!;
+  String get whereItGrows =>
+      _localizedValues[locale.languageCode]!['whereItGrows']!;
+  String get habitatLoadError =>
+      _localizedValues[locale.languageCode]!['habitatLoadError']!;
+
+  // 2D Interactive Plant Silhouette (anatomy)
+  String get explorePlantParts =>
+      _localizedValues[locale.languageCode]!['explorePlantParts']!;
+  String get nextPart => _localizedValues[locale.languageCode]!['nextPart']!;
+  String get previousPart =>
+      _localizedValues[locale.languageCode]!['previousPart']!;
+
+  // Admin Anatomy tab
+  String get adminAnatomyEmpty =>
+      _localizedValues[locale.languageCode]!['adminAnatomyEmpty']!;
+  String get adminAnatomyAddPart =>
+      _localizedValues[locale.languageCode]!['adminAnatomyAddPart']!;
+  String get restoreToDefault =>
+      _localizedValues[locale.languageCode]!['restoreToDefault']!;
+  String get edit => _localizedValues[locale.languageCode]!['edit']!;
+  String get adminAnatomyDeleteConfirm =>
+      _localizedValues[locale.languageCode]!['adminAnatomyDeleteConfirm']!;
+  String get savedToCatalog =>
+      _localizedValues[locale.languageCode]!['savedToCatalog']!;
+  String get saveFailed =>
+      _localizedValues[locale.languageCode]!['saveFailed']!;
+  String get deleted => _localizedValues[locale.languageCode]!['deleted']!;
+  String get restoredToDefault =>
+      _localizedValues[locale.languageCode]!['restoredToDefault']!;
 
   // Settings
   String get language => _localizedValues[locale.languageCode]!['language']!;
@@ -165,6 +248,26 @@ class AppLocalizations {
       _localizedValues[locale.languageCode]!['deleteConfirmation']!;
   String get confidence =>
       _localizedValues[locale.languageCode]!['confidence']!;
+  String get saveToCloud =>
+      _localizedValues[locale.languageCode]!['saveToCloud']!;
+  String get saveToDevice =>
+      _localizedValues[locale.languageCode]!['saveToDevice']!;
+
+  // Admin User Management
+  String get makeAdmin =>
+      _localizedValues[locale.languageCode]!['makeAdmin']!;
+  String get removeAdmin =>
+      _localizedValues[locale.languageCode]!['removeAdmin']!;
+  String get userNowAdmin =>
+      _localizedValues[locale.languageCode]!['userNowAdmin']!;
+  String get adminRemoved =>
+      _localizedValues[locale.languageCode]!['adminRemoved']!;
+  String get forceVerifyEmail =>
+      _localizedValues[locale.languageCode]!['forceVerifyEmail']!;
+  String get emailVerified =>
+      _localizedValues[locale.languageCode]!['emailVerified']!;
+  String get forceVerifyNotAvailable =>
+      _localizedValues[locale.languageCode]!['forceVerifyNotAvailable']!;
 
   // Condition Search
   String get browseByCondition =>
@@ -205,6 +308,12 @@ class AppLocalizations {
   String get retake => _localizedValues[locale.languageCode]!['retake']!;
   String get browseManually =>
       _localizedValues[locale.languageCode]!['browseManually']!;
+  String get browseCatalog =>
+      _localizedValues[locale.languageCode]!['browseCatalog']!;
+  String get toxicPlantDetected =>
+      _localizedValues[locale.languageCode]!['toxicPlantDetected']!;
+  String get toxicPlantBody =>
+      _localizedValues[locale.languageCode]!['toxicPlantBody']!;
   String get scanningTipsTitle =>
       _localizedValues[locale.languageCode]!['scanningTipsTitle']!;
 
@@ -252,6 +361,16 @@ class AppLocalizations {
   String get feedbackSubmitted =>
       _localizedValues[locale.languageCode]!['feedbackSubmitted']!;
   String get done => _localizedValues[locale.languageCode]!['done']!;
+  String get didWeGetThisRight =>
+      _localizedValues[locale.languageCode]!['didWeGetThisRight']!;
+  String get milestoneFeedbackTitle =>
+      _localizedValues[locale.languageCode]!['milestoneFeedbackTitle']!;
+  String get milestoneFeedbackBody =>
+      _localizedValues[locale.languageCode]!['milestoneFeedbackBody']!;
+  String get rateExperience =>
+      _localizedValues[locale.languageCode]!['rateExperience']!;
+  String get maybeLater =>
+      _localizedValues[locale.languageCode]!['maybeLater']!;
   String get appPerformance =>
       _localizedValues[locale.languageCode]!['appPerformance']!;
   String get viewPerformanceData =>
@@ -307,10 +426,54 @@ class AppLocalizations {
       'activeCompounds': 'Active Compounds',
       'consultHealthcareDisclaimer':
           'Always consult healthcare professionals before using any herbal remedies',
+      'startPreparationFocusMode': 'Start Preparation (Focus Mode)',
+      'addScheduleToCalendar': 'Add Schedule to Device Calendar',
+      'timerFinished': 'Timer finished',
+      'openingCalendar': 'Opening calendar to add event',
+      'preparationGuide': 'Preparation Guide',
+      'drugInteractions': 'Drug interactions',
+      'notSafeForPregnancy': 'Not safe for pregnancy',
+      'knownSideEffects': 'Known side effects',
+      'strictContraindications': 'Strict contraindications',
+      'useWithStrictCaution': 'Use with strict caution',
+      'useWithStrictCautionBody': 'Preparation and dosage must be followed. Do not use without professional guidance.',
+      'generallySafeForConsumption': 'Generally safe for normal consumption.',
+      'safetyDisclaimerEducational':
+          'This app is for educational purposes only. It is not a replacement for professional medical advice. Always consult a healthcare professional before using herbal remedies, especially if you are pregnant, nursing, taking medications, or have existing medical conditions.',
+      'noStructuredSafetyData': 'No structured safety data for this plant.',
+      'safetyInformationUnavailable': 'Safety Information Unavailable',
+      'safetyInformationUnavailableBody':
+          'Identification confidence is too low. Do not use this result for health decisions.',
+      'plantNotRecognized': 'Plant Not Recognized',
+      'uncertainMatchBody':
+          'For your safety, do not consume or use this plant based on this result.',
+      'whyCantAppIdentify': "Why can't the app identify this?",
+      'avoidUseWith': 'Avoid use with',
+      'viewHabitatMap': 'Habitat Map',
+      'noHabitatData': 'No habitat data',
+      'noHabitatDataSubtitle':
+          'Known habitat regions for this plant are not yet in the database. Data is from curated sources (e.g. DOST-PCHRD, DA).',
+      'knownHabitatRegions': 'Known habitat regions',
+      'climateNotes': 'Climate & habitat notes',
+      'whereItGrows': 'Where it grows',
+      'habitatLoadError': 'Failed to load habitat data.',
+      'explorePlantParts': 'Explore plant parts',
+      'nextPart': 'Next part',
+      'previousPart': 'Previous part',
+      'adminAnatomyEmpty':
+          'No plant parts yet. Add parts to show the interactive silhouette on the Plant Detail screen.',
+      'adminAnatomyAddPart': 'Add plant part',
+      'restoreToDefault': 'Restore to default',
+      'edit': 'Edit',
+      'adminAnatomyDeleteConfirm': 'Delete this plant part',
+      'savedToCatalog': 'Saved to catalog',
+      'saveFailed': 'Save failed',
+      'deleted': 'Deleted',
+      'restoredToDefault': 'Restored to default',
       'language': 'Language / Wika',
       'offlineMode': 'Offline Mode',
       'showConfidenceScores': 'Show Confidence Scores',
-      'showGradCAM': 'GradCAM Visualization',
+      'showGradCAM': 'Show AI Reasoning Heatmap',
       'showTop3Results': 'Top-3 Results',
       'loading': 'Loading...',
       'error': 'Error',
@@ -337,6 +500,16 @@ class AppLocalizations {
       'confirmDelete': 'Confirm Delete',
       'deleteConfirmation': 'Are you sure you want to delete this scan?',
       'confidence': 'Confidence',
+      'saveToCloud': 'Save to Cloud',
+      'saveToDevice': 'Save to Device',
+      'makeAdmin': 'Make admin',
+      'removeAdmin': 'Remove admin',
+      'userNowAdmin': 'User is now an administrator.',
+      'adminRemoved': 'Admin role removed.',
+      'forceVerifyEmail': 'Force activate email',
+      'emailVerified': 'Email verified. User can sign in without OTP.',
+      'forceVerifyNotAvailable':
+          'Force verify is not available. Deploy the force-verify-user Edge Function.',
       'browseByCondition': 'Browse by Condition',
       'selectCondition': 'Select a medical condition',
       'commonConditions': 'Common Conditions',
@@ -358,6 +531,10 @@ class AppLocalizations {
       'tryAgain': 'Try Again',
       'retake': 'Retake Photo',
       'browseManually': 'Browse Manually',
+      'browseCatalog': 'Browse Catalog',
+      'toxicPlantDetected': 'Toxic plant detected',
+      'toxicPlantBody':
+          'This plant may be %s. Do not use for food or medicine. If ingested or exposed, seek medical attention.',
       'scanningTipsTitle': 'Scanning Tips',
       'helpAndTutorial': 'Help & Tutorial',
       'bestPractices': 'Best Practices for Scanning',
@@ -383,6 +560,13 @@ class AppLocalizations {
       'feedbackSubmitted':
           'Your feedback has been submitted successfully. Thank you for helping us improve HerbaScan!',
       'done': 'Done',
+      'didWeGetThisRight':
+          'Did we get this right? Help our research.',
+      'milestoneFeedbackTitle': 'You\'ve been exploring HerbaScan!',
+      'milestoneFeedbackBody':
+          'Would you mind taking 30 seconds to rate your experience for our thesis research?',
+      'rateExperience': 'Rate experience',
+      'maybeLater': 'Maybe later',
       'appPerformance': 'App Performance',
       'viewPerformanceData': 'View performance data and statistics',
     },
@@ -435,10 +619,54 @@ class AppLocalizations {
       'activeCompounds': 'Mga Aktibong Sangkap',
       'consultHealthcareDisclaimer':
           'Laging kumonsulta sa mga propesyonal sa kalusugan bago gumamit ng anumang halamang gamot',
+      'startPreparationFocusMode': 'Simulan ang Paghahanda (Focus Mode)',
+      'addScheduleToCalendar': 'Idagdag ang Iskedyul sa Kalendaryo ng Device',
+      'timerFinished': 'Tapos na ang timer',
+      'openingCalendar': 'Binubuksan ang kalendaryo para magdagdag ng event',
+      'preparationGuide': 'Gabay sa Paghahanda',
+      'drugInteractions': 'Pakikipag-ugnayan sa gamot',
+      'notSafeForPregnancy': 'Hindi ligtas para sa pagbubuntis',
+      'knownSideEffects': 'Kilalang side effects',
+      'strictContraindications': 'Strikto na mga kontraindikasyon',
+      'useWithStrictCaution': 'Gamitin nang may mahigpit na pag-iingat',
+      'useWithStrictCautionBody': 'Dapat sundin ang paraan ng paghahanda at dosis. Huwag gamitin nang walang gabay ng propesyonal.',
+      'generallySafeForConsumption': 'Sa pangkalahatan ay ligtas para sa normal na pagkonsumo.',
+      'safetyDisclaimerEducational':
+          'Ang app na ito ay para lamang sa edukasyonal na layunin. Hindi ito kapalit ng propesyonal na payo medikal. Laging kumonsulta sa propesyonal sa kalusugan bago gumamit ng halamang gamot, lalo na kung ikaw ay buntis, nagpapasuso, umiinom ng gamot, o may umiiral na kondisyong medikal.',
+      'noStructuredSafetyData': 'Walang istrukturang data ng kaligtasan para sa halamang ito.',
+      'safetyInformationUnavailable': 'Hindi Available ang Impormasyon sa Kaligtasan',
+      'safetyInformationUnavailableBody':
+          'Masyadong mababa ang kumpiyansa ng pagkakakilala. Huwag gamitin ang resultang ito para sa mga desisyon sa kalusugan.',
+      'plantNotRecognized': 'Hindi Makilala ang Halaman',
+      'uncertainMatchBody':
+          'Para sa iyong kaligtasan, huwag gamitin o kainin ang halamang ito batay sa resultang ito.',
+      'whyCantAppIdentify': 'Bakit hindi makilala ng app ang halamang ito?',
+      'avoidUseWith': 'Iwasan ang paggamit kasama ng',
+      'viewHabitatMap': 'Mapa ng Tirahan',
+      'noHabitatData': 'Walang data ng tirahan',
+      'noHabitatDataSubtitle':
+          'Ang mga kilalang rehiyong tirahan ng halamang ito ay wala pa sa database. Ang data ay mula sa mga curated na pinagmulan (hal. DOST-PCHRD, DA).',
+      'knownHabitatRegions': 'Kilalang rehiyong tirahan',
+      'climateNotes': 'Mga tala sa klima at tirahan',
+      'whereItGrows': 'Saan ito tumutubo',
+      'habitatLoadError': 'Hindi ma-load ang data ng tirahan.',
+      'explorePlantParts': 'Tuklasin ang mga bahagi ng halaman',
+      'nextPart': 'Susunod na bahagi',
+      'previousPart': 'Nakaraang bahagi',
+      'adminAnatomyEmpty':
+          'Walang bahagi ng halaman. Magdagdag ng bahagi para ipakita ang interactive silhouette sa Plant Detail.',
+      'adminAnatomyAddPart': 'Magdagdag ng bahagi ng halaman',
+      'restoreToDefault': 'Ibalik sa default',
+      'edit': 'I-edit',
+      'adminAnatomyDeleteConfirm': 'Tanggalin ang bahaging ito ng halaman',
+      'savedToCatalog': 'Nai-save sa catalog',
+      'saveFailed': 'Hindi nai-save',
+      'deleted': 'Natanggal',
+      'restoredToDefault': 'Naibalik sa default',
       'language': 'Wika / Language',
       'offlineMode': 'Offline Mode',
       'showConfidenceScores': 'Ipakita ang Confidence Scores',
-      'showGradCAM': 'GradCAM Visualization',
+      'showGradCAM': 'Show AI Reasoning Heatmap',
       'showTop3Results': 'Top-3 na Resulta',
       'loading': 'Naglo-load...',
       'error': 'May Mali',
@@ -466,6 +694,16 @@ class AppLocalizations {
       'deleteConfirmation':
           'Sigurado ka bang gusto mong tanggalin ang scan na ito?',
       'confidence': 'Confidence',
+      'saveToCloud': 'I-save sa Cloud',
+      'saveToDevice': 'I-save sa Device',
+      'makeAdmin': 'Gawing admin',
+      'removeAdmin': 'Alisin ang admin',
+      'userNowAdmin': 'Ang user ay administrator na.',
+      'adminRemoved': 'Naalis na ang admin role.',
+      'forceVerifyEmail': 'Pilitin i-activate ang email',
+      'emailVerified': 'Na-verify na ang email. Maaari nang mag-sign in ang user nang walang OTP.',
+      'forceVerifyNotAvailable':
+          'Hindi available ang force verify. I-deploy ang force-verify-user Edge Function.',
       'browseByCondition': 'Tingnan Ayon sa Kondisyon',
       'selectCondition': 'Pumili ng kondisyong medikal',
       'commonConditions': 'Mga Karaniwang Kondisyon',
@@ -487,6 +725,10 @@ class AppLocalizations {
       'tryAgain': 'Subukan Muli',
       'retake': 'Kumuha Muli ng Larawan',
       'browseManually': 'Mag-browse Nang Manu-mano',
+      'browseCatalog': 'Mag-browse ng Katalogo',
+      'toxicPlantDetected': 'Nadetect ang lason na halaman',
+      'toxicPlantBody':
+          'Ang halamang ito ay maaaring %s. Huwag gamitin para sa pagkain o gamot. Kung nalunok o na-expose, humingi ng medikal na atensyon.',
       'scanningTipsTitle': 'Mga Tip sa Pag-scan',
       'helpAndTutorial': 'Tulong at Tutorial',
       'bestPractices': 'Pinakamahusay na Gawain sa Pag-scan',
@@ -512,6 +754,13 @@ class AppLocalizations {
       'feedbackSubmitted':
           'Ang iyong feedback ay matagumpay na naisumite. Salamat sa pagtulong sa amin na mapabuti ang HerbaScan!',
       'done': 'Tapos na',
+      'didWeGetThisRight':
+          'Tama ba ang resulta? Tulungan ang aming pananaliksik.',
+      'milestoneFeedbackTitle': 'Nag-explore ka na ng HerbaScan!',
+      'milestoneFeedbackBody':
+          'Pwede mo bang gugulin ng 30 segundo para i-rate ang iyong karanasan para sa aming pananaliksik?',
+      'rateExperience': 'I-rate ang karanasan',
+      'maybeLater': 'Mamaya na',
       'appPerformance': 'Pagganap ng App',
       'viewPerformanceData': 'Tingnan ang data at istatistika ng pagganap',
     },
