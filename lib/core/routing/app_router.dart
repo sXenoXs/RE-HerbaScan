@@ -87,6 +87,10 @@ GoRouter createAppRouter(GlobalKey<NavigatorState> navigatorKey) {
         builder: (_, __) => const SettingsScreen(),
       ),
       GoRoute(
+        path: '/callback',
+        builder: (_, state) => AuthCallbackScreen(uri: state.uri),
+      ),
+      GoRoute(
         path: '/auth/callback',
         builder: (_, state) => AuthCallbackScreen(uri: state.uri),
       ),
