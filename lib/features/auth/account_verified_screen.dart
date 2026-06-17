@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
-import 'package:herbascan/features/auth/login_screen.dart';
+import 'package:go_router/go_router.dart';
 
 /// Shown after successful OTP verification during sign-up.
 /// Displays a success animation, user's email, and a 5-second countdown
@@ -31,11 +31,8 @@ class _AccountVerifiedScreenState extends State<AccountVerifiedScreen> {
         _countdown--;
         if (_countdown <= 0) {
           timer.cancel();
-          // Navigate to login, clearing the navigation stack
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const LoginScreen()),
-            (route) => false,
-          );
+          // Navigate to dashboard
+          context.go('/home');
         }
       });
     });
@@ -99,7 +96,7 @@ class _AccountVerifiedScreenState extends State<AccountVerifiedScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'You can now sign in to access your Personal Herbarium.',
+                    'You are now signed in. Welcome to your Personal Herbarium.',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface.withOpacity(0.5),
                     ),
@@ -109,7 +106,7 @@ class _AccountVerifiedScreenState extends State<AccountVerifiedScreen> {
 
                   // Countdown indicator
                   Text(
-                    'Redirecting to login in $_countdown...',
+                    'Redirecting to dashboard in $_countdown...',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface.withOpacity(0.45),
                     ),
@@ -138,10 +135,7 @@ class _AccountVerifiedScreenState extends State<AccountVerifiedScreen> {
                     child: FilledButton(
                       onPressed: () {
                         _timer?.cancel();
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(builder: (_) => const LoginScreen()),
-                          (route) => false,
-                        );
+                        context.go('/home');
                       },
                       style: FilledButton.styleFrom(
                         backgroundColor: AppTheme.botanicalPrimary,
@@ -151,7 +145,7 @@ class _AccountVerifiedScreenState extends State<AccountVerifiedScreen> {
                         ),
                       ),
                       child: const Text(
-                        'Sign In Now',
+                        'Go to Dashboard',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
