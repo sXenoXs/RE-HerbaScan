@@ -98,6 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ? null
               : FloatingActionButton(
                   onPressed: _openScan,
+                  heroTag: null,
                   backgroundColor: AppTheme.botanicalPrimary,
                   foregroundColor: Colors.white,
                   elevation: 4,
@@ -161,6 +162,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.only(bottom: 16.0, top: 8.0),
                   child: FloatingActionButton(
                     onPressed: _openScan,
+                    heroTag: null,
                     backgroundColor: AppTheme.botanicalPrimary,
                     foregroundColor: Colors.white,
                     elevation: 4,

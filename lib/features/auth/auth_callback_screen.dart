@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthCallbackScreen extends StatelessWidget {
   const AuthCallbackScreen({super.key, required this.uri});
@@ -52,7 +53,14 @@ class AuthCallbackScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 32),
                 FilledButton(
-                  onPressed: () => context.go('/home'),
+                  onPressed: () async {
+                    try {
+                      await Supabase.instance.client.auth.refreshSession();
+                    } catch (_) {}
+                    if (context.mounted) {
+                      context.go('/home');
+                    }
+                  },
                   child: const Text('Go to Dashboard'),
                 ),
               ],

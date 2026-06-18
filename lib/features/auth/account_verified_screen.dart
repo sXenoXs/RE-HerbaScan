@@ -31,7 +31,8 @@ class _AccountVerifiedScreenState extends State<AccountVerifiedScreen> {
         _countdown--;
         if (_countdown <= 0) {
           timer.cancel();
-          // Navigate to Settings tab
+          // Pop native stack then navigate to Settings tab
+          Navigator.of(context).popUntil((route) => route.isFirst);
           context.go('/home?tab=3');
         }
       });
@@ -135,6 +136,7 @@ class _AccountVerifiedScreenState extends State<AccountVerifiedScreen> {
                     child: FilledButton(
                       onPressed: () {
                         _timer?.cancel();
+                        Navigator.of(context).popUntil((route) => route.isFirst);
                         context.go('/home?tab=3');
                       },
                       style: FilledButton.styleFrom(

@@ -235,7 +235,7 @@ class _AdminUserManagementScreenState
               child: const Text('Cancel'),
             ),
             FilledButton(
-              onPressed: confirmController.text.trim().toUpperCase() == 'DELETE'
+              onPressed: confirmController.text.trim() == 'DELETE'
                   ? () => Navigator.pop(ctx, true)
                   : null,
               style: FilledButton.styleFrom(backgroundColor: errorColor),
