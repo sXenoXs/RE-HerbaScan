@@ -64,7 +64,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   Future<void> _updateStatus(CloudScan scan, String status) async {
-    final ok = await HerbariumService().updateScanStatus(scan.id, status);
+    final ok = await HerbariumService().updateScanStatus(scan.id, status, plantSlug: scan.plantId);
     if (ok && mounted) _load();
   }
 

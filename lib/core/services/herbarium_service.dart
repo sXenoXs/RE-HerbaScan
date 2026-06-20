@@ -169,10 +169,20 @@ class HerbariumService {
   }
 
   /// Admin: update scan status (pending | approved | rejected).
-  Future<bool> updateScanStatus(String scanId, String status) async {
+  Future<bool> updateScanStatus(String scanId, String status, {String? plantSlug}) async {
     if (!isAvailable) return false;
     try {
-      await _client.from('scans').update({'status': status}).eq('id', scanId);
+      final updates = <String, dynamic>{'status': status};
+      if (status == 'rejected' || status == 'pending') {
+        updates['training_eligible'] = false;
+        updates['training_copied_at'] = null;
+        if (plantSlug != null) {
+          try {
+             await _client.storage.from('training-datasets').remove(['$plantSlug/approved_$scanId.jpg']);
+          } catch (_) {}
+        }
+      }
+      await _client.from('scans').update(updates).eq('id', scanId);
       return true;
     } catch (_) {
       return false;
@@ -208,14 +218,21 @@ class HerbariumService {
     try {
       final res = await _client
           .from('scans')
-          .select('user_id')
+          .select('user_id, image_url')
           .eq('id', scanId)
           .single();
       final userId = res['user_id'] as String?;
+      final imageUrl = res['image_url'] as String?;
+
       if (userId == null) return false;
 
+      String storagePath = '$userId/$scanId.jpg';
+      if (imageUrl != null && imageUrl.contains('/$_bucket/')) {
+        storagePath = imageUrl.split('/$_bucket/').last;
+      }
+
       final bytes =
-          await _client.storage.from(_bucket).download('$userId/$scanId.jpg');
+          await _client.storage.from(_bucket).download(storagePath);
 
       const trainingBucket = 'training-datasets';
       await _client.storage.from(trainingBucket).uploadBinary(
@@ -247,12 +264,12 @@ class HerbariumService {
       final res = await _client
           .from('scans')
           .select()
-          .eq('plant_id', plantSlug)
-          .eq('training_eligible', true)
+          .ilike('plant_id', plantSlug)
           .order('scan_date', ascending: false);
-      return (res as List)
+      final list = (res as List)
           .map((e) => CloudScan.fromJson(e as Map<String, dynamic>))
           .toList();
+      return list.where((s) => s.trainingEligible && s.status == 'approved').toList();
     } catch (e) {
       if (kDebugMode) {
         debugPrint('[HerbariumService] getTrainingEligibleScans: $e');

@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:herbascan/core/models/cloud_scan.dart';
 import 'package:herbascan/core/models/plant.dart';
 import 'package:herbascan/core/models/plant_metadata_override.dart';
 import 'package:herbascan/core/services/catalog_plant_admin_service.dart';
@@ -689,7 +690,7 @@ class _TrainingImagesSheetState extends State<_TrainingImagesSheet> {
   int _uploadedCount = 0;
   bool _done = false;
   int _existingCount = 0;
-  int _approvedScanCount = 0;
+  List<CloudScan> _approvedScans = [];
   bool _includeApprovedScans = true;
   List<String> _uploadErrors = [];
 
@@ -697,7 +698,7 @@ class _TrainingImagesSheetState extends State<_TrainingImagesSheet> {
   void initState() {
     super.initState();
     _fetchExistingCount();
-    _fetchApprovedScanCount();
+    _fetchApprovedScans();
   }
 
   Future<void> _fetchExistingCount() async {
@@ -706,10 +707,45 @@ class _TrainingImagesSheetState extends State<_TrainingImagesSheet> {
     if (mounted) setState(() => _existingCount = count);
   }
 
-  Future<void> _fetchApprovedScanCount() async {
+  Future<void> _fetchApprovedScans() async {
     final scans =
         await HerbariumService().getTrainingEligibleScans(widget.plantSlug);
-    if (mounted) setState(() => _approvedScanCount = scans.length);
+    if (mounted) setState(() => _approvedScans = scans);
+  }
+
+  void _showApprovedScansPreview() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Approved Scans Preview'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: GridView.builder(
+            shrinkWrap: true,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+            ),
+            itemCount: _approvedScans.length,
+            itemBuilder: (context, i) {
+              final url = _approvedScans[i].imageUrl;
+              if (url == null) return const Icon(Icons.image_not_supported);
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(url, fit: BoxFit.cover),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _pick() async {
@@ -869,13 +905,25 @@ class _TrainingImagesSheetState extends State<_TrainingImagesSheet> {
                           borderRadius: BorderRadius.circular(100),
                         ),
                         child: Text(
-                          '$_approvedScanCount approved scan image${_approvedScanCount == 1 ? '' : 's'} available',
+                          '${_approvedScans.length} approved scan image${_approvedScans.length == 1 ? '' : 's'} available',
                           style: const TextStyle(
                               fontSize: 10,
                               color: AppTheme.botanicalPrimary,
                               fontWeight: FontWeight.w600),
                         ),
                       ),
+                      if (_approvedScans.isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        TextButton(
+                          onPressed: _showApprovedScansPreview,
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: const Text('Preview', style: TextStyle(fontSize: 12)),
+                        ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -915,18 +963,51 @@ class _TrainingImagesSheetState extends State<_TrainingImagesSheet> {
             const SizedBox(height: 16),
 
             // Pick button
-            OutlinedButton.icon(
-              onPressed: _uploading ? null : _pick,
-              icon: const Icon(Icons.photo_library_rounded),
-              label: Text(_selected.isEmpty
-                  ? 'Select Images'
-                  : 'Change Selection (${_selected.length} selected)'),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 48),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+            if (_selected.isEmpty)
+              OutlinedButton.icon(
+                onPressed: _uploading ? null : _pick,
+                icon: const Icon(Icons.photo_library_rounded),
+                label: const Text('Select Images'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 48),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+              )
+            else
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _uploading ? null : _pick,
+                      icon: const Icon(Icons.photo_library_rounded),
+                      label: Text('Change Selection (${_selected.length})'),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, 48),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  OutlinedButton.icon(
+                    onPressed: _uploading
+                        ? null
+                        : () => setState(() {
+                              _selected.clear();
+                              _done = false;
+                            }),
+                    icon: const Icon(Icons.clear_all_rounded, color: Colors.red),
+                    label: const Text('Clear', style: TextStyle(color: Colors.red)),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 48),
+                      side: const BorderSide(color: Colors.red),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ],
               ),
-            ),
 
             // Preview grid
             if (_selected.isNotEmpty) ...[
@@ -941,14 +1022,37 @@ class _TrainingImagesSheetState extends State<_TrainingImagesSheet> {
                     future: _selected[i].readAsBytes(),
                     builder: (_, snap) {
                       if (snap.hasData) {
-                        return ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.memory(
-                            snap.data!,
-                            width: 80,
-                            height: 80,
-                            fit: BoxFit.cover,
-                          ),
+                        return Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.memory(
+                                snap.data!,
+                                width: 80,
+                                height: 80,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            Positioned(
+                              top: -4,
+                              right: -4,
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() => _selected.removeAt(i));
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.close,
+                                      size: 16, color: Colors.white),
+                                ),
+                              ),
+                            ),
+                          ],
                         );
                       }
                       return Container(
