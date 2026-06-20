@@ -257,6 +257,41 @@ class HerbariumService {
     }
   }
 
+  /// Admin: returns all approved scans for a given plant slug, regardless of training eligibility.
+  Future<List<CloudScan>> getApprovedScans(String plantSlug) async {
+    if (!isAvailable) return [];
+    try {
+      final res = await _client
+          .from('scans')
+          .select()
+          .ilike('plant_id', plantSlug)
+          .eq('status', 'approved')
+          .order('scan_date', ascending: false);
+      return (res as List)
+          .map((e) => CloudScan.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      if (kDebugMode) debugPrint('[HerbariumService] getApprovedScans: $e');
+      return [];
+    }
+  }
+
+  /// Admin: removes a scan from training datasets and sets training_eligible = false.
+  Future<bool> unapproveForTraining(String scanId, String plantSlug) async {
+    if (!isAvailable) return false;
+    try {
+      await _client.storage.from('training-datasets').remove(['$plantSlug/approved_$scanId.jpg']);
+      await _client.from('scans').update({
+        'training_eligible': false,
+        'training_copied_at': null,
+      }).eq('id', scanId);
+      return true;
+    } catch (e) {
+      if (kDebugMode) debugPrint('[HerbariumService] unapproveForTraining: $e');
+      return false;
+    }
+  }
+
   /// Admin: returns training-eligible scans for a given plant slug.
   Future<List<CloudScan>> getTrainingEligibleScans(String plantSlug) async {
     if (!isAvailable) return [];

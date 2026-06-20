@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:herbascan/core/services/catalog_plant_admin_service.dart';
 import 'package:herbascan/core/services/herbarium_service.dart';
 import 'package:herbascan/core/services/training_dataset_service.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/features/admin/admin_new_plant_wizard.dart';
 import 'package:herbascan/features/admin/admin_inference_test_screen.dart';
+import 'package:herbascan/features/admin/widgets/select_plant_sheet.dart';
+import 'package:herbascan/features/admin/widgets/training_images_sheet.dart';
+import 'package:herbascan/features/admin/widgets/trigger_training_widget.dart';
 
 /// Admin Dashboard Overview — landing screen of the admin portal.
 ///
@@ -139,6 +143,101 @@ class _AdminOverviewScreenState extends State<AdminOverviewScreen> {
     );
   }
 
+  void _openUploadImages() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SelectPlantSheet(
+        title: 'Upload Training Images',
+        filter: (plant, cloudEntry) => true,
+        onPlantSelected: (plant, cloudEntry) {
+          final slug = cloudEntry?.plantSlug ?? plant.id;
+          showModalBottomSheet<void>(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            builder: (_) => TrainingImagesSheet(
+              plantName: plant.commonName,
+              plantSlug: slug,
+              onUploaded: (count) {
+                CatalogPlantAdminService().updateTrainingImageCount(plant.id, count);
+                _loadMetrics();
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _openTriggerTraining() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SelectPlantSheet(
+        title: 'Select Plant to Train',
+        filter: (plant, cloudEntry) => (cloudEntry?.trainingImageCount ?? 0) > 0,
+        onPlantSelected: (plant, cloudEntry) {
+          final slug = cloudEntry?.plantSlug ?? plant.id;
+          showModalBottomSheet<void>(
+            context: context,
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            builder: (_) => Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TriggerTrainingWidget(
+                    plantSlug: slug,
+                    newClassName: plant.scientificName,
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _openPublishPlant() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SelectPlantSheet(
+        title: 'Select Draft to Publish',
+        filter: (plant, cloudEntry) => cloudEntry?.status == 'draft',
+        onPlantSelected: (plant, cloudEntry) async {
+          final ok = await CatalogPlantAdminService().updatePlantStatus(plant.id, 'active');
+          if (ok && mounted) {
+            _loadMetrics();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('"${plant.commonName}" is now active.')),
+            );
+          }
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -246,6 +345,11 @@ class _AdminOverviewScreenState extends State<AdminOverviewScreen> {
                     _PipelineCard(
                       currentModelVersion: _currentModelVersion,
                       pendingDrafts: _pendingDrafts,
+                      onStep1Tap: _openNewPlantWizard,
+                      onStep2Tap: _openUploadImages,
+                      onStep3Tap: _openTriggerTraining,
+                      onStep4Tap: _openDeployModel,
+                      onStep5Tap: _openPublishPlant,
                     ),
                   ]),
                 ),
@@ -563,10 +667,20 @@ class _PipelineCard extends StatelessWidget {
   const _PipelineCard({
     required this.currentModelVersion,
     required this.pendingDrafts,
+    required this.onStep1Tap,
+    required this.onStep2Tap,
+    required this.onStep3Tap,
+    required this.onStep4Tap,
+    required this.onStep5Tap,
   });
 
   final String currentModelVersion;
   final int pendingDrafts;
+  final VoidCallback onStep1Tap;
+  final VoidCallback onStep2Tap;
+  final VoidCallback onStep3Tap;
+  final VoidCallback onStep4Tap;
+  final VoidCallback onStep5Tap;
 
   @override
   Widget build(BuildContext context) {
@@ -579,31 +693,36 @@ class _PipelineCard extends StatelessWidget {
         num: '1',
         label: 'Create plant',
         detail: 'Admin wizard → saved as Draft',
-        done: true,
+        done: false,
+        onTap: onStep1Tap,
       ),
       (
         num: '2',
         label: 'Upload training images',
-        detail: 'Plant Catalog → ⋮ → Training Images',
-        done: true,
+        detail: 'Select plant → Upload images',
+        done: false,
+        onTap: onStep2Tap,
       ),
       (
         num: '3',
-        label: 'Train model externally',
-        detail: 'Run Python / Colab script on the uploaded images',
+        label: 'Trigger Model Training',
+        detail: 'Run Modal GPU automated training',
         done: false,
+        onTap: onStep3Tap,
       ),
       (
         num: '4',
         label: 'Deploy new model',
-        detail: 'Overview → Quick Actions → Deploy New Model',
+        detail: 'Deploy via OTA update',
         done: false,
+        onTap: onStep4Tap,
       ),
       (
         num: '5',
         label: 'Publish plant',
-        detail: 'Plant Catalog → ⋮ → Publish (→ Active)',
+        detail: 'Publish draft to make it Active',
         done: false,
+        onTap: onStep5Tap,
       ),
     ];
 
@@ -668,71 +787,83 @@ class _PipelineCard extends StatelessWidget {
             final i = e.key;
             final step = e.value;
             final isLast = i == steps.length - 1;
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Column(
+            return InkWell(
+              onTap: step.onTap,
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: step.done
-                            ? AppTheme.botanicalPrimary
-                            : purple.withValues(alpha: 0.1),
-                        border: step.done
-                            ? null
-                            : Border.all(
-                                color: purple.withValues(alpha: 0.3)),
-                      ),
-                      child: Center(
-                        child: step.done
-                            ? const Icon(Icons.check_rounded,
-                                size: 13, color: Colors.white)
-                            : Text(
-                                step.num,
-                                style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: purple.withValues(alpha: 0.7)),
-                              ),
-                      ),
-                    ),
-                    if (!isLast)
-                      Container(
-                          width: 1, height: 24, color: Colors.grey.shade300),
-                  ],
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    Column(
                       children: [
-                        Text(
-                          step.label,
-                          style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: step.done
-                                  ? AppTheme.botanicalPrimary
-                                  : theme.colorScheme.onSurface),
+                        Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: step.done
+                                ? AppTheme.botanicalPrimary
+                                : purple.withValues(alpha: 0.1),
+                            border: step.done
+                                ? null
+                                : Border.all(
+                                    color: purple.withValues(alpha: 0.3)),
+                          ),
+                          child: Center(
+                            child: step.done
+                                ? const Icon(Icons.check_rounded,
+                                    size: 13, color: Colors.white)
+                                : Text(
+                                    step.num,
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: purple.withValues(alpha: 0.7)),
+                                  ),
+                          ),
                         ),
-                        const SizedBox(height: 1),
-                        Text(
-                          step.detail,
-                          style: TextStyle(
-                              fontSize: 11,
-                              color: theme.colorScheme.onSurface
-                                  .withValues(alpha: 0.5)),
-                        ),
+                        if (!isLast)
+                          Container(
+                              width: 1, height: 24, color: Colors.grey.shade300),
                       ],
                     ),
-                  ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              step.label,
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: step.done
+                                      ? AppTheme.botanicalPrimary
+                                      : theme.colorScheme.onSurface),
+                            ),
+                            const SizedBox(height: 1),
+                            Text(
+                              step.detail,
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: theme.colorScheme.onSurface
+                                      .withValues(alpha: 0.5)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 18,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             );
           }),
         ],

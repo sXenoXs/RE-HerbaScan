@@ -48,4 +48,34 @@ class CloudScan {
           : null,
     );
   }
+
+  CloudScan copyWith({
+    String? id,
+    String? userId,
+    String? plantId,
+    DateTime? scanDate,
+    String? imageUrl,
+    double? confidenceScore,
+    List<dynamic>? predictions,
+    Map<String, dynamic>? metadata,
+    String? gradcamUrl,
+    String? status,
+    bool? trainingEligible,
+    DateTime? trainingCopiedAt,
+  }) {
+    return CloudScan(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      plantId: plantId ?? this.plantId,
+      scanDate: scanDate ?? this.scanDate,
+      imageUrl: imageUrl ?? this.imageUrl,
+      confidenceScore: confidenceScore ?? this.confidenceScore,
+      predictions: predictions ?? this.predictions,
+      metadata: metadata ?? this.metadata,
+      gradcamUrl: gradcamUrl ?? this.gradcamUrl,
+      status: status ?? this.status,
+      trainingEligible: trainingEligible ?? this.trainingEligible,
+      trainingCopiedAt: trainingCopiedAt ?? this.trainingCopiedAt,
+    );
+  }
 }
