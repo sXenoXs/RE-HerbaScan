@@ -1,17 +1,41 @@
+import 'dart:ui';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/providers/plant_provider.dart';
 import 'package:herbascan/core/models/plant.dart';
+import 'package:herbascan/core/models/toxic_plant_entry.dart';
+import 'package:herbascan/core/services/toxic_plant_catalog_service.dart';
+import 'package:herbascan/core/services/toxic_plant_image_service.dart';
+import 'package:herbascan/core/theme/app_theme.dart';
+import 'package:herbascan/core/widgets/plant_image.dart';
 import 'package:herbascan/features/scan/plant_detail_screen.dart';
 import 'package:herbascan/features/browse/condition_search_screen.dart';
+import 'package:herbascan/features/browse/toxic_plant_detail_screen.dart';
 import 'package:herbascan/core/services/usage_analytics.dart';
-import 'dart:io';
 
-enum BrowseFilter { all, doh, byCondition }
+enum BrowseFilter { all, doh, toxic }
+
+// Toxic plant data now loaded from Supabase toxic_plants_catalog table.
+// Falls back to empty list when offline or on error.
+
+Color _harmColor(String harm) {
+  final h = harm.toLowerCase();
+  if (h.contains('heavy') || h.contains('poison') || h.contains('toxic')) {
+    return Colors.red.shade700;
+  }
+  if (h.contains('mild') || h.contains('irritant') || h.contains('blister')) {
+    return Colors.orange.shade700;
+  }
+  return Colors.orange.shade700;
+}
+
+// ---------------------------------------------------------------------------
 
 class BrowseScreen extends StatefulWidget {
-  const BrowseScreen({super.key});
+  final BrowseFilter initialFilter;
+
+  const BrowseScreen({super.key, this.initialFilter = BrowseFilter.all});
 
   @override
   State<BrowseScreen> createState() => _BrowseScreenState();
@@ -19,43 +43,79 @@ class BrowseScreen extends StatefulWidget {
 
 class _BrowseScreenState extends State<BrowseScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   final UsageAnalytics _analytics = UsageAnalytics();
-  BrowseFilter _selectedFilter = BrowseFilter.all;
+  final ToxicPlantImageService _toxicImageService = ToxicPlantImageService();
+
+  final ToxicPlantCatalogService _catalogService = ToxicPlantCatalogService();
+
+  late BrowseFilter _selectedFilter;
   String _searchQuery = '';
   bool _isGridView = true;
+
+  // slug → imageUrl, loaded from Supabase
+  Map<String, String> _toxicPlantImages = {};
+  // Toxic plants loaded from Supabase catalog; falls back to empty on error.
+  List<ToxicPlantEntry> _toxicPlants = [];
+  bool _loadingToxicPlants = false;
 
   @override
   void initState() {
     super.initState();
-    // Track browse screen view
+    _selectedFilter = widget.initialFilter;
     _analytics.trackBrowseViewed();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final plantProvider = Provider.of<PlantProvider>(context, listen: false);
+      plantProvider.refreshPlants();
+    });
+    _loadToxicPlantImages();
+    _loadToxicPlants();
+  }
+
+  Future<void> _loadToxicPlantImages() async {
+    final images = await _toxicImageService.getImageUrls();
+    if (mounted) setState(() => _toxicPlantImages = images);
+  }
+
+  Future<void> _loadToxicPlants() async {
+    if (_loadingToxicPlants) return;
+    setState(() => _loadingToxicPlants = true);
+    try {
+      final raw = await _catalogService.fetchAllActive();
+      if (!mounted) return;
+      setState(() {
+        _toxicPlants = raw.map((m) => ToxicPlantEntry(
+          slug: m['slug'] as String? ?? '',
+          commonName: m['common_name'] as String? ?? '',
+          scientificName: m['scientific_name'] as String? ?? '',
+          localName: m['local_name'] as String? ?? '',
+          harm: m['harm'] as String? ?? '',
+          toxin: m['toxin'] as String? ?? '',
+          symptoms: m['symptoms'] as String? ?? '',
+          appearance: m['appearance'] as String? ?? '',
+          habitat: m['habitat'] as String? ?? '',
+        )).toList();
+        _loadingToxicPlants = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loadingToxicPlants = false);
+    }
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
   List<Plant> _filterPlants(List<Plant> plants) {
     List<Plant> filtered = plants;
 
-    // Apply filter
-    switch (_selectedFilter) {
-      case BrowseFilter.all:
-        // No filter
-        break;
-      case BrowseFilter.doh:
-        filtered = filtered.where((plant) => plant.isDOHApproved).toList();
-        break;
-      case BrowseFilter.byCondition:
-        // For now, show all plants with medicinal uses
-        filtered =
-            filtered.where((plant) => plant.medicinalUses.isNotEmpty).toList();
-        break;
+    if (_selectedFilter == BrowseFilter.doh) {
+      filtered = filtered.where((plant) => plant.isDOHApproved).toList();
     }
 
-    // Apply search query
     if (_searchQuery.isNotEmpty) {
       filtered = filtered.where((plant) {
         final query = _searchQuery.toLowerCase();
@@ -70,176 +130,375 @@ class _BrowseScreenState extends State<BrowseScreen> {
     return filtered;
   }
 
+  List<ToxicPlantEntry> _filterToxicPlants() {
+    if (_searchQuery.isEmpty) return _toxicPlants;
+    final query = _searchQuery.toLowerCase();
+    return _toxicPlants.where((p) {
+      return p.commonName.toLowerCase().contains(query) ||
+          p.scientificName.toLowerCase().contains(query) ||
+          p.localName.toLowerCase().contains(query) ||
+          p.harm.toLowerCase().contains(query) ||
+          p.toxin.toLowerCase().contains(query) ||
+          p.symptoms.toLowerCase().contains(query);
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final appLocalizations = AppLocalizations.of(context);
     final plantProvider = Provider.of<PlantProvider>(context);
     final filteredPlants = _filterPlants(plantProvider.plants);
+    final filteredToxic = _filterToxicPlants();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(appLocalizations.browse),
-        actions: [
-          IconButton(
-            icon: Icon(_isGridView ? Icons.view_list : Icons.grid_view),
-            onPressed: () {
-              setState(() {
-                _isGridView = !_isGridView;
-              });
-            },
-            tooltip: _isGridView ? 'List View' : 'Grid View',
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Search Bar
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: _searchController,
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-              },
-              decoration: InputDecoration(
-                hintText: appLocalizations.searchPlants,
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          setState(() {
-                            _searchController.clear();
-                            _searchQuery = '';
-                          });
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor:
-                    theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-              ),
+    final isToxic = _selectedFilter == BrowseFilter.toxic;
+    final showingCount = isToxic ? filteredToxic.length : filteredPlants.length;
+
+    return GestureDetector(
+      onTap: () => _searchFocusNode.unfocus(),
+      child: Scaffold(
+        resizeToAvoidBottomInset: false,
+        body: RefreshIndicator(
+          onRefresh: () async {
+            if (isToxic) {
+              await Future.wait([
+                _loadToxicPlantImages(),
+                _loadToxicPlants(),
+              ]);
+            } else {
+              await context.read<PlantProvider>().refreshPlants();
+            }
+          },
+          child: CustomScrollView(
+            slivers: [
+            // Safe-area top padding
+            SliverToBoxAdapter(
+              child: SizedBox(height: MediaQuery.of(context).padding.top + 8),
             ),
-          ),
 
-          // Filter Chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Row(
-              children: [
-                _buildFilterChip(
-                  appLocalizations.allPlants,
-                  BrowseFilter.all,
-                  theme,
-                ),
-                const SizedBox(width: 8),
-                _buildFilterChip(
-                  appLocalizations.dohApproved,
-                  BrowseFilter.doh,
-                  theme,
-                ),
-                const SizedBox(width: 8),
-                _buildFilterChip(
-                  appLocalizations.byCondition,
-                  BrowseFilter.byCondition,
-                  theme,
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Results Count
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Row(
-              children: [
-                Text(
-                  '${filteredPlants.length} ${appLocalizations.plantCount}',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+            // Search bar — constrained to 48px height
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: SizedBox(
+                  height: 48,
+                  child: SearchBar(
+                    controller: _searchController,
+                    focusNode: _searchFocusNode,
+                    hintText: isToxic
+                        ? 'Search ${_toxicPlants.length} Toxic Plants'
+                        : 'Search ${plantProvider.plants.length} Plants',
+                    leading: Icon(
+                      Icons.search_rounded,
+                      color: theme.colorScheme.onSurface.withOpacity(0.5),
+                      size: 20,
+                    ),
+                    trailing: _searchQuery.isNotEmpty
+                        ? [
+                            IconButton(
+                              icon: const Icon(Icons.clear_rounded, size: 18),
+                              onPressed: () {
+                                setState(() {
+                                  _searchController.clear();
+                                  _searchQuery = '';
+                                });
+                              },
+                              padding: EdgeInsets.zero,
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ]
+                        : null,
+                    elevation: const WidgetStatePropertyAll(2),
+                    backgroundColor: WidgetStatePropertyAll(
+                      theme.colorScheme.surface,
+                    ),
+                    shape: WidgetStatePropertyAll(
+                      RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                    ),
+                    padding: const WidgetStatePropertyAll(
+                      EdgeInsets.symmetric(horizontal: 16),
+                    ),
+                    textStyle: WidgetStatePropertyAll(
+                      theme.textTheme.bodyMedium,
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
 
-          const SizedBox(height: 8),
+            // Segmented filter SliverToBoxAdapter
+            // Added showSelectedIcon: false to reclaim the checkmark's ~24dp, and
+            // textStyle at 12sp so all three labels fit on one line at ~109dp per segment.
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: SegmentedButton<BrowseFilter>(
+                  showSelectedIcon: false,
+                  segments: const [
+                    ButtonSegment(
+                      value: BrowseFilter.all,
+                      label: Text('All Plants'),
+                      icon: Icon(Icons.eco_rounded),
+                    ),
+                    ButtonSegment(
+                      value: BrowseFilter.doh,
+                      label: Text('DOH Approved'),
+                      icon: Icon(Icons.verified_rounded),
+                    ),
+                    ButtonSegment(
+                      value: BrowseFilter.toxic,
+                      label: Text('Toxic Plants'),
+                      icon: Icon(Icons.warning_amber_rounded),
+                    ),
+                  ],
+                  selected: {_selectedFilter},
+                  onSelectionChanged: (selection) {
+                    setState(() {
+                      _selectedFilter = selection.first;
+                    });
+                  },
+                  style: ButtonStyle(
+                    textStyle: const WidgetStatePropertyAll(
+                      TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                    ),
+                    backgroundColor: WidgetStateProperty.resolveWith(
+                      (states) {
+                        if (states.contains(WidgetState.selected)) {
+                          return _selectedFilter == BrowseFilter.toxic
+                              ? Colors.red.shade700
+                              : AppTheme.botanicalPrimary;
+                        }
+                        return null;
+                      },
+                    ),
+                    foregroundColor: WidgetStateProperty.resolveWith(
+                      (states) {
+                        if (states.contains(WidgetState.selected)) {
+                          return Colors.white;
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ),
 
-          // Plant List/Grid
-          Expanded(
-            child: plantProvider.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : filteredPlants.isEmpty
-                    ? _buildEmptyState(context, theme, appLocalizations)
-                    : _isGridView
-                        ? _buildGridView(filteredPlants, theme)
-                        : _buildListView(filteredPlants, theme),
+            // Toxic Plants info banner
+            if (isToxic)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 11),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.red.shade300,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.warning_amber_rounded,
+                            color: Colors.red.shade700, size: 20),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'These plants are harmful or toxic. Avoid contact or ingestion.',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.red.shade800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+            // Toolbar row: count + Medical pill (non-toxic only) + grid/list toggle
+            SliverToBoxAdapter(
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: Row(
+                  children: [
+                    Text(
+                      'Showing $showingCount ${isToxic ? 'Toxic Plants' : 'Plants'}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                    const Spacer(),
+                    if (!isToxic) ...[
+                      ActionChip(
+                        avatar: const Icon(
+                          Icons.medical_services_outlined,
+                          size: 14,
+                          color: AppTheme.botanicalPrimary,
+                        ),
+                        label: const Text(
+                          'Medical',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: AppTheme.botanicalPrimary,
+                          ),
+                        ),
+                        backgroundColor: theme.brightness == Brightness.dark
+                            ? AppTheme.darkCard
+                            : AppTheme.safeBgLight,
+                        side: BorderSide(
+                          color: AppTheme.botanicalPrimary.withValues(alpha: 0.4),
+                        ),
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 4),
+                        materialTapTargetSize:
+                            MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const ConditionSearchScreen(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                    ],
+                    IconButton(
+                      icon: Icon(
+                        _isGridView
+                            ? Icons.view_list_rounded
+                            : Icons.grid_view_rounded,
+                        size: 20,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _isGridView = !_isGridView;
+                        });
+                      },
+                      tooltip: _isGridView ? 'List View' : 'Grid View',
+                      padding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Plant content — toxic tab
+            if (isToxic) ...[
+              if (filteredToxic.isEmpty)
+                SliverFillRemaining(
+                  child: _buildEmptyState(context, theme),
+                )
+              else if (_isGridView)
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                  sliver: SliverGrid(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) =>
+                          _buildToxicGridCard(filteredToxic[index], theme),
+                      childCount: filteredToxic.length,
+                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: 240,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 0.68,
+                    ),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) =>
+                          _buildToxicListCard(filteredToxic[index], theme),
+                      childCount: filteredToxic.length,
+                    ),
+                  ),
+                ),
+            ]
+            // Plant content — all / doh tabs
+            else ...[
+              if (plantProvider.isLoading)
+                const SliverFillRemaining(
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (filteredPlants.isEmpty)
+                SliverFillRemaining(
+                  child: _buildEmptyState(context, theme),
+                )
+              else if (_isGridView)
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                  sliver: SliverGrid(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) =>
+                          _buildPlantGridCard(filteredPlants[index], theme),
+                      childCount: filteredPlants.length,
+                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: 240,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 0.9,
+                    ),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) =>
+                          _buildPlantListCard(filteredPlants[index], theme),
+                      childCount: filteredPlants.length,
+                    ),
+                  ),
+                ),
+            ],
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildFilterChip(String label, BrowseFilter filter, ThemeData theme) {
-    final isSelected = _selectedFilter == filter;
-    return FilterChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: (selected) {
-        // Navigate to condition search screen for "By Condition" filter
-        if (filter == BrowseFilter.byCondition) {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const ConditionSearchScreen(),
-            ),
-          );
-        } else {
-          setState(() {
-            _selectedFilter = filter;
-          });
-        }
-      },
-      selectedColor: theme.colorScheme.primaryContainer,
-      checkmarkColor: theme.colorScheme.onPrimaryContainer,
-      labelStyle: TextStyle(
-        color: isSelected
-            ? theme.colorScheme.onPrimaryContainer
-            : theme.colorScheme.onSurface,
-        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(BuildContext context, ThemeData theme,
-      AppLocalizations appLocalizations) {
+  Widget _buildEmptyState(BuildContext context, ThemeData theme) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.search_off,
+            Icons.search_off_rounded,
             size: 64,
             color: theme.colorScheme.onSurface.withOpacity(0.3),
           ),
           const SizedBox(height: 16),
           Text(
-            appLocalizations.noResultsFound,
+            'No plants found',
             style: theme.textTheme.titleMedium?.copyWith(
               color: theme.colorScheme.onSurface.withOpacity(0.6),
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            appLocalizations.tryDifferentSearch,
+            'Try a different search or filter',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurface.withOpacity(0.4),
             ),
@@ -249,43 +508,351 @@ class _BrowseScreenState extends State<BrowseScreen> {
     );
   }
 
-  Widget _buildGridView(List<Plant> plants, ThemeData theme) {
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: 0.75,
+  // ---------------------------------------------------------------------------
+  // Toxic plant cards
+  // ---------------------------------------------------------------------------
+
+  Widget _buildToxicGridCard(ToxicPlantEntry plant, ThemeData theme) {
+    final color = _harmColor(plant.harm);
+    final imageUrl = _toxicPlantImages[plant.slug];
+    return GestureDetector(
+      onTap: () => _openToxicDetail(plant),
+      child: Container(
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color ?? AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      itemCount: plants.length,
-      itemBuilder: (context, index) {
-        final plant = plants[index];
-        return _buildPlantGridCard(plant, theme);
-      },
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Image area (58%)
+              Expanded(
+                flex: 58,
+                child: imageUrl != null && imageUrl.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: imageUrl,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        placeholder: (_, __) => Container(
+                          color: color.withOpacity(0.08),
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: color,
+                            ),
+                          ),
+                        ),
+                        errorWidget: (_, __, ___) => Container(
+                          color: color.withOpacity(0.08),
+                          child: Center(
+                            child: Icon(
+                              Icons.warning_amber_rounded,
+                              size: 44,
+                              color: color.withOpacity(0.6),
+                            ),
+                          ),
+                        ),
+                      )
+                    : Container(
+                        color: color.withOpacity(0.08),
+                        child: Center(
+                          child: Icon(
+                            Icons.warning_amber_rounded,
+                            size: 44,
+                            color: color.withOpacity(0.6),
+                          ),
+                        ),
+                      ),
+              ),
+              // Text area (42%)
+              Expanded(
+                flex: 42,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                  child: ClipRect(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        Text(
+                          plant.commonName,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 1),
+                        Text(
+                          plant.scientificName,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontStyle: FontStyle.italic,
+                            color: AppTheme.textSecondary,
+                            fontSize: 11,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (plant.localName.isNotEmpty) ...[
+                          const SizedBox(height: 1),
+                          Text(
+                            plant.localName,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: AppTheme.textTertiary,
+                              fontSize: 10,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          // Harm badge — top-right glassmorphic pill
+          Positioned(
+            top: 8,
+            right: 8,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(100),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.85),
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.warning_amber_rounded,
+                          size: 11, color: Colors.white),
+                      const SizedBox(width: 3),
+                      Text(
+                        plant.harm,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: 'Inter',
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
     );
   }
 
-  Widget _buildListView(List<Plant> plants, ThemeData theme) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: plants.length,
-      itemBuilder: (context, index) {
-        final plant = plants[index];
-        return _buildPlantListCard(plant, theme);
-      },
+  void _openToxicDetail(ToxicPlantEntry plant) {
+    final imageUrl = _toxicPlantImages[plant.slug];
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ToxicPlantDetailScreen(
+          plant: plant,
+          imageBuilder: (p, accent) => imageUrl != null && imageUrl.isNotEmpty
+              ? CachedNetworkImage(
+                  imageUrl: imageUrl,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                  placeholder: (_, __) => Container(
+                    color: accent.withOpacity(0.08),
+                    child: Center(
+                        child: CircularProgressIndicator(color: accent)),
+                  ),
+                  errorWidget: (_, __, ___) => Container(
+                    color: accent.withOpacity(0.08),
+                    child: Center(
+                        child: Icon(Icons.warning_amber_rounded,
+                            size: 64, color: accent.withOpacity(0.5))),
+                  ),
+                )
+              : Container(
+                  color: accent.withOpacity(0.08),
+                  child: Center(
+                      child: Icon(Icons.warning_amber_rounded,
+                          size: 64, color: accent.withOpacity(0.5))),
+                ),
+        ),
+      ),
     );
   }
+
+  Widget _buildToxicListCard(ToxicPlantEntry plant, ThemeData theme) {
+    final color = _harmColor(plant.harm);
+    final imageUrl = _toxicPlantImages[plant.slug];
+    return GestureDetector(
+      onTap: () => _openToxicDetail(plant),
+      child: Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color ?? AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Plant image or warning icon circle
+            ClipOval(
+              child: SizedBox(
+                width: 56,
+                height: 56,
+                child: imageUrl != null && imageUrl.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: imageUrl,
+                        fit: BoxFit.cover,
+                        width: 56,
+                        height: 56,
+                        placeholder: (_, __) => Container(
+                          color: color.withOpacity(0.1),
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: color,
+                            ),
+                          ),
+                        ),
+                        errorWidget: (_, __, ___) => Container(
+                          color: color.withOpacity(0.1),
+                          child: Icon(Icons.warning_amber_rounded,
+                              size: 28, color: color),
+                        ),
+                      )
+                    : Container(
+                        color: color.withOpacity(0.1),
+                        child: Icon(
+                          Icons.warning_amber_rounded,
+                          size: 28,
+                          color: color,
+                        ),
+                      ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          plant.commonName,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Icon(Icons.warning_amber_rounded,
+                          color: color, size: 16),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    plant.scientificName,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontStyle: FontStyle.italic,
+                      color: AppTheme.textSecondary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (plant.localName.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      plant.localName,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppTheme.textTertiary,
+                        fontSize: 11,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: Text(
+                      plant.harm,
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Safe-plant cards (unchanged)
+  // ---------------------------------------------------------------------------
 
   Widget _buildPlantGridCard(Plant plant, ThemeData theme) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color ?? AppTheme.cardColor,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () {
-          // Track plant view
           _analytics.trackPlantViewed();
           Navigator.of(context).push(
             MaterialPageRoute(
@@ -293,90 +860,89 @@ class _BrowseScreenState extends State<BrowseScreen> {
             ),
           );
         },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
           children: [
-            // Plant Image
-            Expanded(
-              flex: 3,
-              child: Container(
-                width: double.infinity,
-                color: theme.colorScheme.surfaceContainerHighest,
-                child: plant.imagePath.isNotEmpty
-                    ? Image.file(
-                        File(plant.imagePath),
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return _buildPlaceholderImage(theme);
-                        },
-                      )
-                    : _buildPlaceholderImage(theme),
-              ),
-            ),
-            // Plant Info
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      plant.commonName,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      plant.scientificName,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontStyle: FontStyle.italic,
-                        color: theme.colorScheme.onSurface.withOpacity(0.6),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const Spacer(),
-                    if (plant.isDOHApproved)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF48BB78).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(
-                            color: const Color(0xFF48BB78),
-                            width: 1,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  flex: 65,
+                  child: PlantImage(
+                    plant: plant,
+                    fit: BoxFit.cover,
+                    errorWidget: (_, __, ___) => _buildPlaceholderImage(theme),
+                  ),
+                ),
+                Expanded(
+                  flex: 35,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          plant.commonName,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.verified,
-                              size: 12,
-                              color: Color(0xFF48BB78),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'DOH',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: const Color(0xFF48BB78),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ],
+                        const SizedBox(height: 2),
+                        Text(
+                          plant.scientificName,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontStyle: FontStyle.italic,
+                            color: AppTheme.textSecondary,
+                            fontSize: 11,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            if (plant.isDOHApproved)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(100),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppTheme.botanicalPrimary.withOpacity(0.75),
+                        borderRadius: BorderRadius.circular(100),
                       ),
-                  ],
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.verified_rounded,
+                              size: 11, color: Colors.white),
+                          const SizedBox(width: 3),
+                          const Text(
+                            'DOH',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              fontFamily: 'Inter',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ),
@@ -384,14 +950,24 @@ class _BrowseScreenState extends State<BrowseScreen> {
   }
 
   Widget _buildPlantListCard(Plant plant, ThemeData theme) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+    final showLocalName = plant.localName.isNotEmpty &&
+        plant.localName != plant.commonName;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color ?? AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: InkWell(
         onTap: () {
-          // Track plant view
           _analytics.trackPlantViewed();
           Navigator.of(context).push(
             MaterialPageRoute(
@@ -399,95 +975,84 @@ class _BrowseScreenState extends State<BrowseScreen> {
             ),
           );
         },
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.all(12.0),
+          padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              // Plant Image
               Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(8),
-                ),
+                width: 56,
+                height: 56,
+                decoration: const BoxDecoration(shape: BoxShape.circle),
                 clipBehavior: Clip.antiAlias,
-                child: plant.imagePath.isNotEmpty
-                    ? Image.file(
-                        File(plant.imagePath),
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return _buildPlaceholderImage(theme);
-                        },
-                      )
-                    : _buildPlaceholderImage(theme),
+                child: PlantImage(
+                  plant: plant,
+                  fit: BoxFit.cover,
+                  width: 56,
+                  height: 56,
+                  errorWidget: (_, __, ___) => Container(
+                    color: AppTheme.safeBgLight,
+                    child: const Icon(
+                      Icons.local_florist_rounded,
+                      size: 28,
+                      color: AppTheme.botanicalPrimary,
+                    ),
+                  ),
+                ),
               ),
-              const SizedBox(width: 16),
-              // Plant Info
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      plant.commonName,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            plant.commonName,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (plant.isDOHApproved) ...[
+                          const SizedBox(width: 6),
+                          const Icon(
+                            Icons.verified_rounded,
+                            color: AppTheme.botanicalPrimary,
+                            size: 16,
+                          ),
+                        ],
+                      ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text(
                       plant.scientificName,
                       style: theme.textTheme.bodySmall?.copyWith(
                         fontStyle: FontStyle.italic,
-                        color: theme.colorScheme.onSurface.withOpacity(0.6),
+                        color: AppTheme.textSecondary,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      plant.localName,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.5),
-                      ),
-                    ),
-                    if (plant.isDOHApproved) ...[
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF48BB78).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: const Color(0xFF48BB78),
-                            width: 1,
-                          ),
+                    if (showLocalName) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        plant.localName,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppTheme.textTertiary,
+                          fontSize: 11,
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.verified,
-                              size: 14,
-                              color: Color(0xFF48BB78),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'DOH Approved',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: const Color(0xFF48BB78),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right),
             ],
           ),
         ),
@@ -496,11 +1061,14 @@ class _BrowseScreenState extends State<BrowseScreen> {
   }
 
   Widget _buildPlaceholderImage(ThemeData theme) {
-    return Center(
-      child: Icon(
-        Icons.local_florist,
-        size: 48,
-        color: theme.colorScheme.onSurfaceVariant.withOpacity(0.3),
+    return Container(
+      color: AppTheme.safeBgLight,
+      child: const Center(
+        child: Icon(
+          Icons.local_florist_rounded,
+          size: 40,
+          color: AppTheme.botanicalPrimary,
+        ),
       ),
     );
   }
