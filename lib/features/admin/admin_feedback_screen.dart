@@ -19,6 +19,30 @@ class _AdminFeedbackScreenState extends State<AdminFeedbackScreen> {
   bool _isLoading = true;
   String? _error;
 
+  String _searchQuery = '';
+  String? _selectedCategory;
+  String? _selectedStatus;
+
+  List<Map<String, dynamic>> get _filteredItems {
+    return _items.where((item) {
+      final comment = (item['comment'] as String? ?? '').toLowerCase();
+      final userId = (item['user_id'] as String? ?? '').toLowerCase();
+      final category = item['category'] as String?;
+      final status = item['status'] as String? ?? 'pending';
+
+      if (_searchQuery.isNotEmpty && !comment.contains(_searchQuery) && !userId.contains(_searchQuery)) {
+        return false;
+      }
+      if (_selectedCategory != null && category != _selectedCategory) {
+        return false;
+      }
+      if (_selectedStatus != null && status != _selectedStatus) {
+        return false;
+      }
+      return true;
+    }).toList();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -106,25 +130,93 @@ class _AdminFeedbackScreenState extends State<AdminFeedbackScreen> {
       );
     }
 
+    final displayedItems = _filteredItems;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Container(
           color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
-          padding: const EdgeInsets.fromLTRB(16, 16, 8, 0),
-          child: Row(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                'User Feedback',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+              Row(
+                children: [
+                  Text(
+                    'User Feedback',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    onPressed: _loadData,
+                    tooltip: 'Refresh',
+                  ),
+                ],
               ),
-              const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: _loadData,
-                tooltip: 'Refresh',
+              const SizedBox(height: 12),
+              TextField(
+                decoration: InputDecoration(
+                  hintText: 'Search feedback or User ID...',
+                  prefixIcon: const Icon(Icons.search),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  isDense: true,
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value.toLowerCase();
+                  });
+                },
+              ),
+              const SizedBox(height: 12),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    DropdownMenu<String?>(
+                      initialSelection: null,
+                      onSelected: (value) {
+                        setState(() {
+                          _selectedStatus = value;
+                        });
+                      },
+                      dropdownMenuEntries: const [
+                        DropdownMenuEntry(value: null, label: 'All Statuses'),
+                        DropdownMenuEntry(value: 'pending', label: 'Pending'),
+                        DropdownMenuEntry(value: 'reviewed', label: 'Reviewed'),
+                        DropdownMenuEntry(value: 'resolved', label: 'Resolved'),
+                      ],
+                      label: const Text('Status'),
+                      width: 160,
+                      inputDecorationTheme: const InputDecorationTheme(
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    DropdownMenu<String?>(
+                      initialSelection: null,
+                      onSelected: (value) {
+                        setState(() {
+                          _selectedCategory = value;
+                        });
+                      },
+                      dropdownMenuEntries: [
+                        const DropdownMenuEntry(value: null, label: 'All Categories'),
+                        ...FeedbackCategory.all.map((c) => DropdownMenuEntry(value: c, label: FeedbackCategory.getDisplayName(c))),
+                      ],
+                      label: const Text('Category'),
+                      width: 180,
+                      inputDecorationTheme: const InputDecorationTheme(
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -135,14 +227,14 @@ class _AdminFeedbackScreenState extends State<AdminFeedbackScreen> {
             child: ListView.builder(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(16),
-              itemCount: _items.isEmpty ? 1 : _items.length,
+              itemCount: displayedItems.isEmpty ? 1 : displayedItems.length,
               itemBuilder: (context, index) {
-                if (_items.isEmpty) {
+                if (displayedItems.isEmpty) {
                   return Padding(
                     padding: const EdgeInsets.only(top: 48.0),
                     child: Center(
                       child: Text(
-                        'No feedback in Supabase yet.',
+                        _items.isEmpty ? 'No feedback in Supabase yet.' : 'No feedback matches your filters.',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -152,8 +244,8 @@ class _AdminFeedbackScreenState extends State<AdminFeedbackScreen> {
                 }
                 return _FeedbackCard(
                   theme: theme,
-                  row: _items[index],
-                  userLabel: _userLabel(_items[index]),
+                  row: displayedItems[index],
+                  userLabel: _userLabel(displayedItems[index]),
                   formatDate: _formatDate,
                   feedbackService: _feedbackService,
                   onDeleted: _loadData,
@@ -272,7 +364,17 @@ class _FeedbackCardState extends State<_FeedbackCard> {
     final created = widget.formatDate(row['created_at']);
 
     final categoryDisplay = FeedbackCategory.getDisplayName(category);
+    final status = row['status'] as String? ?? 'pending';
     const maxCommentPreview = 120;
+
+    Color statusColor;
+    if (status == 'resolved') {
+      statusColor = AppTheme.successColor;
+    } else if (status == 'reviewed') {
+      statusColor = Colors.blue;
+    } else {
+      statusColor = AppTheme.warningAmber;
+    }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -292,27 +394,46 @@ class _FeedbackCardState extends State<_FeedbackCard> {
                   Expanded(
                     child: Align(
                       alignment: Alignment.centerLeft,
-                      child: Container(
-                        constraints: const BoxConstraints(minWidth: 0),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          categoryDisplay,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: theme.brightness == Brightness.light
-                                ? AppTheme.primaryDark
-                                : theme.colorScheme.onPrimaryContainer,
-                            fontWeight: FontWeight.w600,
+                      child: Wrap(
+                        spacing: 8,
+                        children: [
+                          Container(
+                            constraints: const BoxConstraints(minWidth: 0),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primaryContainer,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              categoryDisplay,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: theme.brightness == Brightness.light
+                                    ? AppTheme.primaryDark
+                                    : theme.colorScheme.onPrimaryContainer,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
-                        ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: statusColor.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              status.toUpperCase(),
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: statusColor,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -334,10 +455,61 @@ class _FeedbackCardState extends State<_FeedbackCard> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.more_vert),
-                    onSelected: (value) {
-                      if (value == 'delete') _onDelete();
+                    onSelected: (value) async {
+                      if (value == 'delete') {
+                        _onDelete();
+                      } else {
+                        setState(() => _deleteInProgress = true);
+                        try {
+                          final ok = await widget.feedbackService.updateFeedbackStatus(widget.row['id'].toString(), value);
+                          if (ok) {
+                            setState(() {
+                              widget.row['status'] = value;
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Status updated to $value')));
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to update status'), backgroundColor: AppTheme.errorDeep));
+                          }
+                        } finally {
+                          if (mounted) setState(() => _deleteInProgress = false);
+                        }
+                      }
                     },
                     itemBuilder: (context) => [
+                      if (status != 'reviewed')
+                        const PopupMenuItem(
+                          value: 'reviewed',
+                          child: Row(
+                            children: [
+                              Icon(Icons.check_circle_outline, color: Colors.blue, size: 22),
+                              SizedBox(width: 12),
+                              Text('Mark Reviewed'),
+                            ],
+                          ),
+                        ),
+                      if (status != 'resolved')
+                        const PopupMenuItem(
+                          value: 'resolved',
+                          child: Row(
+                            children: [
+                              Icon(Icons.done_all, color: AppTheme.successColor, size: 22),
+                              SizedBox(width: 12),
+                              Text('Mark Resolved'),
+                            ],
+                          ),
+                        ),
+                      if (status != 'pending')
+                        const PopupMenuItem(
+                          value: 'pending',
+                          child: Row(
+                            children: [
+                              Icon(Icons.pending_actions, color: AppTheme.warningAmber, size: 22),
+                              SizedBox(width: 12),
+                              Text('Mark Pending'),
+                            ],
+                          ),
+                        ),
+                      const PopupMenuDivider(),
                       const PopupMenuItem(
                         value: 'delete',
                         child: Row(

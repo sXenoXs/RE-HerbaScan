@@ -51,6 +51,7 @@ class FeedbackService {
           'metadata': feedback.metadata,
           'created_at': feedback.createdAt.toIso8601String(),
           'is_anonymous': feedback.isAnonymous,
+          'status': feedback.status,
         });
       } catch (e, st) {
         if (kDebugMode) {
@@ -70,6 +71,24 @@ class FeedbackService {
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint('FeedbackService: deleteFeedbackFromSupabase failed: $e');
+        debugPrint('$st');
+      }
+      return false;
+    }
+  }
+
+  /// Update feedback status in Supabase. Admins only (RLS). Returns true if updated.
+  Future<bool> updateFeedbackStatus(String id, String newStatus) async {
+    if (!isSupabaseConfigured) return false;
+    try {
+      await Supabase.instance.client
+          .from('user_feedback')
+          .update({'status': newStatus})
+          .eq('id', id);
+      return true;
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('FeedbackService: updateFeedbackStatus failed: $e');
         debugPrint('$st');
       }
       return false;

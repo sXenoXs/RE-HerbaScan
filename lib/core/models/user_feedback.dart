@@ -10,6 +10,7 @@ class UserFeedback {
       metadata; // Additional context (app version, device, etc.)
 
   final bool isAnonymous;
+  final String status;
 
   UserFeedback({
     required this.id,
@@ -20,6 +21,7 @@ class UserFeedback {
     required this.createdAt,
     this.metadata = const {},
     this.isAnonymous = false,
+    this.status = 'pending',
   });
 
   Map<String, dynamic> toJson() => {
@@ -31,6 +33,7 @@ class UserFeedback {
         'created_at': createdAt.toIso8601String(),
         'metadata': metadata,
         'is_anonymous': isAnonymous,
+        'status': status,
       };
 
   factory UserFeedback.fromJson(Map<String, dynamic> json) => UserFeedback(
@@ -42,7 +45,32 @@ class UserFeedback {
         createdAt: DateTime.parse(json['created_at'] as String),
         metadata: json['metadata'] as Map<String, dynamic>? ?? {},
         isAnonymous: json['is_anonymous'] as bool? ?? false,
+        status: json['status'] as String? ?? 'pending',
       );
+
+  UserFeedback copyWith({
+    String? id,
+    int? rating,
+    String? category,
+    String? comment,
+    String? featureSuggestion,
+    DateTime? createdAt,
+    Map<String, dynamic>? metadata,
+    bool? isAnonymous,
+    String? status,
+  }) {
+    return UserFeedback(
+      id: id ?? this.id,
+      rating: rating ?? this.rating,
+      category: category ?? this.category,
+      comment: comment ?? this.comment,
+      featureSuggestion: featureSuggestion ?? this.featureSuggestion,
+      createdAt: createdAt ?? this.createdAt,
+      metadata: metadata ?? this.metadata,
+      isAnonymous: isAnonymous ?? this.isAnonymous,
+      status: status ?? this.status,
+    );
+  }
 }
 
 /// Categories for user feedback
