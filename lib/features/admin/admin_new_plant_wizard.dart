@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:herbascan/core/models/plant.dart';
@@ -1192,15 +1194,25 @@ class _ImagePreviewGrid extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                images[i].path,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  color: AppTheme.darkCard,
-                  child: const Icon(Icons.image_rounded,
-                      size: 24, color: Colors.white38),
-                ),
-              ),
+              child: kIsWeb
+                  ? Image.network(
+                      images[i].path,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: AppTheme.darkCard,
+                        child: const Icon(Icons.image_rounded,
+                            size: 24, color: Colors.white38),
+                      ),
+                    )
+                  : Image.file(
+                      File(images[i].path),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: AppTheme.darkCard,
+                        child: const Icon(Icons.image_rounded,
+                            size: 24, color: Colors.white38),
+                      ),
+                    ),
             ),
             if (onRemove != null)
               Positioned(

@@ -265,7 +265,7 @@ class SettingsScreen extends StatelessWidget {
                   color: AppTheme.botanicalPrimary,
                 ),
                 title: const Text('Admin Console'),
-                subtitle: const Text('Approve or delete user submissions'),
+                subtitle: const Text('Access administrative tools and settings'),
                 trailing:
                     const Icon(Icons.arrow_forward_ios_rounded, size: 16),
                 onTap: () => context.push('/admin'),

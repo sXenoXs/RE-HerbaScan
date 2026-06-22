@@ -84,7 +84,11 @@ class _LoginScreenState extends State<LoginScreen> {
         } else if (context.canPop()) {
           Navigator.of(context).pop(true);
         } else {
-          context.go(authAfter.isAdmin ? '/admin' : '/home');
+          if (kIsWeb) {
+            context.go('/settings');
+          } else {
+            context.go(authAfter.isAdmin ? '/admin' : '/home');
+          }
         }
       }
     } catch (e) {

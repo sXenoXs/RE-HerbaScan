@@ -96,7 +96,7 @@ class _FeedbackFormContentState extends State<FeedbackFormContent> {
       return;
     }
     final meta = Map<String, dynamic>.from(widget.metadata ?? {});
-    meta['app_version'] = 'v1.0.28';
+    meta['app_version'] = 'v1.0.30';
     meta['platform'] = Theme.of(context).platform.name;
 
     final feedback = UserFeedback(

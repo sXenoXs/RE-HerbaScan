@@ -329,7 +329,7 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
           const SizedBox(height: 8),
           TextFormField(
             controller: _appVersionController,
-            decoration: _inputDecoration('e.g. v1.0.28'),
+            decoration: _inputDecoration('e.g. v1.0.30'),
             style: theme.textTheme.bodyMedium,
           ),
           const SizedBox(height: 6),

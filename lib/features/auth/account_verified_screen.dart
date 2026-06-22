@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter/foundation.dart';
 
 /// Shown after successful OTP verification during sign-up.
 /// Displays a success animation, user's email, and a 5-second countdown
@@ -33,7 +34,11 @@ class _AccountVerifiedScreenState extends State<AccountVerifiedScreen> {
           timer.cancel();
           // Pop native stack then navigate to Settings tab
           Navigator.of(context).popUntil((route) => route.isFirst);
-          context.go('/home?tab=3');
+          if (kIsWeb) {
+            context.go('/settings');
+          } else {
+            context.go('/home?tab=3');
+          }
         }
       });
     });
@@ -137,7 +142,11 @@ class _AccountVerifiedScreenState extends State<AccountVerifiedScreen> {
                       onPressed: () {
                         _timer?.cancel();
                         Navigator.of(context).popUntil((route) => route.isFirst);
-                        context.go('/home?tab=3');
+                        if (kIsWeb) {
+                          context.go('/settings');
+                        } else {
+                          context.go('/home?tab=3');
+                        }
                       },
                       style: FilledButton.styleFrom(
                         backgroundColor: AppTheme.botanicalPrimary,

@@ -287,7 +287,18 @@ class CameraProvider extends ChangeNotifier {
       }
 
       if (topK.isEmpty) {
-        throw Exception('Model could not identify image.');
+        _isClassifying = false;
+        notifyListeners();
+        return {
+          'predictions': <Map<String, dynamic>>[],
+          'gradcam_image': null,
+          'method': 'classification_only',
+          'fallback_used': false,
+          'processing_time_ms': 0.0,
+          'gradCAMPath': null,
+          'summaryGradCAMPath': null,
+          'validation_failed': false,
+        };
       }
 
       final predictions = topK.asMap().entries.map((e) => {
