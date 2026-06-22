@@ -14,6 +14,7 @@ import 'package:herbascan/core/services/ota_model_service.dart';
 import 'package:herbascan/core/services/performance_monitor.dart';
 import 'package:herbascan/core/services/usage_analytics.dart';
 import 'package:herbascan/core/services/plant_data_service.dart';
+import 'package:herbascan/core/utils/export_util.dart';
 import 'package:flutter/foundation.dart';
 
 /// Admin-only System Health: AI metrics, live usage, and error logs.
@@ -968,44 +969,15 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
         final stamp = _dateStamp();
         final filename = '${filenameBase}_$stamp.$ext';
         
-        if (kIsWeb) {
-          // Use url_launcher to download the file directly via data URI on the web
-          // Base64 encode it so large files don't break the URI format
-          final bytes = utf8.encode(content);
-          final base64String = base64Encode(bytes);
-          final mimeType = format == 'JSON' ? 'application/json' 
-                       : format == 'CSV' ? 'text/csv' 
-                       : 'text/plain';
-          final url = 'data:$mimeType;charset=utf-8;base64,$base64String';
-          
-          if (await canLaunchUrlString(url)) {
-             await launchUrlString(url);
-             if (!mounted) return;
-             ScaffoldMessenger.of(context).showSnackBar(
-               SnackBar(
-                 content: Text('Download started for $filename'),
-                 backgroundColor: AppTheme.safeGreen,
-               ),
-             );
-          } else {
-             throw Exception('Could not launch download on web');
-          }
-        } else {
-          final dir = await getApplicationDocumentsDirectory();
-          final file = File('${dir.path}/$filename');
-          await file.writeAsString(content, flush: true);
-          await Share.shareXFiles(
-            [XFile(file.path)],
-            subject: 'HerbaScan export — $stamp',
-          );
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('File saved: $filename'),
-              backgroundColor: AppTheme.safeGreen,
-            ),
-          );
-        }
+        await exportData(content, filename);
+        
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(kIsWeb ? 'Download started for $filename' : 'File saved: $filename'),
+            backgroundColor: AppTheme.safeGreen,
+          ),
+        );
       }
     } catch (e) {
       if (!mounted) return;
