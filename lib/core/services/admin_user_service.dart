@@ -15,11 +15,16 @@ class AdminUserService {
 
   bool get isAvailable => isSupabaseConfigured && _client.auth.currentUser != null;
 
-  /// List all profiles (admin RLS). Returns id, email, role, is_active, created_at and scan count.
+  /// List all profiles (admin RLS). Returns id, email, role, is_active, created_at,
+  /// suspension_reason, force_verified_notice, role_change_notice, and scan count.
   Future<List<AdminProfileRow>> listProfiles() async {
     if (!isAvailable) return [];
     try {
-      final res = await _client.from('profiles').select('id, email, role, is_active, created_at').order('created_at', ascending: false);
+      final res = await _client
+          .from('profiles')
+          .select(
+              'id, email, role, is_active, created_at, suspension_reason, force_verified_notice, role_change_notice')
+          .order('created_at', ascending: false);
       final list = (res as List).cast<Map<String, dynamic>>();
       final rows = <AdminProfileRow>[];
       for (final p in list) {
@@ -31,8 +36,13 @@ class AdminUserService {
           email: p['email'] as String? ?? '',
           role: p['role'] as String? ?? 'user',
           isActive: p['is_active'] as bool? ?? true,
-          createdAt: p['created_at'] != null ? DateTime.parse(p['created_at'] as String) : null,
+          createdAt: p['created_at'] != null
+              ? DateTime.parse(p['created_at'] as String)
+              : null,
           scanCount: scanCount,
+          suspensionReason: p['suspension_reason'] as String?,
+          forceVerifiedNotice: p['force_verified_notice'] as bool? ?? false,
+          roleChangeNotice: p['role_change_notice'] as bool? ?? false,
         ));
       }
       return rows;
@@ -51,21 +61,38 @@ class AdminUserService {
   }
 
   /// Set is_active for a user (admin only). When false, app should treat as deactivated.
-  Future<bool> setActive(String userId, bool active) async {
+  /// [reason] is stored in suspension_reason; pass null when reactivating.
+  Future<bool> setActive(String userId, bool active, {String? reason}) async {
     if (!isAvailable) return false;
     try {
-      await _client.from('profiles').update({'is_active': active, 'updated_at': DateTime.now().toIso8601String()}).eq('id', userId);
+      final update = <String, dynamic>{
+        'is_active': active,
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+      if (!active) {
+        // Store the suspension reason (may be null = no reason given)
+        update['suspension_reason'] = reason;
+      } else {
+        // Clear reason when reactivating
+        update['suspension_reason'] = null;
+      }
+      await _client.from('profiles').update(update).eq('id', userId);
       return true;
     } catch (_) {
       return false;
     }
   }
 
-  /// Set role for a user (admin only). Typically 'admin' or 'user'. RLS allows admins to update any profile column.
+  /// Set role for a user (admin only). Typically 'admin' or 'user'.
+  /// Also sets role_change_notice = true so the user sees a one-time dialog on next login.
   Future<bool> setRole(String userId, String role) async {
     if (!isAvailable) return false;
     try {
-      await _client.from('profiles').update({'role': role, 'updated_at': DateTime.now().toIso8601String()}).eq('id', userId);
+      await _client.from('profiles').update({
+        'role': role,
+        'role_change_notice': true,
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', userId);
       return true;
     } catch (_) {
       return false;
@@ -98,6 +125,45 @@ class AdminUserService {
       rethrow;
     }
   }
+
+  /// Dismiss the force_verified_notice for the currently signed-in user.
+  Future<void> clearForceVerifiedNotice(String userId) async {
+    if (!isAvailable) return;
+    try {
+      await _client
+          .from('profiles')
+          .update({'force_verified_notice': false})
+          .eq('id', userId);
+    } catch (_) {}
+  }
+
+  /// Dismiss the role_change_notice for the currently signed-in user.
+  Future<void> clearRoleChangeNotice(String userId) async {
+    if (!isAvailable) return;
+    try {
+      await _client
+          .from('profiles')
+          .update({'role_change_notice': false})
+          .eq('id', userId);
+    } catch (_) {}
+  }
+
+  /// Fetch a single user's profile notices + is_active + suspension_reason.
+  /// Used by the login flow to check for pending notices/suspension.
+  Future<Map<String, dynamic>?> getProfileNotices(String userId) async {
+    if (!isAvailable) return null;
+    try {
+      final res = await _client
+          .from('profiles')
+          .select(
+              'is_active, suspension_reason, force_verified_notice, role_change_notice, role')
+          .eq('id', userId)
+          .maybeSingle();
+      return res as Map<String, dynamic>?;
+    } catch (_) {
+      return null;
+    }
+  }
 }
 
 class AdminProfileRow {
@@ -107,6 +173,9 @@ class AdminProfileRow {
   final bool isActive;
   final DateTime? createdAt;
   final int scanCount;
+  final String? suspensionReason;
+  final bool forceVerifiedNotice;
+  final bool roleChangeNotice;
 
   AdminProfileRow({
     required this.id,
@@ -115,5 +184,8 @@ class AdminProfileRow {
     required this.isActive,
     this.createdAt,
     required this.scanCount,
+    this.suspensionReason,
+    this.forceVerifiedNotice = false,
+    this.roleChangeNotice = false,
   });
 }

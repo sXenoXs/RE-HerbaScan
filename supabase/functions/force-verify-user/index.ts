@@ -98,6 +98,13 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Set force_verified_notice = true so the user sees a one-time dialog on next login.
+    // Non-critical: if this fails we still return success (email was already confirmed).
+    await adminClient
+      .from("profiles")
+      .update({ force_verified_notice: true })
+      .eq("id", targetUserId.trim());
+
     return new Response(
       JSON.stringify({ success: true }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

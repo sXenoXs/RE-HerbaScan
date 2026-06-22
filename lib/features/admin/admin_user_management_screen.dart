@@ -80,9 +80,69 @@ class _AdminUserManagementScreenState
 
   Future<void> _setActive(AdminProfileRow row, bool active) async {
     if (_actionInProgress) return;
+
+    // When suspending, ask admin for an optional reason first
+    String? suspensionReason;
+    if (!active) {
+      final reasonController = TextEditingController();
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Suspend Account'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Suspend ${row.email}? They will not be able to sign in.',
+                style: Theme.of(ctx).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: reasonController,
+                maxLines: 2,
+                maxLength: 200,
+                decoration: const InputDecoration(
+                  labelText: 'Reason (optional)',
+                  hintText: 'e.g. Violated terms of service',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(ctx).colorScheme.error,
+              ),
+              child: const Text('Suspend'),
+            ),
+          ],
+        ),
+      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          reasonController.dispose();
+        });
+      });
+      if (confirmed != true || !mounted) return;
+      suspensionReason = reasonController.text.trim().isEmpty
+          ? null
+          : reasonController.text.trim();
+    }
+
     _actionInProgress = true;
     try {
-      final ok = await AdminUserService().setActive(row.id, active);
+      final ok = await AdminUserService().setActive(
+        row.id,
+        active,
+        reason: suspensionReason,
+      );
       if (!mounted) return;
       if (ok) await _load();
     } finally {
@@ -257,10 +317,63 @@ class _AdminUserManagementScreenState
     if (confirm != true || !mounted) return;
 
     _actionInProgress = true;
+
+    // Show a non-dismissible blocking loading dialog while the Edge Function runs
+    if (mounted) {
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => PopScope(
+          canPop: false,
+          child: AlertDialog(
+            content: Row(
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(width: 20),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Deleting account…',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleSmall
+                            ?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Removing account and associated data.',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     try {
       await AdminUserService().deleteUser(row.id);
-      if (mounted) await _load();
+      if (mounted) {
+        Navigator.of(context).pop(); // Dismiss loading dialog
+        // Remove user from list in-place
+        setState(() {
+          _profiles.removeWhere((p) => p.id == row.id);
+          _filtered.removeWhere((p) => p.id == row.id);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${row.email} has been deleted.'),
+          ),
+        );
+      }
     } catch (e, stack) {
+      if (mounted) Navigator.of(context).pop(); // Dismiss loading dialog
       if (kDebugMode) {
         debugPrint(
             '[AdminUserManagement][_deleteUser] Delete failed for ${row.email} (${row.id}): $e');
