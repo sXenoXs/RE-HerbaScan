@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -146,8 +148,10 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
                 children: [
                   const SizedBox(height: 8),
                   _buildAISection(theme),
-                  const SizedBox(height: 24),
-                  _buildUsageSection(theme),
+                  if (!kIsWeb) ...[
+                    const SizedBox(height: 24),
+                    _buildUsageSection(theme),
+                  ],
                   const SizedBox(height: 24),
                   _buildErrorSection(theme),
                   const SizedBox(height: 24),
@@ -180,12 +184,12 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
   }
 
   Widget _buildModelSourceCard(ThemeData theme) {
-    final color = _otaActive ? AppTheme.botanicalPrimary : Colors.orange.shade700;
-    final icon = _otaActive ? Icons.cloud_done_rounded : Icons.inventory_2_outlined;
-    final label = _otaActive ? 'Live Model (Supabase)' : 'Bundled Asset Model';
-    final subtitle = _otaActive
-        ? 'Version: $_otaVersion'
-        : 'No OTA model downloaded yet';
+    final color = (kIsWeb || _otaActive) ? AppTheme.botanicalPrimary : Colors.orange.shade700;
+    final icon = (kIsWeb || _otaActive) ? Icons.cloud_done_rounded : Icons.inventory_2_outlined;
+    final label = kIsWeb ? 'Web Live Model (Cloud)' : (_otaActive ? 'Live Model (Supabase)' : 'Bundled Asset Model');
+    final subtitle = kIsWeb
+        ? 'Web Admin runs on the live cloud model.'
+        : (_otaActive ? 'Version: $_otaVersion' : 'No OTA model downloaded yet');
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -228,7 +232,7 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
               ],
             ),
           ),
-          if (!_otaActive)
+          if (!kIsWeb && !_otaActive)
             TextButton(
               onPressed: () async {
                 if (kIsWeb) {
@@ -272,7 +276,7 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Live Usage',
+          'Local Device Analytics',
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
             color: theme.colorScheme.onSurface,
@@ -961,22 +965,47 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
           ),
         );
       } else {
-        final dir = await getApplicationDocumentsDirectory();
         final stamp = _dateStamp();
         final filename = '${filenameBase}_$stamp.$ext';
-        final file = File('${dir.path}/$filename');
-        await file.writeAsString(content, flush: true);
-        await Share.shareXFiles(
-          [XFile(file.path)],
-          subject: 'HerbaScan export — $stamp',
-        );
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('File saved: $filename'),
-            backgroundColor: AppTheme.safeGreen,
-          ),
-        );
+        
+        if (kIsWeb) {
+          // Use url_launcher to download the file directly via data URI on the web
+          // Base64 encode it so large files don't break the URI format
+          final bytes = utf8.encode(content);
+          final base64String = base64Encode(bytes);
+          final mimeType = format == 'JSON' ? 'application/json' 
+                       : format == 'CSV' ? 'text/csv' 
+                       : 'text/plain';
+          final url = 'data:$mimeType;charset=utf-8;base64,$base64String';
+          
+          if (await canLaunchUrlString(url)) {
+             await launchUrlString(url);
+             if (!mounted) return;
+             ScaffoldMessenger.of(context).showSnackBar(
+               SnackBar(
+                 content: Text('Download started for $filename'),
+                 backgroundColor: AppTheme.safeGreen,
+               ),
+             );
+          } else {
+             throw Exception('Could not launch download on web');
+          }
+        } else {
+          final dir = await getApplicationDocumentsDirectory();
+          final file = File('${dir.path}/$filename');
+          await file.writeAsString(content, flush: true);
+          await Share.shareXFiles(
+            [XFile(file.path)],
+            subject: 'HerbaScan export — $stamp',
+          );
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('File saved: $filename'),
+              backgroundColor: AppTheme.safeGreen,
+            ),
+          );
+        }
       }
     } catch (e) {
       if (!mounted) return;

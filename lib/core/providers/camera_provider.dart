@@ -270,6 +270,8 @@ class CameraProvider extends ChangeNotifier {
     _performanceMonitor.startTimer(PerformanceOperation.aiInference);
 
     try {
+      await _usageAnalytics.trackScanAttempt();
+      
       final imageFile = await _getImageFileForTflite(imageData);
 
       final topK = await _tfliteService.predictTopK(imageFile, k: 3);
@@ -277,6 +279,7 @@ class CameraProvider extends ChangeNotifier {
 
       // OOD rejection: top prediction is Not_Plant
       if (topK.isNotEmpty && topK.first.label == 'Not_Plant') {
+        await _usageAnalytics.trackNoMatchScan();
         _isClassifying = false;
         notifyListeners();
         return {
