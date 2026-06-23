@@ -695,9 +695,9 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
         : 'Scientifically Documented Plant';
     final body = isDOHApproved
         ? 'This plant is officially endorsed by the Philippine Department of Health under Administrative Order No. 12, series of 1997, and is included in the list of clinically validated herbal medicines (Republic Act No. 8423 — TAMA).'
-        : 'This plant is not on the DOH approved list but is included in HerbaScan based on peer-reviewed literature and PITAHC (Philippine Institute of Traditional and Alternative Health Care) references.';
+        : 'This plant is not on the DOH approved list but is included in HerbaScan based on peer-reviewed literature and Philippine Herbal Pharmacopeia (PITAHC) references.';
     const footer =
-        'Source: Dept. of Health Admin. Order No. 12, s. 1997 · Republic Act No. 8423 (TAMA, 1997) · PITAHC';
+        'Source: Dept. of Health Admin. Order No. 12, s. 1997 · Republic Act No. 8423 (TAMA, 1997) · Philippine Herbal Pharmacopeia (PITAHC)';
 
     showModalBottomSheet(
       context: context,

@@ -98,7 +98,7 @@ INSERT INTO public.catalog_safety (
   true,
   true,
   '["May act as emmenagogue at very high doses", "Avoid pure menthol/essential oil in young children (respiratory risk)", "Mild skin sensitization possible with prolonged topical use"]',
-  '["No known drug interactions documented in DOH/PITAHC references."]',
+  '["No known drug interactions documented in the Philippine Herbal Pharmacopeia (PITAHC) references."]',
   '["Avoid high medicinal doses during pregnancy — may stimulate uterine contractions at excessive intake", "Do not apply pure essential oil directly to face of infants or young children"]'
 ) ON CONFLICT (plant_id) DO NOTHING;
 

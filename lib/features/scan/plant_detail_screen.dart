@@ -929,7 +929,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
                           icon: Icons.science_rounded,
                           title: 'PITAHC',
                           subtitle:
-                              'Philippine Institute of Traditional and Alternative Health Care — Philippine Herbal Pharmacopeia 2022',
+                              'Philippine Herbal Pharmacopeia 2022 (PITAHC)',
                         ),
                         const SizedBox(height: 12),
                         _DataSourceTile(

@@ -5,7 +5,7 @@
 HerbaScan is a Flutter-based mobile application that uses a MobileNetV2 Convolutional Neural Network to identify Philippine medicinal plants fully offline. The app provides comprehensive information about DOH-approved herbal medicines and supports offline processing for rural areas.
 
 **Academic Context**: Undergraduate Thesis — College of Information Technology and Computer Science, Lyceum of the Philippines University-Cavite
-**Client/Partner**: Philippine Institute of Traditional and Alternative Health Care (PITAHC)
+**Client/Partner**: Integrative Medicine for Alternative Healthcare Systems (INAM) Philippines
 **Dataset**: PhilMedic — 4,922 leaf images, medicinal plant classes native to the Philippines
 
 ---
