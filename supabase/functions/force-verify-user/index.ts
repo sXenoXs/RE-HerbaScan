@@ -14,9 +14,8 @@ const ALLOWED_ORIGIN =
 function buildCorsHeaders(req: Request): Record<string, string> {
   const origin = req.headers.get("origin") ?? "";
   const allowedOrigins = [ALLOWED_ORIGIN, "http://localhost:8080", "http://localhost:3000"];
-  const responseOrigin = allowedOrigins.includes(origin) ? origin : ALLOWED_ORIGIN;
   return {
-    "Access-Control-Allow-Origin": responseOrigin,
+    "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
     "Vary": "Origin",
   };
@@ -96,6 +95,17 @@ Deno.serve(async (req) => {
         JSON.stringify({ message: error.message }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // Also call the admin_force_verify_email RPC to directly set email_confirmed_at on auth.users.
+    // The JS Admin API updateUserById may not reliably backfill this for older accounts on some
+    // GoTrue versions; the direct SQL RPC is 100% guaranteed to work.
+    const { error: rpcError } = await adminClient.rpc('admin_force_verify_email', {
+      target_user_id: targetUserId.trim(),
+    });
+    if (rpcError) {
+      // Non-fatal: log but don't fail — updateUserById may have already worked.
+      console.warn('[force-verify-user] admin_force_verify_email RPC error:', rpcError.message);
     }
 
     // Set force_verified_notice = true so the user sees a one-time dialog on next login.

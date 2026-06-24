@@ -60,9 +60,9 @@ class _UserSessionWatcherState extends State<UserSessionWatcher> {
     final navContext = widget.navigatorKey.currentContext;
     if (navContext == null) return;
 
-    // Do not show dialogs or navigate if we are on Splash, Disclaimer, or Onboarding
+    // Do not show dialogs or navigate if we are on Splash, Disclaimer, Onboarding, Login, or Signup
     final path = GoRouter.of(navContext).routerDelegate.currentConfiguration.uri.path;
-    if (path == '/' || path == '/disclaimer' || path == '/onboarding') {
+    if (path == '/' || path == '/disclaimer' || path == '/onboarding' || path == '/login' || path == '/signup') {
       return; // Defer until route changes
     }
 
@@ -72,17 +72,29 @@ class _UserSessionWatcherState extends State<UserSessionWatcher> {
       GoRouter.of(navContext).go('/suspended', extra: reason);
     } else if (auth.showForceVerifiedNotice) {
       auth.clearForceVerifiedNoticeFlag();
-      _showForceVerifiedDialog(navContext);
-      if (auth.user != null) {
-        AdminUserService().clearForceVerifiedNotice(auth.user!.id);
-      }
+      final userId = auth.user?.id;
+      // Delay dialog by 500ms so any in-flight GoRouter navigation (e.g. pop back to
+      // Settings, go to Home) fully settles before we push the dialog route on top.
+      // Without this delay the dialog is pushed then immediately popped by the
+      // still-completing Navigator.pop() from the Login screen.
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (!mounted) return;
+        _showForceVerifiedDialog(navContext);
+        if (userId != null) {
+          AdminUserService().clearForceVerifiedNotice(userId);
+        }
+      });
     } else if (auth.showRoleChangeNotice) {
       final role = auth.isAdmin ? 'admin' : 'user';
       auth.clearRoleChangeNoticeFlag();
-      _showRoleChangeDialog(navContext, role);
-      if (auth.user != null) {
-        AdminUserService().clearRoleChangeNotice(auth.user!.id);
-      }
+      final userId = auth.user?.id;
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (!mounted) return;
+        _showRoleChangeDialog(navContext, role);
+        if (userId != null) {
+          AdminUserService().clearRoleChangeNotice(userId);
+        }
+      });
     }
   }
 

@@ -1,7 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:herbascan/core/config/supabase_config.dart';
 import 'package:herbascan/core/services/auth_service.dart';
-
 const String _bucket = 'herbarium-images';
 
 /// Admin-only: list profiles, deactivate user, delete user (storage + auth).
@@ -23,14 +23,21 @@ class AdminUserService {
       List<Map<String, dynamic>> list;
       try {
         final rpcRes = await _client.rpc('get_admin_users');
-        list = (rpcRes as List).cast<Map<String, dynamic>>();
-      } catch (_) {
+        list = (rpcRes as List)
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList();
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[AdminUserService] RPC get_admin_users failed: $e');
+        }
         final res = await _client
             .from('profiles')
             .select(
                 'id, email, role, is_active, created_at, suspension_reason, force_verified_notice, role_change_notice')
             .order('created_at', ascending: false);
-        list = (res as List).cast<Map<String, dynamic>>();
+        list = (res as List)
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList();
       }
       final rows = <AdminProfileRow>[];
       for (final p in list) {

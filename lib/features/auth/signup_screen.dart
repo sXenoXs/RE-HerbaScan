@@ -295,6 +295,37 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         : const Text('Create Account'),
                   ),
                 ),
+                const SizedBox(height: 12),
+                
+                // Bypass to OTP screen
+                TextButton(
+                  onPressed: () {
+                    final email = _emailController.text.trim();
+                    final emailRegex = RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+");
+                    
+                    if (email.isEmpty || !emailRegex.hasMatch(email)) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please enter your valid email above to verify your code.'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    } else {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => EnterSignupCodeScreen(email: email),
+                        ),
+                      );
+                    }
+                  },
+                  child: Text(
+                    'Already have a verification code?',
+                    style: TextStyle(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
