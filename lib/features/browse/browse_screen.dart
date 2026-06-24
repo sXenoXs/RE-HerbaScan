@@ -14,7 +14,7 @@ import 'package:herbascan/features/browse/condition_search_screen.dart';
 import 'package:herbascan/features/browse/toxic_plant_detail_screen.dart';
 import 'package:herbascan/core/services/usage_analytics.dart';
 
-enum BrowseFilter { all, doh, toxic }
+enum BrowseFilter { all, doh }
 
 // Toxic plant data now loaded from Supabase toxic_plants_catalog table.
 // Falls back to empty list when offline or on error.
@@ -150,8 +150,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
     final filteredPlants = _filterPlants(plantProvider.plants);
     final filteredToxic = _filterToxicPlants();
 
-    final isToxic = _selectedFilter == BrowseFilter.toxic;
-    final showingCount = isToxic ? filteredToxic.length : filteredPlants.length;
+    final showingCount = filteredPlants.length;
 
     return GestureDetector(
       onTap: () => _searchFocusNode.unfocus(),
@@ -159,14 +158,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
         resizeToAvoidBottomInset: false,
         body: RefreshIndicator(
           onRefresh: () async {
-            if (isToxic) {
-              await Future.wait([
-                _loadToxicPlantImages(),
-                _loadToxicPlants(),
-              ]);
-            } else {
-              await context.read<PlantProvider>().refreshPlants();
-            }
+            await context.read<PlantProvider>().refreshPlants();
           },
           child: CustomScrollView(
             slivers: [
@@ -184,9 +176,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
                   child: SearchBar(
                     controller: _searchController,
                     focusNode: _searchFocusNode,
-                    hintText: isToxic
-                        ? 'Search ${_toxicPlants.length} Toxic Plants'
-                        : 'Search ${plantProvider.plants.length} Plants',
+                    hintText: 'Search ${plantProvider.plants.length} Plants',
                     leading: Icon(
                       Icons.search_rounded,
                       color: theme.colorScheme.onSurface.withOpacity(0.5),
@@ -251,11 +241,6 @@ class _BrowseScreenState extends State<BrowseScreen> {
                       label: Text('DOH Approved'),
                       icon: Icon(Icons.verified_rounded),
                     ),
-                    ButtonSegment(
-                      value: BrowseFilter.toxic,
-                      label: Text('Toxic Plants'),
-                      icon: Icon(Icons.warning_amber_rounded),
-                    ),
                   ],
                   selected: {_selectedFilter},
                   onSelectionChanged: (selection) {
@@ -270,9 +255,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
                     backgroundColor: WidgetStateProperty.resolveWith(
                       (states) {
                         if (states.contains(WidgetState.selected)) {
-                          return _selectedFilter == BrowseFilter.toxic
-                              ? Colors.red.shade700
-                              : AppTheme.botanicalPrimary;
+                          return AppTheme.botanicalPrimary;
                         }
                         return null;
                       },
@@ -290,41 +273,6 @@ class _BrowseScreenState extends State<BrowseScreen> {
               ),
             ),
 
-            // Toxic Plants info banner
-            if (isToxic)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 11),
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Colors.red.shade300,
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.warning_amber_rounded,
-                            color: Colors.red.shade700, size: 20),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'These plants are harmful or toxic. Avoid contact or ingestion.',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: Colors.red.shade800,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
 
             // Toolbar row: count + Medical pill (non-toxic only) + grid/list toggle
             SliverToBoxAdapter(
@@ -334,13 +282,13 @@ class _BrowseScreenState extends State<BrowseScreen> {
                 child: Row(
                   children: [
                     Text(
-                      'Showing $showingCount ${isToxic ? 'Toxic Plants' : 'Plants'}',
+                      'Showing $showingCount Plants',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: AppTheme.textSecondary,
                       ),
                     ),
                     const Spacer(),
-                    if (!isToxic) ...[
+
                       ActionChip(
                         avatar: const Icon(
                           Icons.medical_services_outlined,
@@ -374,7 +322,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
                         ),
                       ),
                       const SizedBox(width: 4),
-                    ],
+
                     IconButton(
                       icon: Icon(
                         _isGridView
@@ -396,82 +344,44 @@ class _BrowseScreenState extends State<BrowseScreen> {
               ),
             ),
 
-            // Plant content — toxic tab
-            if (isToxic) ...[
-              if (filteredToxic.isEmpty)
-                SliverFillRemaining(
-                  child: _buildEmptyState(context, theme),
-                )
-              else if (_isGridView)
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                  sliver: SliverGrid(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) =>
-                          _buildToxicGridCard(filteredToxic[index], theme),
-                      childCount: filteredToxic.length,
-                    ),
-                    gridDelegate:
-                        const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 240,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 0.68,
-                    ),
-                  ),
-                )
-              else
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) =>
-                          _buildToxicListCard(filteredToxic[index], theme),
-                      childCount: filteredToxic.length,
-                    ),
-                  ),
-                ),
-            ]
             // Plant content — all / doh tabs
-            else ...[
-              if (plantProvider.isLoading)
-                const SliverFillRemaining(
-                  child: Center(child: CircularProgressIndicator()),
-                )
-              else if (filteredPlants.isEmpty)
-                SliverFillRemaining(
-                  child: _buildEmptyState(context, theme),
-                )
-              else if (_isGridView)
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                  sliver: SliverGrid(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) =>
-                          _buildPlantGridCard(filteredPlants[index], theme),
-                      childCount: filteredPlants.length,
-                    ),
-                    gridDelegate:
-                        const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 240,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 0.9,
-                    ),
+            if (plantProvider.isLoading)
+              const SliverFillRemaining(
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (filteredPlants.isEmpty)
+              SliverFillRemaining(
+                child: _buildEmptyState(context, theme),
+              )
+            else if (_isGridView)
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                sliver: SliverGrid(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) =>
+                        _buildPlantGridCard(filteredPlants[index], theme),
+                    childCount: filteredPlants.length,
                   ),
-                )
-              else
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) =>
-                          _buildPlantListCard(filteredPlants[index], theme),
-                      childCount: filteredPlants.length,
-                    ),
+                  gridDelegate:
+                      const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 240,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 0.9,
                   ),
                 ),
-            ],
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) =>
+                        _buildPlantListCard(filteredPlants[index], theme),
+                    childCount: filteredPlants.length,
+                  ),
+                ),
+              ),
             ],
           ),
         ),
