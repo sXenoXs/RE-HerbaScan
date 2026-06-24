@@ -1,809 +1,483 @@
 {
-  "lagundi-001": {
-    "plant_id": "lagundi-001",
-    "known_coordinates": [
-      {
-        "lat": 14.5995,
-        "lng": 120.9842
-      },
-      {
-        "lat": 10.3157,
-        "lng": 123.8854
-      },
-      {
-        "lat": 7.0731,
-        "lng": 125.6128
-      },
-      {
-        "lat": 15.48,
-        "lng": 120.5979
-      },
-      {
-        "lat": 13.412,
-        "lng": 122.5615
-      }
-    ],
-    "region_names": [
-      "Metro Manila",
-      "Cebu",
-      "Davao",
-      "Tarlac",
-      "Quezon"
-    ],
-    "climate_notes": "Tropical; lowland to mid-elevation (0–1000 masl). Thrives in disturbed areas and forest edges."
-  },
-  "sambong-001": {
-    "plant_id": "sambong-001",
-    "known_coordinates": [
-      {
-        "lat": 14.5995,
-        "lng": 120.9842
-      },
-      {
-        "lat": 10.3157,
-        "lng": 123.8854
-      },
-      {
-        "lat": 15.48,
-        "lng": 120.5979
-      },
-      {
-        "lat": 16.0428,
-        "lng": 120.333
-      }
-    ],
-    "region_names": [
-      "Metro Manila",
-      "Cebu",
-      "Tarlac",
-      "Pangasinan"
-    ],
-    "climate_notes": "Tropical; open grasslands, roadsides, and secondary forests. Full sun to partial shade."
-  },
   "akapulko-001": {
     "plant_id": "akapulko-001",
     "known_coordinates": [
-      {
-        "lat": 14.5995,
-        "lng": 120.9842
-      },
-      {
-        "lat": 10.3157,
-        "lng": 123.8854
-      },
-      {
-        "lat": 7.0731,
-        "lng": 125.6128
-      },
-      {
-        "lat": 13.412,
-        "lng": 122.5615
-      }
+      { "lat": 14.1648, "lng": 121.2415 },
+      { "lat": 15.3677, "lng": 121.0572 },
+      { "lat": 7.1907, "lng": 125.4553 },
+      { "lat": 6.9214, "lng": 122.0790 },
+      { "lat": 17.6523, "lng": 121.6904 }
     ],
     "region_names": [
-      "Metro Manila",
-      "Cebu",
-      "Davao",
-      "Quezon"
+      "Los Baños, Laguna",
+      "Nueva Ecija",
+      "Davao City",
+      "Zamboanga City",
+      "Solana, Cagayan"
     ],
     "climate_notes": "Tropical; widely distributed in lowland areas. Cultivated in gardens and found in open spaces."
+  },
+  "aloe-vera-001": {
+    "plant_id": "aloe-vera-001",
+    "known_coordinates": [
+      { "lat": 14.1648, "lng": 121.2415 },
+      { "lat": 18.1980, "lng": 120.5900 },
+      { "lat": 6.7656, "lng": 125.3284 },
+      { "lat": 14.6760, "lng": 121.0437 }
+    ],
+    "region_names": [
+      "Los Baños, Laguna",
+      "Ilocos Norte",
+      "Davao del Sur",
+      "Quezon City"
+    ],
+    "climate_notes": "Tropical; drought-tolerant. Cultivated in gardens; well-drained soil, full sun to partial shade."
   },
   "ampalaya-001": {
     "plant_id": "ampalaya-001",
     "known_coordinates": [
-      {
-        "lat": 14.5995,
-        "lng": 120.9842
-      },
-      {
-        "lat": 10.3157,
-        "lng": 123.8854
-      },
-      {
-        "lat": 15.48,
-        "lng": 120.5979
-      },
-      {
-        "lat": 7.0731,
-        "lng": 125.6128
-      }
+      { "lat": 14.0676, "lng": 121.4880 },
+      { "lat": 15.5784, "lng": 120.9731 },
+      { "lat": 8.0515, "lng": 124.6220 },
+      { "lat": 16.4613, "lng": 120.5935 }
     ],
     "region_names": [
-      "Metro Manila",
-      "Cebu",
-      "Tarlac",
-      "Davao"
+      "Mt. Banahaw, Quezon",
+      "Nueva Ecija",
+      "Bukidnon",
+      "La Trinidad, Benguet"
     ],
     "climate_notes": "Tropical; cultivated nationwide. Prefers warm, humid conditions and well-drained soil."
+  },
+  "banaba-001": {
+    "plant_id": "banaba-001",
+    "known_coordinates": [
+      { "lat": 14.0676, "lng": 121.4880 },
+      { "lat": 14.1648, "lng": 121.2415 },
+      { "lat": 13.7565, "lng": 121.0583 },
+      { "lat": 7.1323, "lng": 124.8530 }
+    ],
+    "region_names": [
+      "Mt. Banahaw, Quezon",
+      "Los Baños, Laguna",
+      "Batangas",
+      "North Cotabato"
+    ],
+    "climate_notes": "Tropical; secondary forests and roadsides. Deciduous; well-drained soil."
   },
   "bawang-001": {
     "plant_id": "bawang-001",
     "known_coordinates": [
-      {
-        "lat": 15.48,
-        "lng": 120.5979
-      },
-      {
-        "lat": 16.0428,
-        "lng": 120.333
-      },
-      {
-        "lat": 10.3157,
-        "lng": 123.8854
-      },
-      {
-        "lat": 14.5995,
-        "lng": 120.9842
-      }
+      { "lat": 18.0554, "lng": 120.5648 },
+      { "lat": 17.5747, "lng": 120.3869 },
+      { "lat": 16.3301, "lng": 121.1719 },
+      { "lat": 16.4613, "lng": 120.5935 }
     ],
     "region_names": [
-      "Tarlac",
-      "Pangasinan",
-      "Cebu",
-      "Metro Manila"
+      "Batac, Ilocos Norte",
+      "Vigan, Ilocos Sur",
+      "Nueva Vizcaya",
+      "La Trinidad, Benguet"
     ],
     "climate_notes": "Tropical to subtropical; widely cultivated. Cooler highland areas in Luzon for bulb production."
   },
   "bayabas-001": {
     "plant_id": "bayabas-001",
     "known_coordinates": [
-      {
-        "lat": 14.5995,
-        "lng": 120.9842
-      },
-      {
-        "lat": 10.3157,
-        "lng": 123.8854
-      },
-      {
-        "lat": 7.0731,
-        "lng": 125.6128
-      },
-      {
-        "lat": 13.412,
-        "lng": 122.5615
-      }
+      { "lat": 14.1648, "lng": 121.2415 },
+      { "lat": 13.7565, "lng": 121.0583 },
+      { "lat": 13.9310, "lng": 121.9376 },
+      { "lat": 7.1907, "lng": 125.4553 }
     ],
     "region_names": [
-      "Metro Manila",
-      "Cebu",
-      "Davao",
-      "Quezon"
+      "Los Baños, Laguna",
+      "Batangas",
+      "Quezon Province",
+      "Davao City"
     ],
     "climate_notes": "Tropical; naturalized and cultivated throughout the Philippines. Lowland to mid-elevation."
-  },
-  "niyog-niyogan-001": {
-    "plant_id": "niyog-niyogan-001",
-    "known_coordinates": [
-      {
-        "lat": 14.5995,
-        "lng": 120.9842
-      },
-      {
-        "lat": 10.3157,
-        "lng": 123.8854
-      },
-      {
-        "lat": 13.412,
-        "lng": 122.5615
-      },
-      {
-        "lat": 7.0731,
-        "lng": 125.6128
-      }
-    ],
-    "region_names": [
-      "Metro Manila",
-      "Cebu",
-      "Quezon",
-      "Davao"
-    ],
-    "climate_notes": "Tropical; climbing vine in forest edges and secondary growth. Warm, humid lowlands."
-  },
-  "tsaang-gubat-001": {
-    "plant_id": "tsaang-gubat-001",
-    "known_coordinates": [
-      {
-        "lat": 14.5995,
-        "lng": 120.9842
-      },
-      {
-        "lat": 13.412,
-        "lng": 122.5615
-      },
-      {
-        "lat": 10.3157,
-        "lng": 123.8854
-      },
-      {
-        "lat": 15.48,
-        "lng": 120.5979
-      }
-    ],
-    "region_names": [
-      "Metro Manila",
-      "Quezon",
-      "Cebu",
-      "Tarlac"
-    ],
-    "climate_notes": "Tropical; understory shrub in lowland forests. Partial shade, well-drained soil."
-  },
-  "ulasimang-bato-001": {
-    "plant_id": "ulasimang-bato-001",
-    "known_coordinates": [
-      {
-        "lat": 14.5995,
-        "lng": 120.9842
-      },
-      {
-        "lat": 10.3157,
-        "lng": 123.8854
-      },
-      {
-        "lat": 7.0731,
-        "lng": 125.6128
-      },
-      {
-        "lat": 13.412,
-        "lng": 122.5615
-      }
-    ],
-    "region_names": [
-      "Metro Manila",
-      "Cebu",
-      "Davao",
-      "Quezon"
-    ],
-    "climate_notes": "Tropical; moist, shaded areas. Common in gardens and damp forest edges."
-  },
-  "tawa-tawa-001": {
-    "plant_id": "tawa-tawa-001",
-    "known_coordinates": [
-      {
-        "lat": 14.5995,
-        "lng": 120.9842
-      },
-      {
-        "lat": 10.3157,
-        "lng": 123.8854
-      },
-      {
-        "lat": 7.0731,
-        "lng": 125.6128
-      },
-      {
-        "lat": 15.48,
-        "lng": 120.5979
-      }
-    ],
-    "region_names": [
-      "Metro Manila",
-      "Cebu",
-      "Davao",
-      "Tarlac"
-    ],
-    "climate_notes": "Tropical; roadsides, grasslands, and disturbed areas. Widespread in lowlands."
-  },
-  "malunggay-001": {
-    "plant_id": "malunggay-001",
-    "known_coordinates": [
-      {
-        "lat": 14.5995,
-        "lng": 120.9842
-      },
-      {
-        "lat": 10.3157,
-        "lng": 123.8854
-      },
-      {
-        "lat": 7.0731,
-        "lng": 125.6128
-      },
-      {
-        "lat": 13.412,
-        "lng": 122.5615
-      }
-    ],
-    "region_names": [
-      "Metro Manila",
-      "Cebu",
-      "Davao",
-      "Quezon"
-    ],
-    "climate_notes": "Tropical; drought-tolerant. Cultivated nationwide; lowland to mid-elevation."
-  },
-  "oregano-001": {
-    "plant_id": "oregano-001",
-    "known_coordinates": [
-      {
-        "lat": 14.5995,
-        "lng": 120.9842
-      },
-      {
-        "lat": 10.3157,
-        "lng": 123.8854
-      },
-      {
-        "lat": 15.48,
-        "lng": 120.5979
-      }
-    ],
-    "region_names": [
-      "Metro Manila",
-      "Cebu",
-      "Tarlac"
-    ],
-    "climate_notes": "Tropical to subtropical; well-drained soil, full sun. Often cultivated in gardens."
-  },
-  "luya-001": {
-    "plant_id": "luya-001",
-    "known_coordinates": [
-      {
-        "lat": 10.3157,
-        "lng": 123.8854
-      },
-      {
-        "lat": 7.0731,
-        "lng": 125.6128
-      },
-      {
-        "lat": 13.412,
-        "lng": 122.5615
-      },
-      {
-        "lat": 14.5995,
-        "lng": 120.9842
-      }
-    ],
-    "region_names": [
-      "Cebu",
-      "Davao",
-      "Quezon",
-      "Metro Manila"
-    ],
-    "climate_notes": "Tropical; warm, humid lowlands. Widely cultivated; prefers rich, moist soil."
-  },
-  "aloe-vera-001": {
-    "plant_id": "aloe-vera-001",
-    "known_coordinates": [
-      {
-        "lat": 14.5995,
-        "lng": 120.9842
-      },
-      {
-        "lat": 10.3157,
-        "lng": 123.8854
-      },
-      {
-        "lat": 15.48,
-        "lng": 120.5979
-      },
-      {
-        "lat": 7.0731,
-        "lng": 125.6128
-      }
-    ],
-    "region_names": [
-      "Metro Manila",
-      "Cebu",
-      "Tarlac",
-      "Davao"
-    ],
-    "climate_notes": "Tropical; drought-tolerant. Cultivated in gardens; well-drained soil, full sun to partial shade."
-  },
-  "banaba-001": {
-    "plant_id": "banaba-001",
-    "known_coordinates": [
-      {
-        "lat": 14.5995,
-        "lng": 120.9842
-      },
-      {
-        "lat": 10.3157,
-        "lng": 123.8854
-      },
-      {
-        "lat": 7.0731,
-        "lng": 125.6128
-      },
-      {
-        "lat": 13.412,
-        "lng": 122.5615
-      }
-    ],
-    "region_names": [
-      "Metro Manila",
-      "Cebu",
-      "Davao",
-      "Quezon"
-    ],
-    "climate_notes": "Tropical; secondary forests and roadsides. Deciduous; well-drained soil."
   },
   "calamansi-001": {
     "plant_id": "calamansi-001",
     "known_coordinates": [
-      {
-        "lat": 14.5995,
-        "lng": 120.9842
-      },
-      {
-        "lat": 10.3157,
-        "lng": 123.8854
-      },
-      {
-        "lat": 7.0731,
-        "lng": 125.6128
-      },
-      {
-        "lat": 13.412,
-        "lng": 122.5615
-      }
+      { "lat": 13.0565, "lng": 121.4069 },
+      { "lat": 13.9310, "lng": 121.9376 },
+      { "lat": 10.5930, "lng": 122.6324 },
+      { "lat": 7.5222, "lng": 122.1198 },
+      { "lat": 15.0794, "lng": 120.6200 }
     ],
     "region_names": [
-      "Metro Manila",
-      "Cebu",
-      "Davao",
-      "Quezon"
+      "Oriental Mindoro",
+      "Quezon Province",
+      "Guimaras Island",
+      "Zamboanga Sibugay",
+      "Pampanga"
     ],
     "climate_notes": "Tropical; widely cultivated. Small shrubby tree; bears fruit year-round; full sun."
   },
   "gumamela-001": {
     "plant_id": "gumamela-001",
     "known_coordinates": [
-      {
-        "lat": 14.5995,
-        "lng": 120.9842
-      },
-      {
-        "lat": 10.3157,
-        "lng": 123.8854
-      },
-      {
-        "lat": 7.0731,
-        "lng": 125.6128
-      }
+      { "lat": 14.6760, "lng": 121.0437 },
+      { "lat": 10.3157, "lng": 123.8854 },
+      { "lat": 7.1907, "lng": 125.4553 },
+      { "lat": 16.4023, "lng": 120.5960 }
     ],
     "region_names": [
-      "Metro Manila",
-      "Cebu",
-      "Davao"
+      "Quezon City",
+      "Cebu City",
+      "Davao City",
+      "Baguio City"
     ],
     "climate_notes": "Tropical; evergreen shrub, ornamental hedge. Blooms year-round; full sun."
   },
   "guyabano-001": {
     "plant_id": "guyabano-001",
     "known_coordinates": [
-      {
-        "lat": 14.5995,
-        "lng": 120.9842
-      },
-      {
-        "lat": 10.3157,
-        "lng": 123.8854
-      },
-      {
-        "lat": 7.0731,
-        "lng": 125.6128
-      },
-      {
-        "lat": 13.412,
-        "lng": 122.5615
-      }
+      { "lat": 13.9310, "lng": 121.9376 },
+      { "lat": 14.1648, "lng": 121.2415 },
+      { "lat": 7.1907, "lng": 125.4553 },
+      { "lat": 16.4023, "lng": 120.5960 }
     ],
     "region_names": [
-      "Metro Manila",
-      "Cebu",
-      "Davao",
-      "Quezon"
+      "Quezon Province",
+      "Laguna",
+      "Davao City",
+      "Baguio City"
     ],
     "climate_notes": "Tropical; humid lowlands. Small tree with large spiny fruits; well-drained soil."
   },
   "kakawate-001": {
     "plant_id": "kakawate-001",
     "known_coordinates": [
-      {
-        "lat": 14.5995,
-        "lng": 120.9842
-      },
-      {
-        "lat": 10.3157,
-        "lng": 123.8854
-      },
-      {
-        "lat": 7.0731,
-        "lng": 125.6128
-      },
-      {
-        "lat": 13.412,
-        "lng": 122.5615
-      }
+      { "lat": 15.1450, "lng": 120.5960 },
+      { "lat": 14.1483, "lng": 121.2416 },
+      { "lat": 8.4542, "lng": 124.6319 },
+      { "lat": 10.8731, "lng": 124.8811 }
     ],
     "region_names": [
-      "Metro Manila",
-      "Cebu",
-      "Davao",
-      "Quezon"
+      "Pampanga",
+      "Los Baños, Laguna",
+      "Cagayan de Oro",
+      "Leyte"
     ],
     "climate_notes": "Tropical; living fence and shade tree. Sheds leaves in dry season; pink/lilac flowers; drought-tolerant."
   },
   "kamias-001": {
     "plant_id": "kamias-001",
     "known_coordinates": [
-      {
-        "lat": 14.5995,
-        "lng": 120.9842
-      },
-      {
-        "lat": 10.3157,
-        "lng": 123.8854
-      },
-      {
-        "lat": 7.0731,
-        "lng": 125.6128
-      }
+      { "lat": 14.1648, "lng": 121.2415 },
+      { "lat": 13.7565, "lng": 121.0583 },
+      { "lat": 10.3157, "lng": 123.8854 },
+      { "lat": 7.1907, "lng": 125.4553 }
     ],
     "region_names": [
-      "Metro Manila",
-      "Cebu",
-      "Davao"
+      "Laguna",
+      "Batangas",
+      "Cebu City",
+      "Davao City"
     ],
     "climate_notes": "Tropical; small tree, fruits on trunk (cauliflory). Sour cylinder-shaped fruits; well-drained soil."
   },
   "kamote-001": {
     "plant_id": "kamote-001",
     "known_coordinates": [
-      {
-        "lat": 14.5995,
-        "lng": 120.9842
-      },
-      {
-        "lat": 10.3157,
-        "lng": 123.8854
-      },
-      {
-        "lat": 7.0731,
-        "lng": 125.6128
-      },
-      {
-        "lat": 13.412,
-        "lng": 122.5615
-      }
+      { "lat": 16.4613, "lng": 120.5935 },
+      { "lat": 18.1980, "lng": 120.5900 },
+      { "lat": 13.9310, "lng": 121.9376 },
+      { "lat": 8.0515, "lng": 124.6220 }
     ],
     "region_names": [
-      "Metro Manila",
-      "Cebu",
-      "Davao",
-      "Quezon"
+      "La Trinidad, Benguet",
+      "Ilocos Norte",
+      "Quezon Province",
+      "Bukidnon"
     ],
     "climate_notes": "Tropical; creeping vine, tuberous roots. Staple crop; various soil types; full sun."
   },
   "kamoteng-kahoy-001": {
     "plant_id": "kamoteng-kahoy-001",
     "known_coordinates": [
-      {
-        "lat": 14.5995,
-        "lng": 120.9842
-      },
-      {
-        "lat": 10.3157,
-        "lng": 123.8854
-      },
-      {
-        "lat": 7.0731,
-        "lng": 125.6128
-      },
-      {
-        "lat": 13.412,
-        "lng": 122.5615
-      }
+      { "lat": 8.1527, "lng": 123.2679 },
+      { "lat": 12.5270, "lng": 124.7000 },
+      { "lat": 16.9754, "lng": 121.8107 },
+      { "lat": 6.3324, "lng": 124.7703 }
     ],
     "region_names": [
-      "Metro Manila",
-      "Cebu",
-      "Davao",
-      "Quezon"
+      "Zamboanga del Norte",
+      "Northern Samar",
+      "Isabela",
+      "South Cotabato"
     ],
     "climate_notes": "Tropical; woody shrub, starchy roots. Drought-tolerant; poor to well-drained soils."
+  },
+  "lagundi-001": {
+    "plant_id": "lagundi-001",
+    "known_coordinates": [
+      { "lat": 16.9178, "lng": 121.0817 },
+      { "lat": 13.7565, "lng": 121.0583 },
+      { "lat": 14.5835, "lng": 121.1225 },
+      { "lat": 16.6159, "lng": 120.3172 },
+      { "lat": 10.3157, "lng": 123.8854 },
+      { "lat": 18.1980, "lng": 120.5900 }
+    ],
+    "region_names": [
+      "Batad, Ifugao",
+      "Batangas",
+      "Antipolo, Rizal",
+      "La Union",
+      "Cebu",
+      "Ilocos Norte"
+    ],
+    "climate_notes": "Tropical; lowland to mid-elevation (0–1000 masl). Thrives in disturbed areas and forest edges."
+  },
+  "luya-001": {
+    "plant_id": "luya-001",
+    "known_coordinates": [
+      { "lat": 18.1980, "lng": 120.5900 },
+      { "lat": 16.4613, "lng": 120.5935 },
+      { "lat": 8.0515, "lng": 124.6220 },
+      { "lat": 13.9310, "lng": 121.9376 }
+    ],
+    "region_names": [
+      "Ilocos Norte",
+      "Benguet",
+      "Bukidnon",
+      "Quezon Province"
+    ],
+    "climate_notes": "Tropical; warm, humid lowlands. Widely cultivated; prefers rich, moist soil."
+  },
+  "malunggay-001": {
+    "plant_id": "malunggay-001",
+    "known_coordinates": [
+      { "lat": 9.8349, "lng": 118.7384 },
+      { "lat": 14.6524, "lng": 121.0475 },
+      { "lat": 7.1907, "lng": 125.4553 },
+      { "lat": 18.1980, "lng": 120.5900 }
+    ],
+    "region_names": [
+      "Palawan",
+      "Quezon City",
+      "Davao City",
+      "Ilocos Norte"
+    ],
+    "climate_notes": "Tropical; drought-tolerant. Cultivated nationwide; lowland to mid-elevation."
   },
   "mango-001": {
     "plant_id": "mango-001",
     "known_coordinates": [
-      {
-        "lat": 14.5995,
-        "lng": 120.9842
-      },
-      {
-        "lat": 10.3157,
-        "lng": 123.8854
-      },
-      {
-        "lat": 7.0731,
-        "lng": 125.6128
-      },
-      {
-        "lat": 15.48,
-        "lng": 120.5979
-      }
+      { "lat": 10.5930, "lng": 122.6324 },
+      { "lat": 10.3157, "lng": 123.8854 },
+      { "lat": 15.4000, "lng": 119.8590 },
+      { "lat": 7.1907, "lng": 125.4553 },
+      { "lat": 15.9670, "lng": 120.3673 }
     ],
     "region_names": [
-      "Metro Manila",
+      "Guimaras Island",
       "Cebu",
-      "Davao",
-      "Tarlac"
+      "San Antonio, Zambales",
+      "Davao City",
+      "Dagupan, Pangasinan"
     ],
     "climate_notes": "Tropical; large evergreen tree. National fruit; distinct wet and dry seasons; full sun."
   },
   "mayana-001": {
     "plant_id": "mayana-001",
     "known_coordinates": [
-      {
-        "lat": 14.5995,
-        "lng": 120.9842
-      },
-      {
-        "lat": 10.3157,
-        "lng": 123.8854
-      },
-      {
-        "lat": 13.412,
-        "lng": 122.5615
-      }
+      { "lat": 14.6760, "lng": 121.0437 },
+      { "lat": 16.4023, "lng": 120.5960 },
+      { "lat": 10.3157, "lng": 123.8854 },
+      { "lat": 7.1907, "lng": 125.4553 }
     ],
     "region_names": [
-      "Metro Manila",
-      "Cebu",
-      "Quezon"
+      "Quezon City",
+      "Baguio City",
+      "Cebu City",
+      "Davao City"
     ],
     "climate_notes": "Tropical; fleshy herb, variegated leaves. Shade to partial sun; moist soil."
+  },
+  "niyog-niyogan-001": {
+    "plant_id": "niyog-niyogan-001",
+    "known_coordinates": [
+      { "lat": 14.1648, "lng": 121.2415 },
+      { "lat": 13.9310, "lng": 121.9376 },
+      { "lat": 10.3157, "lng": 123.8854 },
+      { "lat": 7.1907, "lng": 125.4553 }
+    ],
+    "region_names": [
+      "Los Baños, Laguna",
+      "Quezon Province",
+      "Cebu",
+      "Davao City"
+    ],
+    "climate_notes": "Tropical; climbing vine in forest edges and secondary growth. Warm, humid lowlands."
+  },
+  "oregano-001": {
+    "plant_id": "oregano-001",
+    "known_coordinates": [
+      { "lat": 14.6760, "lng": 121.0437 },
+      { "lat": 10.3157, "lng": 123.8854 },
+      { "lat": 7.1907, "lng": 125.4553 },
+      { "lat": 10.6840, "lng": 122.9570 }
+    ],
+    "region_names": [
+      "Quezon City",
+      "Cebu City",
+      "Davao City",
+      "Iloilo"
+    ],
+    "climate_notes": "Tropical to subtropical; well-drained soil, full sun. Often cultivated in gardens."
   },
   "pomelo-001": {
     "plant_id": "pomelo-001",
     "known_coordinates": [
-      {
-        "lat": 14.5995,
-        "lng": 120.9842
-      },
-      {
-        "lat": 10.3157,
-        "lng": 123.8854
-      },
-      {
-        "lat": 7.0731,
-        "lng": 125.6128
-      },
-      {
-        "lat": 13.412,
-        "lng": 122.5615
-      }
+      { "lat": 7.0857, "lng": 125.3772 },
+      { "lat": 7.1907, "lng": 125.4553 },
+      { "lat": 7.1323, "lng": 124.8530 },
+      { "lat": 15.9670, "lng": 120.3673 }
     ],
     "region_names": [
-      "Metro Manila",
-      "Cebu",
-      "Davao",
-      "Quezon"
+      "Davao City (SODACO)",
+      "Davao City (Golden Pomelo)",
+      "North Cotabato",
+      "Pangasinan"
     ],
     "climate_notes": "Tropical; largest citrus tree. Large leaves, winged petioles; full sun."
   },
   "saluyot-001": {
     "plant_id": "saluyot-001",
     "known_coordinates": [
-      {
-        "lat": 16.0428,
-        "lng": 120.333
-      },
-      {
-        "lat": 15.48,
-        "lng": 120.5979
-      },
-      {
-        "lat": 14.5995,
-        "lng": 120.9842
-      }
+      { "lat": 18.1980, "lng": 120.5900 },
+      { "lat": 17.5747, "lng": 120.3869 },
+      { "lat": 8.0515, "lng": 124.6220 },
+      { "lat": 14.6760, "lng": 121.0437 }
     ],
     "region_names": [
-      "Pangasinan",
-      "Tarlac",
-      "Metro Manila"
+      "Ilocos Norte",
+      "Ilocos Sur",
+      "Mindanao uplands",
+      "Quezon City"
     ],
     "climate_notes": "Tropical; erect annual herb. Open low-lying areas; popular vegetable; full sun."
   },
   "sampa-sampalukan-001": {
     "plant_id": "sampa-sampalukan-001",
-    "known_coordinates": [
-      {
-        "lat": 14.5995,
-        "lng": 120.9842
-      },
-      {
-        "lat": 10.3157,
-        "lng": 123.8854
-      },
-      {
-        "lat": 7.0731,
-        "lng": 125.6128
-      }
-    ],
-    "region_names": [
-      "Metro Manila",
-      "Cebu",
-      "Davao"
-    ],
+    "known_coordinates": [],
+    "region_names": [],
     "climate_notes": "Tropical; small erect herb. Roadsides, gardens, wastelands; two-row leaf arrangement."
   },
   "sampalok-001": {
     "plant_id": "sampalok-001",
     "known_coordinates": [
-      {
-        "lat": 14.5995,
-        "lng": 120.9842
-      },
-      {
-        "lat": 10.3157,
-        "lng": 123.8854
-      },
-      {
-        "lat": 7.0731,
-        "lng": 125.6128
-      },
-      {
-        "lat": 15.48,
-        "lng": 120.5979
-      }
+      { "lat": 18.1980, "lng": 120.5900 },
+      { "lat": 10.3157, "lng": 123.8854 },
+      { "lat": 7.1907, "lng": 125.4553 },
+      { "lat": 15.0794, "lng": 120.6200 }
     ],
     "region_names": [
-      "Metro Manila",
-      "Cebu",
-      "Davao",
-      "Tarlac"
+      "Ilocos Norte",
+      "Cebu City",
+      "Davao City",
+      "Pampanga"
     ],
     "climate_notes": "Tropical; large slow-growing tree. Drought-resistant; brown pods with sour/sweet pulp."
+  },
+  "sambong-001": {
+    "plant_id": "sambong-001",
+    "known_coordinates": [
+      { "lat": 17.5747, "lng": 120.3869 },
+      { "lat": 16.4023, "lng": 120.5960 },
+      { "lat": 14.1648, "lng": 121.2415 },
+      { "lat": 7.1907, "lng": 125.4553 }
+    ],
+    "region_names": [
+      "Ilocos Region",
+      "Baguio City",
+      "Laguna / Los Baños",
+      "Davao City"
+    ],
+    "climate_notes": "Tropical; open grasslands, roadsides, and secondary forests. Full sun to partial shade."
   },
   "siling-labuyo-001": {
     "plant_id": "siling-labuyo-001",
     "known_coordinates": [
-      {
-        "lat": 14.5995,
-        "lng": 120.9842
-      },
-      {
-        "lat": 10.3157,
-        "lng": 123.8854
-      },
-      {
-        "lat": 7.0731,
-        "lng": 125.6128
-      }
+      { "lat": 13.9310, "lng": 121.9376 },
+      { "lat": 17.5747, "lng": 120.3869 },
+      { "lat": 7.1907, "lng": 125.4553 },
+      { "lat": 10.3157, "lng": 123.8854 }
     ],
     "region_names": [
-      "Metro Manila",
-      "Cebu",
-      "Davao"
+      "Quezon Province",
+      "Ilocos Sur",
+      "Davao City",
+      "Cebu"
     ],
     "climate_notes": "Tropical; small perennial shrub. Very hot small chilies; cultivated or wild; full sun."
+  },
+  "tawa-tawa-001": {
+    "plant_id": "tawa-tawa-001",
+    "known_coordinates": [
+      { "lat": 9.8500, "lng": 124.1435 },
+      { "lat": 14.6760, "lng": 121.0437 },
+      { "lat": 10.3157, "lng": 123.8854 },
+      { "lat": 7.1907, "lng": 125.4553 }
+    ],
+    "region_names": [
+      "Bohol",
+      "Quezon City",
+      "Cebu City",
+      "Davao City"
+    ],
+    "climate_notes": "Tropical; roadsides, grasslands, and disturbed areas. Widespread in lowlands."
+  },
+  "tsaang-gubat-001": {
+    "plant_id": "tsaang-gubat-001",
+    "known_coordinates": [
+      { "lat": 20.4477, "lng": 121.9700 },
+      { "lat": 9.8349, "lng": 118.7384 },
+      { "lat": 18.3000, "lng": 121.7700 },
+      { "lat": 7.8322, "lng": 123.2967 },
+      { "lat": 13.9310, "lng": 121.9376 }
+    ],
+    "region_names": [
+      "Batan Islands, Batanes",
+      "Palawan",
+      "Cagayan",
+      "Zamboanga del Sur",
+      "Quezon Province"
+    ],
+    "climate_notes": "Tropical; understory shrub in lowland forests. Partial shade, well-drained soil."
+  },
+  "ulasimang-bato-001": {
+    "plant_id": "ulasimang-bato-001",
+    "known_coordinates": [
+      { "lat": 14.1648, "lng": 121.2415 },
+      { "lat": 14.6760, "lng": 121.0437 },
+      { "lat": 10.3157, "lng": 123.8854 },
+      { "lat": 9.8500, "lng": 124.1435 }
+    ],
+    "region_names": [
+      "Los Baños, Laguna",
+      "Quezon City",
+      "Cebu",
+      "Bohol"
+    ],
+    "climate_notes": "Tropical; moist, shaded areas. Common in gardens and damp forest edges."
   },
   "yerba-buena-001": {
     "plant_id": "yerba-buena-001",
     "known_coordinates": [
-      {
-        "lat": 14.1021,
-        "lng": 120.9597
-      },
-      {
-        "lat": 16.4023,
-        "lng": 120.5960
-      },
-      {
-        "lat": 16.9754,
-        "lng": 121.1708
-      }
+      { "lat": 16.4023, "lng": 120.5960 },
+      { "lat": 16.4613, "lng": 120.5935 },
+      { "lat": 16.5856, "lng": 120.8939 },
+      { "lat": 17.0832, "lng": 120.9017 }
     ],
     "region_names": [
-      "Tagaytay, Cavite",
-      "Benguet",
-      "Mountain Province",
-      "Cordillera Administrative Region",
-      "Metro Manila (cultivated)",
-      "Batangas (cultivated)"
+      "Baguio City / Benguet",
+      "La Trinidad, Benguet",
+      "Mt. Pulag, Benguet",
+      "Sagada, Mountain Province"
     ],
     "climate_notes": "Thrives in cool, humid highland climates at 600–2000 masl. Also widely cultivated at lower elevations in pots and home gardens throughout the Philippines. Requires partial shade and consistently moist, well-drained soil."
   }
