@@ -20,12 +20,18 @@ class AdminUserService {
   Future<List<AdminProfileRow>> listProfiles() async {
     if (!isAvailable) return [];
     try {
-      final res = await _client
-          .from('profiles')
-          .select(
-              'id, email, role, is_active, created_at, suspension_reason, force_verified_notice, role_change_notice')
-          .order('created_at', ascending: false);
-      final list = (res as List).cast<Map<String, dynamic>>();
+      List<Map<String, dynamic>> list;
+      try {
+        final rpcRes = await _client.rpc('get_admin_users');
+        list = (rpcRes as List).cast<Map<String, dynamic>>();
+      } catch (_) {
+        final res = await _client
+            .from('profiles')
+            .select(
+                'id, email, role, is_active, created_at, suspension_reason, force_verified_notice, role_change_notice')
+            .order('created_at', ascending: false);
+        list = (res as List).cast<Map<String, dynamic>>();
+      }
       final rows = <AdminProfileRow>[];
       for (final p in list) {
         final id = p['id'] as String?;
@@ -43,6 +49,9 @@ class AdminUserService {
           suspensionReason: p['suspension_reason'] as String?,
           forceVerifiedNotice: p['force_verified_notice'] as bool? ?? false,
           roleChangeNotice: p['role_change_notice'] as bool? ?? false,
+          emailConfirmedAt: p['email_confirmed_at'] != null
+              ? DateTime.tryParse(p['email_confirmed_at'] as String)
+              : null,
         ));
       }
       return rows;
@@ -176,6 +185,7 @@ class AdminProfileRow {
   final String? suspensionReason;
   final bool forceVerifiedNotice;
   final bool roleChangeNotice;
+  final DateTime? emailConfirmedAt;
 
   AdminProfileRow({
     required this.id,
@@ -187,5 +197,6 @@ class AdminProfileRow {
     this.suspensionReason,
     this.forceVerifiedNotice = false,
     this.roleChangeNotice = false,
+    this.emailConfirmedAt,
   });
 }

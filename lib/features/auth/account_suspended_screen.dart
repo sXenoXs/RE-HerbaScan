@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 
 /// Shown when a user's account has been suspended (is_active = false).
@@ -15,16 +17,19 @@ class AccountSuspendedScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: isDark ? AppTheme.darkScaffold : AppTheme.surfaceColor,
-      body: SafeArea(
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        backgroundColor: isDark ? AppTheme.darkScaffold : AppTheme.surfaceColor,
+        body: SafeArea(
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 440),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 40),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 40),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // ── Icon ──────────────────────────────────────────────
                   Container(
@@ -106,9 +111,20 @@ class AccountSuspendedScreen extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
-                      onPressed: () {
-                        // Navigate to feedback form for support contact
-                        context.go('/home?tab=3');
+                      onPressed: () async {
+                        final Uri emailLaunchUri = Uri(
+                          scheme: 'mailto',
+                          path: 'herbascan.official@gmail.com',
+                        );
+                        if (await canLaunchUrl(emailLaunchUri)) {
+                          await launchUrl(emailLaunchUri);
+                        } else {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Could not open email client.')),
+                            );
+                          }
+                        }
                       },
                       icon: const Icon(Icons.mail_outline_rounded),
                       label: const Text('Contact Support'),
@@ -124,7 +140,18 @@ class AccountSuspendedScreen extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton(
-                      onPressed: () => context.go('/login'),
+                      onPressed: () {
+                        if (kIsWeb) {
+                          context.go('/settings');
+                        } else {
+                          context.go('/home?tab=3');
+                        }
+                        Future.delayed(const Duration(milliseconds: 50), () {
+                          if (context.mounted) {
+                            context.push('/login');
+                          }
+                        });
+                      },
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
@@ -145,8 +172,10 @@ class AccountSuspendedScreen extends StatelessWidget {
                 ],
               ),
             ),
+            ),
           ),
         ),
+      ),
       ),
     );
   }

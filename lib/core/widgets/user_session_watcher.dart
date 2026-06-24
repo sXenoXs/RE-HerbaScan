@@ -21,13 +21,21 @@ class UserSessionWatcher extends StatefulWidget {
 }
 
 class _UserSessionWatcherState extends State<UserSessionWatcher> {
+  void _onRouteChanged() {
+    if (!mounted) return;
+    _onAuthChange();
+  }
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.read<AuthProvider>().addListener(_onAuthChange);
-        // Initial check in case flags were set during the initial load
+        final navContext = widget.navigatorKey.currentContext;
+        if (navContext != null) {
+          GoRouter.of(navContext).routerDelegate.addListener(_onRouteChanged);
+        }
         _onAuthChange();
       }
     });
@@ -37,6 +45,10 @@ class _UserSessionWatcherState extends State<UserSessionWatcher> {
   void dispose() {
     if (mounted) {
       context.read<AuthProvider>().removeListener(_onAuthChange);
+      final navContext = widget.navigatorKey.currentContext;
+      if (navContext != null) {
+        GoRouter.of(navContext).routerDelegate.removeListener(_onRouteChanged);
+      }
     }
     super.dispose();
   }
@@ -47,6 +59,12 @@ class _UserSessionWatcherState extends State<UserSessionWatcher> {
     final auth = context.read<AuthProvider>();
     final navContext = widget.navigatorKey.currentContext;
     if (navContext == null) return;
+
+    // Do not show dialogs or navigate if we are on Splash, Disclaimer, or Onboarding
+    final path = GoRouter.of(navContext).routerDelegate.currentConfiguration.uri.path;
+    if (path == '/' || path == '/disclaimer' || path == '/onboarding') {
+      return; // Defer until route changes
+    }
 
     if (auth.wasDeactivatedByAdmin) {
       final reason = auth.suspensionReason;

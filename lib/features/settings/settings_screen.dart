@@ -35,9 +35,19 @@ class SettingsScreen extends StatelessWidget {
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 800),
-          child: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        children: [
+          child: RefreshIndicator(
+            onRefresh: () async {
+              final auth = context.read<AuthProvider>();
+              final appProvider = context.read<AppProvider>();
+              await appProvider.loadRemoteConfig();
+              if (auth.isLoggedIn) {
+                await auth.refreshRole();
+              }
+            },
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              children: [
           // 1. Account / Personal Herbarium
           _buildSectionLabel(context, theme, 'Account'),
           const SizedBox(height: 8),
@@ -112,7 +122,8 @@ class SettingsScreen extends StatelessWidget {
 
           const SizedBox(height: 24),
         ],
-      ),
+            ),
+          ),
         ),
       ),
     );

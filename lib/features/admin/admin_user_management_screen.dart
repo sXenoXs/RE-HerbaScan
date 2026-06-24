@@ -240,7 +240,7 @@ class _AdminUserManagementScreenState
       if (kDebugMode) debugPrint('[AdminUserManagement] Force verify error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not verify email. Please try again.')),
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
         );
       }
     } finally {
@@ -385,7 +385,7 @@ class _AdminUserManagementScreenState
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not delete user. Please try again.')),
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
         );
       }
     } finally {
@@ -512,6 +512,7 @@ class _AdminUserManagementScreenState
     final l10n = AppLocalizations.of(context);
 
     final subtitleParts = <String>[
+      row.emailConfirmedAt != null ? 'Verified' : 'Unverified',
       if (row.createdAt != null)
         'Joined ${dateFormat.format(row.createdAt!)}',
       '${row.scanCount} Scan${row.scanCount == 1 ? '' : 's'}',
