@@ -17,6 +17,7 @@ import 'package:herbascan/core/routing/app_router.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/services/performance_monitor.dart';
 import 'package:herbascan/core/widgets/auth_deeplink_handler.dart';
+import 'package:herbascan/core/widgets/user_session_watcher.dart';
 import 'package:herbascan/core/services/preparation_notification_service.dart';
 import 'package:herbascan/core/services/inactivity_timer_service.dart';
 // Desktop-only: init SQLite FFI so DB works on Windows/Linux/macOS. Mobile and web unchanged.
@@ -178,17 +179,20 @@ class _HerbaScanAppState extends State<HerbaScanApp> {
                     _syncInactivityTimer(ctx, auth);
                     // Listener intercepts every pointer-down event (tap, scroll, drag start)
                     // and resets the inactivity countdown.
-                    return Listener(
-                      behavior: HitTestBehavior.translucent,
-                      onPointerDown: (_) => InactivityTimerService().reset(),
-                      child: MediaQuery(
-                        data: MediaQuery.of(ctx).copyWith(
-                          textScaler: MediaQuery.of(ctx).textScaler.clamp(
-                            minScaleFactor: 0.85,
-                            maxScaleFactor: 1.15,
+                    return UserSessionWatcher(
+                      navigatorKey: _rootNavigatorKey,
+                      child: Listener(
+                        behavior: HitTestBehavior.translucent,
+                        onPointerDown: (_) => InactivityTimerService().reset(),
+                        child: MediaQuery(
+                          data: MediaQuery.of(ctx).copyWith(
+                            textScaler: MediaQuery.of(ctx).textScaler.clamp(
+                              minScaleFactor: 0.85,
+                              maxScaleFactor: 1.15,
+                            ),
                           ),
+                          child: child!,
                         ),
-                        child: child!,
                       ),
                     );
                   },

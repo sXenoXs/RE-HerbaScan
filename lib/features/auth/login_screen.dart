@@ -80,44 +80,12 @@ class _LoginScreenState extends State<LoginScreen> {
       _failedAttempts = 0;
       if (mounted) {
         final authAfter = context.read<AuthProvider>();
-        final userId = authAfter.user?.id;
-
-        // ── Post-login checks: suspension + one-time notices ──────────
-        if (userId != null && mounted) {
-          final profile = await AdminUserService().getProfileNotices(userId);
-          if (!mounted) return;
-
-          // 1. Suspension check — sign out and redirect to suspended screen
-          final isActive = profile?['is_active'] as bool? ?? true;
-          if (!isActive) {
-            await context.read<AuthProvider>().signOut();
-            if (mounted) {
-              context.go('/suspended', extra: profile?['suspension_reason'] as String?);
-            }
-            return;
-          }
-
-          // 2. Force-verified notice — one-time dialog
-          final forceVerified = profile?['force_verified_notice'] as bool? ?? false;
-          if (forceVerified && mounted) {
-            await _showForceVerifiedDialog();
-            if (mounted) {
-              AdminUserService().clearForceVerifiedNotice(userId);
-            }
-          }
-
-          // 3. Role change notice — one-time dialog
-          final roleChanged = profile?['role_change_notice'] as bool? ?? false;
-          final newRole = profile?['role'] as String? ?? 'user';
-          if (roleChanged && mounted) {
-            await _showRoleChangeDialog(newRole);
-            if (mounted) {
-              AdminUserService().clearRoleChangeNotice(userId);
-            }
-          }
+        
+        if (!authAfter.isLoggedIn) {
+          // If signed out immediately (e.g. suspended account), the watcher handles the redirect.
+          return;
         }
 
-        if (!mounted) return;
         if (kIsWeb && authAfter.isAdmin) {
           context.go('/admin');
         } else if (context.canPop()) {
@@ -160,68 +128,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  /// One-time dialog shown when an admin manually verified this account.
-  Future<void> _showForceVerifiedDialog() async {
-    if (!mounted) return;
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        icon: const Icon(
-          Icons.mark_email_read_rounded,
-          color: AppTheme.safeGreen,
-          size: 40,
-        ),
-        title: const Text('Account Verified'),
-        content: const Text(
-          'Your account was manually verified by an administrator. '
-          'You now have full access to HerbaScan.',
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Got it'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// One-time dialog shown when the user's role was changed by an admin.
-  Future<void> _showRoleChangeDialog(String newRole) async {
-    if (!mounted) return;
-    final isAdmin = newRole == 'admin';
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        icon: Icon(
-          isAdmin
-              ? Icons.admin_panel_settings_rounded
-              : Icons.person_rounded,
-          color: isAdmin ? AppTheme.botanicalPrimary : AppTheme.textSecondary,
-          size: 40,
-        ),
-        title: Text(
-          isAdmin ? 'Admin Access Granted' : 'Account Role Changed',
-        ),
-        content: Text(
-          isAdmin
-              ? 'You have been granted Administrator privileges. '
-                'You can now access the Admin Console to manage the app, '
-                'catalog, and users.'
-              : 'Your account has been changed to a Standard User. '
-                'You no longer have access to the Admin Console.',
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Understood'),
-          ),
-        ],
-      ),
-    );
-  }
 
   void _showWebBackMenu(BuildContext context) {
     showModalBottomSheet(

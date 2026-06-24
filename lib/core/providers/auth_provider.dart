@@ -17,6 +17,11 @@ class AuthProvider extends ChangeNotifier {
   AppRole _role = AppRole.user;
   bool _initialized = false;
   bool _deactivatedByAdmin = false;
+  bool _showForceVerifiedNotice = false;
+  bool _showRoleChangeNotice = false;
+  String? _suspensionReason;
+
+  RealtimeChannel? _profileSubscription;
 
   User? get user => _user;
   AppRole get role => _role;
@@ -26,9 +31,23 @@ class AuthProvider extends ChangeNotifier {
 
   /// True after sign-out due to admin deactivation (is_active: false).
   bool get wasDeactivatedByAdmin => _deactivatedByAdmin;
+  String? get suspensionReason => _suspensionReason;
+  bool get showForceVerifiedNotice => _showForceVerifiedNotice;
+  bool get showRoleChangeNotice => _showRoleChangeNotice;
 
   void clearDeactivatedFlag() {
     _deactivatedByAdmin = false;
+    _suspensionReason = null;
+    notifyListeners();
+  }
+
+  void clearForceVerifiedNoticeFlag() {
+    _showForceVerifiedNotice = false;
+    notifyListeners();
+  }
+
+  void clearRoleChangeNoticeFlag() {
+    _showRoleChangeNotice = false;
     notifyListeners();
   }
 
@@ -60,28 +79,43 @@ class AuthProvider extends ChangeNotifier {
     if (_user == null) {
       _role = AppRole.user;
       _debugAuth('_loadRole: no user, set role=user');
+      _cancelProfileSubscription();
       return;
     }
     try {
       final res = await Supabase.instance.client
           .from('profiles')
-          .select('role, is_active')
+          .select('role, is_active, force_verified_notice, role_change_notice, suspension_reason')
           .eq('id', _user!.id)
           .maybeSingle();
       _debugAuth('_loadRole: profiles result=$res');
+      
       final isActive = res?['is_active'] as bool? ?? true;
       if (!isActive) {
         _debugAuth('_loadRole: user inactive (deactivated by admin), signing out');
         _deactivatedByAdmin = true;
+        _suspensionReason = res?['suspension_reason'] as String?;
         await _auth.signOut();
         _user = null;
         _role = AppRole.user;
+        _cancelProfileSubscription();
         return;
       }
+      
       final roleStr = res?['role'] as String?;
       _role = roleStr == 'admin' ? AppRole.admin : AppRole.user;
-      _debugAuth(
-          '_loadRole: roleStr=$roleStr => _role=$_role isAdmin=$isAdmin');
+      
+      if (res?['force_verified_notice'] == true) {
+        _showForceVerifiedNotice = true;
+      }
+      if (res?['role_change_notice'] == true) {
+        _showRoleChangeNotice = true;
+      }
+
+      _debugAuth('_loadRole: roleStr=$roleStr => _role=$_role isAdmin=$isAdmin');
+      
+      _setupProfileSubscription();
+
       final email = _user!.email;
       if (email != null && email.isNotEmpty) {
         try {
@@ -95,6 +129,70 @@ class AuthProvider extends ChangeNotifier {
       _debugAuth('_loadRole: error=$e');
       if (kDebugMode) debugPrint('[AuthProvider] _loadRole stack: $st');
       _role = AppRole.user;
+    }
+  }
+
+  void _setupProfileSubscription() {
+    final userId = _user?.id;
+    if (userId == null) {
+      _cancelProfileSubscription();
+      return;
+    }
+    if (_profileSubscription != null) return;
+
+    _profileSubscription = Supabase.instance.client
+        .channel('public:profiles:id=eq.$userId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'profiles',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'id',
+            value: userId,
+          ),
+          callback: (payload) {
+            _handleProfileUpdate(payload.newRecord);
+          },
+        )
+        .subscribe();
+  }
+
+  void _cancelProfileSubscription() {
+    _profileSubscription?.unsubscribe();
+    _profileSubscription = null;
+  }
+
+  Future<void> _handleProfileUpdate(Map<String, dynamic> newRecord) async {
+    bool changed = false;
+
+    final isActive = newRecord['is_active'] as bool? ?? true;
+    if (!isActive && _user != null) {
+      _deactivatedByAdmin = true;
+      _suspensionReason = newRecord['suspension_reason'] as String?;
+      await signOut(); // This will reset user and call notifyListeners
+      return; 
+    }
+
+    final roleStr = newRecord['role'] as String?;
+    final newRole = roleStr == 'admin' ? AppRole.admin : AppRole.user;
+    if (_role != newRole) {
+      _role = newRole;
+      changed = true;
+    }
+
+    if (newRecord['force_verified_notice'] == true) {
+      _showForceVerifiedNotice = true;
+      changed = true;
+    }
+
+    if (newRecord['role_change_notice'] == true) {
+      _showRoleChangeNotice = true;
+      changed = true;
+    }
+
+    if (changed) {
+      notifyListeners();
     }
   }
 
@@ -138,6 +236,7 @@ class AuthProvider extends ChangeNotifier {
     await _auth.signOut();
     _user = null;
     _role = AppRole.user;
+    _cancelProfileSubscription();
     notifyListeners();
   }
 
