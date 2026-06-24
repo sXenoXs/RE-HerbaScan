@@ -1,8 +1,8 @@
 name: herbascan
-description: "HerbaScan: A CNN-Based Mobile Application for Herbal Plant Recognition and Data Retrieval"
+description: "A complete, self-contained offline-first flutter app for local plant identification with 42 medicinal plants, powered by TFLite and a smart offline-sync layer."
 publish_to: "none"
 
-version: 0.5.2+1
+version: 1.0.30+30
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
@@ -13,17 +13,20 @@ dependencies:
 
   # UI and Icons
   cupertino_icons: ^1.0.8
+  flutter_svg: ^2.0.10+1
 
   # State Management
   provider: ^6.1.2
 
   # Database
   sqflite: ^2.4.0
+  sqflite_common_ffi: ^2.3.7  # Desktop (Windows/Linux/macOS) only; mobile unchanged
   path: ^1.9.0
 
   # Camera and Image Processing
   camera: ^0.11.2+1
   image_picker: ^1.1.2
+  file_picker: ^8.1.7
   image: ^4.5.4
 
   # AI/ML
@@ -51,8 +54,52 @@ dependencies:
   uuid: ^4.5.1
   logger: ^2.5.0
 
+  # Markdown rendering
+  flutter_markdown: ^0.6.18
+
+  # Supabase (Auth, Database, Storage - Personal Herbarium)
+  supabase_flutter: ^2.8.0
+  # Deep links (auth callback: password reset, change email)
+  app_links: ^6.3.2
+
   # Device Preview for testing different screen sizes
   device_preview: ^1.2.0
+
+  # Calendar export (preparation schedule)
+  add_2_calendar: ^2.2.5
+
+  # Static Habitat Heatmap (OpenStreetMap; no API key)
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+
+  # Routing (web + admin guard)
+  go_router: ^14.6.2
+
+  # Plant catalog images from Supabase Storage (admin uploads)
+  cached_network_image: ^3.4.1
+
+  # 2D Interactive Silhouette: parse SVG path d="..." to Flutter Path
+  path_drawing: ^1.0.1
+
+  # 6-box OTP input (enter_signup_code_screen, enter_reset_code_screen)
+  pinput: ^5.0.0
+
+  # PRD v0.9.5: Share, Gallery export, Preparation timers
+  gal: ^2.3.0
+  share_plus: ^10.0.0
+  flutter_local_notifications: ^18.0.0
+  timezone: ^0.10.0
+
+  # Security: secure token storage (Android Keystore / iOS Keychain / Windows Credential Manager)
+  flutter_secure_storage: ^9.2.2
+
+  # OTA App Updates: version check + in-app APK download & install
+  package_info_plus: ^8.1.2   # Read current app version/build number
+  open_file: ^3.3.2           # Trigger Android APK install intent
+  dio: ^5.7.0                 # Chunked download with progress callback
+  permission_handler: ^12.0.3
+  url_launcher: ^6.3.2
+
 
 dev_dependencies:
   flutter_test:
@@ -76,6 +123,7 @@ flutter:
     - assets/images/
     - assets/models/
     - assets/data/
+    - assets/data/legal/
     - assets/animations/
     - assets/icons/
 

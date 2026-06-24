@@ -1,29 +1,67 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:herbascan/core/constants/toxic_plant_blacklist.dart';
 import 'package:herbascan/core/providers/plant_provider.dart';
-import 'package:herbascan/core/widgets/offline_indicator.dart';
+import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/features/scan/scan_screen.dart';
 import 'package:herbascan/features/browse/browse_screen.dart';
 import 'package:herbascan/features/history/history_screen.dart';
 import 'package:herbascan/features/doh/doh_screen.dart';
 import 'package:herbascan/features/settings/settings_screen.dart';
+import 'package:herbascan/features/scan/no_match_found_screen.dart';
+import 'package:herbascan/features/scan/plant_result_screen.dart';
+import 'package:herbascan/features/scan/plant_detail_screen.dart';
+import 'package:herbascan/core/models/scan_result.dart';
+import 'package:herbascan/core/models/plant.dart';
+import 'package:herbascan/core/widgets/plant_image.dart';
+import 'package:herbascan/core/widgets/responsive_layout.dart';
+import 'dart:io';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({
+    super.key,
+    this.showUnauthorizedSnackBar = false,
+    this.initialTabIndex = 0,
+  });
+
+  final bool showUnauthorizedSnackBar;
+  final int initialTabIndex;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0;
+  // 4 real tabs: 0=Home, 1=Browse, 2=History, 3=Settings
+  // Index 2 in the BottomAppBar row is the FAB slot (camera), not a tab
+  late int _currentIndex;
 
   late final List<Widget> _screens;
 
   @override
+  void didUpdateWidget(HomeScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialTabIndex != widget.initialTabIndex) {
+      setState(() {
+        _currentIndex = widget.initialTabIndex;
+      });
+    }
+  }
+
+  @override
   void initState() {
     super.initState();
+    _currentIndex = widget.initialTabIndex;
+    if (widget.showUnauthorizedSnackBar) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Unauthorized access.')),
+          );
+        }
+      });
+    }
     _screens = [
       HomeDashboard(onNavigate: (index) {
         setState(() {
@@ -32,60 +70,190 @@ class _HomeScreenState extends State<HomeScreen> {
       }),
       const BrowseScreen(),
       const HistoryScreen(),
-      const DOHScreen(),
       const SettingsScreen(),
     ];
+  }
+
+  void _openScan() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const ScanScreen()),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
-    return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: theme.colorScheme.primary,
-        unselectedItemColor: theme.colorScheme.onSurface.withOpacity(0.6),
-        items: [
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.home),
-            label: AppLocalizations.of(context).scan,
+    return ResponsiveLayout(
+      mobile: (context) {
+        return Scaffold(
+          body: IndexedStack(
+            index: _currentIndex,
+            children: _screens,
           ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.search),
-            label: AppLocalizations.of(context).browse,
+          floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+          floatingActionButton: isKeyboardOpen
+              ? null
+              : FloatingActionButton(
+                  onPressed: _openScan,
+                  heroTag: null,
+                  backgroundColor: AppTheme.botanicalPrimary,
+                  foregroundColor: Colors.white,
+                  elevation: 4,
+                  shape: const CircleBorder(),
+                  child: const Icon(Icons.camera_alt_rounded),
+                ),
+          bottomNavigationBar: BottomAppBar(
+            color: isDark ? AppTheme.darkSurface : Colors.white,
+            elevation: 8,
+            notchMargin: 8,
+            height: 60,
+            padding: EdgeInsets.zero,
+            shape: const CircularNotchedRectangle(),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _NavItem(
+                  icon: Icons.home_rounded,
+                  label: 'Home',
+                  selected: _currentIndex == 0,
+                  onTap: () => setState(() => _currentIndex = 0),
+                ),
+                _NavItem(
+                  icon: Icons.search_rounded,
+                  label: AppLocalizations.of(context).browse,
+                  selected: _currentIndex == 1,
+                  onTap: () => setState(() => _currentIndex = 1),
+                ),
+                // Center gap for FAB
+                const SizedBox(width: 56),
+                _NavItem(
+                  icon: Icons.history_rounded,
+                  label: AppLocalizations.of(context).history,
+                  selected: _currentIndex == 2,
+                  onTap: () => setState(() => _currentIndex = 2),
+                ),
+                _NavItem(
+                  icon: Icons.settings_rounded,
+                  label: AppLocalizations.of(context).settings,
+                  selected: _currentIndex == 3,
+                  onTap: () => setState(() => _currentIndex = 3),
+                ),
+              ],
+            ),
           ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.history),
-            label: AppLocalizations.of(context).history,
+        );
+      },
+      tablet: (context) {
+        return Scaffold(
+          body: Row(
+            children: [
+              NavigationRail(
+                selectedIndex: _currentIndex,
+                onDestinationSelected: (index) {
+                  setState(() {
+                    _currentIndex = index;
+                  });
+                },
+                labelType: NavigationRailLabelType.all,
+                leading: Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0, top: 8.0),
+                  child: FloatingActionButton(
+                    onPressed: _openScan,
+                    heroTag: null,
+                    backgroundColor: AppTheme.botanicalPrimary,
+                    foregroundColor: Colors.white,
+                    elevation: 4,
+                    shape: const CircleBorder(),
+                    child: const Icon(Icons.camera_alt_rounded),
+                  ),
+                ),
+                destinations: [
+                  const NavigationRailDestination(
+                    icon: Icon(Icons.home_outlined),
+                    selectedIcon: Icon(Icons.home_rounded),
+                    label: Text('Home'),
+                  ),
+                  NavigationRailDestination(
+                    icon: const Icon(Icons.search_outlined),
+                    selectedIcon: const Icon(Icons.search_rounded),
+                    label: Text('Browse'),
+                  ),
+                  NavigationRailDestination(
+                    icon: const Icon(Icons.history_outlined),
+                    selectedIcon: const Icon(Icons.history_rounded),
+                    label: Text('History'),
+                  ),
+                  NavigationRailDestination(
+                    icon: const Icon(Icons.settings_outlined),
+                    selectedIcon: const Icon(Icons.settings_rounded),
+                    label: Text('Settings'),
+                  ),
+                ],
+              ),
+              VerticalDivider(
+                thickness: 1, 
+                width: 1, 
+                color: theme.dividerColor.withOpacity(0.05),
+              ),
+              Expanded(
+                child: IndexedStack(
+                  index: _currentIndex,
+                  children: _screens,
+                ),
+              ),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.verified),
-            label: AppLocalizations.of(context).dohApproved,
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.settings),
-            label: AppLocalizations.of(context).settings,
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (context) => const ScanScreen()),
-          );
-        },
-        child: const Icon(Icons.camera_alt),
+        );
+      },
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  const _NavItem({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = selected
+        ? theme.colorScheme.primary
+        : theme.colorScheme.onSurface.withOpacity(0.5);
+
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 22),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: color,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                fontSize: 10,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -116,11 +284,20 @@ class _HomeDashboardState extends State<HomeDashboard> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context).appTitle),
+        titleSpacing: 16,
+        centerTitle: false,
+        title: Text(
+          'HerbaScan',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.3,
+          ),
+        ),
         actions: [
-          // Offline indicator
-          OfflineIndicator(
-            margin: const EdgeInsets.only(right: 16),
+          IconButton(
+            icon: const Icon(Icons.settings_rounded),
+            onPressed: () => widget.onNavigate?.call(3),
+            tooltip: 'Settings',
           ),
         ],
       ),
@@ -130,37 +307,27 @@ class _HomeDashboardState extends State<HomeDashboard> {
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.only(bottom: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Welcome Section
-              _buildWelcomeSection(context, theme),
+              // Hero section
+              _buildHeroSection(context, theme),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
-              // Offline Status
-              OfflineStatusCard(),
+              // Stats ribbon
+              _buildStatsRibbon(context, theme, plantProvider),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 28),
 
-              // Quick Actions
-              _buildQuickActions(context, theme),
-
-              const SizedBox(height: 24),
-
-              // Statistics
-              _buildStatistics(context, theme, plantProvider),
-
-              const SizedBox(height: 24),
-
-              // Recent Scans
+              // Recent Scans horizontal scroll
               _buildRecentScans(context, theme, plantProvider),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 28),
 
-              // DOH Approved Plants Preview
-              _buildDOHPreview(context, theme, plantProvider),
+              // DOH Spotlight carousel
+              _buildDOHSpotlight(context, theme, plantProvider),
             ],
           ),
         ),
@@ -168,35 +335,30 @@ class _HomeDashboardState extends State<HomeDashboard> {
     );
   }
 
-  Widget _buildWelcomeSection(BuildContext context, ThemeData theme) {
+  Widget _buildHeroSection(BuildContext context, ThemeData theme) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            theme.colorScheme.primary,
-            theme.colorScheme.primaryContainer,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
+        color: AppTheme.safeBgLight,
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Welcome to HerbaScan! 🌿',
+            'What plant are you identifying?',
             style: theme.textTheme.headlineSmall?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textPrimary,
+              letterSpacing: -0.3,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            AppLocalizations.of(context).welcomeMessage,
+            'Tap the camera button below to start.',
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: Colors.white.withOpacity(0.9),
-              height: 1.4,
+              color: AppTheme.textSecondary,
             ),
           ),
         ],
@@ -204,459 +366,395 @@ class _HomeDashboardState extends State<HomeDashboard> {
     );
   }
 
-  Widget _buildQuickActions(BuildContext context, ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Quick Actions',
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
-        GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 1.3,
-          children: [
-            _buildActionCard(
-              context,
-              theme,
-              Icons.camera_alt,
-              AppLocalizations.of(context).scanPlant,
-              'Identify using camera',
-              () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const ScanScreen()),
-                );
-              },
-            ),
-            _buildActionCard(
-              context,
-              theme,
-              Icons.search,
-              AppLocalizations.of(context).browsePlants,
-              'Explore database',
-              () {
-                // Navigate to browse screen (index 1)
-                widget.onNavigate?.call(1);
-              },
-            ),
-            _buildActionCard(
-              context,
-              theme,
-              Icons.history,
-              AppLocalizations.of(context).recentScans,
-              'View history',
-              () {
-                // Navigate to history screen (index 2)
-                widget.onNavigate?.call(2);
-              },
-            ),
-            _buildActionCard(
-              context,
-              theme,
-              Icons.verified,
-              AppLocalizations.of(context).dohPlants,
-              'Official list',
-              () {
-                // Navigate to DOH screen (index 3)
-                widget.onNavigate?.call(3);
-              },
-            ),
-          ],
-        ),
-      ],
-    );
-  }
+  Widget _buildStatsRibbon(
+      BuildContext context, ThemeData theme, PlantProvider plantProvider) {
+    final stats = plantProvider.getStatistics();
+    final totalScans = stats['totalScans'] as int? ?? 0;
+    final dohPlants = stats['dohApprovedPlants'] as int? ?? 0;
+    final avgConfidence = stats['averageConfidence'] as double? ?? 0.0;
 
-  Widget _buildActionCard(
-    BuildContext context,
-    ThemeData theme,
-    IconData icon,
-    String title,
-    String subtitle,
-    VoidCallback onTap,
-  ) {
-    return Card(
-      child: InkWell(
-        key: ValueKey('action_card_${title}_$subtitle'),
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  icon,
-                  color: theme.colorScheme.primary,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
-                  fontSize: 10,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          _buildStatCell(
+            theme,
+            '$totalScans',
+            'Scans',
           ),
-        ),
+          _buildStatDivider(),
+          _buildStatCell(
+            theme,
+            '$dohPlants',
+            'DOH Plants',
+          ),
+          _buildStatDivider(),
+          _buildStatCell(
+            theme,
+            '${(avgConfidence * 100).toStringAsFixed(0)}%',
+            'Accuracy',
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildStatistics(
-      BuildContext context, ThemeData theme, PlantProvider plantProvider) {
-    final stats = plantProvider.getStatistics();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Quick Stats',
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: theme.colorScheme.outline.withOpacity(0.2),
+  Widget _buildStatCell(ThemeData theme, String value, String label) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppTheme.botanicalPrimary,
             ),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildStatItem(
-                theme,
-                '${stats['totalScans']}',
-                'Plants Identified',
-                Icons.eco,
-              ),
-              _buildStatItem(
-                theme,
-                '${stats['dohApprovedPlants']}',
-                'DOH Approved',
-                Icons.verified,
-              ),
-              _buildStatItem(
-                theme,
-                '${(stats['averageConfidence'] * 100).toStringAsFixed(1)}%',
-                'Avg Accuracy',
-                Icons.analytics,
-              ),
-            ],
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: AppTheme.textSecondary,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  Widget _buildStatItem(
-      ThemeData theme, String value, String label, IconData icon) {
-    return Column(
-      children: [
-        Icon(
-          icon,
-          color: theme.colorScheme.primary,
-          size: 24,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.primary,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurface.withOpacity(0.6),
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
+  Widget _buildStatDivider() {
+    return Container(
+      width: 1,
+      height: 32,
+      color: AppTheme.textTertiary.withOpacity(0.3),
     );
   }
 
   Widget _buildRecentScans(
       BuildContext context, ThemeData theme, PlantProvider plantProvider) {
-    final recentScans = plantProvider.scanHistory.take(3).toList();
+    final recentScans = plantProvider.scanHistory.take(6).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              AppLocalizations.of(context).recentScans,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                AppLocalizations.of(context).recentScans,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
-            if (recentScans.isNotEmpty)
-              TextButton(
-                onPressed: () {
-                  // Navigate to history screen (index 2)
-                  widget.onNavigate?.call(2);
-                },
-                child: const Text('View All'),
-              ),
-          ],
+              if (recentScans.isNotEmpty)
+                TextButton(
+                  onPressed: () => widget.onNavigate?.call(2),
+                  child: const Text('View All'),
+                ),
+            ],
+          ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         if (recentScans.isEmpty)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: theme.colorScheme.outline.withOpacity(0.2),
-              ),
-            ),
-            child: Column(
-              children: [
-                Icon(
-                  Icons.camera_alt_outlined,
-                  size: 48,
-                  color: theme.colorScheme.onSurface.withOpacity(0.4),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'No scans yet',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Start by scanning your first plant!',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.4),
-                  ),
-                ),
-              ],
-            ),
-          )
+          _buildEmptyScans(theme)
         else
-          ...recentScans.map((scan) => _buildScanItem(context, theme, scan)),
+          SizedBox(
+            height: 200,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: recentScans.length,
+              itemBuilder: (context, index) {
+                return _buildScanCard(context, theme, recentScans[index]);
+              },
+            ),
+          ),
       ],
     );
   }
 
-  Widget _buildScanItem(BuildContext context, ThemeData theme, dynamic scan) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: theme.colorScheme.outline.withOpacity(0.2),
+  Widget _buildEmptyScans(ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+        child: Column(
+          children: [
+            Icon(
+              Icons.camera_alt_outlined,
+              size: 48,
+              color: theme.colorScheme.onSurface.withOpacity(0.3),
             ),
-            child: Icon(
-              Icons.eco,
-              color: theme.colorScheme.primary,
+            const SizedBox(height: 12),
+            Text(
+              'No scans yet',
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.5),
+              ),
             ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  scan.plant?.commonName ?? 'Unknown Plant',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${(scan.confidenceScore * 100).toStringAsFixed(1)}% confidence',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                ),
-              ],
+            const SizedBox(height: 4),
+            Text(
+              'Start by scanning your first plant!',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.4),
+              ),
             ),
-          ),
-          Text(
-            scan.formattedScanDate,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.4),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildDOHPreview(
-      BuildContext context, ThemeData theme, PlantProvider plantProvider) {
-    final dohPlants = plantProvider.dohApprovedPlants.take(4).toList();
+  Widget _buildScanCard(
+      BuildContext context, ThemeData theme, ScanResult scan) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final cardWidth = screenWidth * 0.72;
+    final confidence = scan.confidenceScore;
+    final confidenceColor = confidence >= 0.8
+        ? AppTheme.safeGreen
+        : confidence >= 0.6
+            ? AppTheme.warningAmber
+            : AppTheme.errorDeep;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              AppLocalizations.of(context).dohApproved,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
+    return InkWell(
+      onTap: () {
+        if (!mounted) return;
+        if (isScanResultTopPredictionBlacklisted(scan)) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => NoMatchFoundScreen(
+                imagePath: scan.imagePath,
+                isToxicPlant: true,
+                detectedToxicPlantName: toxicPlantDisplayName(
+                  scan.topPrediction?.plantName,
+                ),
               ),
             ),
-            TextButton(
-              onPressed: () {
-                // Navigate to DOH screen (index 3)
-                widget.onNavigate?.call(3);
-              },
-              child: const Text('View All'),
+          );
+        } else {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => PlantResultScreen.fromScanResult(scan),
             ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF0FFF4),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: const Color(0xFF48BB78),
-            ),
+          );
+        }
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: cardWidth,
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+        color: theme.cardTheme.color ?? Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
-          child: Column(
+        ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.verified,
-                    color: Color(0xFF48BB78),
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    AppLocalizations.of(context).philippineDepartmentOfHealth,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      color: const Color(0xFF48BB78),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+              // Plant photo
+              SizedBox(
+                height: 120,
+                width: double.infinity,
+                child: scan.imagePath.isNotEmpty
+                    ? Image.file(
+                        File(scan.imagePath),
+                        fit: BoxFit.cover,
+                        errorBuilder: (ctx, _, __) =>
+                            _scanImageFallback(theme),
+                      )
+                    : _scanImageFallback(theme),
               ),
-              const SizedBox(height: 8),
-              Text(
-                '${dohPlants.length} ${AppLocalizations.of(context).clinicallyValidated}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFF38A169),
+              // Info
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      scan.plant?.commonName ??
+                          scan.topPrediction?.plantName ??
+                          'Unknown Plant',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      scan.formattedScanDate,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppTheme.textSecondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-        ),
-        const SizedBox(height: 16),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 2.5,
-          ),
-          itemCount: dohPlants.length,
-          itemBuilder: (context, index) {
-            final plant = dohPlants[index];
-            return Container(
-              padding: const EdgeInsets.all(12),
+          // Confidence pill top-right
+          Positioned(
+            top: 8,
+            right: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: const Color(0xFF48BB78).withOpacity(0.3),
+                color: confidenceColor,
+                borderRadius: BorderRadius.circular(100),
+              ),
+              child: Text(
+                '${(confidence * 100).toStringAsFixed(0)}%',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF48BB78).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.eco,
-                      color: Color(0xFF48BB78),
-                      size: 16,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      plant.commonName,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
+            ),
+          ),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _scanImageFallback(ThemeData theme) {
+    return Container(
+      color: theme.colorScheme.surfaceContainerHighest,
+      child: Center(
+        child: Icon(
+          Icons.local_florist,
+          size: 32,
+          color: theme.colorScheme.onSurface.withOpacity(0.3),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDOHSpotlight(
+      BuildContext context, ThemeData theme, PlantProvider plantProvider) {
+    final dohPlants = plantProvider.dohApprovedPlants.take(10).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'DOH Approved Plants',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const DOHScreen()),
+                  );
+                },
+                child: const Text('See All'),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (dohPlants.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              'No DOH approved plants loaded.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: AppTheme.textSecondary,
+              ),
+            ),
+          )
+        else
+          SizedBox(
+            height: 104,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: dohPlants.length,
+              itemBuilder: (context, index) {
+                return _buildDOHPlantItem(context, theme, dohPlants[index]);
+              },
+            ),
+          ),
       ],
+    );
+  }
+
+  Widget _buildDOHPlantItem(
+      BuildContext context, ThemeData theme, Plant plant) {
+    return InkWell(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => PlantDetailScreen(plant: plant),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(36),
+      child: Container(
+        width: 72,
+        margin: const EdgeInsets.only(right: 16),
+        child: Column(
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: const BoxDecoration(shape: BoxShape.circle),
+              clipBehavior: Clip.antiAlias,
+              child: PlantImage(
+                plant: plant,
+                fit: BoxFit.cover,
+                width: 64,
+                height: 64,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              plant.commonName,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurface,
+                fontWeight: FontWeight.w500,
+                fontSize: 10,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -1,0 +1,1145 @@
+// lib/features/admin/image_tracer_dialog.dart
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:herbascan/core/services/svg_tracer_service.dart';
+import 'package:herbascan/core/theme/app_theme.dart';
+import 'dart:async';
+import 'dart:ui' as ui;
+import 'package:flutter/services.dart';
+import 'package:image/image.dart' as img;
+import 'package:path_drawing/path_drawing.dart';
+
+enum _TracerState { idle, picking, resizing, tracing, preview }
+
+/// A full-screen dialog for tracing images into SVG paths.
+class ImageTracerDialog extends StatefulWidget {
+  final Color fillColor;
+
+  const ImageTracerDialog({
+    super.key,
+    this.fillColor = const Color(0xFF4CAF50), // Default green
+  });
+
+  @override
+  State<ImageTracerDialog> createState() => _ImageTracerDialogState();
+}
+
+class _ImageTracerDialogState extends State<ImageTracerDialog> {
+  // ── State Machine ────────────────────────────────────────────────────────
+
+  _TracerState _state = _TracerState.idle;
+
+  // ── Image Data ───────────────────────────────────────────────────────────
+  Uint8List? _originalImageBytes;
+  Uint8List? _resizedImageBytes; // 300×300
+  String? _imageFilename;
+
+  // ── Tracing Parameters ───────────────────────────────────────────────────
+  int _threshold = 128; // 0-255
+  int _blur = 2; // 0-15
+  double _simplify = 1.5; // 0.5-5.0
+  bool _invert = false;
+  int _ignoreLessThan = 20; // 0-100
+  int _smoothness = 0; // 0-5
+
+  // ── Preview Toggles ──────────────────────────────────────────────────────
+  bool _showPath = true;
+  bool _showPoints = true;
+  bool _fadeImage = false;
+  bool _showOriginal = false; // Toggle for single preview overlay
+
+  // ── Tracing Results ──────────────────────────────────────────────────────
+  String? _tracedSvgPath;
+  ui.Image? _previewImage; // For CustomPaint background
+  bool _isTracing = false;
+  String? _traceError;
+  
+  // ── Histogram Data ───────────────────────────────────────────────────────
+  List<double> _histogram = List.filled(256, 0.0);
+
+  // ── UI Helpers ───────────────────────────────────────────────────────────
+  final _picker = ImagePicker();
+  bool get _isWeb => kIsWeb;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreviewImage();
+  }
+
+  Future<void> _loadPreviewImage() async {
+    // Create a transparent 300x300 preview image initially
+    final pic = await _createPlaceholderImage();
+    if (mounted) {
+      setState(() => _previewImage = pic);
+    }
+  }
+
+  Future<ui.Image> _createPlaceholderImage() async {
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    final paint = Paint()..color = Colors.transparent;
+    canvas.drawRect(Rect.fromLTWH(0, 0, 300, 300), paint);
+    final picture = recorder.endRecording();
+    return await picture.toImage(300, 300);
+  }
+
+  // ── Actions ──────────────────────────────────────────────────────────────
+  Future<void> _pickImage() async {
+    if (_state == _TracerState.tracing) return;
+
+    setState(() {
+      _state = _TracerState.picking;
+      _traceError = null;
+    });
+
+    try {
+      final XFile? pickedFile;
+      if (_isWeb) {
+        // Web: use file_picker via file_picker package
+        final result = await ImagePicker().pickImage(
+          source: ImageSource.gallery,
+          maxWidth: 300,
+          maxHeight: 300,
+        );
+        pickedFile = result;
+      } else {
+        // Mobile: use image_picker
+        pickedFile = await ImagePicker().pickImage(
+          source: ImageSource.gallery,
+        );
+      }
+
+      if (pickedFile == null) {
+        if (!mounted) return;
+        setState(() => _state = _TracerState.idle);
+        return;
+      }
+
+      final imageBytes = await pickedFile.readAsBytes();
+      final filename = pickedFile.name;
+
+      if (!mounted) return;
+      setState(() {
+        _originalImageBytes = imageBytes;
+        _imageFilename = filename;
+        _state = _TracerState.resizing;
+      });
+
+      // Resize to 300×300 for processing and preview
+      await _resizeImage(imageBytes);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _state = _TracerState.idle;
+        _traceError = 'Failed to pick image: $e';
+      });
+    }
+  }
+
+  Future<void> _resizeImage(Uint8List imageBytes) async {
+    try {
+      final img.Image? decoded = img.decodeImage(imageBytes);
+      if (decoded == null) {
+        if (!mounted) return;
+        setState(() {
+          _state = _TracerState.idle;
+          _traceError = 'Failed to decode image';
+        });
+        return;
+      }
+
+      // Proportional resizing: max dimension is 300px
+      int newW = 300;
+      int newH = 300;
+      if (decoded.width > decoded.height) {
+        newH = (decoded.height * 300 / decoded.width).round();
+      } else {
+        newW = (decoded.width * 300 / decoded.height).round();
+      }
+
+      final img.Image resized =
+          img.copyResize(decoded, width: newW, height: newH);
+      final resizedBytes = Uint8List.fromList(img.encodePng(resized));
+      
+      _calculateHistogram(resized);
+
+      if (!mounted) return;
+      setState(() {
+        _resizedImageBytes = resizedBytes;
+        _state = _TracerState.tracing;
+      });
+
+      // Start tracing
+      await _traceImage();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _state = _TracerState.idle;
+        _traceError = 'Failed to resize image: $e';
+      });
+    }
+  }
+
+  void _calculateHistogram(img.Image image) {
+    final hist = List<int>.filled(256, 0);
+    int maxCount = 0;
+    
+    // image package v4 pixel iteration
+    for (final p in image) {
+      final lum = (0.299 * p.r + 0.587 * p.g + 0.114 * p.b).round().clamp(0, 255);
+      hist[lum]++;
+      if (hist[lum] > maxCount) maxCount = hist[lum];
+    }
+
+    if (maxCount > 0) {
+      _histogram = hist.map((c) => c / maxCount).toList();
+    } else {
+      _histogram = List.filled(256, 0.0);
+    }
+  }
+
+  Future<void> _traceImage() async {
+    if (_resizedImageBytes == null) return;
+
+    setState(() => _isTracing = true);
+
+    try {
+      final path = await SvgTracerService.traceToSvgPath(
+        imageBytes: _resizedImageBytes!,
+        threshold: _threshold,
+        blur: _blur,
+        invert: _invert,
+        simplify: _simplify,
+        ignoreLessThan: _ignoreLessThan,
+        smoothness: _smoothness,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _tracedSvgPath = path;
+        _isTracing = false;
+        _state = _TracerState.preview;
+        _traceError = null;
+      });
+
+      // Update preview image for CustomPaint background
+      await _updatePreviewImage();
+    } on SvgTracerException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isTracing = false;
+        _state = _TracerState.preview;
+        _traceError = e.message;
+        _tracedSvgPath = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isTracing = false;
+        _state = _TracerState.preview;
+        _traceError = 'Unexpected error: $e';
+        _tracedSvgPath = null;
+      });
+    }
+  }
+
+  Future<void> _updatePreviewImage() async {
+    if (_resizedImageBytes == null) return;
+    try {
+      final codec = await ui.instantiateImageCodec(
+        _resizedImageBytes!,
+        targetWidth: 300,
+        targetHeight: 300,
+      );
+      final frame = await codec.getNextFrame();
+      if (mounted) {
+        setState(() => _previewImage = frame.image);
+      }
+    } catch (e) {
+      debugPrint('Failed to update preview image: $e');
+    }
+  }
+
+  void _copyToClipboard() {
+    if (_tracedSvgPath == null || !mounted) return;
+    Clipboard.setData(ClipboardData(text: _tracedSvgPath!));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Copied to clipboard')),
+    );
+  }
+
+  void _useThisPath() {
+    if (_tracedSvgPath == null || !mounted) return;
+    Navigator.of(context).pop(_tracedSvgPath);
+  }
+
+  void _cancel() {
+    Navigator.of(context).pop();
+  }
+
+  // ── Debounced Tracing ────────────────────────────────────────────────────
+  Timer? _debounceTimer;
+
+  void _debouncedTrace() {
+    if (_debounceTimer?.isActive ?? false) {
+      _debounceTimer?.cancel();
+    }
+    _debounceTimer = Timer(const Duration(milliseconds: 400), () {
+      if (_state == _TracerState.preview &&
+          _resizedImageBytes != null &&
+          !_isTracing) {
+        _traceImage();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog.fullscreen(
+      child: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    switch (_state) {
+      case _TracerState.idle:
+        return _buildIdleState();
+      case _TracerState.picking:
+        return _buildPickingState();
+      case _TracerState.resizing:
+        return _buildResizingState();
+      case _TracerState.tracing:
+        return _buildTracingState();
+      case _TracerState.preview:
+        return _buildPreviewState();
+    }
+  }
+
+  Widget _buildIdleState() {
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          tooltip: 'Cancel',
+          onPressed: _cancel,
+        ),
+        title: const Text('Image Tracer'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
+        elevation: 0,
+      ),
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.image,
+              size: 64,
+              color: AppTheme.botanicalPrimary,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Image Tracer',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Upload a plant part image to auto-generate the SVG path',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: _pickImage,
+              icon: const Icon(Icons.image),
+              label: const Text('Pick Image'),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppTheme.botanicalPrimary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPickingState() {
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          tooltip: 'Cancel',
+          onPressed: _cancel,
+        ),
+        title: const Text('Image Tracer'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
+        elevation: 0,
+      ),
+      body: const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.botanicalPrimary),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResizingState() {
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          tooltip: 'Cancel',
+          onPressed: _cancel,
+        ),
+        title: const Text('Image Tracer'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
+        elevation: 0,
+      ),
+      body: const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.botanicalPrimary),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTracingState() {
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          tooltip: 'Cancel',
+          onPressed: _cancel,
+        ),
+        title: const Text('Image Tracer'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
+        elevation: 0,
+      ),
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.botanicalPrimary),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Tracing image...',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPreviewState() {
+    return SafeArea(
+      top: false,
+      bottom: false,
+      child: Column(
+        children: [
+          _buildAppBar(),
+          Expanded(
+            child: _buildMainContent(),
+          ),
+          _buildBottomControls(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAppBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(
+          bottom: BorderSide(
+            color: Theme.of(context).dividerColor,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
+            onPressed: _cancel,
+          ),
+          Expanded(
+            child: Text(
+              'Image Tracer',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.check, color: AppTheme.botanicalPrimary),
+            onPressed: _useThisPath,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMainContent() {
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: _buildPreviewArea(),
+        ),
+        Positioned(
+          top: 16,
+          right: 16,
+          child: _buildViewToggle(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildViewToggle() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ToggleButtons(
+        isSelected: [_showOriginal, !_showOriginal],
+        onPressed: (index) {
+          setState(() {
+            _showOriginal = index == 0;
+          });
+        },
+        borderRadius: BorderRadius.circular(8),
+        constraints: const BoxConstraints(minHeight: 36, minWidth: 80),
+        children: const [
+          Text('Original', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+          Text('Traced', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPreviewArea() {
+    if (_tracedSvgPath == null || _tracedSvgPath!.isEmpty) {
+      return _buildEmptyPreview();
+    }
+    
+    return Container(
+      margin: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: InteractiveViewer(
+          minScale: 0.5,
+          maxScale: 5.0,
+          constrained: true,
+          boundaryMargin: const EdgeInsets.all(double.infinity),
+          child: Center(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // Determine the size of the previewImage
+                double w = 300;
+                double h = 300;
+                if (_previewImage != null) {
+                  w = _previewImage!.width.toDouble();
+                  h = _previewImage!.height.toDouble();
+                }
+                return SizedBox(
+                  width: w,
+                  height: h,
+                  child: CustomPaint(
+                    size: Size(w, h),
+                    painter: _TracedPathPainter(
+                      svgPathData: _tracedSvgPath!,
+                      sourceImage: _previewImage,
+                      showPath: _showPath,
+                      showPoints: _showPoints,
+                      fadeImage: _fadeImage,
+                      showOriginal: _showOriginal,
+                      fillColor: widget.fillColor,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyPreview() {
+    return Container(
+      margin: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
+      ),
+      child: Center(
+        child: Icon(
+          Icons.image_not_supported,
+          size: 48,
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomControls() {
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.6,
+      ),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(
+          top: BorderSide(
+            color: Theme.of(context).dividerColor,
+          ),
+        ),
+      ),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+          if (_traceError != null) ...[
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.errorColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                _traceError!,
+                style: TextStyle(
+                  color: AppTheme.errorColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+          _buildTracingSettings(),
+          const SizedBox(height: 12),
+          _buildPathDisplay(),
+          const SizedBox(height: 8),
+          _buildActionButtons(),
+        ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTracingSettings() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2),
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('PREVIEW'),
+          _buildCheckbox('Show path', _showPath, (v) => setState(() => _showPath = v)),
+          _buildCheckbox('Show points', _showPoints, (v) => setState(() => _showPoints = v)),
+          _buildCheckbox('Fade image', _fadeImage, (v) => setState(() => _fadeImage = v)),
+          
+          Divider(color: Theme.of(context).dividerColor, height: 24),
+          _buildSectionHeader('PRE-PROCESSING'),
+          _buildCheckbox('Invert image', _invert, (v) {
+            setState(() { _invert = v; _debouncedTrace(); });
+          }),
+          const SizedBox(height: 8),
+          _buildNumberStepper(
+            label: 'Blur', value: _blur.toDouble(), min: 0, max: 15, step: 1,
+            onChanged: (v) { setState(() { _blur = v.round(); _debouncedTrace(); }); },
+            valueFormatter: (v) => v.round().toString(),
+          ),
+          const SizedBox(height: 12),
+          _buildThresholdSlider(),
+
+          Divider(color: Theme.of(context).dividerColor, height: 24),
+          _buildSectionHeader('TRACING'),
+          _buildNumberStepper(
+            label: 'Ignore less than', value: _ignoreLessThan.toDouble(), min: 0, max: 100, step: 1,
+            onChanged: (v) { setState(() { _ignoreLessThan = v.round(); _debouncedTrace(); }); },
+            valueFormatter: (v) => v.round().toString(),
+          ),
+          _buildNumberStepper(
+            label: 'Smoothness', value: _smoothness.toDouble(), min: 0, max: 5, step: 1,
+            onChanged: (v) { setState(() { _smoothness = v.round(); _debouncedTrace(); }); },
+            valueFormatter: (v) => v.round().toString(),
+          ),
+          _buildNumberStepper(
+            label: 'Curve optimisation', value: _simplify, min: 0.5, max: 5.0, step: 0.1,
+            onChanged: (v) { setState(() { _simplify = v; _debouncedTrace(); }); },
+            valueFormatter: (v) => v.toStringAsFixed(1),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Text(
+        title,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+            ),
+      ),
+    );
+  }
+
+  Widget _buildCheckbox(String title, bool value, ValueChanged<bool> onChanged) {
+    return SizedBox(
+      height: 32,
+      child: Row(
+        children: [
+          SizedBox(
+            width: 24,
+            child: Checkbox(
+              value: value,
+              onChanged: (v) => onChanged(v ?? false),
+              activeColor: AppTheme.botanicalPrimary,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(title, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildThresholdSlider() {
+    // The Flutter Slider widget reserves 16dp of padding at each end for the
+    // thumb so it never clips the track endpoints. We mirror that padding on
+    // the histogram so the bars align exactly with the slider track.
+    const double _sliderEndPadding = 16.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Threshold',
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7)),
+              ),
+            ),
+            Text(
+              _threshold.toString(),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        // Histogram sits directly above the slider track, padded to match it.
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: _sliderEndPadding),
+          child: SizedBox(
+            height: 32,
+            child: CustomPaint(
+              size: const Size(double.infinity, 32),
+              painter: _HistogramPainter(
+                histogram: _histogram,
+                color: const Color(0xFF4285F4),
+              ),
+            ),
+          ),
+        ),
+        // Slider
+        Slider(
+          value: _threshold.toDouble(),
+          min: 0,
+          max: 255,
+          onChanged: (v) {
+            setState(() {
+              _threshold = v.round();
+              _debouncedTrace();
+            });
+          },
+          activeColor: Theme.of(context).colorScheme.onSurface,
+          inactiveColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+          thumbColor: Theme.of(context).colorScheme.onSurface,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNumberStepper({
+    required String label,
+    required double value,
+    required double min,
+    required double max,
+    required double step,
+    required ValueChanged<double> onChanged,
+    required String Function(double) valueFormatter,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7)),
+            ),
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.remove, size: 16),
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                onPressed: value > min ? () => onChanged((value - step).clamp(min, max)) : null,
+              ),
+              InkWell(
+                onTap: () {
+                  _showNumberInputDialog(
+                    label: label,
+                    initialValue: value,
+                    min: min,
+                    max: max,
+                    onChanged: onChanged,
+                    valueFormatter: valueFormatter,
+                  );
+                },
+                child: Container(
+                  constraints: const BoxConstraints(minWidth: 40),
+                  alignment: Alignment.center,
+                  child: Text(
+                    valueFormatter(value),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.add, size: 16),
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                onPressed: value < max ? () => onChanged((value + step).clamp(min, max)) : null,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showNumberInputDialog({
+    required String label,
+    required double initialValue,
+    required double min,
+    required double max,
+    required ValueChanged<double> onChanged,
+    required String Function(double) valueFormatter,
+  }) async {
+    final controller = TextEditingController(text: valueFormatter(initialValue));
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(label),
+          content: TextField(
+            controller: controller,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              helperText: 'Range: ${valueFormatter(min)} - ${valueFormatter(max)}',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final val = double.tryParse(controller.text);
+                if (val != null) {
+                  onChanged(val.clamp(min, max));
+                }
+                Navigator.pop(context);
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildPathDisplay() {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2),
+        ),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Generated path (d="..." value):',
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+          ),
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: SelectableText(
+              _tracedSvgPath ?? '',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontFamily: 'monospace',
+                  ),
+              maxLines: 3,
+            ),
+          ),
+          const SizedBox(height: 4),
+          TextButton.icon(
+            onPressed: _tracedSvgPath == null ? null : _copyToClipboard,
+            icon: const Icon(Icons.content_copy, size: 16),
+            label: const Text('Copy to Clipboard'),
+            style: TextButton.styleFrom(
+              foregroundColor: _tracedSvgPath == null
+                  ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38)
+                  : AppTheme.botanicalPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton(
+            onPressed: _cancel,
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
+            ),
+            child: const Text('Cancel'),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: FilledButton(
+            onPressed:
+                _isTracing || _tracedSvgPath == null ? null : _useThisPath,
+            child: _isTracing
+                ? SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                    ),
+                  )
+                : const Text('Use This Path'),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Custom painter for displaying the traced SVG path overlaid on the image.
+class _TracedPathPainter extends CustomPainter {
+  final String svgPathData; // the d="..." string
+  final ui.Image? sourceImage; // 300×300 decoded image for background
+  final bool showPath;
+  final bool showPoints;
+  final bool fadeImage;
+  final bool showOriginal;
+  final Color fillColor;
+
+  _TracedPathPainter({
+    required this.svgPathData,
+    required this.sourceImage,
+    required this.showPath,
+    required this.showPoints,
+    required this.fadeImage,
+    required this.showOriginal,
+    required this.fillColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Draw source image
+    if (sourceImage != null) {
+      if (showOriginal || !fadeImage) {
+        canvas.drawImage(sourceImage!, Offset.zero, Paint());
+      } else {
+        canvas.saveLayer(
+          Rect.largest,
+          Paint()..color = Colors.white.withAlpha(76),
+        );
+        canvas.drawImage(sourceImage!, Offset.zero, Paint());
+        canvas.restore();
+      }
+    }
+
+    if (showOriginal) return;
+
+    // Parse and draw SVG path
+    try {
+      final path = parseSvgPathData(svgPathData);
+      
+      if (showPath) {
+        canvas.drawPath(path, Paint()
+          ..color = fillColor.withValues(alpha: 0.7)
+          ..style = PaintingStyle.fill);
+        // Stroke outline
+        canvas.drawPath(path, Paint()
+          ..color = fillColor
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5);
+      }
+
+      if (showPoints) {
+        final regex = RegExp(r'[ML]\s+([0-9.-]+)\s+([0-9.-]+)');
+        final matches = regex.allMatches(svgPathData);
+        final pointPaint = Paint()
+          ..color = Colors.red
+          ..style = PaintingStyle.fill;
+        
+        for (final match in matches) {
+          final x = double.tryParse(match.group(1)!) ?? 0;
+          final y = double.tryParse(match.group(2)!) ?? 0;
+          canvas.drawCircle(Offset(x, y), 2.0, pointPaint);
+        }
+      }
+    } catch (e) {
+      // If parsing fails, show error in preview
+      final textPainter = TextPainter(
+        text: TextSpan(
+          text: 'Invalid SVG path',
+          style: TextStyle(
+            color: AppTheme.errorColor,
+            fontSize: 12,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      textPainter.layout();
+      textPainter.paint(
+        canvas,
+        Offset((size.width - textPainter.width) / 2,
+            (size.height - textPainter.height) / 2),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _TracedPathPainter oldDelegate) {
+    return oldDelegate.svgPathData != svgPathData ||
+        oldDelegate.sourceImage != sourceImage ||
+        oldDelegate.showPath != showPath ||
+        oldDelegate.showPoints != showPoints ||
+        oldDelegate.fadeImage != fadeImage ||
+        oldDelegate.showOriginal != showOriginal;
+  }
+}
+
+class _HistogramPainter extends CustomPainter {
+  final List<double> histogram;
+  final Color color;
+
+  _HistogramPainter({required this.histogram, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (histogram.isEmpty) return;
+
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    final path = Path();
+    path.moveTo(0, size.height);
+
+    final double step = size.width / (histogram.length - 1);
+    for (int i = 0; i < histogram.length; i++) {
+      final double x = i * step;
+      final double y = size.height - (histogram[i] * size.height);
+      path.lineTo(x, y);
+    }
+
+    path.lineTo(size.width, size.height);
+    path.close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _HistogramPainter oldDelegate) {
+    return oldDelegate.histogram != histogram || oldDelegate.color != color;
+  }
+}
