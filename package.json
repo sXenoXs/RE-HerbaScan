@@ -1,0 +1,28 @@
+{
+  "name": "herbascan",
+  "version": "1.0.0",
+  "description": "**Thesis Project**: HERBASCAN: A CONVOLUTIONAL NEURAL NETWORK-BASED MOBILE APPLICATION FOR PLANT IDENTIFICATION AND HERBAL MEDICINE INFORMATION",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sXenoXs/HerbaScan.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/sXenoXs/HerbaScan/issues"
+  },
+  "homepage": "https://github.com/sXenoXs/HerbaScan#readme",
+  "devDependencies": {
+    "supabase": "^2.107.0"
+  }
+}

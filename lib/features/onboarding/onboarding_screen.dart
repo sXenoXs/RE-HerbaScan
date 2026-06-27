@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:herbascan/core/providers/app_provider.dart';
-import 'package:herbascan/features/home/home_screen.dart';
+import 'package:herbascan/core/theme/app_theme.dart';
+import 'package:herbascan/core/localization/app_localizations.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -14,32 +16,31 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  final List<OnboardingPage> _pages = [
-    OnboardingPage(
-      icon: Icons.camera_alt,
-      title: 'AI-Powered Plant Recognition',
-      description: 'Identify Philippine medicinal plants instantly using advanced CNN technology',
-      color: const Color(0xFF6366F1),
-    ),
-    OnboardingPage(
-      icon: Icons.offline_bolt,
-      title: 'Works Offline',
-      description: 'No internet required - perfect for rural areas and field work',
-      color: const Color(0xFF22C55E),
-    ),
-    OnboardingPage(
-      icon: Icons.verified,
-      title: 'DOH Approved Plants',
-      description: 'Access information about 13 clinically validated herbal medicines',
-      color: const Color(0xFFF59E0B),
-    ),
-    OnboardingPage(
-      icon: Icons.visibility,
-      title: 'Explainable AI',
-      description: 'See exactly how the AI identifies plants with GradCAM visualization',
-      color: const Color(0xFF9F7AEA),
-    ),
-  ];
+  List<OnboardingPage> _getPages(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return [
+      OnboardingPage(
+        icon: Icons.document_scanner_rounded,
+        title: l10n.onboardingTitle1,
+        description: l10n.onboardingDesc1,
+      ),
+      OnboardingPage(
+        icon: Icons.wifi_off_rounded,
+        title: l10n.onboardingTitle2,
+        description: l10n.onboardingDesc2,
+      ),
+      OnboardingPage(
+        icon: Icons.verified_rounded,
+        title: l10n.onboardingTitle3,
+        description: l10n.onboardingDesc3,
+      ),
+      OnboardingPage(
+        icon: Icons.visibility_rounded,
+        title: l10n.onboardingTitle4,
+        description: l10n.onboardingDesc4,
+      ),
+    ];
+  }
 
   @override
   void dispose() {
@@ -47,8 +48,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     super.dispose();
   }
 
-  void _nextPage() {
-    if (_currentPage < _pages.length - 1) {
+  void _nextPage(int totalPages) {
+    if (_currentPage < totalPages - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -58,54 +59,48 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   }
 
-  void _previousPage() {
-    if (_currentPage > 0) {
-      _pageController.previousPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    }
-  }
-
   void _completeOnboarding() async {
     final appProvider = Provider.of<AppProvider>(context, listen: false);
     await appProvider.setFirstLaunchCompleted();
-    
+
     if (mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-      );
+      context.go('/home');
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final pages = _getPages(context);
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
-      body: SafeArea(
-        child: Column(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: SafeArea(
+            child: Column(
           children: [
-            // Skip Button
+            // Header Navigation
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  if (_currentPage > 0)
+                  const SizedBox(width: 60),
+                  if (_currentPage < pages.length - 1)
                     TextButton(
-                      onPressed: _previousPage,
-                      child: const Text('Back'),
+                      onPressed: _completeOnboarding,
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppTheme.botanicalPrimary,
+                      ),
+                      child: Text(l10n.skipBtn),
                     )
                   else
                     const SizedBox(width: 60),
-                  
-                  TextButton(
-                    onPressed: _completeOnboarding,
-                    child: const Text('Skip'),
-                  ),
                 ],
               ),
             ),
-            
+
             // Page View
             Expanded(
               child: PageView.builder(
@@ -115,94 +110,120 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     _currentPage = index;
                   });
                 },
-                itemCount: _pages.length,
+                itemCount: pages.length,
                 itemBuilder: (context, index) {
-                  return _buildOnboardingPage(_pages[index]);
+                  return _buildOnboardingPage(pages[index]);
                 },
               ),
             ),
-            
+
             // Page Indicators
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(
-                  _pages.length,
+                  pages.length,
                   (index) => _buildPageIndicator(index),
                 ),
               ),
             ),
-            
+
             // Next/Get Started Button
             Padding(
               padding: const EdgeInsets.all(24.0),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _nextPage,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: Text(
-                    _currentPage == _pages.length - 1 ? 'Get Started' : 'Next',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
+              child: FilledButton(
+                onPressed: () => _nextPage(pages.length),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 52),
+                ),
+                child: Text(
+                  _currentPage == pages.length - 1 ? l10n.getStartedBtn : l10n.nextBtn,
                 ),
               ),
             ),
           ],
         ),
       ),
+        ),
+      ),
     );
   }
 
   Widget _buildOnboardingPage(OnboardingPage page) {
-    return Padding(
-      padding: const EdgeInsets.all(32.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Icon
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              color: page.color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(60),
-            ),
-            child: Icon(
-              page.icon,
-              size: 60,
-              color: page.color,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(32.0),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight - 64),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+          // Layered botanical icon
+          SizedBox(
+            width: 160,
+            height: 160,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Layer 1: large soft outer circle
+                Container(
+                  width: 160,
+                  height: 160,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppTheme.botanicalPrimary.withOpacity(0.08),
+                  ),
+                ),
+                // Layer 2: medium tinted inner ring
+                Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppTheme.botanicalPrimary.withOpacity(0.12),
+                  ),
+                ),
+                // Layer 3: crisp primary icon
+                Icon(
+                  page.icon,
+                  size: 56,
+                  color: AppTheme.botanicalPrimary,
+                ),
+              ],
             ),
           ),
-          
+
           const SizedBox(height: 48),
-          
+
           // Title
           Text(
             page.title,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Description
           Text(
             page.description,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-              height: 1.5,
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                  height: 1.5,
+                ),
+          ),
+              ],
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -214,9 +235,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       width: isActive ? 24 : 8,
       height: 8,
       decoration: BoxDecoration(
-        color: isActive 
-            ? Theme.of(context).colorScheme.primary 
-            : Theme.of(context).colorScheme.primary.withOpacity(0.3),
+        color: isActive
+            ? AppTheme.botanicalPrimary
+            : Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(4),
       ),
     );
@@ -227,12 +248,10 @@ class OnboardingPage {
   final IconData icon;
   final String title;
   final String description;
-  final Color color;
 
   OnboardingPage({
     required this.icon,
     required this.title,
     required this.description,
-    required this.color,
   });
 }

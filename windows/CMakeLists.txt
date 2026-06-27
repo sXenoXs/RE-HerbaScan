@@ -65,8 +65,11 @@ include(flutter/generated_plugins.cmake)
 set(BUILD_BUNDLE_DIR "$<TARGET_FILE_DIR:${BINARY_NAME}>")
 # Make the "install" step default, as it's required to run.
 set(CMAKE_VS_INCLUDE_INSTALL_TO_DEFAULT_BUILD 1)
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-  set(CMAKE_INSTALL_PREFIX "${BUILD_BUNDLE_DIR}" CACHE PATH "..." FORCE)
+# Always install into the build tree so we don't require admin rights (avoid
+# "C:/Program Files/..." which causes INSTALL to fail). Use runner/Debug for
+# the default "flutter run -d windows" (Debug) build.
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT OR CMAKE_INSTALL_PREFIX MATCHES "Program Files")
+  set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/runner/Debug" CACHE PATH "Install to build output" FORCE)
 endif()
 
 set(INSTALL_BUNDLE_DATA_DIR "${CMAKE_INSTALL_PREFIX}/data")
@@ -88,19 +91,30 @@ if(PLUGIN_BUNDLED_LIBRARIES)
 endif()
 
 # Copy the native assets provided by the build.dart from all packages.
+# Only install if the directory exists (optional).
 set(NATIVE_ASSETS_DIR "${PROJECT_BUILD_DIR}native_assets/windows/")
-install(DIRECTORY "${NATIVE_ASSETS_DIR}"
-   DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
-   COMPONENT Runtime)
+install(CODE "
+  if(EXISTS \"${NATIVE_ASSETS_DIR}\")
+    file(INSTALL \"${NATIVE_ASSETS_DIR}\" DESTINATION \"${INSTALL_BUNDLE_LIB_DIR}\" TYPE DIRECTORY)
+  endif()
+  " COMPONENT Runtime)
 
-# Fully re-copy the assets directory on each build to avoid having stale files
-# from a previous install.
+# Fully re-copy the assets directory on each build to avoid having stale files.
+# Flutter may put flutter_assets in PROJECT_BUILD_DIR or in CMAKE_BINARY_DIR.
 set(FLUTTER_ASSET_DIR_NAME "flutter_assets")
+set(FLUTTER_ASSET_SOURCE "${PROJECT_BUILD_DIR}/${FLUTTER_ASSET_DIR_NAME}")
 install(CODE "
   file(REMOVE_RECURSE \"${INSTALL_BUNDLE_DATA_DIR}/${FLUTTER_ASSET_DIR_NAME}\")
   " COMPONENT Runtime)
-install(DIRECTORY "${PROJECT_BUILD_DIR}/${FLUTTER_ASSET_DIR_NAME}"
-  DESTINATION "${INSTALL_BUNDLE_DATA_DIR}" COMPONENT Runtime)
+install(CODE "
+  set(ASSET_SRC \"${FLUTTER_ASSET_SOURCE}\")
+  if(NOT EXISTS \"\${ASSET_SRC}\")
+    set(ASSET_SRC \"${CMAKE_BINARY_DIR}/${FLUTTER_ASSET_DIR_NAME}\")
+  endif()
+  if(EXISTS \"\${ASSET_SRC}\")
+    file(INSTALL \"\${ASSET_SRC}\" DESTINATION \"${INSTALL_BUNDLE_DATA_DIR}\" TYPE DIRECTORY)
+  endif()
+  " COMPONENT Runtime)
 
 # Install the AOT library on non-Debug builds only.
 install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"

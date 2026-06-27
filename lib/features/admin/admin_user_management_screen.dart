@@ -1,0 +1,694 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:intl/intl.dart';
+import 'package:herbascan/core/localization/app_localizations.dart';
+import 'package:herbascan/core/services/admin_user_service.dart';
+import 'package:herbascan/core/theme/app_theme.dart';
+
+/// User Management: list users (email, join date, scan count), Suspend, Reactivate, Delete only.
+class AdminUserManagementScreen extends StatefulWidget {
+  const AdminUserManagementScreen({super.key});
+
+  @override
+  State<AdminUserManagementScreen> createState() =>
+      _AdminUserManagementScreenState();
+}
+
+class _AdminUserManagementScreenState
+    extends State<AdminUserManagementScreen> {
+  List<AdminProfileRow> _profiles = [];
+  List<AdminProfileRow> _filtered = [];
+  bool _loading = true;
+  String? _error;
+  // Prevents concurrent suspend/reactivate/delete operations from overlapping
+  bool _actionInProgress = false;
+
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+    _searchController.addListener(_applyFilter);
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_applyFilter);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _applyFilter() {
+    final q = _searchController.text.trim().toLowerCase();
+    setState(() {
+      if (q.isEmpty) {
+        _filtered = List.from(_profiles);
+      } else {
+        _filtered = _profiles
+            .where((p) => p.email.toLowerCase().contains(q))
+            .toList();
+      }
+    });
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final list = await AdminUserService().listProfiles();
+      if (mounted) {
+        setState(() {
+          _profiles = list;
+          _filtered = List.from(list);
+          _loading = false;
+        });
+        _applyFilter();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _setActive(AdminProfileRow row, bool active) async {
+    if (_actionInProgress) return;
+
+    // When suspending, ask admin for an optional reason first
+    String? suspensionReason;
+    if (!active) {
+      final reasonController = TextEditingController();
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(AppLocalizations.of(context).suspendAccount),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${AppLocalizations.of(context).suspend} ${row.email}? ${AppLocalizations.of(context).suspendWarning}',
+                style: Theme.of(ctx).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: reasonController,
+                maxLines: 2,
+                maxLength: 200,
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context).reasonOptional,
+                  hintText: AppLocalizations.of(context).reasonHint,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(AppLocalizations.of(context).cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(ctx).colorScheme.error,
+              ),
+              child: Text(AppLocalizations.of(context).suspend),
+            ),
+          ],
+        ),
+      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          reasonController.dispose();
+        });
+      });
+      if (confirmed != true || !mounted) return;
+      suspensionReason = reasonController.text.trim().isEmpty
+          ? null
+          : reasonController.text.trim();
+    }
+
+    _actionInProgress = true;
+    try {
+      final ok = await AdminUserService().setActive(
+        row.id,
+        active,
+        reason: suspensionReason,
+      );
+      if (!mounted) return;
+      if (ok) await _load();
+    } finally {
+      if (mounted) setState(() => _actionInProgress = false);
+    }
+  }
+
+  Future<void> _setRole(AdminProfileRow row, String role) async {
+    if (_actionInProgress) return;
+    final isMakingAdmin = role == 'admin';
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+    if (!isMakingAdmin && currentUserId == row.id) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('You cannot remove your own admin role.')),
+        );
+      }
+      return;
+    }
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(isMakingAdmin ? AppLocalizations.of(context).makeAdminPrompt : AppLocalizations.of(context).removeAdminPrompt),
+        content: Text(
+          isMakingAdmin
+              ? '${row.email} ${AppLocalizations.of(context).makeAdminDesc}'
+              : '${row.email} ${AppLocalizations.of(context).removeAdminDesc}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(AppLocalizations.of(context).cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(isMakingAdmin ? AppLocalizations.of(context).makeAdmin : AppLocalizations.of(context).removeAdmin),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+    _actionInProgress = true;
+    try {
+      final ok = await AdminUserService().setRole(row.id, role);
+      if (!mounted) return;
+      if (ok) {
+        await _load();
+        if (mounted) {
+          final l10n = AppLocalizations.of(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                isMakingAdmin ? l10n.userNowAdmin : l10n.adminRemoved,
+              ),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to update role.')),
+          );
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _actionInProgress = false);
+    }
+  }
+
+  Future<void> _forceVerifyUser(AdminProfileRow row) async {
+    if (_actionInProgress) return;
+    _actionInProgress = true;
+    try {
+      await AdminUserService().forceVerifyUser(row.id);
+      if (!mounted) return;
+      await _load();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context).emailVerified)),
+        );
+      }
+    } on FunctionException catch (e) {
+      if (e.status == 404 || e.status == 501) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(AppLocalizations.of(context).forceVerifyNotAvailable),
+            ),
+          );
+        }
+      } else {
+        rethrow;
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('[AdminUserManagement] Force verify error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _actionInProgress = false);
+    }
+  }
+
+  Future<void> _deleteUser(AdminProfileRow row) async {
+    if (_actionInProgress) return;
+
+    // Capture theme values synchronously before any await
+    final errorColor = Theme.of(context).colorScheme.error;
+    final confirmController = TextEditingController();
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text(AppLocalizations.of(context).deleteUserDataPrompt),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${row.email}: ${AppLocalizations.of(context).deleteUserDataDesc}',
+              ),
+              const SizedBox(height: 16),
+              Text(
+                AppLocalizations.of(context).typeDeleteToConfirm,
+                style: TextStyle(
+                    color: errorColor, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: confirmController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'DELETE',
+                  border: const OutlineInputBorder(),
+                  errorBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: errorColor)),
+                ),
+                onChanged: (_) {
+                  if (ctx.mounted) setDialogState(() {});
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(AppLocalizations.of(context).cancel),
+            ),
+            FilledButton(
+              onPressed: confirmController.text.trim() == 'DELETE'
+                  ? () => Navigator.pop(ctx, true)
+                  : null,
+              style: FilledButton.styleFrom(backgroundColor: errorColor),
+              child: Text(AppLocalizations.of(context).deleteUserDataBtn),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    // Defer disposal by two frames so the dialog route is fully torn down before we dispose.
+    // Fixes _dependents.isEmpty when tapping Cancel or Confirm (TextField still dependent in single-frame defer).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        confirmController.dispose();
+      });
+    });
+
+    if (confirm != true || !mounted) return;
+
+    _actionInProgress = true;
+
+    // Show a non-dismissible blocking loading dialog while the Edge Function runs
+    if (mounted) {
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => PopScope(
+          canPop: false,
+          child: AlertDialog(
+            content: Row(
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(width: 20),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        AppLocalizations.of(context).deletingAccount,
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleSmall
+                            ?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        AppLocalizations.of(context).removingAccountData,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    try {
+      await AdminUserService().deleteUser(row.id);
+      if (mounted) {
+        Navigator.of(context).pop(); // Dismiss loading dialog
+        // Remove user from list in-place
+        setState(() {
+          _profiles.removeWhere((p) => p.id == row.id);
+          _filtered.removeWhere((p) => p.id == row.id);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${row.email} has been deleted.'),
+          ),
+        );
+      }
+    } catch (e, stack) {
+      if (mounted) Navigator.of(context).pop(); // Dismiss loading dialog
+      if (kDebugMode) {
+        debugPrint(
+            '[AdminUserManagement][_deleteUser] Delete failed for ${row.email} (${row.id}): $e');
+        if (e is FunctionException) {
+          debugPrint(
+              '[AdminUserManagement][_deleteUser] FunctionException status: ${e.status}, details: ${e.details}');
+        }
+        debugPrint('[AdminUserManagement][_deleteUser] stack: $stack');
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _actionInProgress = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final dateFormat = DateFormat('MMM dd, yyyy');
+
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(_error!, style: theme.textTheme.bodyMedium),
+              const SizedBox(height: 16),
+              FilledButton(onPressed: _load, child: Text(AppLocalizations.of(context).retry)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+          padding: const EdgeInsets.fromLTRB(16, 16, 8, 0),
+          child: Row(
+            children: [
+              Text(
+                AppLocalizations.of(context).userDirectory,
+                style: theme.textTheme.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: _load,
+                tooltip: AppLocalizations.of(context).refresh,
+              ),
+            ],
+          ),
+        ),
+        // Search bar
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: AppLocalizations.of(context).searchByEmail,
+              prefixIcon: const Icon(Icons.search_rounded, size: 20),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      onPressed: () => _searchController.clear(),
+                    )
+                  : null,
+              filled: true,
+              fillColor: theme.colorScheme.surfaceContainerHighest
+                  .withValues(alpha: 0.4),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
+          ),
+        ),
+        if (_filtered.isEmpty)
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.people_outline,
+                      size: 64, color: theme.colorScheme.outline),
+                  const SizedBox(height: 16),
+                  Text(
+                    _searchController.text.isNotEmpty
+                        ? AppLocalizations.of(context).noUsersMatch
+                        : AppLocalizations.of(context).noUsersFound,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+              itemCount: _filtered.length,
+              separatorBuilder: (_, __) => const Divider(height: 1, indent: 72),
+              itemBuilder: (context, index) {
+                final row = _filtered[index];
+                return _buildUserRow(context, theme, row, dateFormat);
+              },
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildUserRow(BuildContext context, ThemeData theme,
+      AdminProfileRow row, DateFormat dateFormat) {
+    final isAdmin = row.role == 'admin';
+    final isActive = row.isActive;
+    final initials = row.email.isNotEmpty
+        ? row.email[0].toUpperCase()
+        : '?';
+    final l10n = AppLocalizations.of(context);
+
+    final subtitleParts = <String>[
+      row.emailConfirmedAt != null ? l10n.verified : l10n.unverified,
+      if (row.createdAt != null)
+        '${l10n.joined} ${dateFormat.format(row.createdAt!)}',
+      '${row.scanCount} ${row.scanCount == 1 ? l10n.scanCount : l10n.scansCount}',
+    ];
+
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      leading: CircleAvatar(
+        radius: 24,
+        backgroundColor: isAdmin
+            ? AppTheme.botanicalPrimary
+            : theme.colorScheme.surfaceContainerHighest,
+        foregroundColor: isAdmin
+            ? Colors.white
+            : theme.colorScheme.onSurfaceVariant,
+        child: Text(
+          initials,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+          ),
+        ),
+      ),
+      title: Row(
+        children: [
+          Flexible(
+            child: Text(
+              row.email.isEmpty ? '(no email)' : row.email,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              softWrap: true,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 8,
+              vertical: 2,
+            ),
+            decoration: BoxDecoration(
+              color: isAdmin
+                  ? AppTheme.botanicalPrimary
+                  : theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              isAdmin ? l10n.adminLabel : l10n.userLabel,
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: isAdmin
+                    ? Colors.white
+                    : theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
+      subtitle: Padding(
+        padding: const EdgeInsets.only(top: 4),
+        child: Text(
+          subtitleParts.join(' • '),
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+          ),
+        ),
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isActive
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.error,
+            ),
+          ),
+          const SizedBox(width: 4),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert_rounded),
+            onSelected: (action) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                switch (action) {
+                  case 'suspend':
+                    _setActive(row, false);
+                    break;
+                  case 'reactivate':
+                    _setActive(row, true);
+                    break;
+                  case 'make_admin':
+                    _setRole(row, 'admin');
+                    break;
+                  case 'remove_admin':
+                    _setRole(row, 'user');
+                    break;
+                  case 'delete':
+                    _deleteUser(row);
+                    break;
+                  case 'force_verify':
+                    _forceVerifyUser(row);
+                    break;
+                }
+              });
+            },
+            itemBuilder: (ctx) {
+              final currentUserId =
+                  Supabase.instance.client.auth.currentUser?.id;
+              final isCurrentUser = currentUserId == row.id;
+              return [
+                if (isActive)
+                  PopupMenuItem(
+                    value: 'suspend',
+                    child: Row(children: [
+                      const Icon(Icons.block_outlined),
+                      const SizedBox(width: 12),
+                      Text(l10n.suspendAccount),
+                    ]),
+                  )
+                else
+                  PopupMenuItem(
+                    value: 'reactivate',
+                    child: Row(children: [
+                      const Icon(Icons.check_circle_outline,
+                          color: AppTheme.safeGreen),
+                      const SizedBox(width: 12),
+                      Text(l10n.reactivateAccount),
+                    ]),
+                  ),
+                if (!isAdmin)
+                  PopupMenuItem(
+                    value: 'make_admin',
+                    child: Row(children: [
+                      const Icon(Icons.admin_panel_settings_outlined),
+                      const SizedBox(width: 12),
+                      Text(l10n.makeAdmin),
+                    ]),
+                  ),
+                if (isAdmin && !isCurrentUser)
+                  PopupMenuItem(
+                    value: 'remove_admin',
+                    child: Row(children: [
+                      const Icon(Icons.admin_panel_settings_rounded),
+                      const SizedBox(width: 12),
+                      Text(l10n.removeAdmin),
+                    ]),
+                  ),
+                PopupMenuItem(
+                  value: 'force_verify',
+                  child: Row(children: [
+                    const Icon(Icons.mark_email_read_outlined),
+                    const SizedBox(width: 12),
+                    Text(l10n.forceVerifyEmail),
+                  ]),
+                ),
+                PopupMenuItem(
+                  value: 'delete',
+                  child: Row(children: [
+                    Icon(Icons.person_remove_outlined,
+                        color: theme.colorScheme.error),
+                    const SizedBox(width: 12),
+                    Text(l10n.deleteUserDataBtn,
+                        style: TextStyle(color: theme.colorScheme.error)),
+                  ]),
+                ),
+              ];
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+

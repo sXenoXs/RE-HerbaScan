@@ -1,296 +1,117 @@
-## Quick Setup Instructions
+# HerbaScan – Quick Setup Guide
 
-### 1. Install Flutter
+## Prerequisites
 
-**Windows:**
-1. Download Flutter SDK from: https://flutter.dev/docs/get-started/install/windows
-2. Extract to `C:\flutter`
-3. Add `C:\flutter\bin` to your PATH environment variable
-4. Run `flutter doctor` to check installation
+| Requirement | Version | Notes |
+| --- | --- | --- |
+| Flutter SDK | 3.9.2+ | |
+| Dart SDK | bundled with Flutter | |
+| Android Studio | Latest stable | Or VS Code with Flutter extensions |
+| Android SDK | API 21+ | Required for Android deployment |
 
-**macOS:**
-1. Download Flutter SDK from: https://flutter.dev/docs/get-started/install/macos
-2. Extract to your home directory
-3. Add Flutter to your PATH in `~/.zshrc` or `~/.bash_profile`
-4. Run `flutter doctor` to check installation
+---
 
-**Linux:**
-1. Download Flutter SDK from: https://flutter.dev/docs/get-started/install/linux
-2. Extract to your home directory
-3. Add Flutter to your PATH in `~/.bashrc`
-4. Run `flutter doctor` to check installation
+## 1. Install Flutter & Dependencies
 
-### 2. Install Dependencies
+Install Flutter for your OS ([Installation Guide](https://flutter.dev/docs/get-started/install)), ensuring `flutter doctor` passes without major issues.
 
 ```bash
-# Navigate to project directory
-cd herbascan
+# Clone the repository
+git clone <repository-url>
+cd RE-HerbaScan
 
 # Install Flutter dependencies
 flutter pub get
 
-# Check for any issues
+# Verify installation
 flutter doctor
 ```
 
-### 3. Run the App
+---
+
+## 2. Run the App
+
+The primary target is an Android device. Emulators do not support the camera or TFLite hardware acceleration well.
 
 ```bash
-# For Android
+# Android device (recommended)
 flutter run
 
-# For iOS (macOS only)
-flutter run -d ios
-
-# For Web
-flutter run -d web
+# Windows desktop (admin portal testing — no camera/TFLite)
+flutter run -d windows
 ```
 
-## Development Setup
-
-### Android Studio Setup
-1. Install Android Studio
-2. Install Android SDK (API level 21 or higher)
-3. Create an Android Virtual Device (AVD)
-4. Enable USB Debugging on your physical device
-
-### VS Code Setup
-1. Install VS Code
-2. Install Flutter and Dart extensions
-3. Open the project folder in VS Code
-4. Use `Ctrl+Shift+P` and run "Flutter: Select Device"
-
-## Troubleshooting
-
-### Common Issues
-
-**Flutter not found:**
-- Make sure Flutter is added to your PATH
-- Restart your terminal/command prompt
-- Run `flutter doctor` to verify installation
-
-**Android SDK not found:**
-- Install Android Studio
-- Run `flutter doctor --android-licenses`
-- Accept all licenses
-
-**Device not detected:**
-- Enable USB Debugging on Android device
-- Install device drivers
-- Run `flutter devices` to list available devices
-
-**Dependencies not installing:**
-- Check internet connection
-- Run `flutter clean` then `flutter pub get`
-- Check `pubspec.yaml` for syntax errors
-- Verify Flutter and Dart versions compatibility
-
-**Build errors:**
-- Check Flutter and Dart versions
-- Update dependencies if needed
-- Run `flutter doctor` to identify issues
-- Check for version conflicts in pubspec.yaml
-
-**Camera permissions:**
-- Add camera permissions to AndroidManifest.xml
-- Test on real device (camera doesn't work in emulator)
-- Check device camera permissions in settings
-
-**Database errors:**
-- Check SQLite database initialization
-- Verify database schema creation
-- Check file permissions for database storage
-
-### Getting Help
-
-1. Check Flutter documentation: https://flutter.dev/docs
-2. Check the project's README.md for specific instructions
-
-## Next Steps
-
-After successful setup:
-
-1. **Test the app**: Run `flutter run` and test all functionality
-2. **Test AI Features**: 
-   - Test plant identification with camera and gallery
-   - Verify GradCAM visualization and overlay controls
-   - Check confidence scores and predictions
-3. **Test Offline Mode**: Toggle offline mode in settings and verify functionality
-4. **Test Multi-language**: Switch between English and Filipino
-5. **Deploy**: Build APK with `flutter build apk` for release
-
-**Current Features Ready for Testing**:
-- ✅ Plant identification (camera + gallery)
-- ✅ GradCAM visualization with working overlay controls
-- ✅ Offline processing capabilities
-- ✅ **Offline CAM heatmap generation** (fixed in v0.5.2)
-- ✅ Multi-language support (English/Filipino)
-- ✅ Scan history with metadata
-- ✅ Settings and preferences
-- ✅ Responsive UI with fixed overflow issues
-- ✅ Backend API for true Grad-CAM computation
-- ✅ Postman collection for API testing
-
-**Recent Fixes (v0.5.2)**:
-- ✅ Fixed offline CAM inference shape mismatch error
-- ✅ Corrected TFLite multiple outputs handling using `runForMultipleInputs()`
-- ✅ Verified feature maps extraction: `[1, 7, 7, 1280]`
-- ✅ Verified predictions extraction: `[1, 40]`
-
-**Backend API Testing**:
-- See `backend/README.md` → "🧪 Testing with Postman" for complete testing guide
-- Postman collection: `backend/HerbaScan_API.postman_collection.json`
-- Supports: Postman desktop, VS Code (REST Client, Thunder Client), curl
-
-## Project Structure Overview
-
-```
-herbascan/
-├── lib/                   # Dart source code
-│   ├── core/              # Core functionality
-│   │   ├── models/        # Data models
-│   │   ├── providers/     # State management
-│   │   ├── services/      # Business logic
-│   │   ├── theme/         # App styling
-│   │   └── localization/  # Multi-language
-│   └── features/          # Feature modules
-│       ├── splash/        # App launch
-│       ├── home/          # Main dashboard
-│       ├── scan/          # Camera scanning
-│       └── ...
-├── assets/                # Static assets
-│   ├── images/            # Plant images and app icons
-│   ├── models/            # AI model files (.tflite)
-│   ├── data/              # JSON data files (doh_plants.json)
-│   ├── fonts/             # Custom fonts (Inter)
-│   └── icons/             # App icons and UI elements
-├── android/               # Android-specific code
-├── ios/                   # iOS-specific code
-└── pubspec.yaml           # Dependencies
-```
-
-## AI Model Integration
-
-The app includes pre-trained models:
-1. **MobileNet V2 Feature Extractor**: `mobilenetv2_feature_extractor.tflite`
-2. **Random Forest Classifier**: `random_forest_distilled.tflite`
-3. **Class Labels**: `labels.json` and `labels.txt`
-
-**Model Files Location**: `assets/models/`
-
-### Backend Setup (Python FastAPI)
-
-HerbaScan includes a Python backend API for true Grad-CAM computation:
-
-**Location**: `backend/` directory
-
-#### Prerequisites
-- Python 3.8+ installed
-- Virtual environment (recommended)
-- Model files: `backend/models/mobilenetv2_rf.h5` and `backend/models/labels.json`
-
-#### Setup Steps
-
-1. **Navigate to backend directory**:
-   ```bash
-   cd backend
-   ```
-
-2. **Create virtual environment**:
-   ```bash
-   # Windows
-   python -m venv venv
-   venv\Scripts\activate
-   
-   # Mac/Linux
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
-
-3. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Place model files**:
-   - Copy `mobilenetv2_rf.h5` to `backend/models/`
-   - Copy `labels.json` to `backend/models/`
-
-5. **Run locally**:
-   ```bash
-   python main.py
-   # Or
-   uvicorn main:app --reload --host 0.0.0.0 --port 8000
-   ```
-
-6. **Test API**:
-   ```bash
-   curl http://localhost:8000/health
-   ```
-
-#### Backend Documentation
-
-For detailed backend setup, see:
-- **`backend/README.md`** - Complete backend documentation
-- **`backend/QUICK_START.md`** - Quick deployment guide
-- **Model Management**: `backend/README.md` → "🔄 Updating Models"
-- **Deployment**: `backend/README.md` → "🚀 Deployment to Railway"
-- **Phase 2**: `backend/README.md` → "Phase 2: Model Extraction & Conversion"
-- **Testing**: `backend/README.md` → "🧪 Testing with Postman"
-
-#### Phase 2: Model Extraction (For Flutter Assets)
-
-After setting up the backend, extract CAM weights and create multi-output TFLite model:
+### Build Commands
 
 ```bash
-cd backend
+# Release APK (split per ABI — recommended for production)
+flutter build apk --split-per-abi
 
-# Extract CAM weights
-python extract_cam_weights.py
-
-# Create multi-output TFLite model
-python create_multi_output_tflite.py
-
-# Copy to Flutter assets
-cp models/cam_weights.json ../assets/models/
-cp models/mobilenetv2_multi_output.tflite ../assets/models/
+# Universal APK
+flutter build apk
 ```
-
-**For detailed instructions, see `backend/README.md` → "Phase 2: Model Extraction & Conversion"**
-
-## Database Setup
-
-The app uses SQLite for local storage. The database is created automatically on first run with the following tables:
-
-- `plants` - Plant information (DOH-approved medicinal plants)
-- `medicinal_uses` - Medicinal applications and therapeutic uses
-- `preparation_methods` - Preparation instructions and dosage guidelines
-- `scan_history` - User scan results with GradCAM paths and metadata
-- `plant_details` - Detailed plant characteristics and taxonomy
-
-
-## Development Tips
-
-### Hot Reload & Debugging
-- Use `r` in terminal for hot reload during development
-- Use `R` in terminal for hot restart
-- Use `flutter run --debug` for debugging
-- Use `flutter run --release` for performance testing
-- Use `flutter devices` to see available devices
-
-### Performance Tips
-- Use `flutter run --release` for better performance
-- Enable R8/ProGuard for smaller APK size
-- Optimize images in `assets/images/`
-- Use `flutter build apk --split-per-abi` for smaller APKs
-- Monitor memory usage with Flutter Inspector
-
-### Code Quality
-- Run `flutter analyze` to check for issues
-- Use `flutter test` to run unit tests
-- Follow Dart/Flutter style guidelines
-- Use proper error handling throughout the app
 
 ---
 
-**Need help?** Check the main README.md, PROJECT_STATUS.md, or contact the development team.
+## 3. Supabase Configuration (Cloud DB & Auth)
+
+Supabase credentials are set in `lib/core/config/supabase_config.dart`. The project defaults to the production instance `tsahfzmxqsgbxrrtbdnw.supabase.co`.
+
+**To provision a fresh database, apply all migrations via the CLI:**
+
+```bash
+# Link project (run once)
+npx supabase login
+npx supabase link --project-ref <YOUR_PROJECT_REF>
+
+# Push all migrations to build the tables and RLS policies
+npx supabase db push
+
+# Deploy the Edge Functions
+npx supabase functions deploy delete-user
+npx supabase functions deploy force-verify-user
+```
+
+**Grant Admin Access:**
+Run this in the Supabase SQL Editor to gain access to the HerbaScan Admin Portal:
+```sql
+UPDATE public.profiles SET role = 'admin' WHERE id = 'YOUR_USER_UUID';
+```
+
+> **Detailed Guide**: For comprehensive Supabase configuration (e.g. Email templates, Magic Links, Storage Buckets), refer to [`supabase/README.md`](supabase/README.md).
+
+---
+
+## 4. Local Database (SQLite)
+
+HerbaScan is offline-first. The local SQLite database is created automatically on the first app launch. No manual setup is required. 
+
+- **First Launch**: Automatically seeded with all medicinal plant structures.
+- **Subsequent Launches**: Automatically syncs the latest catalog from Supabase via `CatalogSyncService` when online.
+
+---
+
+## 5. Backend API (Model Retraining)
+
+**The backend is NOT required for plant scanning.** 
+Plant identification runs fully offline via TFLite. The backend is an optional microservice used exclusively for retraining the ML model via a Modal GPU pipeline.
+
+> **Detailed Guide**: If you need to deploy or modify the retraining pipeline, refer to [`backend/QUICK_START.md`](backend/QUICK_START.md) and [`backend/README.md`](backend/README.md).
+
+---
+
+## 6. Development Tips
+
+```bash
+# Hot reload (keeps state)
+r
+
+# Hot restart (resets state)
+R
+
+# Run widget tests
+flutter test
+
+# Analyze code for issues
+flutter analyze
+```

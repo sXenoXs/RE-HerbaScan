@@ -1,16 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/foundation.dart';
 import 'package:herbascan/core/providers/app_provider.dart';
+import 'package:herbascan/core/providers/auth_provider.dart';
 import 'package:herbascan/core/providers/language_provider.dart';
 import 'package:herbascan/core/providers/offline_provider.dart';
-import 'package:herbascan/core/widgets/offline_indicator.dart';
-import 'package:herbascan/features/offline/offline_demo_screen.dart';
-import 'package:herbascan/features/help/help_tutorial_screen.dart';
-import 'package:herbascan/features/metrics/performance_metrics_screen.dart';
+import 'package:herbascan/core/providers/plant_provider.dart';
+import 'package:herbascan/core/theme/app_theme.dart';
+import 'package:herbascan/features/auth/login_screen.dart';
+import 'package:herbascan/features/auth/change_password_screen.dart';
+import 'package:herbascan/features/auth/change_email_screen.dart';
 import 'package:herbascan/features/feedback/feedback_screen.dart';
-import 'package:herbascan/features/dashboard/performance_dashboard_screen.dart';
-import 'package:herbascan/features/testing/gradcam_testing_screen.dart';
+import 'package:herbascan/features/offline/system_diagnostics_screen.dart';
+import 'package:herbascan/features/help/help_tutorial_screen.dart';
 import 'package:herbascan/core/localization/app_localizations.dart';
+import 'package:herbascan/core/services/data_deletion_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -23,395 +32,661 @@ class SettingsScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(AppLocalizations.of(context).settings),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // General Settings
-          _buildSectionHeader(context, theme, 'General'),
-          _buildThemeSetting(context, theme),
-          _buildLanguageSetting(context, theme),
-          _buildOfflineModeSetting(context, theme),
-          _buildAutoSaveSetting(context, theme),
-
-          const SizedBox(height: 16),
-
-          // Offline Management
-          _buildOfflineManagementSection(context, theme),
-
-          const SizedBox(height: 24),
-
-          // AI Settings
-          _buildSectionHeader(context, theme, 'AI Settings'),
-          _buildConfidenceScoresSetting(context, theme),
-          _buildGradCAMSetting(context, theme),
-          _buildTop3ResultsSetting(context, theme),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: RefreshIndicator(
+            onRefresh: () async {
+              final auth = context.read<AuthProvider>();
+              final appProvider = context.read<AppProvider>();
+              await appProvider.loadRemoteConfig();
+              if (auth.isLoggedIn) {
+                await auth.refreshRole();
+              }
+            },
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              children: [
+          // 1. Account / Personal Herbarium
+          _buildSectionLabel(context, theme, AppLocalizations.of(context).accountLabel),
+          const SizedBox(height: 8),
+          _buildAccountBlock(context, theme),
 
           const SizedBox(height: 24),
 
-          // Help & Support
-          _buildSectionHeader(context, theme, 'Help & Support'),
-          _buildHelpTutorialLink(context, theme),
-          _buildPerformanceMetricsLink(context, theme),
-          _buildFeedbackLink(context, theme),
-          _buildAppPerformanceLink(context, theme),
-          _buildGradCAMTestingLink(context, theme),
+          // 2. App Preferences
+          _buildSectionLabel(context, theme, AppLocalizations.of(context).appPreferencesLabel),
+          const SizedBox(height: 8),
+          _buildGroupedCard(
+            theme,
+            children: [
+              _buildThemeTile(context, theme),
+              _buildSoftDivider(theme),
+              _buildLanguageTile(context, theme),
+              _buildSoftDivider(theme),
+              // ── Hide Auto-Save on web (no device gallery) ──
+              if (!kIsWeb) ...[
+                _buildAutoSaveTile(context, theme),
+              ],
+            ],
+          ),
 
           const SizedBox(height: 24),
 
-          // About
-          _buildSectionHeader(context, theme, 'About'),
-          _buildAppVersionInfo(context, theme),
-          _buildModelVersionInfo(context, theme),
+          // 3. Scanning & AI
+          if (!kIsWeb) ...[
+            _buildSectionLabel(context, theme, AppLocalizations.of(context).scanningRecognitionLabel),
+            const SizedBox(height: 8),
+            _buildGroupedCard(
+              theme,
+              children: [
+                _buildConfidenceScoresTile(context, theme),
+                _buildSoftDivider(theme),
+                _buildTop3ResultsTile(context, theme),
+              ],
+            ),
+          ],
+
+          const SizedBox(height: 24),
+
+          // 4. Support, Legal & About
+          if (!kIsWeb) ...[
+            _buildSectionLabel(context, theme, AppLocalizations.of(context).supportLegalAboutLabel),
+            const SizedBox(height: 8),
+            _buildGroupedCard(
+              theme,
+              children: [
+                _buildHelpTutorialTile(context, theme),
+                _buildSoftDivider(theme),
+                _buildSendFeedbackTile(context, theme),
+                _buildSoftDivider(theme),
+                _buildTermsOfServiceTile(context, theme),
+                _buildSoftDivider(theme),
+                _buildEULATile(context, theme),
+                _buildSoftDivider(theme),
+                _buildPrivacyPolicyTile(context, theme),
+                _buildSoftDivider(theme),
+                _buildAppVersionTile(context, theme),
+                _buildSoftDivider(theme),
+                _buildModelVersionTile(context, theme),
+              ],
+            ),
+            const SizedBox(height: 32),
+          ],
+
+          // 5. Developer Options (visually separated)
+          if (!kIsWeb) ...[
+            _buildDeveloperOptionsBlock(context, theme),
+          ],
+
+          const SizedBox(height: 24),
         ],
+            ),
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildSectionHeader(
+  Widget _buildSectionLabel(
       BuildContext context, ThemeData theme, String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(left: 4, bottom: 2),
       child: Text(
         title,
-        style: theme.textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.bold,
+        style: theme.textTheme.labelLarge?.copyWith(
+          fontWeight: FontWeight.w700,
           color: theme.colorScheme.primary,
+          letterSpacing: 0.4,
         ),
       ),
     );
   }
 
-  Widget _buildThemeSetting(BuildContext context, ThemeData theme) {
-    final appProvider = Provider.of<AppProvider>(context);
-
+  Widget _buildGroupedCard(ThemeData theme,
+      {required List<Widget> children}) {
     return Card(
-      child: SwitchListTile(
-        secondary: Icon(
-          appProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode,
-        ),
-        title: Text(appProvider.isDarkMode ? 'Dark Mode' : 'Light Mode'),
-        subtitle: const Text('Toggle between dark and light themes'),
-        value: appProvider.isDarkMode,
-        onChanged: (value) {
-          appProvider.toggleDarkMode();
-        },
+      elevation: 0,
+      color: theme.colorScheme.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: children,
       ),
     );
   }
 
-  Widget _buildLanguageSetting(BuildContext context, ThemeData theme) {
-    final languageProvider = Provider.of<LanguageProvider>(context);
+  // ── Account block ──────────────────────────────────────────────────────────
 
-    return Card(
-      child: ListTile(
-        leading: const Icon(Icons.language),
-        title: Text(AppLocalizations.of(context).language),
-        subtitle: Text(languageProvider.isEnglish ? 'English' : 'Filipino'),
-        trailing: const Icon(Icons.arrow_forward_ios),
-        onTap: () {
-          languageProvider.toggleLanguage();
-        },
-      ),
-    );
-  }
-
-  Widget _buildOfflineModeSetting(BuildContext context, ThemeData theme) {
-    final appProvider = Provider.of<AppProvider>(context);
-    final offlineProvider = Provider.of<OfflineProvider>(context);
-
-    return Card(
-      child: SwitchListTile(
-        secondary: const Icon(Icons.offline_bolt),
-        title: Text(AppLocalizations.of(context).offlineMode),
-        subtitle: const Text('Enable offline processing'),
-        value: appProvider.isOfflineMode,
-        onChanged: (value) async {
-          await appProvider.toggleOfflineMode();
-          await offlineProvider.toggleOfflineMode();
-        },
-      ),
-    );
-  }
-
-  Widget _buildAutoSaveSetting(BuildContext context, ThemeData theme) {
-    return Card(
-      child: SwitchListTile(
-        secondary: const Icon(Icons.save),
-        title: const Text('Auto-save Scans'),
-        subtitle: const Text('Automatically save scan results'),
-        value: true,
-        onChanged: (value) {
-          // TODO: Implement auto-save setting
-        },
-      ),
-    );
-  }
-
-  Widget _buildConfidenceScoresSetting(BuildContext context, ThemeData theme) {
-    final appProvider = Provider.of<AppProvider>(context);
-
-    return Card(
-      child: SwitchListTile(
-        secondary: const Icon(Icons.analytics),
-        title: Text(AppLocalizations.of(context).showConfidenceScores),
-        subtitle: const Text('Display confidence percentages'),
-        value: appProvider.showConfidenceScores,
-        onChanged: (value) {
-          appProvider.toggleConfidenceScores();
-        },
-      ),
-    );
-  }
-
-  Widget _buildGradCAMSetting(BuildContext context, ThemeData theme) {
-    final appProvider = Provider.of<AppProvider>(context);
-
-    return Card(
-      child: SwitchListTile(
-        secondary: const Icon(Icons.visibility),
-        title: Text(AppLocalizations.of(context).showGradCAM),
-        subtitle: const Text('Show AI focus areas'),
-        value: appProvider.showGradCAM,
-        onChanged: (value) {
-          appProvider.toggleGradCAM();
-        },
-      ),
-    );
-  }
-
-  Widget _buildTop3ResultsSetting(BuildContext context, ThemeData theme) {
-    final appProvider = Provider.of<AppProvider>(context);
-
-    return Card(
-      child: SwitchListTile(
-        secondary: const Icon(Icons.list),
-        title: Text(AppLocalizations.of(context).showTop3Results),
-        subtitle: const Text('Show top 3 predictions'),
-        value: appProvider.showTop3Results,
-        onChanged: (value) {
-          appProvider.toggleTop3Results();
-        },
-      ),
-    );
-  }
-
-  Widget _buildAppVersionInfo(BuildContext context, ThemeData theme) {
-    final appProvider = Provider.of<AppProvider>(context);
-
-    return Card(
-      child: ListTile(
-        leading: const Icon(Icons.info),
-        title: const Text('App Version'),
-        subtitle: Text(appProvider.appVersion),
-      ),
-    );
-  }
-
-  Widget _buildModelVersionInfo(BuildContext context, ThemeData theme) {
-    final appProvider = Provider.of<AppProvider>(context);
-
-    return Card(
-      child: ListTile(
-        leading: const Icon(Icons.psychology),
-        title: const Text('Model Version'),
-        subtitle: Text(appProvider.modelVersion),
-      ),
-    );
-  }
-
-  Widget _buildHelpTutorialLink(BuildContext context, ThemeData theme) {
-    final appLocalizations = AppLocalizations.of(context);
-
-    return Card(
-      child: ListTile(
-        leading: const Icon(Icons.help_outline),
-        title: Text(appLocalizations.helpAndTutorial),
-        subtitle: const Text('Learn how to get the best scanning results'),
-        trailing: const Icon(Icons.arrow_forward_ios),
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const HelpTutorialScreen(),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildPerformanceMetricsLink(BuildContext context, ThemeData theme) {
-    return Card(
-      child: ListTile(
-        leading: const Icon(Icons.analytics),
-        title: const Text('AI Performance Metrics'),
-        subtitle: const Text('View model accuracy and performance stats'),
-        trailing: const Icon(Icons.arrow_forward_ios),
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const PerformanceMetricsScreen(),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildFeedbackLink(BuildContext context, ThemeData theme) {
-    final appLocalizations = AppLocalizations.of(context);
-
-    return Card(
-      child: ListTile(
-        leading: const Icon(Icons.feedback_outlined),
-        title: Text(appLocalizations.sendFeedback),
-        subtitle: const Text('Help us improve HerbaScan'),
-        trailing: const Icon(Icons.arrow_forward_ios),
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const FeedbackScreen(),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildAppPerformanceLink(BuildContext context, ThemeData theme) {
-    final appLocalizations = AppLocalizations.of(context);
-
-    return Card(
-      child: ListTile(
-        leading: const Icon(Icons.speed),
-        title: Text(appLocalizations.appPerformance),
-        subtitle: Text(appLocalizations.viewPerformanceData),
-        trailing: const Icon(Icons.arrow_forward_ios),
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const PerformanceDashboardScreen(),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildGradCAMTestingLink(BuildContext context, ThemeData theme) {
-    return Card(
-      child: ListTile(
-        leading: const Icon(Icons.science),
-        title: const Text('Phase 5: GradCAM Testing'),
-        subtitle: const Text('Test online/offline modes and measure performance'),
-        trailing: const Icon(Icons.arrow_forward_ios),
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const GradCAMTestingScreen(),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildOfflineManagementSection(BuildContext context, ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader(context, theme, 'Offline Management'),
-
-        // Offline Status Card
-        OfflineStatusCard(),
-
-        const SizedBox(height: 16),
-
-        // Offline Features Status
-        OfflineFeatureStatus(),
-
-        const SizedBox(height: 16),
-
-        // Offline Actions
-        _buildOfflineActions(context, theme),
-      ],
-    );
-  }
-
-  Widget _buildOfflineActions(BuildContext context, ThemeData theme) {
-    return Consumer<OfflineProvider>(
-      builder: (context, offlineProvider, child) {
-        return Card(
-          child: Column(
+  Widget _buildAccountBlock(BuildContext context, ThemeData theme) {
+    return Consumer<AuthProvider>(
+      builder: (context, auth, _) {
+        if (!auth.isLoggedIn) {
+          return _buildGroupedCard(
+            theme,
             children: [
               ListTile(
-                leading: const Icon(Icons.refresh),
-                title: const Text('Refresh Offline Data'),
-                subtitle: const Text('Update offline database and sync status'),
-                onTap: () async {
-                  try {
-                    await offlineProvider.refreshOfflineData();
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Offline data refreshed successfully'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    }
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Error refreshing data: $e'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  }
-                },
-              ),
-              const Divider(height: 1),
-              ListTile(
-                leading: const Icon(Icons.storage),
-                title: const Text('Offline Storage Info'),
-                subtitle: Text(
-                  'Scans: ${offlineProvider.offlineStats['totalScans'] ?? 0}\n'
-                  'Plants: ${offlineProvider.offlineStats['totalPlants'] ?? 0}\n'
-                  'Pending Sync: ${offlineProvider.offlineStats['pendingSync'] ?? 0}',
-                ),
-                onTap: () {
-                  _showOfflineStorageDialog(context, offlineProvider);
-                },
-              ),
-              const Divider(height: 1),
-              ListTile(
-                leading: const Icon(Icons.delete_forever),
-                title: const Text('Clear Offline Data'),
+                leading: const Icon(Icons.cloud_upload_outlined),
+                title: Text(AppLocalizations.of(context).personalHerbarium),
                 subtitle:
-                    const Text('Remove all offline scans and cached data'),
-                onTap: () {
-                  _showClearDataDialog(context, offlineProvider);
-                },
-              ),
-              const Divider(height: 1),
-              ListTile(
-                leading: const Icon(Icons.offline_bolt),
-                title: const Text('Offline Demo'),
-                subtitle: const Text('Test offline processing capabilities'),
+                    Text(AppLocalizations.of(context).signInToBackUp),
+                trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
                 onTap: () {
                   Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const OfflineDemoScreen(),
+                    MaterialPageRoute<bool>(
+                      builder: (context) => const LoginScreen(),
                     ),
                   );
                 },
               ),
             ],
+          );
+        }
+
+        final email = auth.user?.email ?? '';
+        final initials = email.isNotEmpty ? email[0].toUpperCase() : '?';
+        final isAdmin = auth.isAdmin;
+
+        return _buildGroupedCard(
+          theme,
+          children: [
+            // User avatar + email header
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor:
+                        AppTheme.botanicalPrimary.withOpacity(0.15),
+                    child: Text(
+                      initials,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: AppTheme.botanicalPrimary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          email,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          isAdmin ? AppLocalizations.of(context).administrator : AppLocalizations.of(context).standardUser,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: isAdmin
+                                ? AppTheme.botanicalPrimary
+                                : theme.colorScheme.onSurface.withOpacity(0.45),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            _buildSoftDivider(theme),
+            ListTile(
+              leading: const Icon(Icons.lock_outline_rounded),
+              title: Text(AppLocalizations.of(context).changePassword),
+              subtitle: Text(AppLocalizations.of(context).updatePasswordSubtitle),
+              trailing:
+                  const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (context) => const ChangePasswordScreen(),
+                  ),
+                );
+              },
+            ),
+            _buildSoftDivider(theme),
+            ListTile(
+              leading: const Icon(Icons.email_outlined),
+              title: Text(AppLocalizations.of(context).emailAddress),
+              subtitle: Text(AppLocalizations.of(context).updateEmailSubtitle),
+              trailing:
+                  const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (context) => const ChangeEmailScreen(),
+                  ),
+                );
+              },
+            ),
+            if (isAdmin) ...[
+              _buildSoftDivider(theme),
+              ListTile(
+                leading: Icon(
+                  Icons.admin_panel_settings_rounded,
+                  color: AppTheme.botanicalPrimary,
+                ),
+                title: Text(AppLocalizations.of(context).adminConsole),
+                subtitle: Text(AppLocalizations.of(context).adminConsoleSubtitle),
+                trailing:
+                    const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+                onTap: () => context.push('/admin'),
+              ),
+            ],
+            _buildSoftDivider(theme),
+            // Sign Out as a plain list tile — restores visual rhythm
+            ListTile(
+              leading: Icon(Icons.logout_rounded,
+                  color: theme.colorScheme.error),
+              title: Text(
+                AppLocalizations.of(context).signOut,
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
+              onTap: () => _showSignOutDialog(context, auth),
+            ),
+            if (!kIsWeb) ...[
+              _buildSoftDivider(theme),
+              ListTile(
+                leading: Icon(
+                  Icons.delete_forever_outlined,
+                  color: theme.colorScheme.error,
+                ),
+                title: Text(
+                  AppLocalizations.of(context).deleteAccount,
+                  style: TextStyle(
+                    color: theme.colorScheme.error,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: Text(
+                  AppLocalizations.of(context).deleteAccountSubtitle,
+                ),
+                trailing:
+                    const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+                onTap: () => _showDeleteAccountDialog(context, auth),
+              ),
+              _buildSoftDivider(theme),
+              ListTile(
+                leading: Icon(
+                  Icons.privacy_tip_outlined,
+                  color: theme.colorScheme.error.withOpacity(0.8),
+                ),
+                title: Text(
+                  AppLocalizations.of(context).requestDataDeletion,
+                  style: TextStyle(
+                    color: theme.colorScheme.error.withOpacity(0.8),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: Text(
+                  AppLocalizations.of(context).requestDataDeletionSubtitle,
+                ),
+                trailing:
+                    const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+                onTap: () => _showDataDeletionRequestDialog(context),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSoftDivider(ThemeData theme) {
+    return Divider(
+      height: 1,
+      indent: 16,
+      endIndent: 16,
+      color: theme.colorScheme.onSurface.withOpacity(0.07),
+    );
+  }
+
+
+  // ── App Preferences tiles ──────────────────────────────────────────────────
+
+  Widget _buildThemeTile(BuildContext context, ThemeData theme) {
+    final appProvider = Provider.of<AppProvider>(context);
+    return SwitchListTile(
+      secondary: Icon(
+        appProvider.isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+      ),
+      title: Text(appProvider.isDarkMode ? AppLocalizations.of(context).darkMode : AppLocalizations.of(context).lightMode),
+      subtitle: Text(AppLocalizations.of(context).themeSubtitle),
+      value: appProvider.isDarkMode,
+      onChanged: (_) => appProvider.toggleDarkMode(),
+    );
+  }
+
+  Widget _buildLanguageTile(BuildContext context, ThemeData theme) {
+    final languageProvider = Provider.of<LanguageProvider>(context);
+    return ListTile(
+      leading: const Icon(Icons.language_rounded),
+      title: Text(AppLocalizations.of(context).language),
+      subtitle:
+          Text(languageProvider.isEnglish ? 'English' : 'Filipino'),
+      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+      onTap: () => languageProvider.toggleLanguage(),
+    );
+  }
+
+  Widget _buildAutoSaveTile(BuildContext context, ThemeData theme) {
+    final appProvider = Provider.of<AppProvider>(context);
+    return SwitchListTile(
+      secondary: const Icon(Icons.save_outlined),
+      title: Text(AppLocalizations.of(context).autoSaveScans),
+      subtitle: Text(AppLocalizations.of(context).autoSaveScansSubtitle),
+      value: appProvider.autoSaveScans,
+      onChanged: (value) async {
+        appProvider.toggleAutoSaveScans();
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('auto_save_scans', value);
+      },
+    );
+  }
+
+  // ── Scanning & AI tiles (de-jargonified) ──────────────────────────────────
+
+  Widget _buildConfidenceScoresTile(BuildContext context, ThemeData theme) {
+    final appProvider = Provider.of<AppProvider>(context);
+    return SwitchListTile(
+      secondary: const Icon(Icons.analytics_outlined),
+      title: Text(AppLocalizations.of(context).showConfidenceScores),
+      value: appProvider.showConfidenceScores,
+      onChanged: (value) async {
+        appProvider.toggleConfidenceScores();
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('show_confidence', value);
+      },
+    );
+  }
+
+  Widget _buildTop3ResultsTile(BuildContext context, ThemeData theme) {
+    final appProvider = Provider.of<AppProvider>(context);
+    return SwitchListTile(
+      secondary: const Icon(Icons.format_list_numbered_rounded),
+      title: Text(AppLocalizations.of(context).showAlternativeMatches),
+      value: appProvider.showTop3Results,
+      onChanged: (value) async {
+        appProvider.toggleTop3Results();
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('show_top3', value);
+      },
+    );
+  }
+
+  // ── Support & About tiles ──────────────────────────────────────────────────
+
+  Widget _buildHelpTutorialTile(BuildContext context, ThemeData theme) {
+    return ListTile(
+      leading: const Icon(Icons.help_outline_rounded),
+      title: Text(AppLocalizations.of(context).helpAndTutorial),
+      subtitle: Text(AppLocalizations.of(context).helpTutorialSubtitle),
+      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const HelpTutorialScreen(),
           ),
         );
       },
     );
   }
+
+  Widget _buildSendFeedbackTile(BuildContext context, ThemeData theme) {
+    return ListTile(
+      leading: const Icon(Icons.feedback_outlined),
+      title: Text(AppLocalizations.of(context).sendFeedback),
+      subtitle: Text(AppLocalizations.of(context).sendFeedbackSubtitle),
+      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => const FeedbackScreen(),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTermsOfServiceTile(BuildContext context, ThemeData theme) {
+    return ListTile(
+      leading: const Icon(Icons.gavel_rounded),
+      title: Text(AppLocalizations.of(context).termsOfService),
+      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+      onTap: () => _showLegalDocumentDialog(context, 'Terms of Service', 'assets/data/legal/Terms of Service.md'),
+    );
+  }
+
+  Widget _buildEULATile(BuildContext context, ThemeData theme) {
+    return ListTile(
+      leading: const Icon(Icons.policy_rounded),
+      title: Text(AppLocalizations.of(context).eula),
+      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+      onTap: () => _showLegalDocumentDialog(context, 'End-User License Agreement (EULA)', 'assets/data/legal/End-User License Agreement.md'),
+    );
+  }
+
+  Widget _buildPrivacyPolicyTile(BuildContext context, ThemeData theme) {
+    return ListTile(
+      leading: const Icon(Icons.privacy_tip_outlined),
+      title: Text(
+        AppLocalizations.of(context).privacyPolicy,
+        style: TextStyle(
+          color: theme.colorScheme.primary,
+          decoration: TextDecoration.underline,
+          decorationColor: theme.colorScheme.primary,
+        ),
+      ),
+      trailing: const Icon(Icons.open_in_new_rounded, size: 16),
+      onTap: () async {
+        final Uri url = Uri.parse('https://sxenoxs.github.io/RE-HerbaScan/');
+        if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Could not launch \$url')),
+            );
+          }
+        }
+      },
+    );
+  }
+
+  void _showLegalDocumentDialog(BuildContext context, String title, String assetPath) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final theme = Theme.of(context);
+        final isDark = theme.brightness == Brightness.dark;
+        return AlertDialog(
+          title: Text(title),
+          content: SizedBox(
+            width: double.maxFinite,
+            height: MediaQuery.of(context).size.height * 0.7,
+            child: FutureBuilder<String>(
+              future: rootBundle.loadString(assetPath),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  return const Text('Error loading document.');
+                } else {
+                  return Markdown(
+                    data: snapshot.data ?? '',
+                    styleSheet: MarkdownStyleSheet(
+                      p: theme.textTheme.bodyMedium?.copyWith(
+                        color: isDark ? Colors.white70 : Colors.black87,
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildAppVersionTile(BuildContext context, ThemeData theme) {
+    final appProvider = Provider.of<AppProvider>(context);
+    return ListTile(
+      leading: const Icon(Icons.info_outline_rounded),
+      title: Text(AppLocalizations.of(context).appVersion),
+      subtitle: Text(appProvider.appVersion),
+    );
+  }
+
+  Widget _buildModelVersionTile(BuildContext context, ThemeData theme) {
+    final appProvider = Provider.of<AppProvider>(context);
+    return ListTile(
+      leading: const Icon(Icons.psychology_outlined),
+      title: Text(AppLocalizations.of(context).modelVersion),
+      subtitle: Text(appProvider.modelVersion),
+    );
+  }
+
+  // ── Developer Options block ────────────────────────────────────────────────
+
+  Widget _buildDeveloperOptionsBlock(BuildContext context, ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            AppLocalizations.of(context).developerOptionsLabel,
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: theme.colorScheme.onSurface.withOpacity(0.45),
+              letterSpacing: 0.4,
+            ),
+          ),
+        ),
+        Card(
+          elevation: 0,
+          color: theme.colorScheme.surface,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Consumer<OfflineProvider>(
+            builder: (context, offlineProvider, _) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildOfflineModeTile(context, theme, offlineProvider),
+                  _buildSoftDivider(theme),
+                  ListTile(
+                    leading: const Icon(Icons.refresh_rounded),
+                    title: Text(AppLocalizations.of(context).refreshOfflineData),
+                    subtitle: Text(AppLocalizations.of(context).refreshOfflineDataSubtitle),
+                    onTap: () async {
+                      try {
+                        await offlineProvider.refreshOfflineData();
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content:
+                                  Text('Offline data refreshed successfully'),
+                              backgroundColor: AppTheme.botanicalPrimary,
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error refreshing data: $e'),
+                              backgroundColor: AppTheme.errorColor,
+                            ),
+                          );
+                        }
+                      }
+                    },
+                  ),
+                  _buildSoftDivider(theme),
+                  ListTile(
+                    leading: const Icon(Icons.storage_rounded),
+                    title: Text(AppLocalizations.of(context).offlineStorageInfo),
+                    subtitle: Text(
+                      'Scans: ${offlineProvider.offlineStats['totalScans'] ?? 0} · '
+                      'Plants: ${offlineProvider.offlineStats['totalPlants'] ?? 0} · '
+                      'Pending: ${offlineProvider.offlineStats['pendingSync'] ?? 0}',
+                    ),
+                    onTap: () async {
+                      await offlineProvider.refreshOfflineData();
+                      if (context.mounted) {
+                        _showOfflineStorageDialog(context, offlineProvider);
+                      }
+                    },
+                  ),
+                  _buildSoftDivider(theme),
+                  ListTile(
+                    leading: Icon(
+                      Icons.delete_sweep_outlined,
+                      color: theme.colorScheme.error,
+                    ),
+                    title: Text(
+                      AppLocalizations.of(context).clearOfflineData,
+                      style: TextStyle(color: theme.colorScheme.error),
+                    ),
+                    subtitle: Text(AppLocalizations.of(context).clearOfflineDataSubtitle),
+                    onTap: () =>
+                        _showClearDataDialog(context, offlineProvider),
+                  ),
+                  _buildSoftDivider(theme),
+                  ListTile(
+                    leading: const Icon(Icons.monitor_heart_outlined),
+                    title: Text(AppLocalizations.of(context).systemDiagnostics),
+                    subtitle: Text(AppLocalizations.of(context).systemDiagnosticsSubtitle),
+                    trailing:
+                        const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const SystemDiagnosticsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOfflineModeTile(
+      BuildContext context, ThemeData theme, OfflineProvider offlineProvider) {
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
+    return SwitchListTile(
+      secondary: const Icon(Icons.offline_bolt_outlined),
+      title: Text(AppLocalizations.of(context).offlineMode),
+      subtitle: Text(AppLocalizations.of(context).offlineModeSubtitle),
+      value: offlineProvider.isOfflineMode,
+      onChanged: (value) async {
+        await offlineProvider.toggleOfflineMode();
+        await appProvider.syncOfflineModeFromPrefs();
+      },
+    );
+  }
+
+  // ── Dialogs ────────────────────────────────────────────────────────────────
 
   void _showOfflineStorageDialog(
       BuildContext context, OfflineProvider offlineProvider) {
@@ -423,13 +698,17 @@ class SettingsScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildStorageInfoRow('Total Scans',
+            _buildStorageInfoRow(
+                'Total Scans',
                 '${offlineProvider.offlineStats['totalScans'] ?? 0}'),
-            _buildStorageInfoRow('Total Plants',
+            _buildStorageInfoRow(
+                'Total Plants',
                 '${offlineProvider.offlineStats['totalPlants'] ?? 0}'),
-            _buildStorageInfoRow('DOH Plants',
+            _buildStorageInfoRow(
+                'DOH Plants',
                 '${offlineProvider.offlineStats['dohPlants'] ?? 0}'),
-            _buildStorageInfoRow('Pending Sync',
+            _buildStorageInfoRow(
+                'Pending Sync',
                 '${offlineProvider.offlineStats['pendingSync'] ?? 0}'),
             _buildStorageInfoRow('Offline Mode',
                 offlineProvider.isOfflineMode ? 'Enabled' : 'Disabled'),
@@ -459,9 +738,193 @@ class SettingsScreen extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label),
-          Text(
-            value,
-            style: const TextStyle(fontWeight: FontWeight.w600),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+
+  void _showSignOutDialog(BuildContext context, AuthProvider auth) {
+    final theme = Theme.of(context);
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        icon: Icon(Icons.logout_rounded,
+            color: theme.colorScheme.error, size: 48),
+        title: const Text('Sign out?'),
+        content: const Text(
+          'You will be signed out of your Personal Herbarium account.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.of(dialogContext).pop();
+              await auth.signOut();
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.error,
+              foregroundColor: theme.colorScheme.onError,
+            ),
+            child: const Text('Sign Out'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteAccountDialog(BuildContext context, AuthProvider auth) {
+    final theme = Theme.of(context);
+    final confirmationController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          icon: Icon(Icons.warning_amber_rounded,
+              color: theme.colorScheme.error, size: 48),
+          title: const Text('Delete account?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'This will permanently delete your Personal Herbarium account and all cloud data. '
+                'Your device scan history will not be affected. This action cannot be undone.',
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Type "DELETE" to confirm:',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: confirmationController,
+                autofocus: true,
+                onChanged: (_) => setDialogState(() {}),
+                decoration: InputDecoration(
+                  hintText: 'DELETE',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: confirmationController.text.trim() == 'DELETE'
+                  ? () async {
+                      Navigator.of(dialogContext).pop();
+                      try {
+                        await auth.deleteAccount();
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Account deleted')),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                  e.toString().replaceFirst('Exception: ', '')),
+                              backgroundColor: theme.colorScheme.error,
+                            ),
+                          );
+                        }
+                      }
+                    }
+                  : null,
+              style: FilledButton.styleFrom(
+                backgroundColor: theme.colorScheme.error,
+                foregroundColor: theme.colorScheme.onError,
+              ),
+              child: const Text('Delete account'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDataDeletionRequestDialog(BuildContext context) {
+    final theme = Theme.of(context);
+    final reasonController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        icon: Icon(Icons.privacy_tip_rounded,
+            color: theme.colorScheme.error.withOpacity(0.8), size: 48),
+        title: const Text('Request Data Deletion'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Submit a request to have your personal data deleted from HerbaScan\'s servers. '
+              'Your request will be reviewed by an administrator.',
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Reason (optional)',
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: reasonController,
+              maxLines: 3,
+              maxLength: 500,
+              decoration: InputDecoration(
+                hintText: 'Tell us why you\'d like your data deleted...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.all(12),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.of(dialogContext).pop();
+              final ok = await DataDeletionService()
+                  .submitRequest(reason: reasonController.text.trim());
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(ok
+                        ? 'Data deletion request submitted. An admin will review it shortly.'
+                        : 'Failed to submit request. Please try again later.'),
+                    backgroundColor: ok ? AppTheme.botanicalPrimary : theme.colorScheme.error,
+                  ),
+                );
+              }
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.error.withOpacity(0.8),
+              foregroundColor: theme.colorScheme.onError,
+            ),
+            child: const Text('Submit Request'),
           ),
         ],
       ),
@@ -472,27 +935,28 @@ class SettingsScreen extends StatelessWidget {
       BuildContext context, OfflineProvider offlineProvider) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Clear Offline Data'),
         content: const Text(
-          'This will permanently delete all offline scan history and cached data. '
-          'This action cannot be undone. Are you sure you want to continue?',
+          'This will permanently delete all scan history and pending sync on this device. '
+          'This action cannot be undone. Are you sure?',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () async {
-              Navigator.of(context).pop();
+              Navigator.of(dialogContext).pop();
               try {
                 await offlineProvider.clearOfflineData();
                 if (context.mounted) {
+                  await context.read<PlantProvider>().loadScanHistory();
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Offline data cleared successfully'),
-                      backgroundColor: Colors.green,
+                      backgroundColor: AppTheme.botanicalPrimary,
                     ),
                   );
                 }
@@ -501,15 +965,15 @@ class SettingsScreen extends StatelessWidget {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Error clearing data: $e'),
-                      backgroundColor: Colors.red,
+                      backgroundColor: AppTheme.errorColor,
                     ),
                   );
                 }
               }
             },
-            child: const Text(
+            child: Text(
               'Clear',
-              style: TextStyle(color: Colors.red),
+              style: TextStyle(color: AppTheme.errorColor),
             ),
           ),
         ],
