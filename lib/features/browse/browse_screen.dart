@@ -11,6 +11,7 @@ import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/core/widgets/plant_image.dart';
 import 'package:herbascan/features/scan/plant_detail_screen.dart';
 import 'package:herbascan/features/browse/condition_search_screen.dart';
+import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/features/browse/toxic_plant_detail_screen.dart';
 import 'package:herbascan/core/services/usage_analytics.dart';
 
@@ -176,7 +177,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
                   child: SearchBar(
                     controller: _searchController,
                     focusNode: _searchFocusNode,
-                    hintText: 'Search ${plantProvider.plants.length} Plants',
+                    hintText: AppLocalizations.of(context).searchPlantsCount(plantProvider.plants.length),
                     leading: Icon(
                       Icons.search_rounded,
                       color: theme.colorScheme.onSurface.withOpacity(0.5),
@@ -230,16 +231,16 @@ class _BrowseScreenState extends State<BrowseScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                 child: SegmentedButton<BrowseFilter>(
                   showSelectedIcon: false,
-                  segments: const [
+                  segments: [
                     ButtonSegment(
                       value: BrowseFilter.all,
-                      label: Text('All Plants'),
-                      icon: Icon(Icons.eco_rounded),
+                      label: Text(AppLocalizations.of(context).allPlants),
+                      icon: const Icon(Icons.eco_rounded),
                     ),
                     ButtonSegment(
                       value: BrowseFilter.doh,
-                      label: Text('DOH Approved'),
-                      icon: Icon(Icons.verified_rounded),
+                      label: Text(AppLocalizations.of(context).dohApproved),
+                      icon: const Icon(Icons.verified_rounded),
                     ),
                   ],
                   selected: {_selectedFilter},
@@ -282,7 +283,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
                 child: Row(
                   children: [
                     Text(
-                      'Showing $showingCount Plants',
+                      AppLocalizations.of(context).showingPlants(showingCount),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: AppTheme.textSecondary,
                       ),
@@ -295,9 +296,9 @@ class _BrowseScreenState extends State<BrowseScreen> {
                           size: 14,
                           color: AppTheme.botanicalPrimary,
                         ),
-                        label: const Text(
-                          'Medical',
-                          style: TextStyle(
+                        label: Text(
+                          AppLocalizations.of(context).medical,
+                          style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                             color: AppTheme.botanicalPrimary,
@@ -335,7 +336,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
                           _isGridView = !_isGridView;
                         });
                       },
-                      tooltip: _isGridView ? 'List View' : 'Grid View',
+                      tooltip: _isGridView ? AppLocalizations.of(context).listView : AppLocalizations.of(context).gridView,
                       padding: EdgeInsets.zero,
                       visualDensity: VisualDensity.compact,
                     ),
@@ -401,14 +402,14 @@ class _BrowseScreenState extends State<BrowseScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'No plants found',
+            AppLocalizations.of(context).noResultsFound,
             style: theme.textTheme.titleMedium?.copyWith(
               color: theme.colorScheme.onSurface.withOpacity(0.6),
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Try a different search or filter',
+            AppLocalizations.of(context).tryDifferentSearch,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurface.withOpacity(0.4),
             ),

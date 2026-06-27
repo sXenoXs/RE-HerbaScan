@@ -7,6 +7,7 @@ import 'package:herbascan/core/providers/auth_provider.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/core/widgets/botanical_auth_header.dart';
 import 'package:herbascan/features/auth/account_verified_screen.dart';
+import 'package:herbascan/core/localization/app_localizations.dart';
 
 /// Screen for entering the 6-digit code from the signup confirmation email.
 /// On success, confirms the account and pops with [true].
@@ -136,14 +137,13 @@ class _EnterSignupCodeScreenState extends State<EnterSignupCodeScreen> {
         setState(() {
           final raw = e.toString();
           if (raw.contains('otp_expired') || raw.contains('expired')) {
-            _errorMessage =
-                'Code expired. Tap "Resend" to get a new one.';
+            _errorMessage = AppLocalizations.of(context).codeExpired;
           } else {
             _errorMessage = raw
                 .replaceFirst('AuthException: ', '')
                 .replaceFirst('AuthApiException(message: ', '')
                 .replaceAll(RegExp(r', statusCode: \d+, code: \w+\)'), '');
-            if (_errorMessage!.isEmpty) _errorMessage = 'Invalid code. Try again.';
+            if (_errorMessage!.isEmpty) _errorMessage = AppLocalizations.of(context).invalidCode;
           }
           _isLoading = false;
         });
@@ -163,13 +163,13 @@ class _EnterSignupCodeScreenState extends State<EnterSignupCodeScreen> {
       if (mounted) {
         _startCooldown();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('A new code has been sent to your email.')),
+          SnackBar(content: Text(AppLocalizations.of(context).newCodeSent)),
         );
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Failed to resend. Please try again.';
+          _errorMessage = AppLocalizations.of(context).failedToResend;
         });
       }
     } finally {
@@ -244,8 +244,8 @@ class _EnterSignupCodeScreenState extends State<EnterSignupCodeScreen> {
               const SizedBox(height: 16),
               BotanicalAuthHeader(
                 icon: Icons.mark_email_read_rounded,
-                title: 'Check your inbox',
-                subtitle: _buildSubtitle(),
+                title: AppLocalizations.of(context).checkYourInbox,
+                subtitle: _buildSubtitle(context),
               ),
               const SizedBox(height: 40),
 
@@ -282,7 +282,7 @@ class _EnterSignupCodeScreenState extends State<EnterSignupCodeScreen> {
                 const Icon(Icons.lock_clock_rounded, size: 64, color: Colors.orange),
                 const SizedBox(height: 16),
                 Text(
-                  'Too many attempts.\nTry again in $_lockedUntil.',
+                  AppLocalizations.of(context).tooManyAttemptsWait(_lockedUntil ?? ''),
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: theme.colorScheme.onSurface,
                   ),
@@ -292,7 +292,7 @@ class _EnterSignupCodeScreenState extends State<EnterSignupCodeScreen> {
                 TextButton.icon(
                   onPressed: () => Navigator.of(context).pop(),
                   icon: const Icon(Icons.arrow_back),
-                  label: const Text('Back to Sign In'),
+                  label: Text(AppLocalizations.of(context).backToSignIn),
                 ),
               ] else ...[
                 // 6-box OTP input
@@ -314,7 +314,7 @@ class _EnterSignupCodeScreenState extends State<EnterSignupCodeScreen> {
                 const SizedBox(height: 8),
                 Center(
                   child: Text(
-                    'Attempts left: $_attemptsLeft',
+                    AppLocalizations.of(context).attemptsLeft(_attemptsLeft),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -345,7 +345,7 @@ class _EnterSignupCodeScreenState extends State<EnterSignupCodeScreen> {
                                 color: Colors.white,
                               ),
                             )
-                          : const Text('Activate Account'),
+                          : Text(AppLocalizations.of(context).activateAccountBtn),
                     );
                   },
                 ),
@@ -363,8 +363,8 @@ class _EnterSignupCodeScreenState extends State<EnterSignupCodeScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : _isCoolingDown
-                            ? Text("Wait ${_cooldownSeconds}s to resend")
-                            : const Text("Didn't receive the email? Resend"),
+                            ? Text(AppLocalizations.of(context).waitResend(_cooldownSeconds))
+                            : Text(AppLocalizations.of(context).didntReceiveEmail),
                   ),
                 ),
               ],
@@ -377,7 +377,7 @@ class _EnterSignupCodeScreenState extends State<EnterSignupCodeScreen> {
   );
 }
 
-  String _buildSubtitle() {
-    return 'We sent a 6-digit code to\n${widget.email}';
+  String _buildSubtitle(BuildContext context) {
+    return AppLocalizations.of(context).sent6DigitCode(widget.email);
   }
 }

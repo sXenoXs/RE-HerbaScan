@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:herbascan/core/localization/app_localizations.dart';
 
 class AuthCallbackScreen extends StatelessWidget {
   const AuthCallbackScreen({super.key, required this.uri});
@@ -13,14 +14,14 @@ class AuthCallbackScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final fragmentParams = Uri.splitQueryString(uri.fragment);
     
-    final message = fragmentParams['message'] ?? 'Authenticating...';
+    final message = fragmentParams['message'] ?? AppLocalizations.of(context).authenticating;
     final error = fragmentParams['error_description'] ?? fragmentParams['error'];
     
     final isError = error != null;
     final displayMessage = error ?? message;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Authentication')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).authenticationTitle)),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 400),
@@ -37,7 +38,7 @@ class AuthCallbackScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  isError ? 'Authentication Error' : 'Status',
+                  isError ? AppLocalizations.of(context).authErrorTitle : AppLocalizations.of(context).authStatusTitle,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
@@ -61,7 +62,7 @@ class AuthCallbackScreen extends StatelessWidget {
                       context.go('/home');
                     }
                   },
-                  child: const Text('Go to Dashboard'),
+                  child: Text(AppLocalizations.of(context).goToDashboardBtn),
                 ),
               ],
             ),

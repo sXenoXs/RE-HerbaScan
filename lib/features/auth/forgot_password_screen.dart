@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:herbascan/core/providers/auth_provider.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/features/auth/enter_reset_code_screen.dart';
+import 'package:herbascan/core/localization/app_localizations.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -93,7 +94,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 const SizedBox(height: 20),
 
                 Text(
-                  'Reset Password',
+                  AppLocalizations.of(context).resetPasswordTitle,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.w700,
@@ -102,7 +103,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  "Enter your email and we'll send you a 6-digit code to reset your password.",
+                  AppLocalizations.of(context).resetPasswordSubtitle,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyLarge?.copyWith(
                     color: AppTheme.textSecondary,
@@ -139,16 +140,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   autocorrect: false,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    hintText: 'you@example.com',
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context).emailLabel,
+                    hintText: AppLocalizations.of(context).emailHint,
                   ),
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) {
-                      return 'Enter your email';
+                      return AppLocalizations.of(context).enterEmail;
                     }
                     final emailRegex = RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+");
-                    if (!emailRegex.hasMatch(v)) return 'Enter a valid email';
+                    if (!emailRegex.hasMatch(v)) return AppLocalizations.of(context).validEmailRequired;
                     return null;
                   },
                 ),
@@ -164,7 +165,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             width: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Send Code'),
+                        : Text(AppLocalizations.of(context).sendCodeBtn),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -172,7 +173,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 TextButton(
                   onPressed:
                       _isLoading ? null : () => Navigator.of(context).pop(),
-                  child: const Text('Back to Sign In'),
+                  child: Text(AppLocalizations.of(context).backToSignIn),
                 ),
               ],
             ),

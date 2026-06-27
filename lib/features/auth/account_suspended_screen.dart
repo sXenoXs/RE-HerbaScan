@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
+import 'package:herbascan/core/localization/app_localizations.dart';
 
 /// Shown when a user's account has been suspended (is_active = false).
 /// Displays the suspension reason if provided, and a button to contact support.
@@ -49,7 +50,7 @@ class AccountSuspendedScreen extends StatelessWidget {
 
                   // ── Title ─────────────────────────────────────────────
                   Text(
-                    'Account Suspended',
+                    AppLocalizations.of(context).accountSuspendedTitle,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w700,
@@ -60,7 +61,7 @@ class AccountSuspendedScreen extends StatelessWidget {
 
                   // ── Subtitle ──────────────────────────────────────────
                   Text(
-                    'Your HerbaScan account has been temporarily suspended and cannot be accessed right now.',
+                    AppLocalizations.of(context).accountSuspendedSubtitle,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
@@ -86,7 +87,7 @@ class AccountSuspendedScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Reason',
+                            AppLocalizations.of(context).reasonLabel,
                             style: theme.textTheme.labelMedium?.copyWith(
                               color: AppTheme.errorDeep,
                               fontWeight: FontWeight.w600,
@@ -121,13 +122,13 @@ class AccountSuspendedScreen extends StatelessWidget {
                         } else {
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Could not open email client.')),
+                              SnackBar(content: Text(AppLocalizations.of(context).couldNotOpenEmail)),
                             );
                           }
                         }
                       },
                       icon: const Icon(Icons.mail_outline_rounded),
-                      label: const Text('Contact Support'),
+                      label: Text(AppLocalizations.of(context).contactSupportBtn),
                       style: FilledButton.styleFrom(
                         backgroundColor: AppTheme.botanicalPrimary,
                         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -155,7 +156,7 @@ class AccountSuspendedScreen extends StatelessWidget {
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      child: const Text('Back to Sign In'),
+                      child: Text(AppLocalizations.of(context).backToSignIn),
                     ),
                   ),
 
@@ -163,7 +164,7 @@ class AccountSuspendedScreen extends StatelessWidget {
 
                   // ── Footer note ───────────────────────────────────────
                   Text(
-                    'If you believe this is a mistake, please contact our support team.',
+                    AppLocalizations.of(context).supportMistakeMsg,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.45),

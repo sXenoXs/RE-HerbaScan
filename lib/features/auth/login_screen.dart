@@ -10,6 +10,7 @@ import 'package:herbascan/core/widgets/botanical_auth_header.dart';
 import 'package:herbascan/features/auth/forgot_password_screen.dart';
 import 'package:herbascan/features/auth/signup_screen.dart';
 import 'package:herbascan/core/services/admin_user_service.dart';
+import 'package:herbascan/core/localization/app_localizations.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -111,7 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
               .replaceFirst('AuthApiException(message: ', '')
               .replaceAll(RegExp(r', statusCode: \d+, code: \w+\)'), '');
           if (_errorMessage!.isEmpty || _errorMessage == raw) {
-            _errorMessage = 'Sign in failed. Please try again.';
+            _errorMessage = AppLocalizations.of(context).signInFailed;
           }
         }
         _isLoading = false;
@@ -120,8 +121,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (_failedAttempts >= _maxAttempts) {
         _failedAttempts = 0;
         _startCooldown();
-        setState(() => _errorMessage =
-            'Too many failed attempts. Please wait $_cooldownDurationSeconds seconds.');
+        setState(() => _errorMessage = AppLocalizations.of(context).tooManyAttempts(_cooldownDurationSeconds));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -164,14 +164,14 @@ class _LoginScreenState extends State<LoginScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sign In'),
+        title: Text(AppLocalizations.of(context).signInTitle),
         centerTitle: true,
         automaticallyImplyLeading: false,
         toolbarHeight: kIsWeb ? kToolbarHeight : 0,
         leading: kIsWeb
             ? IconButton(
                 icon: const Icon(Icons.arrow_back_rounded),
-                tooltip: 'Back to app',
+                tooltip: AppLocalizations.of(context).backToApp,
                 onPressed: () => _showWebBackMenu(context),
               )
             : null,
@@ -192,9 +192,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       BotanicalAuthHeader(
-                        title: 'Personal Herbarium',
-                        subtitle:
-                            'Sign in to sync your scan history and images to the cloud.',
+                        title: AppLocalizations.of(context).personalHerbarium,
+                        subtitle: AppLocalizations.of(context).loginSubtitle,
                         imageAsset: 'assets/icons/HerbaScan_Icon1.png',
                       ),
                       const SizedBox(height: 28),
@@ -228,17 +227,17 @@ class _LoginScreenState extends State<LoginScreen> {
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
                         autocorrect: false,
-                        decoration: const InputDecoration(
-                          labelText: 'Email',
-                          hintText: 'you@example.com',
+                        decoration: InputDecoration(
+                          labelText: AppLocalizations.of(context).emailLabel,
+                          hintText: AppLocalizations.of(context).emailHint,
                         ),
                         textInputAction: TextInputAction.next,
                         validator: (v) {
                           if (v == null || v.trim().isEmpty) {
-                            return 'Enter your email';
+                            return AppLocalizations.of(context).enterEmail;
                           }
                           final emailRegex = RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+");
-                          if (!emailRegex.hasMatch(v)) return 'Enter a valid email';
+                          if (!emailRegex.hasMatch(v)) return AppLocalizations.of(context).validEmailRequired;
                           return null;
                         },
                       ),
@@ -249,7 +248,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         controller: _passwordController,
                         obscureText: _obscurePassword,
                         decoration: InputDecoration(
-                          labelText: 'Password',
+                          labelText: AppLocalizations.of(context).passwordLabel,
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscurePassword
@@ -264,7 +263,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         onFieldSubmitted: (_) => _submit(),
                         validator: (v) {
                           if (v == null || v.isEmpty)
-                            return 'Enter your password';
+                            return AppLocalizations.of(context).enterPassword;
                           return null;
                         },
                       ),
@@ -283,7 +282,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                   );
                                 },
-                          child: const Text('Forgot password?'),
+                          child: Text(AppLocalizations.of(context).forgotPasswordLabel),
                         ),
                       ),
                       const SizedBox(height: 32),
@@ -300,8 +299,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                       CircularProgressIndicator(strokeWidth: 2),
                                 )
                               : _isCoolingDown
-                                  ? Text('Wait ${_cooldownSeconds}s')
-                                  : const Text('Sign In'),
+                                  ? Text(AppLocalizations.of(context).waitSeconds(_cooldownSeconds))
+                                  : Text(AppLocalizations.of(context).signInTitle),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -313,7 +312,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                             child: Text(
-                              'New to HerbaScan?',
+                              AppLocalizations.of(context).newToHerbaScan,
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: AppTheme.textSecondary,
                               ),
@@ -337,7 +336,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                   );
                                 },
-                          child: const Text('Create an Account'),
+                          child: Text(AppLocalizations.of(context).createAccountBtn),
                         ),
                       ),
                     ],

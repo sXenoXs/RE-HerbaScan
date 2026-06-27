@@ -57,7 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Unauthorized access.')),
+            SnackBar(content: Text(AppLocalizations.of(context).unauthorizedAccess)),
           );
         }
       });
@@ -117,7 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 _NavItem(
                   icon: Icons.home_rounded,
-                  label: 'Home',
+                  label: AppLocalizations.of(context).home,
                   selected: _currentIndex == 0,
                   onTap: () => setState(() => _currentIndex = 0),
                 ),
@@ -171,25 +171,25 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 destinations: [
-                  const NavigationRailDestination(
-                    icon: Icon(Icons.home_outlined),
-                    selectedIcon: Icon(Icons.home_rounded),
-                    label: Text('Home'),
+                  NavigationRailDestination(
+                    icon: const Icon(Icons.home_outlined),
+                    selectedIcon: const Icon(Icons.home_rounded),
+                    label: Text(AppLocalizations.of(context).home),
                   ),
                   NavigationRailDestination(
                     icon: const Icon(Icons.search_outlined),
                     selectedIcon: const Icon(Icons.search_rounded),
-                    label: Text('Browse'),
+                    label: Text(AppLocalizations.of(context).browse),
                   ),
                   NavigationRailDestination(
                     icon: const Icon(Icons.history_outlined),
                     selectedIcon: const Icon(Icons.history_rounded),
-                    label: Text('History'),
+                    label: Text(AppLocalizations.of(context).history),
                   ),
                   NavigationRailDestination(
                     icon: const Icon(Icons.settings_outlined),
                     selectedIcon: const Icon(Icons.settings_rounded),
-                    label: Text('Settings'),
+                    label: Text(AppLocalizations.of(context).settings),
                   ),
                 ],
               ),
@@ -287,7 +287,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
         titleSpacing: 16,
         centerTitle: false,
         title: Text(
-          'HerbaScan',
+          AppLocalizations.of(context).appTitle,
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w700,
             letterSpacing: -0.3,
@@ -297,7 +297,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
           IconButton(
             icon: const Icon(Icons.settings_rounded),
             onPressed: () => widget.onNavigate?.call(3),
-            tooltip: 'Settings',
+            tooltip: AppLocalizations.of(context).settings,
           ),
         ],
       ),
@@ -347,7 +347,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'What plant are you identifying?',
+            AppLocalizations.of(context).whatPlant,
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w700,
               color: AppTheme.textPrimary,
@@ -356,7 +356,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Tap the camera button below to start.',
+            AppLocalizations.of(context).tapCameraToStart,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: AppTheme.textSecondary,
             ),
@@ -380,19 +380,19 @@ class _HomeDashboardState extends State<HomeDashboard> {
           _buildStatCell(
             theme,
             '$totalScans',
-            'Scans',
+            AppLocalizations.of(context).scansCount,
           ),
           _buildStatDivider(),
           _buildStatCell(
             theme,
             '$dohPlants',
-            'DOH Plants',
+            AppLocalizations.of(context).dohPlants,
           ),
           _buildStatDivider(),
           _buildStatCell(
             theme,
             '${(avgConfidence * 100).toStringAsFixed(0)}%',
-            'Accuracy',
+            AppLocalizations.of(context).accuracy,
           ),
         ],
       ),
@@ -451,7 +451,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
               if (recentScans.isNotEmpty)
                 TextButton(
                   onPressed: () => widget.onNavigate?.call(2),
-                  child: const Text('View All'),
+                  child: Text(AppLocalizations.of(context).viewAll),
                 ),
             ],
           ),
@@ -501,14 +501,14 @@ class _HomeDashboardState extends State<HomeDashboard> {
             ),
             const SizedBox(height: 12),
             Text(
-              'No scans yet',
+              AppLocalizations.of(context).noScansYet,
               style: theme.textTheme.titleMedium?.copyWith(
                 color: theme.colorScheme.onSurface.withOpacity(0.5),
               ),
             ),
             const SizedBox(height: 4),
             Text(
-              'Start by scanning your first plant!',
+              AppLocalizations.of(context).startScanning,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurface.withOpacity(0.4),
               ),
@@ -596,7 +596,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                     Text(
                       scan.plant?.commonName ??
                           scan.topPrediction?.plantName ??
-                          'Unknown Plant',
+                          AppLocalizations.of(context).unknownPlant,
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
@@ -669,7 +669,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'DOH Approved Plants',
+                AppLocalizations.of(context).dohPlants,
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
@@ -680,7 +680,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                     MaterialPageRoute(builder: (_) => const DOHScreen()),
                   );
                 },
-                child: const Text('See All'),
+                child: Text(AppLocalizations.of(context).seeAll),
               ),
             ],
           ),
@@ -690,7 +690,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
-              'No DOH approved plants loaded.',
+              AppLocalizations.of(context).noDohPlantsLoaded,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: AppTheme.textSecondary,
               ),

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:herbascan/core/providers/auth_provider.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
+import 'package:herbascan/core/localization/app_localizations.dart';
 
 class ChangeEmailScreen extends StatefulWidget {
   const ChangeEmailScreen({super.key});
@@ -42,10 +43,8 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
       await context.read<AuthProvider>().updateEmail(newEmail);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Email updated. Check your new inbox to confirm the change.',
-            ),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).emailUpdatedMsg),
           ),
         );
         Navigator.of(context).pop(true);
@@ -55,7 +54,7 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
         setState(() {
           final errStr = e.toString();
           if (errStr.contains('Invalid login credentials')) {
-            _errorMessage = 'The current password you entered is incorrect.';
+            _errorMessage = AppLocalizations.of(context).incorrectCurrentPassword;
           } else {
             _errorMessage = errStr.replaceFirst('AuthException: ', '');
           }
@@ -71,7 +70,7 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
     final currentEmail = context.watch<AuthProvider>().user?.email ?? '';
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Email Address')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).emailAddressTitle)),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 450),
@@ -88,14 +87,14 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                 Text(
-                  'Email Address',
+                  AppLocalizations.of(context).emailAddressTitle,
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Update the email address linked to your account.',
+                  AppLocalizations.of(context).updateEmailSubtitle,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: AppTheme.textSecondary,
                   ),
@@ -158,7 +157,7 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
                   controller: _currentPasswordController,
                   obscureText: _obscureCurrent,
                   decoration: InputDecoration(
-                    labelText: 'Current password',
+                    labelText: AppLocalizations.of(context).currentPasswordLabel,
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscureCurrent
@@ -171,7 +170,7 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
                   ),
                   textInputAction: TextInputAction.next,
                   validator: (v) {
-                    if (v == null || v.isEmpty) return 'Enter your current password';
+                    if (v == null || v.isEmpty) return AppLocalizations.of(context).enterCurrentPassword;
                     return null;
                   },
                 ),
@@ -182,22 +181,22 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
                   controller: _newEmailController,
                   keyboardType: TextInputType.emailAddress,
                   autocorrect: false,
-                  decoration: const InputDecoration(
-                    labelText: 'New email address',
-                    hintText: 'you@example.com',
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context).newEmailAddressLabel,
+                    hintText: AppLocalizations.of(context).emailHint,
                   ),
                   textInputAction: TextInputAction.done,
                   onFieldSubmitted: (_) => _submit(),
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) {
-                      return 'Enter a new email';
+                      return AppLocalizations.of(context).enterNewEmail;
                     }
                     final emailRegex = RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+");
                     if (!emailRegex.hasMatch(v.trim())) {
-                      return 'Enter a valid email';
+                      return AppLocalizations.of(context).validEmailRequired;
                     }
                     if (v.trim() == currentEmail) {
-                      return 'New email must be different';
+                      return AppLocalizations.of(context).newEmailMustBeDifferent;
                     }
                     return null;
                   },
@@ -205,8 +204,7 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
                 const SizedBox(height: 12),
 
                 Text(
-                  "We'll send a confirmation link to your new address. "
-                  "Changes take effect once verified.",
+                  AppLocalizations.of(context).confirmationLinkMsg,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: AppTheme.textSecondary,
                   ),
@@ -223,7 +221,7 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
                             width: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Update Email'),
+                        : Text(AppLocalizations.of(context).updateEmailBtn),
                   ),
                 ),
               ],

@@ -215,7 +215,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
                                   width: 1,
                                 ),
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
@@ -225,8 +225,8 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
                                   ),
                                   SizedBox(width: 4),
                                   Text(
-                                    'DOH Approved',
-                                    style: TextStyle(
+                                    AppLocalizations.of(context).dohVerified,
+                                    style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.w700,
                                       fontSize: 12,
@@ -314,11 +314,11 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
                     fontSize: 11,
                     fontWeight: FontWeight.w400,
                   ),
-                  tabs: const [
-                    Tab(icon: Icon(Icons.science_rounded, size: 20), text: 'Taxonomy'),
-                    Tab(icon: Icon(Icons.nature_rounded, size: 20), text: 'Ecology'),
-                    Tab(icon: Icon(Icons.medical_services_rounded, size: 20), text: 'Medicinal'),
-                    Tab(icon: Icon(Icons.shield_rounded, size: 20), text: 'Safety'),
+                  tabs: [
+                    Tab(icon: const Icon(Icons.science_rounded, size: 20), text: AppLocalizations.of(context).taxonomy),
+                    Tab(icon: const Icon(Icons.nature_rounded, size: 20), text: AppLocalizations.of(context).ecology),
+                    Tab(icon: const Icon(Icons.medical_services_rounded, size: 20), text: AppLocalizations.of(context).medicinal),
+                    Tab(icon: const Icon(Icons.shield_rounded, size: 20), text: AppLocalizations.of(context).safety),
                   ],
                 ),
                 theme.colorScheme.surface,
@@ -354,11 +354,11 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
           padding: const EdgeInsets.all(16),
           sliver: SliverList(
             delegate: SliverChildListDelegate([
-              _sectionHeader('Scientific Classification', theme),
+              _sectionHeader(AppLocalizations.of(context).scientificClassification, theme),
               const SizedBox(height: 12),
               _buildTaxonomyGrid(theme),
               const SizedBox(height: 24),
-              _sectionHeader('Morphology', theme),
+              _sectionHeader(AppLocalizations.of(context).morphology, theme),
               const SizedBox(height: 8),
               _buildTextOrPlaceholder(
                 widget.plant.morphology,
@@ -378,10 +378,10 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
 
   Widget _buildTaxonomyGrid(ThemeData theme) {
     final items = [
-      _TaxonomyItem('Kingdom', 'Plantae', Icons.hub_rounded),
-      _TaxonomyItem('Family', widget.plant.family, Icons.account_tree_rounded),
-      _TaxonomyItem('Genus', widget.plant.genus, Icons.eco_rounded),
-      _TaxonomyItem('Species', widget.plant.species, Icons.grass_rounded),
+      _TaxonomyItem(AppLocalizations.of(context).kingdom, AppLocalizations.of(context).plantae, Icons.hub_rounded),
+      _TaxonomyItem(AppLocalizations.of(context).family, widget.plant.family, Icons.account_tree_rounded),
+      _TaxonomyItem(AppLocalizations.of(context).genus, widget.plant.genus, Icons.eco_rounded),
+      _TaxonomyItem(AppLocalizations.of(context).species, widget.plant.species, Icons.grass_rounded),
     ];
 
     return GridView.builder(
@@ -420,7 +420,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
                 item.value.isEmpty ? '—' : item.value,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w600,
-                  fontStyle: item.label == 'Genus' || item.label == 'Species'
+                  fontStyle: item.label == AppLocalizations.of(context).genus || item.label == AppLocalizations.of(context).species
                       ? FontStyle.italic
                       : FontStyle.normal,
                 ),
@@ -458,7 +458,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
                 },
               ),
 
-              _sectionHeader('Ecology', theme),
+              _sectionHeader(AppLocalizations.of(context).ecology, theme),
               const SizedBox(height: 8),
               _buildTextOrPlaceholder(
                 widget.plant.ecology,
@@ -467,7 +467,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
               ),
               const SizedBox(height: 20),
 
-              _sectionHeader('Habitat', theme),
+              _sectionHeader(AppLocalizations.of(context).habitat, theme),
               const SizedBox(height: 8),
               _buildTextOrPlaceholder(
                 widget.plant.habitat,
@@ -658,7 +658,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
 
               // Medicinal Uses — static cards, no accordion
               if (widget.plant.medicinalUses.isNotEmpty) ...[
-                _sectionHeader('Medicinal Uses', theme),
+                _sectionHeader(AppLocalizations.of(context).medicinalUses, theme),
                 const SizedBox(height: 12),
                 ...widget.plant.medicinalUses
                     .map((use) => _buildMedicinalUseCard(theme, use)),
@@ -667,7 +667,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
 
               // Preparation Methods
               if (widget.plant.preparationMethods.isNotEmpty) ...[
-                _sectionHeader('Preparation Methods', theme),
+                _sectionHeader(AppLocalizations.of(context).preparationMethods, theme),
                 const SizedBox(height: 12),
                 ...widget.plant.preparationMethods
                     .map((method) => _buildPreparationMethodCard(theme, method)),
@@ -764,9 +764,9 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
             const Divider(height: 1),
             const SizedBox(height: 10),
             if (use.dosage.isNotEmpty)
-              _infoRow(Icons.medication_rounded, 'Dosage', use.dosage, theme),
+              _infoRow(Icons.medication_rounded, AppLocalizations.of(context).dosage, use.dosage, theme),
             if (use.duration.isNotEmpty)
-              _infoRow(Icons.schedule_rounded, 'Duration', use.duration, theme),
+              _infoRow(Icons.schedule_rounded, AppLocalizations.of(context).duration, use.duration, theme),
           ],
         ],
       ),
@@ -857,7 +857,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
             child: Text(
-              'For ${method.condition}',
+              AppLocalizations.of(context).forCondition(method.condition),
               style: theme.textTheme.bodySmall?.copyWith(
                 color: AppTheme.textSecondary,
               ),
@@ -878,7 +878,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
                 );
               },
               icon: const Icon(Icons.arrow_forward_rounded, size: 16),
-              label: const Text('Start Guide'),
+              label: Text(AppLocalizations.of(context).startGuide),
             ),
           ),
         ],
@@ -904,12 +904,12 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
                 leading: const Icon(Icons.menu_book_rounded,
                     color: AppTheme.botanicalPrimary),
                 title: Text(
-                  'Data Sources',
+                  AppLocalizations.of(context).dataSources,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                subtitle: const Text('Where this information comes from'),
+                subtitle: Text(AppLocalizations.of(context).dataSourcesSub),
                 children: [
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -919,7 +919,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
                         if (widget.plant.isDOHApproved) ...[
                           _DataSourceTile(
                             icon: Icons.verified_rounded,
-                            title: 'Department of Health',
+                            title: AppLocalizations.of(context).departmentOfHealth,
                             subtitle:
                                 'Administrative Order No. 12, s. 1997 · Republic Act No. 8423 (TAMA, 1997)',
                           ),
@@ -927,14 +927,14 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
                         ],
                         _DataSourceTile(
                           icon: Icons.science_rounded,
-                          title: 'PITAHC',
+                          title: AppLocalizations.of(context).pitahc,
                           subtitle:
                               'Philippine Herbal Pharmacopeia 2022 (PITAHC)',
                         ),
                         const SizedBox(height: 12),
                         _DataSourceTile(
                           icon: Icons.psychology_rounded,
-                          title: 'AI Training Dataset',
+                          title: AppLocalizations.of(context).aiTrainingDataset,
                           subtitle:
                               'PhilMedic Dataset (Santos et al., 2024) · Roboflow Medicinal Plant Collections',
                         ),
@@ -1055,7 +1055,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen>
       return Text(text, style: style);
     }
     return Text(
-      'Information not yet available.',
+      AppLocalizations.of(context).informationNotAvailable,
       style: (style ?? theme.textTheme.bodyMedium)?.copyWith(
         color: theme.colorScheme.onSurface.withOpacity(0.38),
         fontStyle: FontStyle.italic,

@@ -135,7 +135,7 @@ class _PreparationInstructionsScreenState
     });
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Progress reset')),
+        SnackBar(content: Text(AppLocalizations.of(context).progressReset)),
       );
     }
   }
@@ -219,11 +219,9 @@ class _PreparationInstructionsScreenState
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Calendar could not be opened. Check that a calendar app is installed and try again.',
-            ),
-            duration: Duration(seconds: 4),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).calendarCouldNotBeOpened),
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -231,7 +229,7 @@ class _PreparationInstructionsScreenState
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Could not open calendar: $e'),
+            content: Text(AppLocalizations.of(context).couldNotOpenCalendar(e.toString())),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -364,18 +362,16 @@ class _PreparationInstructionsScreenState
                 context: context,
                 builder:
                     (ctx) => AlertDialog(
-                      title: const Text('Reset Progress?'),
-                      content: const Text(
-                        'This will clear all completed steps and stop any running timer.',
-                      ),
+                      title: Text(AppLocalizations.of(context).resetProgressTitle),
+                      content: Text(AppLocalizations.of(context).resetProgressBody),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(ctx, false),
-                          child: const Text('Cancel'),
+                          child: Text(AppLocalizations.of(context).cancel),
                         ),
                         TextButton(
                           onPressed: () => Navigator.pop(ctx, true),
-                          child: const Text('Reset'),
+                          child: Text(AppLocalizations.of(context).reset),
                         ),
                       ],
                     ),
@@ -440,7 +436,7 @@ class _PreparationInstructionsScreenState
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'HerbaScan is an educational tool. Always consult a licensed physician before using any herbal remedy.',
+                          AppLocalizations.of(context).medicalDisclaimer,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: disclaimerTextColor,
                             height: 1.4,
@@ -476,7 +472,7 @@ class _PreparationInstructionsScreenState
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Important Warnings',
+                          AppLocalizations.of(context).importantWarnings,
                           style: theme.textTheme.labelLarge?.copyWith(
                             color: AppTheme.errorDeep,
                             fontWeight: FontWeight.w700,
@@ -524,7 +520,7 @@ class _PreparationInstructionsScreenState
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'General Safety Information',
+                          AppLocalizations.of(context).generalSafetyInfo,
                           style: theme.textTheme.labelLarge?.copyWith(
                             color: AppTheme.warningDark,
                             fontWeight: FontWeight.w700,
@@ -585,7 +581,7 @@ class _PreparationInstructionsScreenState
 
                   // ── Preparation Steps ──────────────────────────────────────
                   Text(
-                    'Steps',
+                    AppLocalizations.of(context).steps,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -646,7 +642,7 @@ class _PreparationInstructionsScreenState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Regimen',
+                          AppLocalizations.of(context).regimen,
                           style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: AppTheme.botanicalPrimary,
@@ -660,7 +656,7 @@ class _PreparationInstructionsScreenState
                             Icons.medication_outlined,
                             color: AppTheme.botanicalPrimary,
                           ),
-                          title: const Text('Dosage'),
+                          title: Text(AppLocalizations.of(context).dosage),
                           subtitle: Text(preparationMethod.dosage),
                         ),
                         ListTile(
@@ -670,7 +666,7 @@ class _PreparationInstructionsScreenState
                             Icons.schedule_outlined,
                             color: AppTheme.botanicalPrimary,
                           ),
-                          title: const Text('Frequency'),
+                          title: Text(AppLocalizations.of(context).frequency),
                           subtitle: Text(preparationMethod.frequency),
                         ),
                         ListTile(
@@ -680,7 +676,7 @@ class _PreparationInstructionsScreenState
                             Icons.calendar_today_outlined,
                             color: AppTheme.botanicalPrimary,
                           ),
-                          title: const Text('Duration'),
+                          title: Text(AppLocalizations.of(context).duration),
                           subtitle: Text(preparationMethod.duration),
                         ),
                         const Divider(height: 20),
@@ -894,7 +890,7 @@ class _PreparationInstructionsScreenState
                       // Step label
                       Expanded(
                         child: Text(
-                          'Step $stepNumber',
+                          AppLocalizations.of(context).stepN(stepNumber.toString()),
                           style: theme.textTheme.labelMedium?.copyWith(
                             color:
                                 isCompleted

@@ -12,6 +12,7 @@ import 'package:herbascan/features/admin/admin_user_management_screen.dart';
 import 'package:herbascan/features/admin/admin_system_health_screen.dart';
 import 'package:herbascan/features/admin/admin_feedback_screen.dart';
 import 'package:herbascan/features/admin/admin_app_config_screen.dart';
+import 'package:herbascan/core/localization/app_localizations.dart';
 
 /// Admin web dashboard: desktop layout with NavigationRail and three modules.
 /// RBAC guard ensures only admins reach this screen.
@@ -58,49 +59,51 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
   static const int _submissionTriageIndex = 6;
   static const int _appConfigIndex = 7;
 
-  static const _destinations = [
-    (
-      icon: Icons.dashboard_outlined,
-      selectedIcon: Icons.dashboard_rounded,
-      label: 'Overview',
-    ),
-    (
-      icon: Icons.eco_outlined,
-      selectedIcon: Icons.eco,
-      label: 'Plant Catalog',
-    ),
-    (
-      icon: Icons.local_hospital_outlined,
-      selectedIcon: Icons.local_hospital,
-      label: 'Health Conditions',
-    ),
-    (
-      icon: Icons.people_outline,
-      selectedIcon: Icons.people,
-      label: 'User Directory',
-    ),
-    (
-      icon: Icons.monitor_heart_outlined,
-      selectedIcon: Icons.monitor_heart,
-      label: 'System Health',
-    ),
-    (
-      icon: Icons.feedback_outlined,
-      selectedIcon: Icons.feedback,
-      label: 'Feedback',
-    ),
-    (
-      icon: Icons.inbox_outlined,
-      selectedIcon: Icons.inbox_rounded,
-      label: 'Submissions',
-    ),
-
-    (
-      icon: Icons.tune_outlined,
-      selectedIcon: Icons.tune_rounded,
-      label: 'App Config',
-    ),
-  ];
+  List<({IconData icon, IconData selectedIcon, String label})> _getDestinations(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return [
+      (
+        icon: Icons.dashboard_outlined,
+        selectedIcon: Icons.dashboard_rounded,
+        label: l10n.overview,
+      ),
+      (
+        icon: Icons.eco_outlined,
+        selectedIcon: Icons.eco,
+        label: l10n.plantCatalog,
+      ),
+      (
+        icon: Icons.local_hospital_outlined,
+        selectedIcon: Icons.local_hospital,
+        label: l10n.healthConditions,
+      ),
+      (
+        icon: Icons.people_outline,
+        selectedIcon: Icons.people,
+        label: l10n.userDirectory,
+      ),
+      (
+        icon: Icons.monitor_heart_outlined,
+        selectedIcon: Icons.monitor_heart,
+        label: l10n.systemHealth,
+      ),
+      (
+        icon: Icons.feedback_outlined,
+        selectedIcon: Icons.feedback,
+        label: l10n.feedbackMenu,
+      ),
+      (
+        icon: Icons.inbox_outlined,
+        selectedIcon: Icons.inbox_rounded,
+        label: l10n.submissions,
+      ),
+      (
+        icon: Icons.tune_outlined,
+        selectedIcon: Icons.tune_rounded,
+        label: l10n.appConfig,
+      ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -134,7 +137,7 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
       appBar: AppBar(
         backgroundColor: theme.colorScheme.surface,
         foregroundColor: theme.colorScheme.onSurface,
-        title: const Text('Admin Console'),
+        title: Text(AppLocalizations.of(context).adminConsole),
         leading: IconButton(
           icon: const Icon(Icons.menu),
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
@@ -182,12 +185,12 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Admin Console',
+                          Text(AppLocalizations.of(context).adminConsole,
                               style: TextStyle(
                                   color: titleColor,
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700)),
-                          Text('Elevated Privileges Active',
+                          Text(AppLocalizations.of(context).elevatedPrivilegesActive,
                               style: TextStyle(
                                   color: AppTheme.warningAmber,
                                   fontSize: 11,
@@ -200,7 +203,7 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
                     children: [
                       Icon(Icons.security_rounded, color: titleColor, size: 32),
                       const SizedBox(height: 4),
-                      Text('Admin',
+                      Text(AppLocalizations.of(context).adminRole,
                           style: TextStyle(
                               color: titleColor.withValues(alpha: 0.8),
                               fontSize: 10,
@@ -212,7 +215,7 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
             child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: _destinations.asMap().entries.map((entry) {
+                children: _getDestinations(context).asMap().entries.map((entry) {
                   final i = entry.key;
                   final dest = entry.value;
                   final isSelected = _selectedIndex == i;
@@ -241,7 +244,7 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
                             : Icons.exit_to_app_rounded,
                         color: AppTheme.errorLight,
                         size: 20),
-                    label: Text(kIsWeb ? 'Sign Out' : 'Exit Admin Console',
+                    label: Text(kIsWeb ? AppLocalizations.of(context).signOut : AppLocalizations.of(context).exitAdminConsole,
                         style: const TextStyle(
                             color: AppTheme.errorLight, fontSize: 13)),
                     onPressed: () {
@@ -258,9 +261,9 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
                         kIsWeb
                             ? Icons.logout_rounded
                             : Icons.exit_to_app_rounded,
-                        color: AppTheme.errorLight,
-                        size: 22),
-                    tooltip: kIsWeb ? 'Sign Out' : 'Exit Admin Console',
+                            color: AppTheme.errorLight,
+                            size: 22),
+                    tooltip: kIsWeb ? AppLocalizations.of(context).signOut : AppLocalizations.of(context).exitAdminConsole,
                     onPressed: () {
                       if (kIsWeb) {
                         context.read<AuthProvider>().signOut();
@@ -352,7 +355,7 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
                   Icon(Icons.security_rounded, color: titleColor, size: 32),
                   const SizedBox(height: 12),
                   Text(
-                    'Admin Console',
+                    AppLocalizations.of(context).adminConsole,
                     style: TextStyle(
                         color: titleColor,
                         fontSize: 20,
@@ -360,7 +363,7 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Elevated Privileges Active',
+                    AppLocalizations.of(context).elevatedPrivilegesActive,
                     style: TextStyle(
                         color: AppTheme.warningAmber,
                         fontSize: 12,
@@ -374,7 +377,7 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-              children: _destinations.asMap().entries.map((entry) {
+              children: _getDestinations(context).asMap().entries.map((entry) {
                 final i = entry.key;
                 final dest = entry.value;
                 return _buildDrawerTile(
@@ -397,7 +400,7 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
                   kIsWeb ? Icons.logout_rounded : Icons.exit_to_app_rounded,
                   color: AppTheme.errorLight,
                   size: 20),
-              label: Text(kIsWeb ? 'Sign Out' : 'Exit Admin Console',
+              label: Text(kIsWeb ? AppLocalizations.of(context).signOut : AppLocalizations.of(context).exitAdminConsole,
                   style: const TextStyle(
                       color: AppTheme.errorLight, fontSize: 14)),
               onPressed: () {
@@ -483,7 +486,7 @@ class _AdminWebScreenState extends State<AdminWebScreen> {
       case _appConfigIndex:
         return const AdminAppConfigScreen();
       default:
-        return const Center(child: Text('Select a module'));
+        return Center(child: Text(AppLocalizations.of(context).selectAModule));
     }
   }
 }

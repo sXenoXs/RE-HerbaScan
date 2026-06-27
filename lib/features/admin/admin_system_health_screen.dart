@@ -1,11 +1,5 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher_string.dart';
 import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:herbascan/core/theme/app_theme.dart';
@@ -15,6 +9,7 @@ import 'package:herbascan/core/services/performance_monitor.dart';
 import 'package:herbascan/core/services/usage_analytics.dart';
 import 'package:herbascan/core/services/plant_data_service.dart';
 import 'package:herbascan/core/utils/export_util.dart';
+import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:flutter/foundation.dart';
 
 /// Admin-only System Health: AI metrics, live usage, and error logs.
@@ -124,7 +119,7 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
           child: Row(
             children: [
               Text(
-                'System Health',
+                AppLocalizations.of(context).systemHealth,
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -133,7 +128,7 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
               IconButton(
                 icon: const Icon(Icons.refresh),
                 onPressed: _loadData,
-                tooltip: 'Refresh',
+                tooltip: AppLocalizations.of(context).refresh,
               ),
             ],
           ),
@@ -173,7 +168,7 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'MobileNet V2 · ${PlantDataService.getAllMedicinalPlantsData().length} Philippine medicinal plants',
+          'MobileNet V2 · ${PlantDataService.getAllMedicinalPlantsData().length} ${AppLocalizations.of(context).mobilenetV2MedicinalPlants.split('· ').last}',
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -187,10 +182,10 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
   Widget _buildModelSourceCard(ThemeData theme) {
     final color = (kIsWeb || _otaActive) ? AppTheme.botanicalPrimary : Colors.orange.shade700;
     final icon = (kIsWeb || _otaActive) ? Icons.cloud_done_rounded : Icons.inventory_2_outlined;
-    final label = kIsWeb ? 'Web Live Model (Cloud)' : (_otaActive ? 'Live Model (Supabase)' : 'Bundled Asset Model');
+    final label = kIsWeb ? AppLocalizations.of(context).webLiveModelCloud : (_otaActive ? AppLocalizations.of(context).liveModelSupabase : AppLocalizations.of(context).bundledAssetModel);
     final subtitle = kIsWeb
-        ? 'Web Admin runs on the live cloud model.'
-        : (_otaActive ? 'Version: $_otaVersion' : 'No OTA model downloaded yet');
+        ? AppLocalizations.of(context).webAdminRunsLiveCloud
+        : (_otaActive ? '${AppLocalizations.of(context).versionLabel} $_otaVersion' : AppLocalizations.of(context).noOtaModelDownloaded);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -238,17 +233,17 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
               onPressed: () async {
                 if (kIsWeb) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('OTA model updates are applied directly to mobile devices. Web Admin runs on the live cloud model.')),
+                    SnackBar(content: Text(AppLocalizations.of(context).otaModelUpdatesWebCloud)),
                   );
                   return;
                 }
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Checking for model update…')),
+                  SnackBar(content: Text(AppLocalizations.of(context).checkingForModelUpdate)),
                 );
                 await OtaModelService.instance.initialize();
                 _loadData();
               },
-              child: const Text('Check now'),
+              child: Text(AppLocalizations.of(context).checkNow),
             ),
         ],
       ),
@@ -277,7 +272,7 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Local Device Analytics',
+          AppLocalizations.of(context).localDeviceAnalytics,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
             color: theme.colorScheme.onSurface,
@@ -289,7 +284,7 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
             Expanded(
               child: _buildStatCard(
                 theme,
-                'Total Scans',
+                AppLocalizations.of(context).totalScans,
                 totalScans.toString(),
                 Icons.qr_code_scanner,
                 AppTheme.botanicalPrimary,
@@ -299,7 +294,7 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
             Expanded(
               child: _buildStatCard(
                 theme,
-                'Successful',
+                AppLocalizations.of(context).successful,
                 successfulScans.toString(),
                 Icons.check_circle_outline,
                 AppTheme.safeGreen,
@@ -313,7 +308,7 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
             Expanded(
               child: _buildStatCard(
                 theme,
-                'Success Rate',
+                AppLocalizations.of(context).successRate,
                 successRate,
                 Icons.percent,
                 Colors.teal,
@@ -323,7 +318,7 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
             Expanded(
               child: _buildStatCard(
                 theme,
-                'Avg Response',
+                AppLocalizations.of(context).avgResponse,
                 avgResponseMs > 0 ? '${avgResponseMs}ms' : '—',
                 Icons.timer_outlined,
                 Colors.orange,
@@ -349,7 +344,7 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
         Row(
           children: [
             Text(
-              'Error Logs',
+              AppLocalizations.of(context).errorLogs,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: theme.colorScheme.onSurface,
@@ -383,10 +378,19 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
             child: Row(
               children: _kFilterLabels.map((label) {
                 final isSelected = _errorFilter == label;
+                String localizedLabel;
+                switch (label) {
+                  case 'All': localizedLabel = AppLocalizations.of(context).filterAll; break;
+                  case 'Camera': localizedLabel = AppLocalizations.of(context).filterCamera; break;
+                  case 'AI': localizedLabel = AppLocalizations.of(context).filterAI; break;
+                  case 'Database': localizedLabel = AppLocalizations.of(context).filterDatabase; break;
+                  case 'Network': localizedLabel = AppLocalizations.of(context).filterNetwork; break;
+                  default: localizedLabel = label;
+                }
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: FilterChip(
-                    label: Text(label),
+                    label: Text(localizedLabel),
                     selected: isSelected,
                     visualDensity: VisualDensity.compact,
                     selectedColor:
@@ -428,7 +432,7 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'System stable. 0 errors recorded in this timeframe.',
+                    AppLocalizations.of(context).systemStable0Errors,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -450,7 +454,7 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
             ),
             child: Center(
               child: Text(
-                'No $_errorFilter errors in the last ${_recentErrors.length} log entries.',
+                AppLocalizations.of(context).noErrorsInLog,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                   fontStyle: FontStyle.italic,
@@ -500,8 +504,8 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
                 ),
                 label: Text(
                   _errorsExpanded
-                      ? 'Show less'
-                      : 'Show all ${filtered.length} errors',
+                      ? AppLocalizations.of(context).showLess
+                      : '${AppLocalizations.of(context).showAllErrors} (${filtered.length})',
                 ),
                 style: TextButton.styleFrom(
                   foregroundColor: AppTheme.errorDeep,
@@ -586,19 +590,19 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
         if (hasStack)
           _buildDetailBox(
             theme,
-            'Stack Trace',
+            AppLocalizations.of(context).stackTrace,
             log.stackTrace!.trim(),
             isCode: true,
           ),
         if (hasContext)
           _buildDetailBox(
             theme,
-            'Context',
+            AppLocalizations.of(context).errorContext,
             _formatContext(log.context),
           ),
         if (!hasStack && !hasContext)
           Text(
-            'No additional details.',
+            AppLocalizations.of(context).noAdditionalDetails,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
               fontStyle: FontStyle.italic,
@@ -671,13 +675,13 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Export',
+            AppLocalizations.of(context).export,
             style: theme.textTheme.titleSmall
                 ?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           Text(
-            'Export stats and errors for thesis analysis',
+            AppLocalizations.of(context).exportStatsErrors,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -692,19 +696,19 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
                     _showExportSheet(errorsOnly: false),
                 icon:
                     const Icon(Icons.download_rounded, size: 18),
-                label: const Text('Export All'),
+                label: Text(AppLocalizations.of(context).exportAll),
               ),
               OutlinedButton.icon(
                 onPressed: () =>
                     _showExportSheet(errorsOnly: true),
                 icon: const Icon(Icons.bug_report_outlined,
                     size: 18),
-                label: const Text('Export Error Logs'),
+                label: Text(AppLocalizations.of(context).exportErrorLogs),
               ),
               OutlinedButton.icon(
                 onPressed: _clearAll,
                 icon: const Icon(Icons.delete_outline, size: 18),
-                label: const Text('Clear All'),
+                label: Text(AppLocalizations.of(context).clearAll),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppTheme.errorDeep,
                 ),
@@ -755,15 +759,15 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
 
                 // Title + subtitle
                 Text(
-                  errorsOnly ? 'Export Error Logs' : 'Export All Data',
+                  errorsOnly ? AppLocalizations.of(context).exportErrorLogs : AppLocalizations.of(context).exportAllData,
                   style: theme.textTheme.titleMedium
                       ?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   errorsOnly
-                      ? '${_recentErrors.length} error log entries'
-                      : 'Performance · Usage · Error logs',
+                      ? '${_recentErrors.length} ${AppLocalizations.of(context).errorLogEntries}'
+                      : AppLocalizations.of(context).performanceUsageErrorLogs,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -772,7 +776,7 @@ class _AdminSystemHealthScreenState extends State<AdminSystemHealthScreen> {
 
                 // Format picker
                 Text(
-                  'FORMAT',
+                  AppLocalizations.of(context).format,
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                     letterSpacing: 0.8,

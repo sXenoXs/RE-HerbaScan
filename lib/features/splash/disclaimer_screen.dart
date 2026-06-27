@@ -4,6 +4,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
+import 'package:herbascan/core/localization/app_localizations.dart';
 
 const String kDisclaimerAcknowledgedKey = 'disclaimer_acknowledged';
 
@@ -24,11 +25,14 @@ class _DisclaimerScreenState extends State<DisclaimerScreen> {
     'assets/data/legal/End-User License Agreement.md',
   ];
 
-  final List<String> _checkboxLabels = [
-    'I have read and agree to the Medical Disclaimer',
-    'I have read and agree to the Terms of Service',
-    'I have read and agree to the End-User License Agreement (EULA)',
-  ];
+  List<String> _getCheckboxLabels(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return [
+      l10n.agreeMedicalDisclaimer,
+      l10n.agreeTermsOfService,
+      l10n.agreeEULA,
+    ];
+  }
 
   List<String> _markdownTexts = ['', '', ''];
   bool _isLoading = true;
@@ -66,7 +70,7 @@ class _DisclaimerScreenState extends State<DisclaimerScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _markdownTexts[0] = 'Error loading documents. Please try again later.';
+          _markdownTexts[0] = 'ERROR_DOCS_LOAD';
           _isLoading = false;
         });
       }
@@ -139,13 +143,15 @@ class _DisclaimerScreenState extends State<DisclaimerScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final bgColor = isDark ? AppTheme.darkScaffold : AppTheme.surfaceColor;
+    final checkboxLabels = _getCheckboxLabels(context);
 
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
-        title: Text('Terms & Conditions (${_currentStep + 1}/3)'),
+        title: Text(l10n.termsConditionsStep('${_currentStep + 1}')),
         centerTitle: true,
         automaticallyImplyLeading: false,
         leading: _currentStep > 0
@@ -168,7 +174,9 @@ class _DisclaimerScreenState extends State<DisclaimerScreen> {
                       ? const Center(child: CircularProgressIndicator())
                       : Markdown(
                           controller: _scrollController,
-                          data: _markdownTexts[_currentStep],
+                          data: _markdownTexts[_currentStep] == 'ERROR_DOCS_LOAD'
+                              ? l10n.errorLoadingDocs
+                              : _markdownTexts[_currentStep],
                           styleSheet: MarkdownStyleSheet(
                             p: theme.textTheme.bodyMedium?.copyWith(
                               color: isDark ? Colors.white70 : Colors.black87,
@@ -185,7 +193,7 @@ class _DisclaimerScreenState extends State<DisclaimerScreen> {
                   child: Center(
                     child: !_hasScrolledToBottom[_currentStep]
                         ? Text(
-                            'Please scroll to the bottom to unlock the agreement.',
+                            l10n.scrollToBottomToUnlock,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.error,
                               fontWeight: FontWeight.w600,
@@ -199,7 +207,7 @@ class _DisclaimerScreenState extends State<DisclaimerScreen> {
                               });
                             },
                             title: Text(
-                              _checkboxLabels[_currentStep],
+                              checkboxLabels[_currentStep],
                               style: theme.textTheme.bodyMedium,
                             ),
                             controlAffinity: ListTileControlAffinity.leading,
@@ -224,7 +232,7 @@ class _DisclaimerScreenState extends State<DisclaimerScreen> {
                       ),
                     ),
                     child: Text(
-                      _currentStep < 2 ? 'Next' : 'Continue',
+                      _currentStep < 2 ? l10n.nextBtn : l10n.continueBtn,
                       style: const TextStyle(
                           fontSize: 16, fontWeight: FontWeight.w600),
                     ),

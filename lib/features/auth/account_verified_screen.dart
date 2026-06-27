@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/foundation.dart';
+import 'package:herbascan/core/localization/app_localizations.dart';
 
 /// Shown after successful OTP verification during sign-up.
 /// Displays a success animation, user's email, and a 5-second countdown
@@ -82,7 +83,7 @@ class _AccountVerifiedScreenState extends State<AccountVerifiedScreen> {
 
                   // Success title
                   Text(
-                    'Account Verified!',
+                    AppLocalizations.of(context).accountVerifiedTitle,
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w700,
                       color: theme.colorScheme.onSurface,
@@ -93,7 +94,7 @@ class _AccountVerifiedScreenState extends State<AccountVerifiedScreen> {
 
                   // Email confirmation
                   Text(
-                    'Your account has been created as\n${widget.email}',
+                    AppLocalizations.of(context).accountCreatedAs(widget.email),
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurface.withOpacity(0.65),
                       height: 1.5,
@@ -102,7 +103,7 @@ class _AccountVerifiedScreenState extends State<AccountVerifiedScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'You are now signed in. Welcome to your Personal Herbarium.',
+                    AppLocalizations.of(context).nowSignedInWelcome,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface.withOpacity(0.5),
                     ),
@@ -112,7 +113,7 @@ class _AccountVerifiedScreenState extends State<AccountVerifiedScreen> {
 
                   // Countdown indicator
                   Text(
-                    'Redirecting to settings in $_countdown...',
+                    AppLocalizations.of(context).redirectingSettings(_countdown),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface.withOpacity(0.45),
                     ),
@@ -155,9 +156,9 @@ class _AccountVerifiedScreenState extends State<AccountVerifiedScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text(
-                        'Go to Settings',
-                        style: TextStyle(
+                      child: Text(
+                        AppLocalizations.of(context).goToSettingsBtn,
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),

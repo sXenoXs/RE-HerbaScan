@@ -145,7 +145,7 @@ class _HistoryScreenState extends State<HistoryScreen>
         return AlertDialog(
           title: Text(appLocalizations.confirmDelete),
           content:
-              const Text('Are you sure you want to delete all scan history?'),
+              Text(appLocalizations.deleteAllHistoryConfirmation),
           actions: [
             TextButton(
               onPressed: () {
@@ -161,7 +161,7 @@ class _HistoryScreenState extends State<HistoryScreen>
                 Navigator.of(dialogContext).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: const Text('All scans deleted'),
+                    content: Text(appLocalizations.allScansDeleted),
                     backgroundColor: theme.colorScheme.error,
                   ),
                 );
@@ -185,8 +185,8 @@ class _HistoryScreenState extends State<HistoryScreen>
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: Text(appLocalizations.deleteAll),
-          content: const Text(
-              'Are you sure you want to delete all scans from the cloud?'),
+          content: Text(
+              appLocalizations.deleteAllCloudConfirmation),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
@@ -255,7 +255,7 @@ class _HistoryScreenState extends State<HistoryScreen>
                 pinned: true,
                 floating: false,
                 title: Text(_selectMode
-                    ? '${_historyTabIndex == 0 ? _selectedDeviceIds.length : _selectedCloudIds.length} selected'
+                    ? appLocalizations.itemsSelected('${_historyTabIndex == 0 ? _selectedDeviceIds.length : _selectedCloudIds.length}')
                     : appLocalizations.scanHistory),
                 leading: _selectMode
                     ? IconButton(
@@ -290,8 +290,8 @@ class _HistoryScreenState extends State<HistoryScreen>
                       child: Text(
                         _selectedDeviceIds.length == sortedScans.length &&
                                 sortedScans.isNotEmpty
-                            ? 'Deselect all'
-                            : 'Select all',
+                            ? appLocalizations.deselectAll
+                            : appLocalizations.selectAll,
                       ),
                     ),
                     if (sortedScans.isNotEmpty)
@@ -320,8 +320,8 @@ class _HistoryScreenState extends State<HistoryScreen>
                       child: Text(
                         _selectedCloudIds.length == _cloudScans.length &&
                                 _cloudScans.isNotEmpty
-                            ? 'Deselect all'
-                            : 'Select all',
+                            ? appLocalizations.deselectAll
+                            : appLocalizations.selectAll,
                       ),
                     ),
                     if (_cloudScans.isNotEmpty)
@@ -368,7 +368,7 @@ class _HistoryScreenState extends State<HistoryScreen>
                             enabled: false,
                             height: 32,
                             child: Text(
-                              'SORT',
+                              appLocalizations.sort,
                               style: theme.textTheme.labelSmall?.copyWith(
                                 color: theme.colorScheme.onSurface
                                     .withValues(alpha: 0.5),
@@ -383,7 +383,7 @@ class _HistoryScreenState extends State<HistoryScreen>
                               sortLeading('recent'),
                               const SizedBox(width: 12),
                               Text(
-                                'Most Recent',
+                                appLocalizations.mostRecent,
                                 style: TextStyle(
                                   fontWeight: activeSortBy == 'recent'
                                       ? FontWeight.bold
@@ -398,7 +398,7 @@ class _HistoryScreenState extends State<HistoryScreen>
                               sortLeading('oldest'),
                               const SizedBox(width: 12),
                               Text(
-                                'Oldest First',
+                                appLocalizations.oldestFirst,
                                 style: TextStyle(
                                   fontWeight: activeSortBy == 'oldest'
                                       ? FontWeight.bold
@@ -413,7 +413,7 @@ class _HistoryScreenState extends State<HistoryScreen>
                               sortLeading('confidence'),
                               const SizedBox(width: 12),
                               Text(
-                                'Highest Confidence',
+                                appLocalizations.highestConfidence,
                                 style: TextStyle(
                                   fontWeight: activeSortBy == 'confidence'
                                       ? FontWeight.bold
@@ -425,11 +425,9 @@ class _HistoryScreenState extends State<HistoryScreen>
                           if (hasItems) ...[
                             const PopupMenuDivider(),
                             PopupMenuItem<String>(
-                              value: 'select',
-                              child: const Row(children: [
+                              child: Row(children: [
                                 SizedBox(width: 20),
-                                SizedBox(width: 12),
-                                Text('Select Items'),
+                                Text(AppLocalizations.of(context).selectItems),
                               ]),
                             ),
                           ],
@@ -439,9 +437,9 @@ class _HistoryScreenState extends State<HistoryScreen>
                 ],
                 bottom: TabBar(
                   controller: _tabController,
-                  tabs: const [
-                    Tab(icon: Icon(Icons.phone_android), text: 'Device'),
-                    Tab(icon: Icon(Icons.cloud), text: 'Cloud'),
+                  tabs: [
+                    Tab(icon: const Icon(Icons.phone_android), text: appLocalizations.device),
+                    Tab(icon: const Icon(Icons.cloud), text: appLocalizations.cloud),
                   ],
                 ),
               ),
@@ -451,7 +449,7 @@ class _HistoryScreenState extends State<HistoryScreen>
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
                     child: Text(
-                      '${sortedScans.length} Scans saved • ${(avgConfidence * 100).toStringAsFixed(1)}% Avg Match',
+                      appLocalizations.historyStats('${sortedScans.length}', (avgConfidence * 100).toStringAsFixed(1)),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurface.withOpacity(0.55),
                       ),
@@ -510,8 +508,8 @@ class _HistoryScreenState extends State<HistoryScreen>
                       ? Icons.cloud_upload
                       : Icons.download),
                   label: Text(_historyTabIndex == 0
-                      ? 'Upload Selected Images'
-                      : 'Download Selected Images'),
+                      ? appLocalizations.uploadSelected
+                      : appLocalizations.downloadSelected),
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(52),
                     shape: RoundedRectangleBorder(
@@ -665,7 +663,7 @@ class _HistoryScreenState extends State<HistoryScreen>
                 if (!auth.isLoggedIn) {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Sign in to save to cloud')),
+                      SnackBar(content: Text(appLocalizations.signInToSaveCloud)),
                     );
                   }
                   return false;
@@ -673,7 +671,7 @@ class _HistoryScreenState extends State<HistoryScreen>
                 if (!offline.isOnline) {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('No internet connection')),
+                      SnackBar(content: Text(appLocalizations.noInternetConnection)),
                     );
                   }
                   return false;
@@ -681,7 +679,7 @@ class _HistoryScreenState extends State<HistoryScreen>
                 if (scan.imagePath.isEmpty || !File(scan.imagePath).existsSync()) {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Image file not found')),
+                      SnackBar(content: Text(appLocalizations.imageFileNotFound)),
                     );
                   }
                   return false;
@@ -691,12 +689,12 @@ class _HistoryScreenState extends State<HistoryScreen>
                 if (mounted) {
                   if (id != null) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Saved to cloud')),
+                      SnackBar(content: Text(appLocalizations.savedToCloud)),
                     );
                     _loadCloudScans();
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Failed to save to cloud')),
+                      SnackBar(content: Text(appLocalizations.failedToSaveCloud)),
                     );
                   }
                 }
@@ -729,7 +727,7 @@ class _HistoryScreenState extends State<HistoryScreen>
                 _selectedDeviceIds.remove(scan.id);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: const Text('Scan deleted'),
+                    content: Text(appLocalizations.scanDeleted),
                     backgroundColor: theme.colorScheme.error,
                   ),
                 );
@@ -814,6 +812,7 @@ class _HistoryScreenState extends State<HistoryScreen>
   Widget _buildCloudHistory(BuildContext context, ThemeData theme,
       AuthProvider authProvider, OfflineProvider offlineProvider) {
     final isOnline = offlineProvider.isOnline;
+    final appLocalizations = AppLocalizations.of(context);
 
     // Offline: show "No internet" state so Cloud tab updates immediately when Wi‑Fi is turned off
     if (!isOnline) {
@@ -835,7 +834,7 @@ class _HistoryScreenState extends State<HistoryScreen>
               Icon(Icons.cloud_off, size: 64, color: theme.colorScheme.outline),
               const SizedBox(height: 16),
               Text(
-                'Sign in to view your cloud backup',
+                appLocalizations.signInForCloudBackup,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.titleMedium,
               ),
@@ -849,7 +848,7 @@ class _HistoryScreenState extends State<HistoryScreen>
                   if (mounted && authProvider.isLoggedIn) _loadCloudScans();
                 },
                 icon: const Icon(Icons.login),
-                label: const Text('Sign in'),
+                label: Text(appLocalizations.signIn),
               ),
             ],
           ),
@@ -868,7 +867,6 @@ class _HistoryScreenState extends State<HistoryScreen>
       );
     }
     final sortedCloudScans = _sortCloudScans(_cloudScans);
-    final appLocalizations = AppLocalizations.of(context);
     return RefreshIndicator(
       onRefresh: _loadCloudScans,
       child: Center(
@@ -902,7 +900,7 @@ class _HistoryScreenState extends State<HistoryScreen>
                 final ok = await showDialog<bool>(
                   context: context,
                   builder: (ctx) => AlertDialog(
-                    title: const Text('Delete from cloud?'),
+                    title: Text(appLocalizations.deleteFromCloud),
                     actions: [
                       TextButton(
                           onPressed: () => Navigator.pop(ctx, false),
@@ -984,6 +982,7 @@ class _HistoryScreenState extends State<HistoryScreen>
 
   /// Shown when there is no internet (different from "No cloud scans yet").
   Widget _buildCloudOfflineState(ThemeData theme) {
+    final appLocalizations = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -993,7 +992,7 @@ class _HistoryScreenState extends State<HistoryScreen>
             Icon(Icons.wifi_off, size: 64, color: theme.colorScheme.outline),
             const SizedBox(height: 16),
             Text(
-              'No internet connection',
+              appLocalizations.noInternetConnection,
               textAlign: TextAlign.center,
               style: theme.textTheme.titleMedium?.copyWith(
                 color: theme.colorScheme.onSurface.withOpacity(0.8),
@@ -1001,7 +1000,7 @@ class _HistoryScreenState extends State<HistoryScreen>
             ),
             const SizedBox(height: 8),
             Text(
-              'Cloud scans will appear when you\'re back online.',
+              appLocalizations.cloudScansOfflineMessage,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurface.withOpacity(0.5),
@@ -1022,14 +1021,14 @@ class _HistoryScreenState extends State<HistoryScreen>
           Icon(Icons.cloud_queue, size: 64, color: theme.colorScheme.outline),
           const SizedBox(height: 16),
           Text(
-            'No cloud scans yet',
+            AppLocalizations.of(context).noCloudScansYet,
             style: theme.textTheme.titleMedium?.copyWith(
               color: theme.colorScheme.onSurface.withOpacity(0.6),
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Scans are backed up here when you\'re signed in',
+            AppLocalizations.of(context).cloudScansBackupMessage,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurface.withOpacity(0.4),
             ),
@@ -1053,7 +1052,7 @@ class _HistoryScreenState extends State<HistoryScreen>
         return name.toString();
       }
     }
-    return 'Unknown plant';
+    return AppLocalizations.of(context).unknownPlant;
   }
 
   /// Cloud tab card: same layout as Device tab (_buildScanCard) — 60×60 thumbnail,
@@ -1495,7 +1494,7 @@ class _HistoryScreenState extends State<HistoryScreen>
                           child: Text(
                             scan.plant?.commonName ??
                                 scan.topPrediction?.plantName ??
-                                'Unknown Plant',
+                                AppLocalizations.of(context).unknownPlant,
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,

@@ -79,7 +79,7 @@ class _FeedbackFormContentState extends State<FeedbackFormContent> {
         SnackBar(
           content: Text(_rating == 0
               ? AppLocalizations.of(context).pleaseProvideRating
-              : 'Please select a feedback category'),
+              : AppLocalizations.of(context).pleaseSelectCategory),
           backgroundColor: Colors.orange,
         ),
       );
@@ -88,8 +88,8 @@ class _FeedbackFormContentState extends State<FeedbackFormContent> {
     final comment = widget.commentController.text.trim();
     if (comment.length < 10) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please provide at least 10 characters in your comment'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context).commentMinLength),
           backgroundColor: Colors.orange,
         ),
       );
@@ -227,7 +227,7 @@ class _FeedbackFormContentState extends State<FeedbackFormContent> {
               maxLines: null,
               maxLength: 500,
               decoration: InputDecoration(
-                hintText: 'Share your thoughts about HerbaScan...',
+                hintText: l10n.shareThoughtsHint,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -260,7 +260,7 @@ class _FeedbackFormContentState extends State<FeedbackFormContent> {
               maxLines: null,
               maxLength: 300,
               decoration: InputDecoration(
-                hintText: 'Suggest new features or improvements...',
+                hintText: l10n.suggestFeaturesHint,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -274,9 +274,9 @@ class _FeedbackFormContentState extends State<FeedbackFormContent> {
       ),
       const SizedBox(height: 16),
       SwitchListTile(
-        title: const Text('Submit Anonymously'),
-        subtitle: const Text(
-          'Your identity will not be attached to this feedback.',
+        title: Text(l10n.submitAnonymously),
+        subtitle: Text(
+          l10n.submitAnonymouslySubtitle,
         ),
         value: _isAnonymous,
         onChanged: (val) => setState(() => _isAnonymous = val),

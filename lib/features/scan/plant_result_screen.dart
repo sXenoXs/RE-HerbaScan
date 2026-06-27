@@ -306,13 +306,13 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
         Positioned(
           left: 16,
           bottom: 16,
-          child: _buildConfidenceBadge(confidence),
+          child: _buildConfidenceBadge(context, confidence),
         ),
       ],
     );
   }
 
-  Widget _buildConfidenceBadge(double confidence) {
+  Widget _buildConfidenceBadge(BuildContext context, double confidence) {
     final pct = (confidence.clamp(0.0, 1.0) * 100).toStringAsFixed(0);
     final color =
         _isOODResult ? AppTheme.errorColor : _getConfidenceColor(confidence);
@@ -337,9 +337,9 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
             ),
             const SizedBox(width: 8),
             if (_isOODResult)
-              const Text(
-                'Not identified',
-                style: TextStyle(
+              Text(
+                AppLocalizations.of(context).notIdentified,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
@@ -348,7 +348,7 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
               )
             else if (_showConfidence)
               Text(
-                '$pct% Match',
+                AppLocalizations.of(context).pctMatch(pct),
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 15,
@@ -471,7 +471,7 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
                 _buildActionCards(context, resolvedPlant),
               if (_showTop3 && widget.predictions.length > 1) ...[
                 const SizedBox(height: 24),
-                _buildAlternativeMatches(theme),
+                _buildAlternativeMatches(context, theme),
               ],
               const SizedBox(height: 24),
               _buildFeedbackCTA(context),
@@ -599,7 +599,7 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
           child: _buildHeroActionCard(
             context,
             icon: Icons.eco_rounded,
-            label: 'Open Plant Profile',
+            label: AppLocalizations.of(context).openPlantProfile,
             color: AppTheme.botanicalPrimary,
             onTap: resolvedPlant != null
                 ? () {
@@ -625,7 +625,7 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
               return _buildHeroActionCard(
                 context,
                 icon: Icons.map_rounded,
-                label: 'View Habitat Map',
+                label: AppLocalizations.of(context).viewHabitatMap,
                 color: Colors.teal,
                 onTap: hasHabitat && resolvedPlant != null
                     ? () {
@@ -657,7 +657,7 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
             ? AppTheme.warningAmber.withValues(alpha: 0.2)
             : AppTheme.warningBgLight);
     final fgColor = isDOHApproved ? AppTheme.safeGreen : AppTheme.warningAmber;
-    final label = isDOHApproved ? 'DOH Verified' : 'Scientifically Documented';
+    final label = isDOHApproved ? AppLocalizations.of(context).dohVerified : AppLocalizations.of(context).scientificallyDocumented;
     final icon = isDOHApproved ? Icons.verified_rounded : Icons.science_rounded;
 
     return GestureDetector(
@@ -691,13 +691,12 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
   void _showDOHInfoSheet(BuildContext context, bool isDOHApproved) {
     final theme = Theme.of(context);
     final title = isDOHApproved
-        ? 'DOH Verified Plant'
-        : 'Scientifically Documented Plant';
+        ? AppLocalizations.of(context).dohVerifiedPlant
+        : AppLocalizations.of(context).scientificallyDocumentedPlant;
     final body = isDOHApproved
-        ? 'This plant is officially endorsed by the Philippine Department of Health under Administrative Order No. 12, series of 1997, and is included in the list of clinically validated herbal medicines (Republic Act No. 8423 — TAMA).'
-        : 'This plant is not on the DOH approved list but is included in HerbaScan based on peer-reviewed literature and Philippine Herbal Pharmacopeia (PITAHC) references.';
-    const footer =
-        'Source: Dept. of Health Admin. Order No. 12, s. 1997 · Republic Act No. 8423 (TAMA, 1997) · Philippine Herbal Pharmacopeia (PITAHC)';
+        ? AppLocalizations.of(context).dohVerifiedBody
+        : AppLocalizations.of(context).scientificallyDocumentedBody;
+    final footer = AppLocalizations.of(context).source;
 
     showModalBottomSheet(
       context: context,
@@ -831,7 +830,7 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
     );
   }
 
-  Widget _buildAlternativeMatches(ThemeData theme) {
+  Widget _buildAlternativeMatches(BuildContext context, ThemeData theme) {
     // Exclude blacklisted toxic plants from alternative matches
     final alternatives = widget.predictions.skip(1).where((pred) {
       final label = pred['plantName'] as String? ?? pred['label'] as String?;
@@ -844,14 +843,14 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Alternative Matches',
+          AppLocalizations.of(context).alternativeMatches,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
         ),
         const SizedBox(height: 4),
         Text(
-          'If the top result seems wrong, these are the next possibilities.',
+          AppLocalizations.of(context).alternativeMatchesBody,
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -892,7 +891,7 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
                         ),
                         if (_showConfidence && !_isOODResult)
                           Text(
-                            '${(conf * 100).toStringAsFixed(1)}% match',
+                            AppLocalizations.of(context).pctMatch((conf * 100).toStringAsFixed(1)),
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                               fontSize: 12,
@@ -938,12 +937,12 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
             Icon(Icons.error_outline, size: 64, color: Colors.grey.shade400),
             const SizedBox(height: 16),
             Text(
-              'No predictions available',
+              AppLocalizations.of(context).noPredictionsAvailable,
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 8),
             Text(
-              'Unable to identify the plant in the image',
+              AppLocalizations.of(context).unableToIdentifyPlant,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Colors.grey.shade600,
                   ),
@@ -952,7 +951,7 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
             ElevatedButton.icon(
               onPressed: () => Navigator.of(context).pop(),
               icon: const Icon(Icons.arrow_back),
-              label: const Text('Try Again'),
+              label: Text(AppLocalizations.of(context).tryAgain),
             ),
           ],
         ),
@@ -977,7 +976,7 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Save Scan',
+                  AppLocalizations.of(context).saveScan,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -986,7 +985,7 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.phone_android_rounded),
-                  title: const Text('Save to device'),
+                  title: Text(AppLocalizations.of(context).saveToDevice),
                   onTap: () {
                     Navigator.pop(ctx);
                     _saveToDeviceOnly();
@@ -996,7 +995,7 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: const Icon(Icons.cloud_upload_rounded),
-                    title: const Text('Save to cloud'),
+                    title: Text(AppLocalizations.of(context).saveToCloud),
                     onTap: () {
                       Navigator.pop(ctx);
                       _saveToCloudOnly();
@@ -1005,7 +1004,7 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.photo_library_outlined),
-                  title: const Text('Save to Camera Roll'),
+                  title: Text(AppLocalizations.of(context).saveToCameraRoll),
                   onTap: () {
                     Navigator.pop(ctx);
                     _saveToCameraRoll();
@@ -1042,7 +1041,7 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Share',
+                AppLocalizations.of(context).share,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -1051,8 +1050,8 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.image_rounded),
-                title: const Text('Share as Info Card'),
-                subtitle: const Text('Branded card with plant details'),
+                title: Text(AppLocalizations.of(context).shareAsInfoCard),
+                subtitle: Text(AppLocalizations.of(context).shareAsInfoCardSub),
                 onTap: () {
                   Navigator.pop(ctx);
                   _shareAsCard();
@@ -1061,8 +1060,8 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.text_fields_rounded),
-                title: const Text('Share as Text'),
-                subtitle: const Text('Plain text for WhatsApp, SMS, etc.'),
+                title: Text(AppLocalizations.of(context).shareAsText),
+                subtitle: Text(AppLocalizations.of(context).shareAsTextSub),
                 onTap: () {
                   Navigator.pop(ctx);
                   _shareAsText();
@@ -1235,7 +1234,7 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
                   const SizedBox(height: 16),
                   _buildCardRow(
                     icon: Icons.analytics_outlined,
-                    label: 'Match Confidence',
+                    label: AppLocalizations.of(context).matchConfidence,
                     value: '$confidencePct%',
                   ),
                   const SizedBox(height: 8),
@@ -1243,8 +1242,8 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
                     icon: isDOH
                         ? Icons.verified_rounded
                         : Icons.info_outline_rounded,
-                    label: 'DOH Approved',
-                    value: isDOH ? '✅ Yes' : 'Not listed',
+                    label: AppLocalizations.of(context).dohVerified,
+                    value: isDOH ? '✅ ${AppLocalizations.of(context).yes}' : AppLocalizations.of(context).notListed,
                     valueColor: isDOH
                         ? AppTheme.botanicalPrimary
                         : const Color(0xFF6B7280),
@@ -1253,7 +1252,7 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
                     const SizedBox(height: 8),
                     _buildCardRow(
                       icon: Icons.local_hospital_outlined,
-                      label: 'Medicinal Uses',
+                      label: AppLocalizations.of(context).medicinalUses,
                       value: uses,
                     ),
                   ],
@@ -1276,12 +1275,12 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
                             size: 18, color: AppTheme.botanicalPrimary),
                       ),
                       const SizedBox(width: 10),
-                      const Column(
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Scanned with HerbaScan 🌱',
-                            style: TextStyle(
+                            AppLocalizations.of(context).scannedWithHerbaScan,
+                            style: const TextStyle(
                               fontFamily: 'Inter',
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -1289,8 +1288,8 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
                             ),
                           ),
                           Text(
-                            'Discover Philippine medicinal plants',
-                            style: TextStyle(
+                            AppLocalizations.of(context).discoverMedicinalPlants,
+                            style: const TextStyle(
                               fontFamily: 'Inter',
                               fontSize: 11,
                               color: Color(0xFF9CA3AF),
@@ -1690,10 +1689,10 @@ class FullScreenImageView extends StatelessWidget {
                             const Icon(Icons.error_outline,
                                 size: 64, color: Colors.white),
                             const SizedBox(height: 16),
-                            const Text(
-                              'Image not found',
+                            Text(
+                              AppLocalizations.of(context).imageNotFound,
                               style:
-                                  TextStyle(color: Colors.white, fontSize: 16),
+                                  const TextStyle(color: Colors.white, fontSize: 16),
                             ),
                           ],
                         ),

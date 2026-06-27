@@ -121,8 +121,8 @@ class NoMatchFoundScreen extends StatelessWidget {
                           isToxic
                               ? l10n.toxicPlantDetected
                               : isLowConfidence
-                                  ? 'Low Confidence Match'
-                                  : 'No Plant Match Found',
+                                  ? l10n.lowConfidenceMatch
+                                  : l10n.noPlantMatchFound,
                           style: theme.textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
@@ -137,8 +137,8 @@ class NoMatchFoundScreen extends StatelessWidget {
                           isToxic
                               ? l10n.toxicPlantBody.replaceFirst('%s', toxicName)
                               : isLowConfidence
-                                  ? "We're not confident enough to confirm this as a match. Please retake a clearer photo or browse the catalog manually."
-                                  : "We don't recognize this plant. Ensure it's a clear single leaf.",
+                                  ? l10n.notConfidentEnough
+                                  : l10n.dontRecognizePlant,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: Colors.white.withOpacity(0.80),
                           ),
@@ -176,7 +176,7 @@ class NoMatchFoundScreen extends StatelessWidget {
                                         0.0;
                                 final pct = (conf * 100).toStringAsFixed(1);
                                 return Text(
-                                  'Best guess: $name  ·  $pct%',
+                                  l10n.bestGuess(name, pct),
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     color: Colors.white.withOpacity(0.92),
                                     fontWeight: FontWeight.w600,
@@ -211,7 +211,7 @@ class NoMatchFoundScreen extends StatelessWidget {
                             child: OutlinedButton.icon(
                               onPressed: () => _showLookalikeSheet(context, theme),
                               icon: const Icon(Icons.search_rounded, size: 18),
-                              label: const Text('Look-alike Plants'),
+                              label: Text(l10n.lookAlikePlants),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: Colors.white,
                                 side: BorderSide(
@@ -262,6 +262,7 @@ class _LookalikeSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       child: Container(
@@ -303,13 +304,13 @@ class _LookalikeSheet extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Look-alike Plants',
+                            l10n.lookAlikePlants,
                             style: theme.textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.w700,
                             ),
                           ),
                           Text(
-                            'These are possible but uncertain matches',
+                            l10n.uncertainMatches,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: AppTheme.textSecondary,
                             ),
@@ -389,7 +390,7 @@ class _LookalikeSheet extends StatelessWidget {
                     style: FilledButton.styleFrom(
                       backgroundColor: AppTheme.botanicalPrimary,
                     ),
-                    child: const Text('Got it'),
+                    child: Text(l10n.gotIt),
                   ),
                 ),
               ),

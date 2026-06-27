@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
+import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/features/browse/browse_screen.dart';
 
 class PoorImageQualityScreen extends StatelessWidget {
@@ -17,6 +18,7 @@ class PoorImageQualityScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -85,7 +87,7 @@ class PoorImageQualityScreen extends StatelessWidget {
 
                         // Title
                         Text(
-                          'Image Too Unclear',
+                          l10n.imageTooUnclear,
                           style: theme.textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
@@ -97,7 +99,7 @@ class PoorImageQualityScreen extends StatelessWidget {
 
                         // Description
                         Text(
-                          reason ?? "Couldn't get a clear look. Try better lighting or wipe your lens.",
+                          reason ?? l10n.couldNotGetClearLook,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: Colors.white.withOpacity(0.80),
                           ),
@@ -112,7 +114,7 @@ class PoorImageQualityScreen extends StatelessWidget {
                           child: FilledButton.icon(
                             onPressed: () => Navigator.of(context).pop(),
                             icon: const Icon(Icons.camera_alt_rounded, size: 18),
-                            label: const Text('Retake Photo'),
+                            label: Text(l10n.retakePhoto),
                             style: FilledButton.styleFrom(
                               backgroundColor: AppTheme.botanicalPrimary,
                             ),
@@ -136,7 +138,7 @@ class PoorImageQualityScreen extends StatelessWidget {
                             style: TextButton.styleFrom(
                               foregroundColor: Colors.white,
                             ),
-                            child: const Text('Browse Catalog'),
+                            child: Text(l10n.browseCatalog),
                           ),
                         ),
                       ],

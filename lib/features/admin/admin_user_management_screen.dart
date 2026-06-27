@@ -88,13 +88,13 @@ class _AdminUserManagementScreenState
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Suspend Account'),
+          title: Text(AppLocalizations.of(context).suspendAccount),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Suspend ${row.email}? They will not be able to sign in.',
+                '${AppLocalizations.of(context).suspend} ${row.email}? ${AppLocalizations.of(context).suspendWarning}',
                 style: Theme.of(ctx).textTheme.bodyMedium,
               ),
               const SizedBox(height: 16),
@@ -102,10 +102,10 @@ class _AdminUserManagementScreenState
                 controller: reasonController,
                 maxLines: 2,
                 maxLength: 200,
-                decoration: const InputDecoration(
-                  labelText: 'Reason (optional)',
-                  hintText: 'e.g. Violated terms of service',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context).reasonOptional,
+                  hintText: AppLocalizations.of(context).reasonHint,
+                  border: const OutlineInputBorder(),
                 ),
               ),
             ],
@@ -113,14 +113,14 @@ class _AdminUserManagementScreenState
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
+              child: Text(AppLocalizations.of(context).cancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(ctx, true),
               style: FilledButton.styleFrom(
                 backgroundColor: Theme.of(ctx).colorScheme.error,
               ),
-              child: const Text('Suspend'),
+              child: Text(AppLocalizations.of(context).suspend),
             ),
           ],
         ),
@@ -165,20 +165,20 @@ class _AdminUserManagementScreenState
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(isMakingAdmin ? 'Make admin?' : 'Remove admin?'),
+        title: Text(isMakingAdmin ? AppLocalizations.of(context).makeAdminPrompt : AppLocalizations.of(context).removeAdminPrompt),
         content: Text(
           isMakingAdmin
-              ? '${row.email} will be able to access the admin dashboard and manage users and catalog.'
-              : '${row.email} will no longer have admin access.',
+              ? '${row.email} ${AppLocalizations.of(context).makeAdminDesc}'
+              : '${row.email} ${AppLocalizations.of(context).removeAdminDesc}',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context).cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text(isMakingAdmin ? 'Make admin' : 'Remove admin'),
+            child: Text(isMakingAdmin ? AppLocalizations.of(context).makeAdmin : AppLocalizations.of(context).removeAdmin),
           ),
         ],
       ),
@@ -259,17 +259,17 @@ class _AdminUserManagementScreenState
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('Delete user data?'),
+          title: Text(AppLocalizations.of(context).deleteUserDataPrompt),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'This will permanently delete ${row.email} and all their cloud scans. It cannot be undone.',
+                '${row.email}: ${AppLocalizations.of(context).deleteUserDataDesc}',
               ),
               const SizedBox(height: 16),
               Text(
-                'Type DELETE to confirm:',
+                AppLocalizations.of(context).typeDeleteToConfirm,
                 style: TextStyle(
                     color: errorColor, fontWeight: FontWeight.w600),
               ),
@@ -292,14 +292,14 @@ class _AdminUserManagementScreenState
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
+              child: Text(AppLocalizations.of(context).cancel),
             ),
             FilledButton(
               onPressed: confirmController.text.trim() == 'DELETE'
                   ? () => Navigator.pop(ctx, true)
                   : null,
               style: FilledButton.styleFrom(backgroundColor: errorColor),
-              child: const Text('Delete User Data'),
+              child: Text(AppLocalizations.of(context).deleteUserDataBtn),
             ),
           ],
         ),
@@ -336,7 +336,7 @@ class _AdminUserManagementScreenState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Deleting account…',
+                        AppLocalizations.of(context).deletingAccount,
                         style: Theme.of(context)
                             .textTheme
                             .titleSmall
@@ -344,7 +344,7 @@ class _AdminUserManagementScreenState
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Removing account and associated data.',
+                        AppLocalizations.of(context).removingAccountData,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
@@ -410,7 +410,7 @@ class _AdminUserManagementScreenState
             children: [
               Text(_error!, style: theme.textTheme.bodyMedium),
               const SizedBox(height: 16),
-              FilledButton(onPressed: _load, child: const Text('Retry')),
+              FilledButton(onPressed: _load, child: Text(AppLocalizations.of(context).retry)),
             ],
           ),
         ),
@@ -426,7 +426,7 @@ class _AdminUserManagementScreenState
           child: Row(
             children: [
               Text(
-                'User Directory',
+                AppLocalizations.of(context).userDirectory,
                 style: theme.textTheme.titleLarge
                     ?.copyWith(fontWeight: FontWeight.bold),
               ),
@@ -434,7 +434,7 @@ class _AdminUserManagementScreenState
               IconButton(
                 icon: const Icon(Icons.refresh),
                 onPressed: _load,
-                tooltip: 'Refresh',
+                tooltip: AppLocalizations.of(context).refresh,
               ),
             ],
           ),
@@ -445,7 +445,7 @@ class _AdminUserManagementScreenState
           child: TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: 'Search by email…',
+              hintText: AppLocalizations.of(context).searchByEmail,
               prefixIcon: const Icon(Icons.search_rounded, size: 20),
               suffixIcon: _searchController.text.isNotEmpty
                   ? IconButton(
@@ -476,8 +476,8 @@ class _AdminUserManagementScreenState
                   const SizedBox(height: 16),
                   Text(
                     _searchController.text.isNotEmpty
-                        ? 'No users match your search.'
-                        : 'No users found.',
+                        ? AppLocalizations.of(context).noUsersMatch
+                        : AppLocalizations.of(context).noUsersFound,
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
@@ -512,10 +512,10 @@ class _AdminUserManagementScreenState
     final l10n = AppLocalizations.of(context);
 
     final subtitleParts = <String>[
-      row.emailConfirmedAt != null ? 'Verified' : 'Unverified',
+      row.emailConfirmedAt != null ? l10n.verified : l10n.unverified,
       if (row.createdAt != null)
-        'Joined ${dateFormat.format(row.createdAt!)}',
-      '${row.scanCount} Scan${row.scanCount == 1 ? '' : 's'}',
+        '${l10n.joined} ${dateFormat.format(row.createdAt!)}',
+      '${row.scanCount} ${row.scanCount == 1 ? l10n.scanCount : l10n.scansCount}',
     ];
 
     return ListTile(
@@ -562,7 +562,7 @@ class _AdminUserManagementScreenState
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
-              isAdmin ? 'ADMIN' : 'USER',
+              isAdmin ? l10n.adminLabel : l10n.userLabel,
               style: theme.textTheme.labelSmall?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: isAdmin
@@ -629,22 +629,22 @@ class _AdminUserManagementScreenState
               final isCurrentUser = currentUserId == row.id;
               return [
                 if (isActive)
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'suspend',
                     child: Row(children: [
-                      Icon(Icons.block_outlined),
-                      SizedBox(width: 12),
-                      Text('Suspend Account'),
+                      const Icon(Icons.block_outlined),
+                      const SizedBox(width: 12),
+                      Text(l10n.suspendAccount),
                     ]),
                   )
                 else
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'reactivate',
                     child: Row(children: [
-                      Icon(Icons.check_circle_outline,
+                      const Icon(Icons.check_circle_outline,
                           color: AppTheme.safeGreen),
-                      SizedBox(width: 12),
-                      Text('Reactivate Account'),
+                      const SizedBox(width: 12),
+                      Text(l10n.reactivateAccount),
                     ]),
                   ),
                 if (!isAdmin)
@@ -679,7 +679,7 @@ class _AdminUserManagementScreenState
                     Icon(Icons.person_remove_outlined,
                         color: theme.colorScheme.error),
                     const SizedBox(width: 12),
-                    Text('Delete User Data',
+                    Text(l10n.deleteUserDataBtn,
                         style: TextStyle(color: theme.colorScheme.error)),
                   ]),
                 ),

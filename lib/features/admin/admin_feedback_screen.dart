@@ -3,6 +3,7 @@ import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/core/services/feedback_service.dart';
 import 'package:herbascan/core/models/user_feedback.dart';
 import 'package:intl/intl.dart';
+import 'package:herbascan/core/localization/app_localizations.dart';
 
 /// Admin-only screen: list feedback submissions from Supabase (Option B).
 /// Requires migration 20260316000000_user_feedback.sql to be run.
@@ -69,19 +70,19 @@ class _AdminFeedbackScreenState extends State<AdminFeedbackScreen> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to load feedback: $e'),
+          content: Text('${AppLocalizations.of(context).failedToLoadFeedback}: $e'),
           backgroundColor: AppTheme.errorDeep,
         ),
       );
     }
   }
 
-  String _userLabel(Map<String, dynamic> row) {
+  String _userLabel(Map<String, dynamic> row, BuildContext context) {
     final userId = row['user_id'];
-    if (userId == null) return 'Anonymous';
+    if (userId == null) return AppLocalizations.of(context).anonymous;
     final s = userId.toString();
-    if (s.length > 12) return 'User ${s.substring(0, 8)}…';
-    return 'User $s';
+    if (s.length > 12) return '${AppLocalizations.of(context).userText} ${s.substring(0, 8)}…';
+    return '${AppLocalizations.of(context).userText} $s';
   }
 
   String _formatDate(dynamic v) {
@@ -115,14 +116,14 @@ class _AdminFeedbackScreenState extends State<AdminFeedbackScreen> {
               Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
               const SizedBox(height: 16),
               Text(
-                'Could not load feedback.',
+                AppLocalizations.of(context).couldNotLoadFeedback,
                 style: theme.textTheme.bodyMedium,
               ),
               const SizedBox(height: 24),
               FilledButton.icon(
                 onPressed: _loadData,
                 icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
+                label: Text(AppLocalizations.of(context).retry),
               ),
             ],
           ),
@@ -144,7 +145,7 @@ class _AdminFeedbackScreenState extends State<AdminFeedbackScreen> {
               Row(
                 children: [
                   Text(
-                    'User Feedback',
+                    AppLocalizations.of(context).userFeedback,
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -153,14 +154,14 @@ class _AdminFeedbackScreenState extends State<AdminFeedbackScreen> {
                   IconButton(
                     icon: const Icon(Icons.refresh),
                     onPressed: _loadData,
-                    tooltip: 'Refresh',
+                    tooltip: AppLocalizations.of(context).refresh,
                   ),
                 ],
               ),
               const SizedBox(height: 12),
               TextField(
                 decoration: InputDecoration(
-                  hintText: 'Search feedback or User ID...',
+                  hintText: AppLocalizations.of(context).searchFeedbackOrUser,
                   prefixIcon: const Icon(Icons.search),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   isDense: true,
@@ -183,13 +184,13 @@ class _AdminFeedbackScreenState extends State<AdminFeedbackScreen> {
                           _selectedStatus = value;
                         });
                       },
-                      dropdownMenuEntries: const [
-                        DropdownMenuEntry(value: null, label: 'All Statuses'),
-                        DropdownMenuEntry(value: 'pending', label: 'Pending'),
-                        DropdownMenuEntry(value: 'reviewed', label: 'Reviewed'),
-                        DropdownMenuEntry(value: 'resolved', label: 'Resolved'),
+                      dropdownMenuEntries: [
+                        DropdownMenuEntry(value: null, label: AppLocalizations.of(context).allStatuses),
+                        DropdownMenuEntry(value: 'pending', label: AppLocalizations.of(context).pending),
+                        DropdownMenuEntry(value: 'reviewed', label: AppLocalizations.of(context).reviewed),
+                        DropdownMenuEntry(value: 'resolved', label: AppLocalizations.of(context).resolved),
                       ],
-                      label: const Text('Status'),
+                      label: Text(AppLocalizations.of(context).statusLabel),
                       width: 160,
                       inputDecorationTheme: const InputDecorationTheme(
                         isDense: true,
@@ -205,10 +206,10 @@ class _AdminFeedbackScreenState extends State<AdminFeedbackScreen> {
                         });
                       },
                       dropdownMenuEntries: [
-                        const DropdownMenuEntry(value: null, label: 'All Categories'),
+                        DropdownMenuEntry(value: null, label: AppLocalizations.of(context).allCategories),
                         ...FeedbackCategory.all.map((c) => DropdownMenuEntry(value: c, label: FeedbackCategory.getDisplayName(c))),
                       ],
-                      label: const Text('Category'),
+                      label: Text(AppLocalizations.of(context).categoryLabel),
                       width: 180,
                       inputDecorationTheme: const InputDecorationTheme(
                         isDense: true,
@@ -234,7 +235,7 @@ class _AdminFeedbackScreenState extends State<AdminFeedbackScreen> {
                     padding: const EdgeInsets.only(top: 48.0),
                     child: Center(
                       child: Text(
-                        _items.isEmpty ? 'No feedback in Supabase yet.' : 'No feedback matches your filters.',
+                        _items.isEmpty ? AppLocalizations.of(context).noFeedbackInSupabase : AppLocalizations.of(context).noFeedbackMatchesFilters,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -245,7 +246,7 @@ class _AdminFeedbackScreenState extends State<AdminFeedbackScreen> {
                 return _FeedbackCard(
                   theme: theme,
                   row: displayedItems[index],
-                  userLabel: _userLabel(displayedItems[index]),
+                  userLabel: _userLabel(displayedItems[index], context),
                   formatDate: _formatDate,
                   feedbackService: _feedbackService,
                   onDeleted: _loadData,
@@ -311,19 +312,19 @@ class _FeedbackCardState extends State<_FeedbackCard> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete feedback'),
-        content: const Text(
-          'Are you sure you want to remove this feedback? This cannot be undone.',
+        title: Text(AppLocalizations.of(context).deleteFeedbackPrompt),
+        content: Text(
+          AppLocalizations.of(context).deleteFeedbackDesc,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context).cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             style: FilledButton.styleFrom(backgroundColor: AppTheme.errorDeep),
-            child: const Text('Delete'),
+            child: Text(AppLocalizations.of(context).deleteBtn),
           ),
         ],
       ),
@@ -336,12 +337,12 @@ class _FeedbackCardState extends State<_FeedbackCard> {
       if (ok) {
         widget.onDeleted();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Feedback removed')),
+          SnackBar(content: Text(AppLocalizations.of(context).feedbackRemoved)),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Could not delete feedback'),
+            content: Text(AppLocalizations.of(context).couldNotDeleteFeedback),
             backgroundColor: AppTheme.errorDeep,
           ),
         );
@@ -466,9 +467,11 @@ class _FeedbackCardState extends State<_FeedbackCard> {
                             setState(() {
                               widget.row['status'] = value;
                             });
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Status updated to $value')));
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${AppLocalizations.of(context).statusUpdated} $value')));
                           } else {
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to update status'), backgroundColor: AppTheme.errorDeep));
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context).failedToUpdateStatus), backgroundColor: AppTheme.errorDeep));
                           }
                         } finally {
                           if (mounted) setState(() => _deleteInProgress = false);
@@ -477,46 +480,46 @@ class _FeedbackCardState extends State<_FeedbackCard> {
                     },
                     itemBuilder: (context) => [
                       if (status != 'reviewed')
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'reviewed',
                           child: Row(
                             children: [
-                              Icon(Icons.check_circle_outline, color: Colors.blue, size: 22),
-                              SizedBox(width: 12),
-                              Text('Mark Reviewed'),
+                              const Icon(Icons.check_circle_outline, color: Colors.blue, size: 22),
+                              const SizedBox(width: 12),
+                              Text(AppLocalizations.of(context).markReviewed),
                             ],
                           ),
                         ),
                       if (status != 'resolved')
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'resolved',
                           child: Row(
                             children: [
-                              Icon(Icons.done_all, color: AppTheme.successColor, size: 22),
-                              SizedBox(width: 12),
-                              Text('Mark Resolved'),
+                              const Icon(Icons.done_all, color: AppTheme.successColor, size: 22),
+                              const SizedBox(width: 12),
+                              Text(AppLocalizations.of(context).markResolved),
                             ],
                           ),
                         ),
                       if (status != 'pending')
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'pending',
                           child: Row(
                             children: [
-                              Icon(Icons.pending_actions, color: AppTheme.warningAmber, size: 22),
-                              SizedBox(width: 12),
-                              Text('Mark Pending'),
+                              const Icon(Icons.pending_actions, color: AppTheme.warningAmber, size: 22),
+                              const SizedBox(width: 12),
+                              Text(AppLocalizations.of(context).markPending),
                             ],
                           ),
                         ),
                       const PopupMenuDivider(),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'delete',
                         child: Row(
                           children: [
-                            Icon(Icons.delete_outline, color: AppTheme.errorDeep, size: 22),
-                            SizedBox(width: 12),
-                            Text('Delete'),
+                            const Icon(Icons.delete_outline, color: AppTheme.errorDeep, size: 22),
+                            const SizedBox(width: 12),
+                            Text(AppLocalizations.of(context).deleteBtn),
                           ],
                         ),
                       ),
@@ -561,7 +564,7 @@ class _FeedbackCardState extends State<_FeedbackCard> {
                         padding: const EdgeInsets.only(top: 10),
                         child: TextButton(
                           onPressed: () => setState(() => _expanded = !_expanded),
-                          child: Text(_expanded ? 'Show less' : 'Show more'),
+                          child: Text(_expanded ? AppLocalizations.of(context).showLess : AppLocalizations.of(context).showMore),
                         ),
                       ),
                   ],
@@ -580,7 +583,7 @@ class _FeedbackCardState extends State<_FeedbackCard> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
-                    'Suggestion: $featureSuggestion',
+                    '${AppLocalizations.of(context).suggestion}: $featureSuggestion',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),

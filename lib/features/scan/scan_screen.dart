@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'dart:async';
 import 'dart:io';
 
+import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:herbascan/core/widgets/responsive_layout.dart';
 import 'package:herbascan/core/constants/toxic_plant_blacklist.dart';
 import 'package:herbascan/core/providers/camera_provider.dart';
@@ -227,7 +228,7 @@ class _ScanScreenState extends State<ScanScreen>
         } else {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No plant detected.')),
+            SnackBar(content: Text(AppLocalizations.of(context).noPlantDetected)),
           );
           if (mounted && cameraProvider.cameraController != null) {
             await cameraProvider.cameraController?.resumePreview();
@@ -328,7 +329,7 @@ class _ScanScreenState extends State<ScanScreen>
         } else {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to identify plant.')),
+            SnackBar(content: Text(AppLocalizations.of(context).failedToIdentifyPlant)),
           );
         }
       }
@@ -426,18 +427,18 @@ class _ScanScreenState extends State<ScanScreen>
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const Text(
-                    'Select a plant image to identify',
-                    style: TextStyle(
+                  Text(
+                    AppLocalizations.of(context).selectAPlantImageToIdentify,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Camera is not available on Windows desktop',
-                    style: TextStyle(color: Colors.white54, fontSize: 13),
+                  Text(
+                    AppLocalizations.of(context).cameraNotAvailableWindows,
+                    style: const TextStyle(color: Colors.white54, fontSize: 13),
                   ),
                 ],
               ),
@@ -453,7 +454,7 @@ class _ScanScreenState extends State<ScanScreen>
                   color: Colors.black.withOpacity(0.6),
                   borderRadius: BorderRadius.circular(100),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     SizedBox(
@@ -467,8 +468,8 @@ class _ScanScreenState extends State<ScanScreen>
                     ),
                     SizedBox(width: 10),
                     Text(
-                      'Analyzing...',
-                      style: TextStyle(
+                      AppLocalizations.of(context).analyzing,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -520,7 +521,7 @@ class _ScanScreenState extends State<ScanScreen>
                       onPressed: isProcessing ? null : _pickFromGallery,
                       icon: const Icon(Icons.folder_open_rounded),
                       label: Text(
-                          hasImage ? 'Choose Different Image' : 'Browse Image'),
+                          hasImage ? AppLocalizations.of(context).chooseDifferentImage : AppLocalizations.of(context).browseImage),
                       style: FilledButton.styleFrom(
                         backgroundColor: AppTheme.botanicalPrimary,
                         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -539,17 +540,17 @@ class _ScanScreenState extends State<ScanScreen>
   Widget _buildLoadingState(BuildContext context, ThemeData theme) {
     return Container(
       color: Colors.black,
-      child: const Center(
+      child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(
+            const CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(AppTheme.botanicalPrimary),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Text(
-              'Initializing camera...',
-              style: TextStyle(color: Colors.white70, fontSize: 14),
+              AppLocalizations.of(context).initializingCamera,
+              style: const TextStyle(color: Colors.white70, fontSize: 14),
             ),
           ],
         ),
@@ -570,13 +571,13 @@ class _ScanScreenState extends State<ScanScreen>
               Icon(Icons.error_outline, size: 64, color: AppTheme.errorColor),
               const SizedBox(height: 16),
               Text(
-                'Camera Error',
+                AppLocalizations.of(context).cameraError,
                 style: theme.textTheme.headlineSmall
                     ?.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 8),
               Text(
-                cameraProvider.errorMessage ?? 'Unknown error',
+                cameraProvider.errorMessage ?? AppLocalizations.of(context).unknownError,
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.white70),
               ),
@@ -586,7 +587,7 @@ class _ScanScreenState extends State<ScanScreen>
                   cameraProvider.clearError();
                   _initializeCameraAndModels();
                 },
-                child: const Text('Retry'),
+                child: Text(AppLocalizations.of(context).retry),
               ),
             ],
           ),
@@ -667,7 +668,7 @@ class _ScanScreenState extends State<ScanScreen>
                 color: Colors.black.withOpacity(0.6),
                 borderRadius: BorderRadius.circular(100),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   SizedBox(
@@ -679,10 +680,10 @@ class _ScanScreenState extends State<ScanScreen>
                           AlwaysStoppedAnimation<Color>(AppTheme.botanicalPrimary),
                     ),
                   ),
-                  SizedBox(width: 10),
+                  const SizedBox(width: 10),
                   Text(
-                    'Analyzing...',
-                    style: TextStyle(
+                    AppLocalizations.of(context).analyzing,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -1039,27 +1040,28 @@ class _ZoomPill extends StatelessWidget {
 class _ScanTipsSheet extends StatelessWidget {
   const _ScanTipsSheet();
 
-  static const _tips = [
-    (
-      icon: Icons.wb_sunny_rounded,
-      title: 'Good Lighting',
-      body: 'Use natural daylight. Avoid harsh shadows.',
-    ),
-    (
-      icon: Icons.filter_center_focus_rounded,
-      title: 'Single Leaf',
-      body: 'Frame one healthy leaf clearly in the reticle.',
-    ),
-    (
-      icon: Icons.eco_rounded,
-      title: 'Clean Subject',
-      body: 'Choose an undamaged leaf on a plain background.',
-    ),
-  ];
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+
+    final tips = [
+      (
+        icon: Icons.wb_sunny_rounded,
+        title: l10n.goodLighting,
+        body: l10n.useBrightLight,
+      ),
+      (
+        icon: Icons.filter_center_focus_rounded,
+        title: l10n.singleLeafFocus,
+        body: l10n.fillFrame,
+      ),
+      (
+        icon: Icons.eco_rounded,
+        title: l10n.cleanLeaf,
+        body: l10n.plainBackground,
+      ),
+    ];
 
     return Container(
       decoration: const BoxDecoration(
@@ -1105,7 +1107,7 @@ class _ScanTipsSheet extends StatelessWidget {
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        'Scanning Tips',
+                        l10n.scanningTipsTitle,
                         style: theme.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
@@ -1126,9 +1128,9 @@ class _ScanTipsSheet extends StatelessWidget {
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     separatorBuilder: (_, __) => const SizedBox(width: 12),
-                    itemCount: _tips.length,
+                    itemCount: tips.length,
                     itemBuilder: (context, index) {
-                      final tip = _tips[index];
+                      final tip = tips[index];
                       return _TipCard(
                         icon: tip.icon,
                         title: tip.title,
@@ -1147,7 +1149,7 @@ class _ScanTipsSheet extends StatelessWidget {
                     width: double.infinity,
                     child: FilledButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('Got it!'),
+                      child: Text(l10n.gotIt),
                     ),
                   ),
                 ),

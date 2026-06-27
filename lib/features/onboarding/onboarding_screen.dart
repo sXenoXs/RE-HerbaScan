@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:herbascan/core/providers/app_provider.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
+import 'package:herbascan/core/localization/app_localizations.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -15,32 +16,31 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  final List<OnboardingPage> _pages = [
-    OnboardingPage(
-      icon: Icons.document_scanner_rounded,
-      title: 'AI-Powered Plant Recognition',
-      description:
-          'Instantly identify Philippine medicinal plants with high accuracy just by snapping a photo.',
-    ),
-    OnboardingPage(
-      icon: Icons.wifi_off_rounded,
-      title: 'Works Offline',
-      description:
-          'Scan and access herbal remedies anywhere. No internet connection required.',
-    ),
-    OnboardingPage(
-      icon: Icons.verified_rounded,
-      title: 'DOH Approved Plants',
-      description:
-          'Discover clinically validated herbal medicines endorsed by the Department of Health.',
-    ),
-    OnboardingPage(
-      icon: Icons.visibility_rounded,
-      title: 'Transparent AI',
-      description:
-          'See exactly which parts of the leaf the AI used to make its identification, ensuring you can trust the results.',
-    ),
-  ];
+  List<OnboardingPage> _getPages(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return [
+      OnboardingPage(
+        icon: Icons.document_scanner_rounded,
+        title: l10n.onboardingTitle1,
+        description: l10n.onboardingDesc1,
+      ),
+      OnboardingPage(
+        icon: Icons.wifi_off_rounded,
+        title: l10n.onboardingTitle2,
+        description: l10n.onboardingDesc2,
+      ),
+      OnboardingPage(
+        icon: Icons.verified_rounded,
+        title: l10n.onboardingTitle3,
+        description: l10n.onboardingDesc3,
+      ),
+      OnboardingPage(
+        icon: Icons.visibility_rounded,
+        title: l10n.onboardingTitle4,
+        description: l10n.onboardingDesc4,
+      ),
+    ];
+  }
 
   @override
   void dispose() {
@@ -48,8 +48,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     super.dispose();
   }
 
-  void _nextPage() {
-    if (_currentPage < _pages.length - 1) {
+  void _nextPage(int totalPages) {
+    if (_currentPage < totalPages - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -70,6 +70,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final pages = _getPages(context);
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       body: Center(
         child: ConstrainedBox(
@@ -84,13 +87,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const SizedBox(width: 60),
-                  if (_currentPage < _pages.length - 1)
+                  if (_currentPage < pages.length - 1)
                     TextButton(
                       onPressed: _completeOnboarding,
                       style: TextButton.styleFrom(
                         foregroundColor: AppTheme.botanicalPrimary,
                       ),
-                      child: const Text('Skip'),
+                      child: Text(l10n.skipBtn),
                     )
                   else
                     const SizedBox(width: 60),
@@ -107,9 +110,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     _currentPage = index;
                   });
                 },
-                itemCount: _pages.length,
+                itemCount: pages.length,
                 itemBuilder: (context, index) {
-                  return _buildOnboardingPage(_pages[index]);
+                  return _buildOnboardingPage(pages[index]);
                 },
               ),
             ),
@@ -120,7 +123,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(
-                  _pages.length,
+                  pages.length,
                   (index) => _buildPageIndicator(index),
                 ),
               ),
@@ -130,12 +133,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             Padding(
               padding: const EdgeInsets.all(24.0),
               child: FilledButton(
-                onPressed: _nextPage,
+                onPressed: () => _nextPage(pages.length),
                 style: FilledButton.styleFrom(
                   minimumSize: const Size(double.infinity, 52),
                 ),
                 child: Text(
-                  _currentPage == _pages.length - 1 ? 'Get Started' : 'Next',
+                  _currentPage == pages.length - 1 ? l10n.getStartedBtn : l10n.nextBtn,
                 ),
               ),
             ),

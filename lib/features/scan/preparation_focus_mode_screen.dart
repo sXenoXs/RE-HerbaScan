@@ -147,7 +147,7 @@ class _PreparationFocusModeScreenState
     }
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Progress reset')),
+        SnackBar(content: Text(AppLocalizations.of(context).progressReset)),
       );
     }
   }
@@ -306,7 +306,7 @@ class _PreparationFocusModeScreenState
             onPressed: () => Navigator.of(context).pop(),
           ),
         ),
-        body: const Center(child: Text('No steps available')),
+        body: Center(child: Text(AppLocalizations.of(context).noStepsAvailable)),
       );
     }
 
@@ -326,16 +326,16 @@ class _PreparationFocusModeScreenState
               final confirm = await showDialog<bool>(
                 context: context,
                 builder: (ctx) => AlertDialog(
-                  title: const Text('Reset Progress?'),
-                  content: const Text('This will clear all completed steps and stop any running timer.'),
+                  title: Text(AppLocalizations.of(context).resetProgressTitle),
+                  content: Text(AppLocalizations.of(context).resetProgressBody),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('Cancel'),
+                      child: Text(AppLocalizations.of(context).cancel),
                     ),
                     TextButton(
                       onPressed: () => Navigator.pop(ctx, true),
-                      child: const Text('Reset'),
+                      child: Text(AppLocalizations.of(context).reset),
                     ),
                   ],
                 ),
@@ -591,9 +591,9 @@ class _PreparationFocusModeScreenState
                 child: Text(
                   showTimerRunning
                       ? (_timerPaused
-                          ? 'Tap to resume • Long press to reset'
-                          : 'Tap to pause • Long press to reset')
-                      : 'Tap to start timer',
+                          ? AppLocalizations.of(context).tapToResume
+                          : AppLocalizations.of(context).tapToPause)
+                      : AppLocalizations.of(context).tapToStartTimer,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -625,11 +625,11 @@ class _PreparationFocusModeScreenState
                   child: Text(
                     isCompleted
                         ? (index < steps.length - 1
-                            ? 'Step Done ✓'
-                            : 'All Done ✓')
+                            ? AppLocalizations.of(context).stepDone
+                            : AppLocalizations.of(context).allDone)
                         : (index < steps.length - 1
-                            ? 'Complete & Continue'
-                            : 'Complete Preparation'),
+                            ? AppLocalizations.of(context).completeAndContinue
+                            : AppLocalizations.of(context).completePreparation),
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -743,7 +743,7 @@ class _PreparationFocusModeScreenState
               ),
               const SizedBox(height: 24),
               Text(
-                'Preparation Complete!',
+                AppLocalizations.of(context).preparationComplete,
                 style: theme.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: AppTheme.botanicalPrimary,
@@ -752,7 +752,7 @@ class _PreparationFocusModeScreenState
               ),
               const SizedBox(height: 12),
               Text(
-                'You\'ve completed all the preparation steps.',
+                AppLocalizations.of(context).completedAllSteps,
                 style: theme.textTheme.bodyLarge?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -773,9 +773,9 @@ class _PreparationFocusModeScreenState
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text(
-                      'Return to Guide',
-                      style: TextStyle(
+                    child: Text(
+                      AppLocalizations.of(context).returnToGuide,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),

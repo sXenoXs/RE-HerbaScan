@@ -69,7 +69,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error: $e'),
+          content: Text(AppLocalizations.of(context).errorOccurred(e.toString())),
           backgroundColor: Colors.red,
         ),
       );
@@ -131,7 +131,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Help us improve HerbaScan by sharing your experience',
+                    l10n.feedbackHelpText,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: Colors.white.withOpacity(0.9),
                     ),
@@ -170,7 +170,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Your feedback is stored locally and used for thesis research purposes only.',
+                      l10n.feedbackPrivacyNotice,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                       ),

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:herbascan/core/services/app_config_service.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
+import 'package:herbascan/core/localization/app_localizations.dart';
 
 /// Admin editor for the app_config Supabase table.
 ///
@@ -190,8 +191,8 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Configuration saved successfully.'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).configSavedSuccess),
             backgroundColor: AppTheme.botanicalPrimary,
             behavior: SnackBarBehavior.floating,
           ),
@@ -201,7 +202,7 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to save: $e'),
+            content: Text('${AppLocalizations.of(context).failedToSave}: $e'),
             backgroundColor: AppTheme.errorColor,
             behavior: SnackBarBehavior.floating,
           ),
@@ -249,12 +250,12 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'App Configuration',
+                  AppLocalizations.of(context).appConfiguration,
                   style: theme.textTheme.titleLarge
                       ?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 Text(
-                  'Edit app version, model version, and help content.',
+                  AppLocalizations.of(context).appConfigDesc,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: AppTheme.textSecondary,
                   ),
@@ -265,7 +266,7 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
           const SizedBox(width: 8),
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
-            tooltip: 'Reload from server',
+            tooltip: AppLocalizations.of(context).reloadFromServer,
             onPressed: _saving ? null : _load,
           ),
           const SizedBox(width: 4),
@@ -281,7 +282,7 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
                     ),
                   )
                 : const Icon(Icons.save_rounded, size: 18),
-            label: Text(_saving ? 'Saving…' : 'Save'),
+            label: Text(_saving ? AppLocalizations.of(context).saving : AppLocalizations.of(context).save),
             style: FilledButton.styleFrom(
               backgroundColor: AppTheme.botanicalPrimary,
             ),
@@ -299,7 +300,7 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
           Icon(Icons.error_outline_rounded,
               size: 48, color: theme.colorScheme.error),
           const SizedBox(height: 12),
-          Text('Failed to load configuration', style: theme.textTheme.titleMedium),
+          Text(AppLocalizations.of(context).failedToLoadConfig, style: theme.textTheme.titleMedium),
           const SizedBox(height: 4),
           Text(_error ?? '',
               style: theme.textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
@@ -308,7 +309,7 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
           FilledButton.icon(
             onPressed: _load,
             icon: const Icon(Icons.refresh_rounded, size: 18),
-            label: const Text('Retry'),
+            label: Text(AppLocalizations.of(context).retry),
           ),
         ],
       ),
@@ -325,7 +326,7 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
           // App Version
-          _buildFieldLabel(theme, 'App Version'),
+          _buildFieldLabel(theme, AppLocalizations.of(context).appVersionLabel),
           const SizedBox(height: 8),
           TextFormField(
             controller: _appVersionController,
@@ -334,7 +335,7 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Displayed in Settings → Support & About. Update when a new APK is released.',
+            AppLocalizations.of(context).appVersionDesc,
             style: theme.textTheme.bodySmall?.copyWith(
               color: AppTheme.textSecondary,
             ),
@@ -343,7 +344,7 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
           const SizedBox(height: 24),
 
           // Model Version
-          _buildFieldLabel(theme, 'Model Version'),
+          _buildFieldLabel(theme, AppLocalizations.of(context).modelVersionLabel),
           const SizedBox(height: 8),
           TextFormField(
             controller: _modelVersionController,
@@ -352,7 +353,7 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Displayed in Settings → Support & About. Update after each model retraining.',
+            AppLocalizations.of(context).modelVersionDesc,
             style: theme.textTheme.bodySmall?.copyWith(
               color: AppTheme.textSecondary,
             ),
@@ -361,15 +362,15 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
           const SizedBox(height: 24),
 
           // Help Content
-          _buildFieldLabel(theme, 'Help & Tutorial Content'),
+          _buildFieldLabel(theme, AppLocalizations.of(context).helpTutorialContent),
           const SizedBox(height: 16),
-          _buildDynamicSection(theme, 'Tips', _tipsControllers, ['title', 'subtitle', 'icon']),
+          _buildDynamicSection(theme, AppLocalizations.of(context).tips, _tipsControllers, ['title', 'subtitle', 'icon']),
           const SizedBox(height: 24),
-          _buildDynamicSection(theme, 'Issues', _issuesControllers, ['title', 'content']),
+          _buildDynamicSection(theme, AppLocalizations.of(context).issues, _issuesControllers, ['title', 'content']),
           const SizedBox(height: 24),
-          _buildDynamicSection(theme, 'Features', _featuresControllers, ['title', 'subtitle', 'icon']),
+          _buildDynamicSection(theme, AppLocalizations.of(context).features, _featuresControllers, ['title', 'subtitle', 'icon']),
           const SizedBox(height: 24),
-          _buildFieldLabel(theme, 'Out-of-Distribution (OOD) Explanation'),
+          _buildFieldLabel(theme, AppLocalizations.of(context).oodExplanation),
           const SizedBox(height: 8),
           TextFormField(
             controller: _oodExplanationController,
@@ -396,7 +397,7 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
                       ),
                     )
                   : const Icon(Icons.save_rounded),
-              label: Text(_saving ? 'Saving…' : 'Save Configuration'),
+              label: Text(_saving ? AppLocalizations.of(context).saving : AppLocalizations.of(context).saveConfiguration),
               style: FilledButton.styleFrom(
                 backgroundColor: AppTheme.botanicalPrimary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -433,13 +434,13 @@ class _AdminAppConfigScreenState extends State<AdminAppConfigScreen> {
                 });
               },
               icon: const Icon(Icons.add, size: 16),
-              label: Text('Add $title'),
+              label: Text('${AppLocalizations.of(context).add} $title'),
             ),
           ],
         ),
         const SizedBox(height: 8),
         if (controllers.isEmpty)
-          Text('No items added.', style: theme.textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary)),
+          Text(AppLocalizations.of(context).noItemsAdded, style: theme.textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary)),
         for (int i = 0; i < controllers.length; i++)
           Card(
             margin: const EdgeInsets.only(bottom: 12),

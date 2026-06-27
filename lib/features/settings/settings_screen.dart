@@ -49,14 +49,14 @@ class SettingsScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               children: [
           // 1. Account / Personal Herbarium
-          _buildSectionLabel(context, theme, 'Account'),
+          _buildSectionLabel(context, theme, AppLocalizations.of(context).accountLabel),
           const SizedBox(height: 8),
           _buildAccountBlock(context, theme),
 
           const SizedBox(height: 24),
 
           // 2. App Preferences
-          _buildSectionLabel(context, theme, 'App Preferences'),
+          _buildSectionLabel(context, theme, AppLocalizations.of(context).appPreferencesLabel),
           const SizedBox(height: 8),
           _buildGroupedCard(
             theme,
@@ -76,7 +76,7 @@ class SettingsScreen extends StatelessWidget {
 
           // 3. Scanning & AI
           if (!kIsWeb) ...[
-            _buildSectionLabel(context, theme, 'Scanning & Recognition'),
+            _buildSectionLabel(context, theme, AppLocalizations.of(context).scanningRecognitionLabel),
             const SizedBox(height: 8),
             _buildGroupedCard(
               theme,
@@ -92,7 +92,7 @@ class SettingsScreen extends StatelessWidget {
 
           // 4. Support, Legal & About
           if (!kIsWeb) ...[
-            _buildSectionLabel(context, theme, 'Support, Legal & About'),
+            _buildSectionLabel(context, theme, AppLocalizations.of(context).supportLegalAboutLabel),
             const SizedBox(height: 8),
             _buildGroupedCard(
               theme,
@@ -168,9 +168,9 @@ class SettingsScreen extends StatelessWidget {
             children: [
               ListTile(
                 leading: const Icon(Icons.cloud_upload_outlined),
-                title: const Text('Personal Herbarium'),
+                title: Text(AppLocalizations.of(context).personalHerbarium),
                 subtitle:
-                    const Text('Sign in to back up your scans to the cloud'),
+                    Text(AppLocalizations.of(context).signInToBackUp),
                 trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
                 onTap: () {
                   Navigator.of(context).push(
@@ -224,7 +224,7 @@ class SettingsScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          isAdmin ? 'Administrator' : 'Standard User',
+                          isAdmin ? AppLocalizations.of(context).administrator : AppLocalizations.of(context).standardUser,
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: isAdmin
                                 ? AppTheme.botanicalPrimary
@@ -241,8 +241,8 @@ class SettingsScreen extends StatelessWidget {
             _buildSoftDivider(theme),
             ListTile(
               leading: const Icon(Icons.lock_outline_rounded),
-              title: const Text('Change Password'),
-              subtitle: const Text('Update your account password'),
+              title: Text(AppLocalizations.of(context).changePassword),
+              subtitle: Text(AppLocalizations.of(context).updatePasswordSubtitle),
               trailing:
                   const Icon(Icons.arrow_forward_ios_rounded, size: 16),
               onTap: () {
@@ -256,8 +256,8 @@ class SettingsScreen extends StatelessWidget {
             _buildSoftDivider(theme),
             ListTile(
               leading: const Icon(Icons.email_outlined),
-              title: const Text('Email Address'),
-              subtitle: const Text('Update your account email'),
+              title: Text(AppLocalizations.of(context).emailAddress),
+              subtitle: Text(AppLocalizations.of(context).updateEmailSubtitle),
               trailing:
                   const Icon(Icons.arrow_forward_ios_rounded, size: 16),
               onTap: () {
@@ -275,8 +275,8 @@ class SettingsScreen extends StatelessWidget {
                   Icons.admin_panel_settings_rounded,
                   color: AppTheme.botanicalPrimary,
                 ),
-                title: const Text('Admin Console'),
-                subtitle: const Text('Access administrative tools and settings'),
+                title: Text(AppLocalizations.of(context).adminConsole),
+                subtitle: Text(AppLocalizations.of(context).adminConsoleSubtitle),
                 trailing:
                     const Icon(Icons.arrow_forward_ios_rounded, size: 16),
                 onTap: () => context.push('/admin'),
@@ -288,7 +288,7 @@ class SettingsScreen extends StatelessWidget {
               leading: Icon(Icons.logout_rounded,
                   color: theme.colorScheme.error),
               title: Text(
-                'Sign Out',
+                AppLocalizations.of(context).signOut,
                 style: TextStyle(color: theme.colorScheme.error),
               ),
               onTap: () => _showSignOutDialog(context, auth),
@@ -301,14 +301,14 @@ class SettingsScreen extends StatelessWidget {
                   color: theme.colorScheme.error,
                 ),
                 title: Text(
-                  'Delete Account',
+                  AppLocalizations.of(context).deleteAccount,
                   style: TextStyle(
                     color: theme.colorScheme.error,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                subtitle: const Text(
-                  'Permanently delete your account and cloud data',
+                subtitle: Text(
+                  AppLocalizations.of(context).deleteAccountSubtitle,
                 ),
                 trailing:
                     const Icon(Icons.arrow_forward_ios_rounded, size: 16),
@@ -321,14 +321,14 @@ class SettingsScreen extends StatelessWidget {
                   color: theme.colorScheme.error.withOpacity(0.8),
                 ),
                 title: Text(
-                  'Request Data Deletion',
+                  AppLocalizations.of(context).requestDataDeletion,
                   style: TextStyle(
                     color: theme.colorScheme.error.withOpacity(0.8),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                subtitle: const Text(
-                  'Submit a request to delete your personal data',
+                subtitle: Text(
+                  AppLocalizations.of(context).requestDataDeletionSubtitle,
                 ),
                 trailing:
                     const Icon(Icons.arrow_forward_ios_rounded, size: 16),
@@ -359,8 +359,8 @@ class SettingsScreen extends StatelessWidget {
       secondary: Icon(
         appProvider.isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
       ),
-      title: Text(appProvider.isDarkMode ? 'Dark Mode' : 'Light Mode'),
-      subtitle: const Text('Toggle between dark and light themes'),
+      title: Text(appProvider.isDarkMode ? AppLocalizations.of(context).darkMode : AppLocalizations.of(context).lightMode),
+      subtitle: Text(AppLocalizations.of(context).themeSubtitle),
       value: appProvider.isDarkMode,
       onChanged: (_) => appProvider.toggleDarkMode(),
     );
@@ -382,8 +382,8 @@ class SettingsScreen extends StatelessWidget {
     final appProvider = Provider.of<AppProvider>(context);
     return SwitchListTile(
       secondary: const Icon(Icons.save_outlined),
-      title: const Text('Auto-save Scans'),
-      subtitle: const Text('Automatically save scan results'),
+      title: Text(AppLocalizations.of(context).autoSaveScans),
+      subtitle: Text(AppLocalizations.of(context).autoSaveScansSubtitle),
       value: appProvider.autoSaveScans,
       onChanged: (value) async {
         appProvider.toggleAutoSaveScans();
@@ -399,7 +399,7 @@ class SettingsScreen extends StatelessWidget {
     final appProvider = Provider.of<AppProvider>(context);
     return SwitchListTile(
       secondary: const Icon(Icons.analytics_outlined),
-      title: const Text('Show Prediction Confidence'),
+      title: Text(AppLocalizations.of(context).showConfidenceScores),
       value: appProvider.showConfidenceScores,
       onChanged: (value) async {
         appProvider.toggleConfidenceScores();
@@ -413,7 +413,7 @@ class SettingsScreen extends StatelessWidget {
     final appProvider = Provider.of<AppProvider>(context);
     return SwitchListTile(
       secondary: const Icon(Icons.format_list_numbered_rounded),
-      title: const Text('Show Alternative Matches'),
+      title: Text(AppLocalizations.of(context).showAlternativeMatches),
       value: appProvider.showTop3Results,
       onChanged: (value) async {
         appProvider.toggleTop3Results();
@@ -429,7 +429,7 @@ class SettingsScreen extends StatelessWidget {
     return ListTile(
       leading: const Icon(Icons.help_outline_rounded),
       title: Text(AppLocalizations.of(context).helpAndTutorial),
-      subtitle: const Text('Learn how to get the best scanning results'),
+      subtitle: Text(AppLocalizations.of(context).helpTutorialSubtitle),
       trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
       onTap: () {
         Navigator.of(context).push(
@@ -444,8 +444,8 @@ class SettingsScreen extends StatelessWidget {
   Widget _buildSendFeedbackTile(BuildContext context, ThemeData theme) {
     return ListTile(
       leading: const Icon(Icons.feedback_outlined),
-      title: const Text('Send Feedback'),
-      subtitle: const Text('Share your thoughts or report an issue'),
+      title: Text(AppLocalizations.of(context).sendFeedback),
+      subtitle: Text(AppLocalizations.of(context).sendFeedbackSubtitle),
       trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
       onTap: () {
         Navigator.of(context).push(
@@ -460,7 +460,7 @@ class SettingsScreen extends StatelessWidget {
   Widget _buildTermsOfServiceTile(BuildContext context, ThemeData theme) {
     return ListTile(
       leading: const Icon(Icons.gavel_rounded),
-      title: const Text('Terms of Service'),
+      title: Text(AppLocalizations.of(context).termsOfService),
       trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
       onTap: () => _showLegalDocumentDialog(context, 'Terms of Service', 'assets/data/legal/Terms of Service.md'),
     );
@@ -469,7 +469,7 @@ class SettingsScreen extends StatelessWidget {
   Widget _buildEULATile(BuildContext context, ThemeData theme) {
     return ListTile(
       leading: const Icon(Icons.policy_rounded),
-      title: const Text('End-User License Agreement'),
+      title: Text(AppLocalizations.of(context).eula),
       trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
       onTap: () => _showLegalDocumentDialog(context, 'End-User License Agreement (EULA)', 'assets/data/legal/End-User License Agreement.md'),
     );
@@ -479,7 +479,7 @@ class SettingsScreen extends StatelessWidget {
     return ListTile(
       leading: const Icon(Icons.privacy_tip_outlined),
       title: Text(
-        'Privacy Policy',
+        AppLocalizations.of(context).privacyPolicy,
         style: TextStyle(
           color: theme.colorScheme.primary,
           decoration: TextDecoration.underline,
@@ -546,7 +546,7 @@ class SettingsScreen extends StatelessWidget {
     final appProvider = Provider.of<AppProvider>(context);
     return ListTile(
       leading: const Icon(Icons.info_outline_rounded),
-      title: const Text('App Version'),
+      title: Text(AppLocalizations.of(context).appVersion),
       subtitle: Text(appProvider.appVersion),
     );
   }
@@ -555,7 +555,7 @@ class SettingsScreen extends StatelessWidget {
     final appProvider = Provider.of<AppProvider>(context);
     return ListTile(
       leading: const Icon(Icons.psychology_outlined),
-      title: const Text('Model Version'),
+      title: Text(AppLocalizations.of(context).modelVersion),
       subtitle: Text(appProvider.modelVersion),
     );
   }
@@ -569,7 +569,7 @@ class SettingsScreen extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
-            'Developer Options',
+            AppLocalizations.of(context).developerOptionsLabel,
             style: theme.textTheme.labelLarge?.copyWith(
               fontWeight: FontWeight.w700,
               color: theme.colorScheme.onSurface.withOpacity(0.45),
@@ -591,9 +591,8 @@ class SettingsScreen extends StatelessWidget {
                   _buildSoftDivider(theme),
                   ListTile(
                     leading: const Icon(Icons.refresh_rounded),
-                    title: const Text('Refresh Offline Data'),
-                    subtitle: const Text(
-                        'Reload stats from local database and sync status'),
+                    title: Text(AppLocalizations.of(context).refreshOfflineData),
+                    subtitle: Text(AppLocalizations.of(context).refreshOfflineDataSubtitle),
                     onTap: () async {
                       try {
                         await offlineProvider.refreshOfflineData();
@@ -621,7 +620,7 @@ class SettingsScreen extends StatelessWidget {
                   _buildSoftDivider(theme),
                   ListTile(
                     leading: const Icon(Icons.storage_rounded),
-                    title: const Text('Offline Storage Info'),
+                    title: Text(AppLocalizations.of(context).offlineStorageInfo),
                     subtitle: Text(
                       'Scans: ${offlineProvider.offlineStats['totalScans'] ?? 0} · '
                       'Plants: ${offlineProvider.offlineStats['totalPlants'] ?? 0} · '
@@ -641,20 +640,18 @@ class SettingsScreen extends StatelessWidget {
                       color: theme.colorScheme.error,
                     ),
                     title: Text(
-                      'Clear Offline Data',
+                      AppLocalizations.of(context).clearOfflineData,
                       style: TextStyle(color: theme.colorScheme.error),
                     ),
-                    subtitle: const Text(
-                        'Remove all scan history and pending sync from this device'),
+                    subtitle: Text(AppLocalizations.of(context).clearOfflineDataSubtitle),
                     onTap: () =>
                         _showClearDataDialog(context, offlineProvider),
                   ),
                   _buildSoftDivider(theme),
                   ListTile(
                     leading: const Icon(Icons.monitor_heart_outlined),
-                    title: const Text('System Diagnostics'),
-                    subtitle: const Text(
-                        'View models, database, and connection status'),
+                    title: Text(AppLocalizations.of(context).systemDiagnostics),
+                    subtitle: Text(AppLocalizations.of(context).systemDiagnosticsSubtitle),
                     trailing:
                         const Icon(Icons.arrow_forward_ios_rounded, size: 16),
                     onTap: () {
@@ -680,8 +677,7 @@ class SettingsScreen extends StatelessWidget {
     return SwitchListTile(
       secondary: const Icon(Icons.offline_bolt_outlined),
       title: Text(AppLocalizations.of(context).offlineMode),
-      subtitle: const Text(
-          'Force offline: use AI and local database only, no cloud sync'),
+      subtitle: Text(AppLocalizations.of(context).offlineModeSubtitle),
       value: offlineProvider.isOfflineMode,
       onChanged: (value) async {
         await offlineProvider.toggleOfflineMode();

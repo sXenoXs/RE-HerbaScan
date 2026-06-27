@@ -4,7 +4,10 @@ import 'package:herbascan/core/providers/auth_provider.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/core/widgets/botanical_auth_header.dart';
 import 'package:herbascan/core/widgets/password_requirements_widget.dart';
+import 'package:herbascan/core/widgets/botanical_auth_header.dart';
+import 'package:herbascan/core/widgets/password_requirements_widget.dart';
 import 'package:herbascan/features/auth/enter_signup_code_screen.dart';
+import 'package:herbascan/core/localization/app_localizations.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -28,22 +31,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   static const int _minPasswordLength = 8;
 
-  static String? validatePassword(String? value) {
-    if (value == null || value.isEmpty) return 'Enter a password';
+  static String? validatePassword(BuildContext context, String? value) {
+    if (value == null || value.isEmpty) return AppLocalizations.of(context).enterPassword;
     if (value.length < _minPasswordLength) {
-      return 'Use at least $_minPasswordLength characters';
+      return AppLocalizations.of(context).useAtLeast8Chars;
     }
     if (!value.contains(RegExp(r'[A-Z]'))) {
-      return 'Include at least one capital letter';
+      return AppLocalizations.of(context).includeCapitalLetter;
     }
     if (!value.contains(RegExp(r'[a-z]'))) {
-      return 'Include at least one lowercase letter';
+      return AppLocalizations.of(context).includeLowercaseLetter;
     }
     if (!value.contains(RegExp(r'[0-9]'))) {
-      return 'Include at least one number';
+      return AppLocalizations.of(context).includeNumber;
     }
     if (!value.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\;/]'))) {
-      return 'Include at least one special character (!@#\$%^&* etc.)';
+      return AppLocalizations.of(context).includeSpecialChar;
     }
     return null;
   }
@@ -65,21 +68,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
-  static String _friendlyAuthError(String raw) {
+  static String _friendlyAuthError(BuildContext context, String raw) {
     final lower = raw.toLowerCase();
     if (lower.contains('over_email_send_rate_limit') ||
         lower.contains('email rate limit') ||
         (lower.contains('rate limit') && lower.contains('email')) ||
         raw.contains('429')) {
-      return 'Too many signup emails sent. Please try again in about an hour.';
+      return AppLocalizations.of(context).tooManyEmailsSent;
     }
     if (lower.contains('invalid_credentials') ||
         lower.contains('invalid login')) {
-      return 'Email or password does not match.';
+      return AppLocalizations.of(context).emailOrPasswordMismatch;
     }
     if (lower.contains('email already registered') ||
         lower.contains('already registered')) {
-      return 'This email is already registered. Try signing in.';
+      return AppLocalizations.of(context).emailAlreadyRegistered;
     }
     return raw
         .replaceFirst('AuthException: ', '')
@@ -122,7 +125,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = _friendlyAuthError(e.toString());
+        _errorMessage = _friendlyAuthError(context, e.toString());
         _isLoading = false;
       });
     }
@@ -142,7 +145,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Account')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).createAccountTitle)),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 450),
@@ -154,10 +157,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const BotanicalAuthHeader(
-                  title: 'Personal Herbarium',
-                  subtitle:
-                      'Create an account to back up your scans to the cloud.',
+                BotanicalAuthHeader(
+                  title: AppLocalizations.of(context).personalHerbarium,
+                  subtitle: AppLocalizations.of(context).signupSubtitle,
                   imageAsset: 'assets/icons/HerbaScan_Icon1.png',
                 ),
                 const SizedBox(height: 28),
@@ -191,16 +193,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   autocorrect: false,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    hintText: 'you@example.com',
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context).emailLabel,
+                    hintText: AppLocalizations.of(context).emailHint,
                   ),
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) {
-                      return 'Enter your email';
+                      return AppLocalizations.of(context).enterEmail;
                     }
                     final emailRegex = RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+");
-                    if (!emailRegex.hasMatch(v)) return 'Enter a valid email';
+                    if (!emailRegex.hasMatch(v)) return AppLocalizations.of(context).validEmailRequired;
                     return null;
                   },
                 ),
@@ -211,8 +213,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   decoration: InputDecoration(
-                    labelText: 'Password',
-                    hintText: 'Enter a strong password',
+                    labelText: AppLocalizations.of(context).passwordLabel,
+                    hintText: AppLocalizations.of(context).passwordHint,
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword
@@ -223,7 +225,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           setState(() => _obscurePassword = !_obscurePassword),
                     ),
                   ),
-                  validator: validatePassword,
+                  validator: (v) => validatePassword(context, v),
                 ),
 
                 // 2-column micro-pill requirements
@@ -237,8 +239,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   controller: _confirmPasswordController,
                   obscureText: _obscureConfirm,
                   decoration: InputDecoration(
-                    labelText: 'Confirm Password',
-                    hintText: 'Re-enter your password',
+                    labelText: AppLocalizations.of(context).confirmPasswordLabel,
+                    hintText: AppLocalizations.of(context).confirmPasswordHint,
                     enabledBorder: confirmNotEmpty
                         ? confirmBorder(
                             matches
@@ -255,7 +257,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           )
                         : null,
                     errorText: (confirmNotEmpty && !matches)
-                        ? 'Passwords do not match'
+                        ? AppLocalizations.of(context).passwordsDoNotMatch
                         : null,
                     suffixIcon: confirmNotEmpty && matches
                         ? const Icon(Icons.check_circle_rounded,
@@ -272,10 +274,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                   validator: (v) {
                     if (v == null || v.isEmpty) {
-                      return 'Confirm your password';
+                      return AppLocalizations.of(context).confirmYourPassword;
                     }
                     if (v != _passwordController.text) {
-                      return 'Passwords do not match';
+                      return AppLocalizations.of(context).passwordsDoNotMatch;
                     }
                     return null;
                   },
@@ -292,7 +294,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             width: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Create Account'),
+                        : Text(AppLocalizations.of(context).createAccountTitle),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -305,8 +307,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     
                     if (email.isEmpty || !emailRegex.hasMatch(email)) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Please enter your valid email above to verify your code.'),
+                        SnackBar(
+                          content: Text(AppLocalizations.of(context).enterValidEmailForCode),
                           behavior: SnackBarBehavior.floating,
                         ),
                       );
@@ -319,7 +321,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     }
                   },
                   child: Text(
-                    'Already have a verification code?',
+                    AppLocalizations.of(context).alreadyHaveCode,
                     style: TextStyle(
                       color: theme.colorScheme.primary,
                       fontWeight: FontWeight.w600,

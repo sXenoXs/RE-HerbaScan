@@ -5,6 +5,7 @@ import 'package:herbascan/core/providers/auth_provider.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
 import 'package:herbascan/core/widgets/botanical_auth_header.dart';
 import 'package:herbascan/features/auth/change_password_screen.dart';
+import 'package:herbascan/core/localization/app_localizations.dart';
 
 /// Screen for entering the 6-digit code from the password reset email.
 /// On success, establishes a recovery session and navigates to [ChangePasswordScreen].
@@ -112,7 +113,7 @@ class _EnterResetCodeScreenState extends State<EnterResetCodeScreen> {
           _errorMessage = e
               .toString()
               .replaceFirst('AuthException: ', '');
-          if (_errorMessage!.isEmpty) _errorMessage = 'Invalid code. Try again.';
+          if (_errorMessage!.isEmpty) _errorMessage = AppLocalizations.of(context).invalidCode;
           _isLoading = false;
         });
         _pinController.clear();
@@ -129,13 +130,13 @@ class _EnterResetCodeScreenState extends State<EnterResetCodeScreen> {
       await context.read<AuthProvider>().requestPasswordReset(widget.email);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('A new code has been sent to your email.')),
+          SnackBar(content: Text(AppLocalizations.of(context).newCodeSent)),
         );
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Failed to resend. Please try again.';
+          _errorMessage = AppLocalizations.of(context).failedToResend;
         });
       }
     } finally {
@@ -210,8 +211,8 @@ class _EnterResetCodeScreenState extends State<EnterResetCodeScreen> {
               const SizedBox(height: 16),
               BotanicalAuthHeader(
                 icon: Icons.mark_email_read_rounded,
-                title: 'Check your inbox',
-                subtitle: _buildSubtitle(),
+                title: AppLocalizations.of(context).checkYourInbox,
+                subtitle: _buildSubtitle(context),
               ),
               const SizedBox(height: 40),
 
@@ -248,7 +249,7 @@ class _EnterResetCodeScreenState extends State<EnterResetCodeScreen> {
                 const Icon(Icons.lock_clock_rounded, size: 64, color: Colors.orange),
                 const SizedBox(height: 16),
                 Text(
-                  'Too many attempts.\nTry again in $_lockedUntil.',
+                  AppLocalizations.of(context).tooManyAttemptsWait(_lockedUntil ?? ''),
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: theme.colorScheme.onSurface,
                   ),
@@ -258,7 +259,7 @@ class _EnterResetCodeScreenState extends State<EnterResetCodeScreen> {
                 TextButton.icon(
                   onPressed: () => Navigator.of(context).pop(),
                   icon: const Icon(Icons.arrow_back),
-                  label: const Text('Back to Sign In'),
+                  label: Text(AppLocalizations.of(context).backToSignIn),
                 ),
               ] else ...[
                 // 6-box OTP input
@@ -280,7 +281,7 @@ class _EnterResetCodeScreenState extends State<EnterResetCodeScreen> {
                 const SizedBox(height: 8),
                 Center(
                   child: Text(
-                    'Attempts left: $_attemptsLeft',
+                    AppLocalizations.of(context).attemptsLeft(_attemptsLeft),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -311,7 +312,7 @@ class _EnterResetCodeScreenState extends State<EnterResetCodeScreen> {
                                 color: Colors.white,
                               ),
                             )
-                          : const Text('Continue'),
+                          : Text(AppLocalizations.of(context).continueBtn),
                     );
                   },
                 ),
@@ -328,7 +329,7 @@ class _EnterResetCodeScreenState extends State<EnterResetCodeScreen> {
                             width: 16,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text("Didn't receive the email? Resend"),
+                        : Text(AppLocalizations.of(context).didntReceiveEmail),
                   ),
                 ),
               ],
@@ -341,7 +342,7 @@ class _EnterResetCodeScreenState extends State<EnterResetCodeScreen> {
     );
   }
 
-  String _buildSubtitle() {
-    return 'We sent a 6-digit code to\n${widget.email}';
+  String _buildSubtitle(BuildContext context) {
+    return AppLocalizations.of(context).sent6DigitCode(widget.email);
   }
 }

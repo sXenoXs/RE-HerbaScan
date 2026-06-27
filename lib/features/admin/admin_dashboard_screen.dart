@@ -6,6 +6,7 @@ import 'package:herbascan/core/models/data_deletion_request.dart';
 import 'package:herbascan/core/services/data_deletion_service.dart';
 import 'package:herbascan/core/services/herbarium_service.dart';
 import 'package:herbascan/core/theme/app_theme.dart';
+import 'package:herbascan/core/localization/app_localizations.dart';
 import 'package:intl/intl.dart';
 
 enum _ApproveChoice { approveOnly, approveAndTrain }
@@ -85,7 +86,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Full resolution – pinch to zoom'),
+                    Text(AppLocalizations.of(context).fullResolutionPinchToZoom),
                     IconButton(
                       icon: const Icon(Icons.close),
                       onPressed: () => Navigator.pop(ctx),
@@ -117,18 +118,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete submission?'),
-        content: const Text(
-          'This will remove the scan from the database and storage. It cannot be undone.',
+        title: Text(AppLocalizations.of(context).deleteSubmission),
+        content: Text(
+          AppLocalizations.of(context).deleteSubmissionBody,
         ),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+              child: Text(AppLocalizations.of(context).cancel)),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child:
-                Text('Delete', style: TextStyle(color: theme.colorScheme.error)),
+                Text(AppLocalizations.of(context).delete, style: TextStyle(color: theme.colorScheme.error)),
           ),
         ],
       ),
@@ -175,16 +176,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete request?'),
+        title: Text(AppLocalizations.of(context).deleteRequest),
         content:
-            const Text('Remove this deletion request from the database.'),
+            Text(AppLocalizations.of(context).deleteRequestBody),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+              child: Text(AppLocalizations.of(context).cancel)),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text('Delete',
+            child: Text(AppLocalizations.of(context).delete,
                 style: TextStyle(color: theme.colorScheme.error)),
           ),
         ],
@@ -231,8 +232,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       SnackBar(
         content: Text(
           ok
-              ? 'Image added to training dataset for $plantSlug'
-              : 'Storage copy failed — scan approved but not in training-datasets',
+              ? '${AppLocalizations.of(context).imageAddedToTraining}$plantSlug'
+              : AppLocalizations.of(context).storageCopyFailed,
         ),
         backgroundColor:
             ok ? AppTheme.botanicalPrimary : AppTheme.errorColor,
@@ -247,8 +248,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     final auth = context.watch<AuthProvider>();
     if (!auth.isAdmin) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Admin')),
-        body: const Center(child: Text('Access denied. Admin only.')),
+        appBar: AppBar(title: Text(AppLocalizations.of(context).adminRole)),
+        body: Center(child: Text(AppLocalizations.of(context).accessDeniedAdminOnly)),
       );
     }
 
@@ -256,7 +257,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: Text(
-            _showDeletionRequests ? 'Data Deletion Requests' : 'Submission Triage'),
+            _showDeletionRequests ? AppLocalizations.of(context).dataDeletionRequests : AppLocalizations.of(context).submissionTriage),
         backgroundColor: theme.colorScheme.surfaceContainerHighest,
         actions: [
           IconButton(
@@ -268,8 +269,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               if (_showDeletionRequests) _loadDeletionRequests();
             },
             tooltip: _showDeletionRequests
-                ? 'Back to Submissions'
-                : 'Data Deletion Requests',
+                ? AppLocalizations.of(context).backToSubmissions
+                : AppLocalizations.of(context).dataDeletionRequests,
           ),
         ],
         bottom: _showDeletionRequests
@@ -282,15 +283,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     children: [
                       Expanded(
                         child: SegmentedButton<bool>(
-                          segments: const [
+                          segments: [
                             ButtonSegment(
                                 value: true,
-                                label: Text('Pending'),
-                                icon: Icon(Icons.pending_outlined)),
+                                label: Text(AppLocalizations.of(context).pending),
+                                icon: const Icon(Icons.pending_outlined)),
                             ButtonSegment(
                                 value: false,
-                                label: Text('All'),
-                                icon: Icon(Icons.list)),
+                                label: Text(AppLocalizations.of(context).all),
+                                icon: const Icon(Icons.list)),
                           ],
                           selected: {_pendingOnly},
                           onSelectionChanged: (Set<bool> sel) {
@@ -368,7 +369,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                 const SizedBox(height: 16),
                                 FilledButton(
                                     onPressed: _load,
-                                    child: const Text('Retry')),
+                                    child: Text(AppLocalizations.of(context).retry)),
                               ],
                             ),
                           ),
@@ -384,7 +385,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                           .withValues(alpha: 0.35)),
                                   const SizedBox(height: 16),
                                   Text(
-                                    'Inbox Zero. All submissions reviewed.',
+                                    AppLocalizations.of(context).inboxZero,
                                     style: theme.textTheme.titleMedium
                                         ?.copyWith(
                                       color: theme.colorScheme.onSurface
@@ -429,7 +430,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               const SizedBox(height: 16),
               FilledButton(
                   onPressed: _loadDeletionRequests,
-                  child: const Text('Retry')),
+                  child: Text(AppLocalizations.of(context).retry)),
             ],
           ),
         ),
@@ -446,7 +447,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     theme.colorScheme.onSurface.withValues(alpha: 0.35)),
             const SizedBox(height: 16),
             Text(
-              'No deletion requests.',
+              AppLocalizations.of(context).noDeletionRequests,
               style: theme.textTheme.titleMedium?.copyWith(
                 color:
                     theme.colorScheme.onSurface.withValues(alpha: 0.6),
@@ -503,7 +504,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        req.email ?? 'Unknown',
+                        req.email ?? AppLocalizations.of(context).unknown,
                         style: theme.textTheme.titleMedium
                             ?.copyWith(fontWeight: FontWeight.bold),
                         maxLines: 1,
@@ -567,7 +568,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     onPressed: () =>
                         _updateDeletionStatus(req.id, 'rejected'),
                     icon: const Icon(Icons.close, size: 16),
-                    label: const Text('Reject'),
+                    label: Text(AppLocalizations.of(context).reject),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppTheme.errorColor,
                       side: const BorderSide(color: AppTheme.errorColor),
@@ -578,7 +579,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     onPressed: () =>
                         _updateDeletionStatus(req.id, 'approved'),
                     icon: const Icon(Icons.check, size: 16),
-                    label: const Text('Approve'),
+                    label: Text(AppLocalizations.of(context).approve),
                     style: FilledButton.styleFrom(
                       backgroundColor: AppTheme.safeGreen,
                     ),
@@ -594,7 +595,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   onPressed: () => _deleteDeletionRequest(req.id),
                   icon: Icon(Icons.delete_outline,
                       size: 16, color: theme.colorScheme.error),
-                  label: Text('Remove',
+                  label: Text(AppLocalizations.of(context).remove,
                       style: TextStyle(color: theme.colorScheme.error)),
                 ),
               ),
@@ -613,13 +614,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         color: AppTheme.safeGreen,
         icon: Icons.check_rounded,
         alignment: Alignment.centerLeft,
-        label: 'Approve',
+        label: AppLocalizations.of(context).approve,
       ),
       secondaryBackground: _buildSwipeBackground(
         color: AppTheme.errorColor,
         icon: Icons.close_rounded,
         alignment: Alignment.centerRight,
-        label: 'Reject',
+        label: AppLocalizations.of(context).reject,
       ),
       confirmDismiss: (direction) async {
         if (direction == DismissDirection.startToEnd) {
@@ -732,7 +733,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    scan.plantId ?? 'Unknown Plant',
+                    scan.plantId ?? AppLocalizations.of(context).unknownPlant,
                     style: theme.textTheme.titleMedium
                         ?.copyWith(fontWeight: FontWeight.bold),
                     maxLines: 1,
@@ -776,16 +777,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                 .withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(100),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.model_training_rounded,
+                              const Icon(Icons.model_training_rounded,
                                   size: 11,
                                   color: AppTheme.botanicalPrimary),
-                              SizedBox(width: 4),
+                              const SizedBox(width: 4),
                               Text(
-                                'Training eligible',
-                                style: TextStyle(
+                                AppLocalizations.of(context).trainingEligible,
+                                style: const TextStyle(
                                     color: AppTheme.botanicalPrimary,
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
