@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — HerbaScan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Tokens ─────────────────────────────────────────────── */
+    :root {
+      --moss:      #3D5A3E;
+      --fern:      #5C7E4A;
+      --sage:      #A8C090;
+      --parchment: #F5F2EA;
+      --paper:     #FDFCF8;
+      --ink:       #1C1F1A;
+      --mid:       #4A4F46;
+      --muted:     #7A8075;
+      --rule:      #D6D3C8;
+      --leaf-vein: #E2EDD8;
+
+      --font-display: 'DM Serif Display', Georgia, serif;
+      --font-body:    'Inter', system-ui, sans-serif;
+      --font-mono:    'JetBrains Mono', monospace;
+
+      --max-w: 780px;
+      --gutter: clamp(1.25rem, 5vw, 2.5rem);
+    }
+
+    /* ── Reset ───────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--parchment);
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 1rem;
+      line-height: 1.75;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Skip link ───────────────────────────────────────────── */
+    .skip-link {
+      position: absolute; top: -999px; left: 0;
+      background: var(--moss); color: #fff; padding: .5rem 1rem;
+      font-size: .875rem; text-decoration: none;
+    }
+    .skip-link:focus { top: 0; }
+
+    /* ── Header / Hero ───────────────────────────────────────── */
+    header {
+      background: var(--moss);
+      color: #fff;
+      padding: 3.5rem var(--gutter) 3rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Botanical line pattern — pure CSS, no images */
+    header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        repeating-linear-gradient(
+          105deg,
+          transparent 0px,
+          transparent 38px,
+          rgba(255,255,255,.045) 38px,
+          rgba(255,255,255,.045) 39px
+        ),
+        repeating-linear-gradient(
+          -15deg,
+          transparent 0px,
+          transparent 56px,
+          rgba(255,255,255,.03) 56px,
+          rgba(255,255,255,.03) 57px
+        );
+      pointer-events: none;
+    }
+
+    .header-inner {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .app-label {
+      font-family: var(--font-mono);
+      font-size: .75rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--sage);
+      margin-bottom: .75rem;
+      display: block;
+    }
+
+    header h1 {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 400;
+      line-height: 1.15;
+      color: #fff;
+      margin-bottom: 1.25rem;
+    }
+
+    header h1 em {
+      font-style: italic;
+      color: var(--sage);
+    }
+
+    .header-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem 1.5rem;
+      font-size: .825rem;
+      color: rgba(255,255,255,.65);
+    }
+
+    .header-meta span {
+      font-family: var(--font-mono);
+    }
+
+    /* ── Summary banner ──────────────────────────────────────── */
+    .summary-bar {
+      background: var(--fern);
+      color: #fff;
+      padding: 1.25rem var(--gutter);
+    }
+
+    .summary-bar-inner {
+      max-width: var(--max-w);
+      margin: 0 auto;
+    }
+
+    .summary-bar p {
+      font-size: .9rem;
+      line-height: 1.65;
+    }
+
+    .summary-bar strong {
+      font-weight: 600;
+    }
+
+    /* ── Layout wrapper ───────────────────────────────────────── */
+    .page {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      max-width: calc(var(--max-w) + 260px);
+      margin: 0 auto;
+      padding: 0 var(--gutter);
+      gap: 0 3rem;
+      align-items: start;
+    }
+
+    /* ── TOC sidebar ─────────────────────────────────────────── */
+    .toc {
+      position: sticky;
+      top: 2rem;
+      padding: 2rem 0;
+    }
+
+    .toc-label {
+      font-family: var(--font-mono);
+      font-size: .7rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: .75rem;
+      display: block;
+    }
+
+    .toc ol {
+      list-style: none;
+      counter-reset: toc;
+    }
+
+    .toc ol li {
+      counter-increment: toc;
+      margin-bottom: .2rem;
+    }
+
+    .toc ol li a {
+      display: flex;
+      gap: .5rem;
+      font-size: .78rem;
+      color: var(--mid);
+      text-decoration: none;
+      padding: .25rem .4rem;
+      border-radius: 3px;
+      transition: background .15s, color .15s;
+      line-height: 1.4;
+    }
+
+    .toc ol li a::before {
+      content: counter(toc, decimal-leading-zero);
+      font-family: var(--font-mono);
+      font-size: .68rem;
+      color: var(--muted);
+      flex-shrink: 0;
+      margin-top: .05rem;
+    }
+
+    .toc ol li a:hover {
+      background: var(--leaf-vein);
+      color: var(--moss);
+    }
+
+    /* ── Main content ────────────────────────────────────────── */
+    main {
+      padding: 2.5rem 0 5rem;
+      min-width: 0;
+    }
+
+    /* Section spacing */
+    .policy-section {
+      padding-top: 3rem;
+      border-top: 1px solid var(--rule);
+      margin-top: 0;
+    }
+
+    .policy-section:first-child {
+      border-top: none;
+      padding-top: 0;
+    }
+
+    /* Headings */
+    .policy-section h2 {
+      font-family: var(--font-display);
+      font-size: 1.55rem;
+      font-weight: 400;
+      color: var(--moss);
+      line-height: 1.25;
+      margin-bottom: 1rem;
+    }
+
+    .section-num {
+      font-family: var(--font-mono);
+      font-size: .75rem;
+      color: var(--muted);
+      display: block;
+      margin-bottom: .2rem;
+      letter-spacing: .08em;
+    }
+
+    .policy-section h3 {
+      font-family: var(--font-body);
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--ink);
+      margin: 1.75rem 0 .5rem;
+    }
+
+    /* Paragraphs */
+    .policy-section p {
+      color: var(--mid);
+      margin-bottom: .85rem;
+      font-size: .95rem;
+    }
+
+    /* Lists */
+    .policy-section ul,
+    .policy-section ol {
+      padding-left: 1.25rem;
+      margin-bottom: .85rem;
+    }
+
+    .policy-section li {
+      color: var(--mid);
+      font-size: .95rem;
+      margin-bottom: .3rem;
+    }
+
+    .policy-section strong {
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    /* ── Callout boxes ───────────────────────────────────────── */
+    .callout {
+      background: var(--leaf-vein);
+      border-left: 3px solid var(--fern);
+      padding: .9rem 1.1rem;
+      margin: 1rem 0 1.25rem;
+      border-radius: 0 4px 4px 0;
+    }
+
+    .callout p {
+      margin: 0;
+      font-size: .875rem;
+      color: var(--moss);
+    }
+
+    .callout strong { color: var(--moss); }
+
+    .callout-zero {
+      background: #EAF3EA;
+      border-left-color: var(--moss);
+    }
+
+    /* ── Tables ──────────────────────────────────────────────── */
+    .table-wrap {
+      overflow-x: auto;
+      margin: 1rem 0 1.5rem;
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .845rem;
+      min-width: 400px;
+    }
+
+    thead tr {
+      background: var(--moss);
+      color: #fff;
+    }
+
+    thead th {
+      padding: .65rem 1rem;
+      text-align: left;
+      font-weight: 500;
+      font-family: var(--font-mono);
+      font-size: .72rem;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--rule);
+    }
+
+    tbody tr:last-child {
+      border-bottom: none;
+    }
+
+    tbody tr:nth-child(even) {
+      background: rgba(168,192,144,.1);
+    }
+
+    tbody td {
+      padding: .6rem 1rem;
+      color: var(--mid);
+      vertical-align: top;
+      line-height: 1.5;
+    }
+
+    tbody td strong {
+      color: var(--ink);
+    }
+
+    /* ── Mode cards (Section 3) ──────────────────────────────── */
+    .mode-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1.25rem 0;
+    }
+
+    .mode-card {
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      padding: 1.25rem;
+      background: var(--paper);
+    }
+
+    .mode-card.default {
+      border-color: var(--fern);
+      background: #F0F5EC;
+    }
+
+    .mode-card .mode-tag {
+      font-family: var(--font-mono);
+      font-size: .68rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: .4rem;
+      display: block;
+    }
+
+    .mode-card.default .mode-tag { color: var(--fern); }
+
+    .mode-card h4 {
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      font-weight: 400;
+      color: var(--ink);
+      margin-bottom: .65rem;
+    }
+
+    .mode-card ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .mode-card ul li {
+      font-size: .83rem;
+      color: var(--mid);
+      padding: .2rem 0;
+      padding-left: .75rem;
+      position: relative;
+    }
+
+    .mode-card ul li::before {
+      content: '•';
+      position: absolute;
+      left: 0;
+      color: var(--sage);
+      font-size: .75rem;
+    }
+
+    .mode-verdict {
+      font-family: var(--font-mono);
+      font-size: .75rem;
+      margin-top: .85rem;
+      padding-top: .75rem;
+      border-top: 1px solid var(--rule);
+      color: var(--moss);
+      font-weight: 500;
+    }
+
+    /* ── Rights accordion (Section 11) ──────────────────────── */
+    .rights-list {
+      display: flex;
+      flex-direction: column;
+      gap: .5rem;
+      margin-top: 1rem;
+    }
+
+    details {
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      background: var(--paper);
+      overflow: hidden;
+    }
+
+    details[open] {
+      border-color: var(--sage);
+    }
+
+    summary {
+      padding: .85rem 1.1rem;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: .9rem;
+      color: var(--ink);
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      user-select: none;
+    }
+
+    summary::-webkit-details-marker { display: none; }
+
+    summary::after {
+      content: '+';
+      margin-left: auto;
+      font-size: 1.1rem;
+      color: var(--muted);
+      font-weight: 400;
+      transition: transform .2s;
+    }
+
+    details[open] summary::after {
+      content: '−';
+    }
+
+    .right-num {
+      font-family: var(--font-mono);
+      font-size: .7rem;
+      color: var(--muted);
+      background: var(--leaf-vein);
+      padding: .15rem .4rem;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    .details-body {
+      padding: .1rem 1.1rem 1rem;
+      border-top: 1px solid var(--rule);
+    }
+
+    .details-body p {
+      font-size: .875rem;
+      color: var(--mid);
+      margin-top: .75rem;
+      margin-bottom: .4rem;
+    }
+
+    .details-body ul {
+      padding-left: 1.1rem;
+      margin-bottom: 0;
+    }
+
+    .details-body li {
+      font-size: .855rem;
+      color: var(--mid);
+      margin-bottom: .25rem;
+    }
+
+    .how-to {
+      font-size: .8rem;
+      color: var(--muted);
+      font-style: italic;
+      margin-top: .65rem;
+    }
+
+    /* ── Contact card ────────────────────────────────────────── */
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1.25rem 0;
+    }
+
+    .contact-card {
+      background: var(--paper);
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+    }
+
+    .contact-card dt {
+      font-family: var(--font-mono);
+      font-size: .68rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: .25rem;
+    }
+
+    .contact-card dd {
+      font-size: .875rem;
+      color: var(--ink);
+      font-weight: 500;
+    }
+
+    .contact-card dd a {
+      color: var(--fern);
+      text-decoration: none;
+    }
+
+    .contact-card dd a:hover {
+      text-decoration: underline;
+    }
+
+    /* ── Footer ──────────────────────────────────────────────── */
+    footer {
+      background: var(--moss);
+      color: rgba(255,255,255,.6);
+      padding: 2rem var(--gutter);
+      margin-top: 4rem;
+    }
+
+    .footer-inner {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    footer p {
+      font-size: .78rem;
+      line-height: 1.55;
+    }
+
+    footer strong { color: rgba(255,255,255,.85); }
+
+    .footer-disclaimer {
+      font-size: .72rem;
+      font-style: italic;
+      color: rgba(255,255,255,.45);
+      max-width: 400px;
+      text-align: right;
+    }
+
+    /* ── Responsive ──────────────────────────────────────────── */
+    @media (max-width: 700px) {
+      .page {
+        grid-template-columns: 1fr;
+      }
+
+      .toc {
+        position: static;
+        padding: 1.5rem 0 0;
+        border-bottom: 1px solid var(--rule);
+        margin-bottom: 1.5rem;
+      }
+
+      .toc ol {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: .15rem;
+      }
+
+      .mode-cards,
+      .contact-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main" class="skip-link">Skip to main content</a>
+
+  <!-- ── Header ── -->
+  <header>
+    <div class="header-inner">
+      <span class="app-label">HerbaScan · Privacy Policy</span>
+      <h1>Your data stays<br><em>where it belongs.</em></h1>
+      <div class="header-meta">
+        <span>Effective: May 29, 2026</span>
+        <span>Last Updated: June 15, 2026</span>
+        <span>Governed by: Philippine DPA (RA 10173)</span>
+        <span>Governing Entity: HerbaScan Development Team</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Plain-language summary ── -->
+  <div class="summary-bar">
+    <div class="summary-bar-inner">
+      <p>
+        <strong>Plain-language summary:</strong>
+        HerbaScan identifies plants using AI that runs <strong>entirely on your device</strong>.
+        We do not collect, transmit, or store your photos unless you explicitly choose to enable cloud sync.
+        If you create an account, your account information and saved scans are stored securely on Supabase.
+        <strong>We never sell your data. Ever.</strong>
+      </p>
+    </div>
+  </div>
+
+  <!-- ── Body layout ── -->
+  <div class="page">
+
+    <!-- TOC -->
+    <nav class="toc" aria-label="Table of contents">
+      <span class="toc-label">Contents</span>
+      <ol>
+        <li><a href="#s1">Scope and Applicability</a></li>
+        <li><a href="#s2">Who We Are</a></li>
+        <li><a href="#s3">Offline vs. Cloud-Sync Mode</a></li>
+        <li><a href="#s4">Camera and Device Permissions</a></li>
+        <li><a href="#s5">Information We Collect</a></li>
+        <li><a href="#s6">How We Use Your Information</a></li>
+        <li><a href="#s7">Legal Basis for Processing</a></li>
+        <li><a href="#s8">Data Sharing and Third Parties</a></li>
+        <li><a href="#s9">Data Retention</a></li>
+        <li><a href="#s10">Data Security</a></li>
+        <li><a href="#s11">Your Rights (RA 10173)</a></li>
+        <li><a href="#s12">Children's Privacy</a></li>
+        <li><a href="#s13">Policy Changes</a></li>
+        <li><a href="#s14">Contact Us</a></li>
+      </ol>
+    </nav>
+
+    <!-- Main content -->
+    <main id="main">
+
+      <!-- § 1 -->
+      <section class="policy-section" id="s1">
+        <span class="section-num">01</span>
+        <h2>Scope and Applicability</h2>
+        <p>
+          This Privacy Policy applies to all users of the HerbaScan mobile application on any supported
+          platform (Android, iOS, Windows). It describes what personal information we collect, how we collect,
+          use, store, and protect it, and your rights as a data subject under
+          <strong>Republic Act No. 10173 (Philippine Data Privacy Act of 2012)</strong> and its Implementing
+          Rules and Regulations.
+        </p>
+        <p>
+          By installing or using HerbaScan, you accept this Policy. If you do not agree, please uninstall
+          the App.
+        </p>
+      </section>
+
+      <!-- § 2 -->
+      <section class="policy-section" id="s2">
+        <span class="section-num">02</span>
+        <h2>Who We Are — Personal Information Controller</h2>
+        <p>For purposes of the Philippine Data Privacy Act, the <strong>Personal Information Controller (PIC)</strong> is:</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Field</th><th>Details</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Organization</strong></td><td>HerbaScan Development Team</td></tr>
+              <tr><td><strong>Institution</strong></td><td>Lyceum of the Philippines University — Cavite</td></tr>
+              <tr><td><strong>College</strong></td><td>College of Information Technology and Computer Science</td></tr>
+              <tr><td><strong>Nature</strong></td><td>Academic Thesis Research Project</td></tr>
+              <tr><td><strong>Email</strong></td><td><a href="mailto:herbascan.official@gmail.com">herbascan.official@gmail.com</a></td></tr>
+              <tr><td><strong>Address</strong></td><td>Governor's Drive, Manggahan, General Trias City, Cavite, Philippines 4107</td></tr>
+              <tr><td><strong>Data Protection Officer</strong></td><td>Vince Wackie R. Espera</td></tr>
+              <tr><td><strong>DPO Contact</strong></td><td><a href="mailto:vinceespera@gmail.com">vinceespera@gmail.com</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- § 3 -->
+      <section class="policy-section" id="s3">
+        <span class="section-num">03</span>
+        <h2>How the App Works — Offline vs. Cloud-Sync Mode</h2>
+        <p>HerbaScan operates in two distinct modes. <strong>The mode you use determines what data, if any, is processed and stored.</strong></p>
+
+        <div class="mode-cards">
+          <div class="mode-card default">
+            <span class="mode-tag">Default · Primary</span>
+            <h4>Offline Mode</h4>
+            <ul>
+              <li>Photos processed entirely on your device</li>
+              <li>Uses an embedded TFLite MobileNetV2 AI model</li>
+              <li>No image ever leaves your phone</li>
+              <li>Results saved to local SQLite database only</li>
+              <li>No network connection required</li>
+            </ul>
+            <p class="mode-verdict">Zero personal data collected.</p>
+          </div>
+          <div class="mode-card">
+            <span class="mode-tag">Optional · User-Initiated</span>
+            <h4>Cloud-Sync Mode</h4>
+            <ul>
+              <li>Requires creating a HerbaScan account</li>
+              <li>Email + hashed password stored on Supabase</li>
+              <li>Only scans you explicitly choose to save are uploaded</li>
+              <li>Auto-save is <strong>OFF by default</strong></li>
+              <li>Delete your cloud data at any time</li>
+            </ul>
+            <p class="mode-verdict">Only activates when you opt in.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- § 4 -->
+      <section class="policy-section" id="s4">
+        <span class="section-num">04</span>
+        <h2>Camera and Device Permissions</h2>
+
+        <h3>4.1 Camera Permission</h3>
+        <p>Requested solely to allow you to photograph plant specimens for AI-powered identification. The camera activates only when you explicitly initiate a scan.</p>
+        <div class="callout">
+          <p><strong>Image Processing Declaration:</strong> All images captured via the camera are processed locally on-device using an on-device TensorFlow Lite model. No image data is transmitted to HerbaScan servers or any third party as part of the core identification workflow. This applies at all times in Offline Mode.</p>
+        </div>
+        <p>We do <strong>not</strong> take photos without your knowledge, record video, transmit photographs externally (in Offline Mode), or access any image not explicitly selected by you for a scan.</p>
+
+        <h3>4.2 Photo Library / Gallery Permission</h3>
+        <p>Requested only if you choose to select an existing image from your device gallery. The same local-processing guarantee applies.</p>
+
+        <h3>4.3 Storage Permission</h3>
+        <p>Requested on certain Android versions to enable saving scan history to local SQLite storage and exporting scan cards to your device.</p>
+
+        <h3>4.4 Internet / Network Permission</h3>
+        <p>Requested to enable optional cloud sync (Personal Herbarium), synchronization of the plant catalog on launch, and admin-only features. <strong>The core plant identification feature does not require or use an internet connection.</strong></p>
+
+        <h3>4.5 Notification Permission</h3>
+        <p>Requested solely to enable preparation-step timer notifications when using the Preparation Guide feature. Notifications are local and generated on-device. No notification content is transmitted to any server.</p>
+      </section>
+
+      <!-- § 5 -->
+      <section class="policy-section" id="s5">
+        <span class="section-num">05</span>
+        <h2>Information We Collect</h2>
+
+        <h3>5.1 Offline Mode</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Data Type</th><th>Collected?</th><th>Stored Where</th><th>Transmitted?</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Plant scan photographs</td><td>No — processed transiently in RAM, discarded post-inference</td><td>Device RAM only (ephemeral)</td><td><strong>Never</strong></td></tr>
+              <tr><td>Plant identification results</td><td>Only if you save locally</td><td>Local SQLite on device</td><td><strong>Never</strong></td></tr>
+              <tr><td>App usage statistics</td><td>Aggregated, anonymous, on-device only</td><td>Local device storage</td><td><strong>Never</strong></td></tr>
+              <tr><td>Device identifiers</td><td>No</td><td>N/A</td><td><strong>Never</strong></td></tr>
+              <tr><td>Location data</td><td>No</td><td>N/A</td><td><strong>Never</strong></td></tr>
+              <tr><td>Personal identifiers</td><td>No</td><td>N/A</td><td><strong>Never</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>5.2 Cloud-Sync Mode (Account Holders)</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Data Type</th><th>Purpose</th><th>Stored Where</th><th>Retention</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Email address</td><td>Account creation, authentication, OTP verification</td><td>Supabase Auth</td><td>Until account deleted</td></tr>
+              <tr><td>Password (hashed)</td><td>Authentication</td><td>Supabase Auth (bcrypt, never plaintext)</td><td>Until account deleted</td></tr>
+              <tr><td>Account role</td><td>User/admin access control</td><td>Supabase profiles table</td><td>Until account deleted</td></tr>
+              <tr><td>Saved scan records</td><td>Personal Herbarium cloud backup</td><td>Supabase scans table</td><td>Until deleted by user or admin</td></tr>
+              <tr><td>Scan photographs (uploaded)</td><td>Cloud backup of explicitly uploaded images</td><td>Supabase Storage (herbarium-images)</td><td>Until deleted by user or admin</td></tr>
+              <tr><td>User feedback submissions</td><td>App improvement and research analysis</td><td>Supabase user_feedback table</td><td>Until deleted by admin</td></tr>
+              <tr><td>App performance metrics</td><td>Thesis research analysis (anonymized)</td><td>Local device only; optional export by admin</td><td>Session-based</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>5.3 Information We Do NOT Collect — Ever</h3>
+        <div class="callout callout-zero">
+          <p>We explicitly declare that HerbaScan does <strong>not</strong> collect: real-time location or GPS coordinates; contacts, call logs, or SMS data; financial or payment information (the App is free); biometric data; social media credentials; information from other apps; or any data while the App is closed.</p>
+        </div>
+      </section>
+
+      <!-- § 6 -->
+      <section class="policy-section" id="s6">
+        <span class="section-num">06</span>
+        <h2>How We Use Your Information</h2>
+
+        <h3>6.1 Purposes (Cloud-Sync Mode — Account Holders)</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Purpose</th><th>Description</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Authentication</strong></td><td>To verify your identity and maintain secure access to your account</td></tr>
+              <tr><td><strong>Personal Herbarium</strong></td><td>To store and retrieve your saved plant scans across devices</td></tr>
+              <tr><td><strong>Access Control</strong></td><td>To enforce user/admin role-based access to features</td></tr>
+              <tr><td><strong>Account Management</strong></td><td>To allow you to change your email, password, or delete your account</td></tr>
+              <tr><td><strong>App Improvement</strong></td><td>To analyze anonymized usage patterns and feedback</td></tr>
+              <tr><td><strong>Academic Research</strong></td><td>To generate anonymized, aggregated performance metrics for thesis research</td></tr>
+              <tr><td><strong>Security</strong></td><td>To detect and prevent unauthorized access, fraud, or abuse</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>6.2 We Will Never Use Your Data To:</h3>
+        <ul>
+          <li>Sell, rent, or trade your personal information to any third party</li>
+          <li>Send unsolicited commercial marketing communications</li>
+          <li>Build advertising profiles or target you with advertisements</li>
+          <li>Train commercial AI models using your photographs without explicit written consent</li>
+          <li>Share your individual data with government entities, except as required by a valid Philippine court order</li>
+        </ul>
+      </section>
+
+      <!-- § 7 -->
+      <section class="policy-section" id="s7">
+        <span class="section-num">07</span>
+        <h2>Legal Basis for Processing (Philippine DPA — RA 10173)</h2>
+        <p>All processing is conducted in strict compliance with Republic Act No. 10173 and its Implementing Rules and Regulations.</p>
+
+        <h3>7.1 Consent (Section 12(a), RA 10173)</h3>
+        <p>When you create an account, enable cloud sync, or submit user feedback, you provide free, informed, specific, and unambiguous consent to our processing of your data.</p>
+
+        <h3>7.2 Contractual Necessity (Section 12(b), RA 10173)</h3>
+        <p>Processing your account credentials is necessary to provide the authentication and cloud-sync services you have requested.</p>
+
+        <h3>7.3 Legitimate Interests (Section 12(f), RA 10173)</h3>
+        <p>Processing anonymized, aggregated performance and usage metrics is conducted in furtherance of our legitimate academic research interests, provided such processing does not override your fundamental rights and freedoms.</p>
+
+        <h3>7.4 Compliance with Legal Obligations (Section 12(c), RA 10173)</h3>
+        <p>We may process or retain data to the extent required to comply with applicable Philippine law, court orders, or regulatory requirements.</p>
+
+        <div class="callout">
+          <p><strong>Data minimization:</strong> All processing is conducted on a need-to-know basis, limited to the minimum data necessary to fulfill the stated purpose.</p>
+        </div>
+      </section>
+
+      <!-- § 8 -->
+      <section class="policy-section" id="s8">
+        <span class="section-num">08</span>
+        <h2>Data Sharing and Third-Party Disclosure</h2>
+
+        <div class="callout callout-zero">
+          <p><strong>We do not sell, rent, lease, or otherwise commercially transfer your personal data to any third party. This is an absolute policy.</strong></p>
+        </div>
+
+        <h3>8.2 Supabase — Infrastructure Provider</h3>
+        <p>HerbaScan's optional cloud features are powered by <strong>Supabase</strong> (<a href="https://supabase.com" target="_blank" rel="noopener">supabase.com</a>), an open-source Backend-as-a-Service platform.</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Attribute</th><th>Details</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Role</strong></td><td>Sub-processor / infrastructure provider</td></tr>
+              <tr><td><strong>Data processed</strong></td><td>Account credentials, saved scan records, uploaded scan images (Cloud-Sync Mode only)</td></tr>
+              <tr><td><strong>Purpose</strong></td><td>Secure storage and retrieval of cloud-synced data</td></tr>
+              <tr><td><strong>Privacy Policy</strong></td><td><a href="https://supabase.com/privacy" target="_blank" rel="noopener">supabase.com/privacy</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Supabase processes your data solely on our behalf and is contractually prohibited from using your data for its own independent purposes.</p>
+
+        <h3>8.3 Modal — GPU Training Pipeline</h3>
+        <p>HerbaScan's admin training pipeline uses <strong>Modal</strong> (<a href="https://modal.com" target="_blank" rel="noopener">modal.com</a>) for GPU-accelerated AI model retraining. <strong>Modal does not receive or process any end-user personal data or photographs.</strong> The training pipeline uses only pre-approved, anonymized plant imagery curated by the development team.</p>
+
+        <h3>8.4 Academic Institution</h3>
+        <p>As an academic thesis project, aggregated and anonymized performance metrics may be shared with Lyceum of the Philippines University — Cavite faculty and the Integrative Medicine for Alternative Healthcare Systems (INAM) Philippines for thesis research reporting. <strong>No personally identifiable information is included in any academic disclosures.</strong></p>
+
+        <h3>8.5 Law Enforcement and Legal Requirements</h3>
+        <p>We may disclose personal information if required by a valid court order from a Philippine court, a lawful directive from the National Privacy Commission (NPC), or any other applicable law. We will notify you of such disclosures to the extent permitted by law.</p>
+      </section>
+
+      <!-- § 9 -->
+      <section class="policy-section" id="s9">
+        <span class="section-num">09</span>
+        <h2>Data Retention</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Data Category</th><th>Retention Period</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Offline scan data</strong> (local SQLite)</td><td>Retained on your device until you manually delete it or uninstall the App</td></tr>
+              <tr><td><strong>Account information</strong> (email, password hash)</td><td>Retained until you delete your account</td></tr>
+              <tr><td><strong>Uploaded scan records</strong> (Supabase)</td><td>Retained until you delete individual scans or your entire account</td></tr>
+              <tr><td><strong>Uploaded scan photographs</strong> (Supabase Storage)</td><td>Retained until you delete them or your account</td></tr>
+              <tr><td><strong>User feedback</strong></td><td>Retained until deleted by an admin or upon account deletion</td></tr>
+              <tr><td><strong>Anonymized aggregated metrics</strong></td><td>May be retained indefinitely for academic research in non-identifiable form</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Upon account deletion via <strong>Settings → Delete Account</strong>, we will permanently delete your Supabase Auth record, all scan records, uploaded photographs, and your profile record. Some residual anonymized data already incorporated into aggregate research datasets may not be recoverable after deletion.</p>
+      </section>
+
+      <!-- § 10 -->
+      <section class="policy-section" id="s10">
+        <span class="section-num">10</span>
+        <h2>Data Security</h2>
+        <p>We implement reasonable and appropriate technical and organizational measures to protect your personal information, including:</p>
+        <ul>
+          <li><strong>Encryption in Transit:</strong> All data transmitted between the App and Supabase is encrypted using TLS/HTTPS.</li>
+          <li><strong>Encryption at Rest:</strong> Data stored on Supabase is encrypted at rest by Supabase's infrastructure.</li>
+          <li><strong>Password Security:</strong> Passwords are never stored in plaintext. Supabase Auth uses bcrypt hashing.</li>
+          <li><strong>Row-Level Security (RLS):</strong> Supabase database tables are protected by RLS policies ensuring users can only access their own data.</li>
+          <li><strong>Role-Based Access Control:</strong> Admin-level access is restricted to authorized accounts verified via the <code>is_admin()</code> function.</li>
+          <li><strong>6-Digit OTP Authentication:</strong> Account verification and password reset use time-limited OTPs to prevent link-scanner vulnerabilities.</li>
+          <li><strong>Offline-First Architecture:</strong> Because core functionality is offline, your plant photographs are never exposed to network-layer security risks during identification.</li>
+        </ul>
+        <p>No method of electronic transmission or storage is 100% secure. In the event of a data breach, we will notify you and the NPC in accordance with RA 10173 and NPC Circular No. 16-03.</p>
+      </section>
+
+      <!-- § 11 -->
+      <section class="policy-section" id="s11">
+        <span class="section-num">11</span>
+        <h2>Your Rights Under the Philippine Data Privacy Act (RA 10173)</h2>
+        <p>These rights apply to data processed in Cloud-Sync Mode (account holders). No personal data is processed in Offline Mode.</p>
+
+        <div class="rights-list">
+          <details>
+            <summary><span class="right-num">§ 16(a)</span> Right to Be Informed</summary>
+            <div class="details-body">
+              <p>You have the right to know whether your personal data is being processed, the source and purposes of processing, and the identity of the Personal Information Controller.</p>
+              <p class="how-to">How we fulfill this: This Privacy Policy is the primary fulfillment, accessible within the App under Settings → Privacy Policy.</p>
+            </div>
+          </details>
+
+          <details>
+            <summary><span class="right-num">§ 16(b)</span> Right to Object</summary>
+            <div class="details-body">
+              <p>You have the right to object to the processing of your personal data, including processing for direct marketing, automated profiling, or any other purpose not clearly disclosed.</p>
+              <p class="how-to">How to exercise: Contact us using the details in Section 14. Upon receipt of a valid objection, we will cease processing unless we can demonstrate compelling legitimate grounds.</p>
+            </div>
+          </details>
+
+          <details>
+            <summary><span class="right-num">§ 16(c)</span> Right to Access</summary>
+            <div class="details-body">
+              <p>You have the right to reasonable access to the contents of your personal data, the sources from which it was obtained, the purposes for which it is being processed, and the identities of any third parties to whom it has been disclosed.</p>
+              <p class="how-to">How to exercise: Submit a written request via Section 14. We will respond within 15 business days.</p>
+            </div>
+          </details>
+
+          <details>
+            <summary><span class="right-num">§ 16(d)</span> Right to Rectification</summary>
+            <div class="details-body">
+              <p>You have the right to dispute inaccurate or incomplete personal data and request correction without unreasonable delay.</p>
+              <p class="how-to">How to exercise: Update your email directly via Settings → Change Email. For other corrections, contact us via Section 14.</p>
+            </div>
+          </details>
+
+          <details>
+            <summary><span class="right-num">§ 16(e)</span> Right to Erasure or Blocking</summary>
+            <div class="details-body">
+              <p>You have the right to request deletion or blocking of your personal data where the data is incomplete, outdated, false, no longer necessary, or where you withdraw consent.</p>
+              <p class="how-to">How to exercise: Delete your account via Settings → Delete Account, which triggers automatic deletion from Supabase. For manual requests, contact us via Section 14.</p>
+            </div>
+          </details>
+
+          <details>
+            <summary><span class="right-num">§ 18</span> Right to Data Portability</summary>
+            <div class="details-body">
+              <p>You have the right to obtain a copy of your personal data in an electronic or structured format where technically feasible.</p>
+              <p class="how-to">How to exercise: Contact us via Section 14 with a portability request. We will provide your data in JSON format within 30 business days.</p>
+            </div>
+          </details>
+
+          <details>
+            <summary><span class="right-num">§ 16(f)</span> Right to Damages</summary>
+            <div class="details-body">
+              <p>You have the right to be compensated for any damages sustained due to inaccurate, incomplete, outdated, false, unlawfully obtained, or unauthorized use of your personal data, in accordance with applicable law.</p>
+            </div>
+          </details>
+
+          <details>
+            <summary>Right to Lodge a Complaint</summary>
+            <div class="details-body">
+              <p>If you believe your data privacy rights have been violated, you may file a complaint with the:</p>
+              <p><strong>National Privacy Commission (NPC) of the Philippines</strong><br>
+              Email: <a href="mailto:info@privacy.gov.ph">info@privacy.gov.ph</a><br>
+              Website: <a href="https://www.privacy.gov.ph" target="_blank" rel="noopener">www.privacy.gov.ph</a><br>
+              Address: 5th Floor Delegation Building, PICC Complex, Pasay City, Philippines</p>
+              <p>We encourage you to contact us first (Section 14) before filing an NPC complaint.</p>
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <!-- § 12 -->
+      <section class="policy-section" id="s12">
+        <span class="section-num">12</span>
+        <h2>Children's Privacy</h2>
+        <p>HerbaScan is not directed at children under <strong>thirteen (13)</strong> years old. We do not knowingly collect personal data from children under 13.</p>
+        <p>If you are a parent or guardian and believe your child has provided personal information without your consent, please contact us immediately at the details in Section 14. We will promptly delete any such information.</p>
+        <p>Users between the ages of 13 and 18 should review this Policy with a parent or guardian before creating an account or enabling cloud-sync features.</p>
+      </section>
+
+      <!-- § 13 -->
+      <section class="policy-section" id="s13">
+        <span class="section-num">13</span>
+        <h2>Changes to This Privacy Policy</h2>
+        <p>We may update this Policy from time to time to reflect changes in the App's features, applicable law, or our data practices. When we make material changes, we will:</p>
+        <ul>
+          <li>Update the <strong>"Last Updated"</strong> date at the top of this Policy</li>
+          <li>Display a notification within the App informing you of the change</li>
+          <li>For significant changes affecting your rights, request renewed consent where required by RA 10173</li>
+        </ul>
+        <p>Your continued use of the App after the effective date of the revised Policy constitutes your acceptance of the updated terms. Previous versions are available upon written request.</p>
+      </section>
+
+      <!-- § 14 -->
+      <section class="policy-section" id="s14">
+        <span class="section-num">14</span>
+        <h2>Contact Us and How to Exercise Your Rights</h2>
+        <p>For any privacy-related concerns, requests to exercise your data subject rights, questions about this Policy, or to report a suspected data breach:</p>
+
+        <div class="contact-grid">
+          <dl class="contact-card">
+            <dt>Institution</dt>
+            <dd>Lyceum of the Philippines University — Cavite</dd>
+          </dl>
+          <dl class="contact-card">
+            <dt>College</dt>
+            <dd>College of Information Technology and Computer Science</dd>
+          </dl>
+          <dl class="contact-card">
+            <dt>Primary Email</dt>
+            <dd><a href="mailto:herbascan.official@gmail.com">herbascan.official@gmail.com</a></dd>
+          </dl>
+          <dl class="contact-card">
+            <dt>Alternative Email</dt>
+            <dd><a href="mailto:backenserverie@gmail.com">backenserverie@gmail.com</a></dd>
+          </dl>
+          <dl class="contact-card" style="grid-column: 1 / -1">
+            <dt>Mailing Address</dt>
+            <dd>Lyceum of the Philippines University — Cavite, Governor's Drive, Manggahan, General Trias City, Cavite 4107, Philippines</dd>
+          </dl>
+          <dl class="contact-card" style="grid-column: 1 / -1">
+            <dt>Response Time</dt>
+            <dd>Within 15 business days for access, rectification, and erasure requests</dd>
+          </dl>
+        </div>
+
+        <p>When submitting a request, please include: (1) your full name and the email address associated with your account; (2) a clear description of your request and the right you wish to exercise; and (3) any information that helps us verify your identity. We reserve the right to verify your identity before processing any data subject rights request.</p>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ── Footer ── -->
+  <footer>
+    <div class="footer-inner">
+      <p>
+        <strong>HerbaScan</strong><br>
+        College of Information Technology and Computer Science<br>
+        Lyceum of the Philippines University — Cavite<br>
+        Effective: May 29, 2026 &nbsp;&middot;&nbsp; Updated: June 15, 2026
+      </p>
+      <p class="footer-disclaimer">
+        This App is for educational and informational purposes only. Not a medical device. Not a substitute for professional medical advice. Developed in partnership with the Integrative Medicine for Alternative Healthcare Systems (INAM) Philippines.
+      </p>
+    </div>
+  </footer>
+
+</body>
+</html>
