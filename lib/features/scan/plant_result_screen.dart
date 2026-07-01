@@ -430,7 +430,7 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
                     ),
                   ),
                   _buildDOHBadge(
-                      context, resolvedPlant?.isDOHApproved ?? false),
+                      context, resolvedPlant?.isDOHApproved ?? false, resolvedPlant),
                 ],
               ),
               if (showSafetyFirst) ...[
@@ -646,7 +646,7 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
   }
 
   /// ROADMAP B 2.2: DOH Verified (green) or Scientifically Documented (amber); tappable → info sheet.
-  Widget _buildDOHBadge(BuildContext context, bool isDOHApproved) {
+  Widget _buildDOHBadge(BuildContext context, bool isDOHApproved, Plant? plant) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final bgColor = isDOHApproved
@@ -667,7 +667,7 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
           borderRadius: BorderRadius.circular(100),
           child: InkWell(
             borderRadius: BorderRadius.circular(100),
-            onTap: () => _showDOHInfoSheet(innerContext, isDOHApproved),
+            onTap: () => _showDOHInfoSheet(innerContext, isDOHApproved, plant),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
@@ -696,8 +696,8 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
     );
   }
 
-  /// ROADMAP B 2.3: Bottom sheet explaining DOH vs Scientifically Documented.
-  void _showDOHInfoSheet(BuildContext context, bool isDOHApproved) {
+  /// ROADMAP B 2.3: Bottom sheet explaining DOH vs Scientifically Documented, with plant-specific references.
+  void _showDOHInfoSheet(BuildContext context, bool isDOHApproved, Plant? plant) {
     final theme = Theme.of(context);
     final title = isDOHApproved
         ? AppLocalizations.of(context).dohVerifiedPlant
@@ -705,7 +705,11 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
     final body = isDOHApproved
         ? AppLocalizations.of(context).dohVerifiedBody
         : AppLocalizations.of(context).scientificallyDocumentedBody;
-    final footer = AppLocalizations.of(context).source;
+
+    // Get plant-specific references from the Supabase-synced data.
+    // Falls back to the general source line if none available.
+    final plantRefs = plant?.references ?? [];
+    final hasPlantRefs = plantRefs.isNotEmpty;
 
     showModalBottomSheet(
       context: context,
@@ -713,56 +717,111 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
       useRootNavigator: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-        decoration: BoxDecoration(
-          color: theme.scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(2),
+      builder: (sheetContext) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (_, scrollController) => Container(
+          decoration: BoxDecoration(
+            color: theme.scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: ListView(
+            controller: scrollController,
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+            children: [
+              // Drag handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            Icon(
-              isDOHApproved ? Icons.verified_rounded : Icons.science_rounded,
-              size: 40,
-              color: isDOHApproved ? AppTheme.safeGreen : AppTheme.warningAmber,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
+              const SizedBox(height: 20),
+              Icon(
+                isDOHApproved ? Icons.verified_rounded : Icons.science_rounded,
+                size: 40,
+                color: isDOHApproved ? AppTheme.safeGreen : AppTheme.warningAmber,
               ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              body,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                height: 1.5,
+              const SizedBox(height: 12),
+              Text(
+                title,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              footer,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                fontStyle: FontStyle.italic,
+              const SizedBox(height: 12),
+              Text(
+                body,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  height: 1.5,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 24),
+              // Plant-specific references section
+              if (hasPlantRefs) ...[
+                Row(
+                  children: [
+                    Icon(
+                      Icons.menu_book_rounded,
+                      size: 18,
+                      color: isDOHApproved ? AppTheme.safeGreen : AppTheme.warningAmber,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'References',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                ...plantRefs.asMap().entries.map((entry) {
+                  final idx = entry.key + 1;
+                  final ref = entry.value;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '$idx. ',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            ref,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              height: 1.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ] else ...[
+                Text(
+                  AppLocalizations.of(context).source,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
