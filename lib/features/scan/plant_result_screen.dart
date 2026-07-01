@@ -660,30 +660,39 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
     final label = isDOHApproved ? AppLocalizations.of(context).dohVerified : AppLocalizations.of(context).scientificallyDocumented;
     final icon = isDOHApproved ? Icons.verified_rounded : Icons.science_rounded;
 
-    return GestureDetector(
-      onTap: () => _showDOHInfoSheet(context, isDOHApproved),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
+    return Builder(
+      builder: (innerContext) {
+        return Material(
           color: bgColor,
           borderRadius: BorderRadius.circular(100),
-          border: Border.all(color: fgColor.withValues(alpha: 0.5)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: fgColor),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: theme.textTheme.labelSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: fgColor,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(100),
+            onTap: () => _showDOHInfoSheet(innerContext, isDOHApproved),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(100),
+                border: Border.all(color: fgColor.withValues(alpha: 0.5)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, size: 16, color: fgColor),
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: fgColor,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -701,6 +710,8 @@ class _PlantResultScreenState extends State<PlantResultScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useRootNavigator: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),

@@ -12,7 +12,7 @@ import 'package:herbascan/core/models/scan_result.dart';
 class DatabaseService {
   static Database? _database;
   static const String _databaseName = 'herbascan.db';
-  static const int _databaseVersion = 8;
+  static const int _databaseVersion = 9;
 
   // Table names
   static const String _plantsTable = 'plants';
@@ -101,6 +101,7 @@ class DatabaseService {
         morphology TEXT NOT NULL,
         ecology TEXT NOT NULL,
         habitat TEXT NOT NULL,
+        "references" TEXT NOT NULL DEFAULT '[]',
         image_path TEXT NOT NULL,
         image_url TEXT,
         created_at TEXT NOT NULL,
@@ -359,6 +360,15 @@ class DatabaseService {
         print('ℹ️ needs_strict_contraindications may already exist: $e');
       }
     }
+    if (oldVersion < 9) {
+      try {
+        await db.execute(
+            'ALTER TABLE $_plantsTable ADD COLUMN "references" TEXT NOT NULL DEFAULT "[]"');
+        print('✅ Added references to plants');
+      } catch (e) {
+        print('ℹ️ references may already exist: $e');
+      }
+    }
   }
 
   // Plant operations
@@ -382,6 +392,7 @@ class DatabaseService {
       'morphology': plant.morphology,
       'ecology': plant.ecology,
       'habitat': plant.habitat,
+      'references': jsonEncode(plant.references),
       'image_path': plant.imagePath,
       'image_url': plant.imageUrl,
       'created_at': plant.createdAt.toIso8601String(),
@@ -819,6 +830,9 @@ class DatabaseService {
       medicinalUses: medicinalUses,
       preparationMethods: preparationMethods,
       safetyWarnings: [], // TODO: synced from Supabase or safety table
+      references: (map['references'] != null && map['references'].toString().isNotEmpty)
+          ? List<String>.from(jsonDecode(map['references']))
+          : [],
       imagePath: map['image_path'],
       imageUrl: map['image_url'] as String?,
       createdAt: DateTime.parse(map['created_at']),

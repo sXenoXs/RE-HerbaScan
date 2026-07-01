@@ -74,6 +74,7 @@ class _SelectPlantSheetState extends State<SelectPlantSheet> {
                   medicinalUses: const [],
                   preparationMethods: const [],
                   safetyWarnings: const [],
+                  references: const [],
                   imagePath: '',
                   imageUrl: e.imageUrl,
                   createdAt: DateTime.now(),

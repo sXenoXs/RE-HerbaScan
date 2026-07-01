@@ -202,6 +202,7 @@ class AppLocalizations {
       _localizedValues[locale.languageCode]!['effectiveness']!;
   String get activeCompounds =>
       _localizedValues[locale.languageCode]!['activeCompounds']!;
+  String get plantReferences => _localizedValues[locale.languageCode]!['plantReferences']!;
   String get consultHealthcareDisclaimer =>
       _localizedValues[locale.languageCode]!['consultHealthcareDisclaimer']!;
   String get startPreparationFocusMode =>
@@ -891,6 +892,7 @@ class AppLocalizations {
       'warnings': 'Warnings',
       'effectiveness': 'Effectiveness',
       'activeCompounds': 'Active Compounds',
+      'plantReferences': 'Plant References',
       'consultHealthcareDisclaimer':
           'Always consult healthcare professionals before using any herbal remedies',
       'startPreparationFocusMode': 'Start Preparation (Focus Mode)',
@@ -960,6 +962,7 @@ class AppLocalizations {
       'plantCount': 'plants',
       'noResultsFound': 'No plants found',
       'tryDifferentSearch': 'Try a different search term',
+      'searchHistory': 'Search History',
       'scanHistory': 'Scan History',
       'noScansYet': 'No scans yet',
       'startScanning': 'Start by scanning your first plant!',
@@ -1334,7 +1337,7 @@ class AppLocalizations {
       'scientificallyDocumentedPlant': 'Scientifically Documented Plant',
       'dohVerifiedBody': 'This plant is officially endorsed by the Philippine Department of Health under Administrative Order No. 12, series of 1997, and is included in the list of clinically validated herbal medicines (Republic Act No. 8423 — TAMA).',
       'scientificallyDocumentedBody': 'This plant is not on the DOH approved list but is included in HerbaScan based on peer-reviewed literature and Philippine Herbal Pharmacopeia (PITAHC) references.',
-      'sourceDOH': 'Source: Dept. of Health Admin. Order No. 12, s. 1997 · Republic Act No. 8423 (TAMA, 1997) · Philippine Herbal Pharmacopeia (PITAHC)',
+      'source': 'Source: Dept. of Health Admin. Order No. 12, s. 1997 · Republic Act No. 8423 (TAMA, 1997) · Philippine Herbal Pharmacopeia (PITAHC)',
       'didWeGetThisRight': 'Did we get this right? Help our research.',
       'thankYou': 'Thank You!',
       'plantNotRecognized': 'Plant Not Recognized',
@@ -1573,6 +1576,7 @@ class AppLocalizations {
       'warnings': 'Mga Babala',
       'effectiveness': 'Pagiging Epektibo',
       'activeCompounds': 'Mga Aktibong Sangkap',
+      'plantReferences': 'Mga Sanggunian ng Halaman',
       'consultHealthcareDisclaimer':
           'Laging kumonsulta sa mga propesyonal sa kalusugan bago gumamit ng anumang halamang gamot',
       'startPreparationFocusMode': 'Simulan ang Paghahanda (Focus Mode)',
@@ -1642,6 +1646,7 @@ class AppLocalizations {
       'plantCount': 'halaman',
       'noResultsFound': 'Walang nahanap na halaman',
       'tryDifferentSearch': 'Subukan ang ibang search term',
+      'searchHistory': 'Kasaysayan ng Paghahanap',
       'scanHistory': 'Kasaysayan ng Scan',
       'noScansYet': 'Wala pang scan',
       'startScanning': 'Magsimula sa pag-scan ng iyong unang halaman!',
@@ -2016,8 +2021,8 @@ class AppLocalizations {
       'dohVerifiedPlant': 'Halamang Na-verify ng DOH',
       'scientificallyDocumentedPlant': 'Halamang Dokumentado ng Siyensya',
       'dohVerifiedBody': 'Ang halamang ito ay opisyal na ineendorso ng Department of Health ng Pilipinas sa ilalim ng Administrative Order No. 12, serye ng 1997, at kasama sa listahan ng mga klinikal na balidong halamang gamot (Republic Act No. 8423 — TAMA).',
-      'scientificallyDocumentedBody': 'Ang halamang ito ay wala sa listahan ng aprubado ng DOH ngunit kasama sa HerbaScan batay sa peer-reviewed na literatura at mga sanggunian ng Philippine Herbal Pharmacopeia (PITAHC).',
-      'sourceDOH': 'Pinagmulan: Dept. of Health Admin. Order No. 12, s. 1997 · Republic Act No. 8423 (TAMA, 1997) · Philippine Herbal Pharmacopeia (PITAHC)',
+      'scientificallyDocumentedBody': 'Ang halamang ito ay wala sa aprubadong listahan ng DOH ngunit isinama sa HerbaScan batay sa peer-reviewed literature at mga sanggunian ng Philippine Herbal Pharmacopeia (PITAHC).',
+      'source': 'Pinagmulan: Dept. of Health Admin. Order No. 12, s. 1997 · Republic Act No. 8423 (TAMA, 1997) · Philippine Herbal Pharmacopeia (PITAHC)',
       'didWeGetThisRight': 'Tama ba ito? Tulungan ang aming pananaliksik.',
       'thankYou': 'Salamat!',
       'plantNotRecognized': 'Hindi Nakilala ang Halaman',

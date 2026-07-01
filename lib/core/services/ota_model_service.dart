@@ -81,10 +81,8 @@ class OtaModelService {
   // ── Private helpers ───────────────────────────────────────────────────────
 
   Future<void> _checkAndUpdate() async {
-    // 1. Try model_versions table first (versioned releases).
-    // 2. Fall back to live-models bucket (direct upload workflow).
-    final Map<String, dynamic>? remote =
-        await _fetchFromVersionsTable() ?? await _fetchFromLiveModelsBucket();
+    // Only use model_versions table (versioned releases with accuracy validation).
+    final Map<String, dynamic>? remote = await _fetchFromVersionsTable();
 
     if (remote == null) {
       debugPrint('ℹ️ [OtaModelService] No remote model source found.');
@@ -125,15 +123,24 @@ class OtaModelService {
     try {
       final response = await Supabase.instance.client
           .from('model_versions')
-          .select('version, tflite_url, class_indices_url, cam_weights_url')
+          .select('version, tflite_url, class_indices_url, cam_weights_url, val_accuracy')
           .eq('is_active', true)
           .order('created_at', ascending: false)
           .limit(1)
           .maybeSingle();
 
       if (response == null) return null;
-      debugPrint('📋 [OtaModelService] Found model_versions row '
-          '(version: ${response['version']})');
+      
+      // Reject incomplete or garbage models
+      final valAccuracy = (response['val_accuracy'] as num?)?.toDouble();
+      if (valAccuracy == null || valAccuracy < 0.50) {
+        debugPrint('⚠️ [OtaModelService] Model version ${response['version']} rejected due to low/null accuracy: $valAccuracy');
+        await clearOtaModels();
+        return null;
+      }
+
+      debugPrint('📋 [OtaModelService] Found valid model_versions row '
+          '(version: ${response['version']}, accuracy: $valAccuracy)');
       return response;
     } catch (e) {
       debugPrint(
@@ -272,6 +279,19 @@ class OtaModelService {
     return await File('${_modelsDir!.path}/$_tfliteFileName').exists() &&
         await File('${_modelsDir!.path}/$_classIndicesFileName').exists() &&
         await File('${_modelsDir!.path}/$_camWeightsFileName').exists();
+  }
+
+  /// Manually clears all OTA models and reverts to base models
+  Future<void> clearOtaModels() async {
+    debugPrint('🗑️ [OtaModelService] Clearing all OTA models...');
+    if (_modelsDir != null && await _modelsDir!.exists()) {
+      await _modelsDir!.delete(recursive: true);
+      await _modelsDir!.create(recursive: true);
+    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_prefKey);
+    _otaAvailable = false;
+    debugPrint('🗑️ [OtaModelService] OTA models cleared successfully.');
   }
 
   Future<void> _cleanupTempFiles() async {

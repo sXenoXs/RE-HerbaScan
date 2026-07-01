@@ -131,6 +131,7 @@ class _AdminPlantMetadataScreenState extends State<AdminPlantMetadataScreen> {
       medicinalUses: const [],
       preparationMethods: const [],
       safetyWarnings: const [],
+      references: const [],
       imagePath: '',
       imageUrl: e.imageUrl,
       createdAt: DateTime.now(),

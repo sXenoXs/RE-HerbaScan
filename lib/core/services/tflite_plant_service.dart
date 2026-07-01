@@ -117,19 +117,47 @@ class TflitePlantService {
   Future<void> _loadLabels() async {
     print("   📋 Loading labels from: $labelPath");
     try {
+      // 1. Always load base labels first
+      final String baseLabelData = await rootBundle.loadString(labelPath);
+      final Map<String, dynamic> baseJsonMap = json.decode(baseLabelData);
+      
+      // 2. Load OTA labels if available
+      Map<String, dynamic> otaJsonMap = {};
       final otaClassIndicesPath = OtaModelService.instance.classIndicesPath;
-      final String labelData = otaClassIndicesPath != null
-          ? await File(otaClassIndicesPath).readAsString()
-          : await rootBundle.loadString(labelPath);
-      print("   📋 Label data loaded: ${labelData.length} characters");
-      final Map<String, dynamic> jsonMap = json.decode(labelData);
-      print("   📋 Parsed ${jsonMap.length} labels");
-      _labels = List<String>.filled(jsonMap.length, 'Unknown');
-      jsonMap.forEach((name, index) {
+      if (otaClassIndicesPath != null) {
+        try {
+          final String otaLabelData = await File(otaClassIndicesPath).readAsString();
+          otaJsonMap = json.decode(otaLabelData);
+          print("   📋 OTA Label data loaded: ${otaLabelData.length} characters");
+        } catch (e) {
+          print("   ⚠️ Failed to load OTA labels: $e");
+        }
+      }
+
+      // 3. Find max index to size the list properly
+      int maxIndex = -1;
+      baseJsonMap.forEach((name, index) {
+        if (index is int && index > maxIndex) maxIndex = index;
+      });
+      otaJsonMap.forEach((name, index) {
+        if (index is int && index > maxIndex) maxIndex = index;
+      });
+      
+      final requiredLength = maxIndex >= 0 ? maxIndex + 1 : 0;
+      _labels = List<String>.filled(requiredLength, 'Unknown');
+      
+      // 4. Populate array (both old and new indices will map to their names)
+      baseJsonMap.forEach((name, index) {
         if (index is int && index < _labels!.length) {
           _labels![index] = name;
         }
       });
+      otaJsonMap.forEach((name, index) {
+        if (index is int && index < _labels!.length) {
+          _labels![index] = name;
+        }
+      });
+      
       print("    Labels loaded: ${_labels!.length} labels");
       print("    First 5 labels: ${_labels!.take(5).toList()}");
     } catch (e, stackTrace) {
@@ -244,26 +272,7 @@ class TflitePlantService {
             final featureTensor = _mobilenetv2Interpreter!.getOutputTensor(i);
             final featureShape = featureTensor.shape;
             // Create 4D buffer for feature maps [batch, H, W, C]
-            if (featureShape.length == 4) {
-              final batch = featureShape[0];
-              final height = featureShape[1];
-              final width = featureShape[2];
-              final channels = featureShape[3];
-              final featureBuffer = List.generate(
-                batch,
-                (_) => List.generate(
-                  height,
-                  (_) => List.generate(
-                    width,
-                    (_) => List.filled(channels, 0.0),
-                  ),
-                ),
-              );
-              outputMap[i] = featureBuffer;
-            } else {
-              final featureSize = featureShape.fold(1, (a, b) => a * b);
-              outputMap[i] = List.filled(featureSize, 0.0);
-            }
+            outputMap[i] = _createBuffer(featureShape);
           }
         }
 
@@ -396,21 +405,7 @@ class TflitePlantService {
         } else {
           final featureTensor = _mobilenetv2Interpreter!.getOutputTensor(i);
           final featureShape = featureTensor.shape;
-          if (featureShape.length == 4) {
-            outputMap[i] = List.generate(
-              featureShape[0],
-              (_) => List.generate(
-                featureShape[1],
-                (_) => List.generate(
-                  featureShape[2],
-                  (_) => List.filled(featureShape[3], 0.0),
-                ),
-              ),
-            );
-          } else {
-            final featureSize = featureShape.fold(1, (a, b) => a * b);
-            outputMap[i] = List.filled(featureSize, 0.0);
-          }
+          outputMap[i] = _createBuffer(featureShape);
         }
       }
 
@@ -423,12 +418,15 @@ class TflitePlantService {
 
       final results = <PlantPrediction>[];
       for (final entry in indexed.take(k)) {
-        if (entry.key >= 0 && entry.key < _labels!.length) {
-          results.add(PlantPrediction(
-              label: _labels![entry.key], confidence: entry.value));
-        }
+        final labelName = (entry.key >= 0 && entry.key < _labels!.length)
+            ? _labels![entry.key]
+            : 'Unknown';
+        results.add(PlantPrediction(label: labelName, confidence: entry.value));
       }
-      print(" predictTopK: returning ${results.length} predictions");
+      print(" predictTopK: returning ${results.length} predictions:");
+      for (final r in results) {
+        print("   - ${r.label}: ${(r.confidence * 100).toStringAsFixed(2)}%");
+      }
       return results;
     } catch (e, st) {
       print(" predictTopK error: $e");
@@ -476,5 +474,29 @@ class TflitePlantService {
     _mobilenetv2Interpreter = null;
     _labels = null;
     _lastLoadError = null;
+  }
+
+  /// Creates an optimally nested list structure based on the tensor shape required by tflite_flutter.
+  Object _createBuffer(List<int> shape) {
+    if (shape.isEmpty) return 0.0;
+    if (shape.length == 1) return List.filled(shape[0], 0.0);
+    if (shape.length == 2) {
+      return List.generate(shape[0], (_) => List.filled(shape[1], 0.0));
+    }
+    if (shape.length == 3) {
+      return List.generate(shape[0], (_) => List.generate(shape[1], (_) => List.filled(shape[2], 0.0)));
+    }
+    if (shape.length == 4) {
+      return List.generate(
+        shape[0],
+        (_) => List.generate(
+          shape[1],
+          (_) => List.generate(shape[2], (_) => List.filled(shape[3], 0.0)),
+        ),
+      );
+    }
+    // Fallback for > 4 dimensions (should be extremely rare for our models)
+    final size = shape.fold(1, (a, b) => a * b);
+    return List.filled(size, 0.0);
   }
 }

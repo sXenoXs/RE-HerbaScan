@@ -250,6 +250,7 @@ class _AdminPlantCatalogEditorScreenState
           medicinalUses: _plant.medicinalUses,
           preparationMethods: _plant.preparationMethods,
           safetyWarnings: _plant.safetyWarnings,
+          references: _plant.references,
           imagePath: _plant.imagePath,
           imageUrl: url,
           createdAt: _plant.createdAt,
@@ -511,6 +512,52 @@ class _AdminPlantCatalogEditorScreenState
             maxLines: 6,
             minLines: 2,
           ),
+          const SizedBox(height: 20),
+          Text('References (APA 7th Edition)',
+              style: theme.textTheme.titleSmall
+                  ?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          ...List.generate(_plant.references.length, (i) {
+            return Dismissible(
+              key: Key('ref_$i'),
+              direction: DismissDirection.endToStart,
+              background: Container(
+                color: AppTheme.errorColor.withValues(alpha: 0.1),
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.only(right: 16),
+                child: const Icon(Icons.delete_outline,
+                    color: AppTheme.errorColor),
+              ),
+              onDismissed: (_) {
+                setState(() {
+                  final list = List<String>.from(_plant.references)..removeAt(i);
+                  _plant = _copyWith(references: list);
+                });
+              },
+              child: _RegionNameRowWidget(
+                value: _plant.references[i],
+                onChanged: (v) {
+                  final list = List<String>.from(_plant.references);
+                  list[i] = v;
+                  setState(() => _plant = _copyWith(references: list));
+                },
+                onRemove: () {
+                  setState(() {
+                    final list = List<String>.from(_plant.references)..removeAt(i);
+                    _plant = _copyWith(references: list);
+                  });
+                },
+              ),
+            );
+          }),
+          TextButton.icon(
+            onPressed: () => setState(() {
+              final list = List<String>.from(_plant.references)..add('');
+              _plant = _copyWith(references: list);
+            }),
+            icon: const Icon(Icons.add),
+            label: const Text('Add reference'),
+          ),
         ],
       ),
     );
@@ -530,6 +577,7 @@ class _AdminPlantCatalogEditorScreenState
     String? habitat,
     List<MedicinalUse>? medicinalUses,
     List<PreparationMethod>? preparationMethods,
+    List<String>? references,
   }) {
     return Plant(
       id: _plant.id,
@@ -547,6 +595,7 @@ class _AdminPlantCatalogEditorScreenState
       medicinalUses: medicinalUses ?? _plant.medicinalUses,
       preparationMethods: preparationMethods ?? _plant.preparationMethods,
       safetyWarnings: _plant.safetyWarnings,
+      references: references ?? _plant.references,
       imagePath: _plant.imagePath,
       imageUrl: _plant.imageUrl,
       createdAt: _plant.createdAt,

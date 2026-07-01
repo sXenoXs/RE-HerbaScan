@@ -122,6 +122,17 @@ class CatalogSyncService {
             : DateTime.now();
         final createdAt = updatedAt;
 
+        List<String> references = [];
+        final rawRefs = row['references'];
+        if (rawRefs is List) {
+          references = rawRefs.map((e) => e.toString()).toList();
+        } else if (rawRefs is String && rawRefs.isNotEmpty) {
+          try {
+            final decoded = jsonDecode(rawRefs);
+            if (decoded is List) references = decoded.map((e) => e.toString()).toList();
+          } catch (_) {}
+        }
+
         final plant = Plant(
           id: plantId,
           commonName: row['common_name'] as String? ?? '',
@@ -138,6 +149,7 @@ class CatalogSyncService {
           medicinalUses: medicinalUses,
           preparationMethods: preparationMethods,
           safetyWarnings: [],
+          references: references,
           imagePath: imagePath,
           imageUrl: row['image_url'] as String?,
           createdAt: createdAt,
@@ -359,6 +371,17 @@ class CatalogSyncService {
           ? DateTime.tryParse(lastUpdated.toString()) ?? DateTime.now()
           : DateTime.now();
 
+      List<String> references = [];
+      final rawRefs = row['references'];
+      if (rawRefs is List) {
+        references = rawRefs.map((e) => e.toString()).toList();
+      } else if (rawRefs is String && rawRefs.isNotEmpty) {
+        try {
+          final decoded = jsonDecode(rawRefs);
+          if (decoded is List) references = decoded.map((e) => e.toString()).toList();
+        } catch (_) {}
+      }
+
       final plant = Plant(
         id: plantId,
         commonName: row['common_name'] as String? ?? '',
@@ -375,6 +398,7 @@ class CatalogSyncService {
         medicinalUses: medicinalUses,
         preparationMethods: preparationMethods,
         safetyWarnings: [],
+        references: references,
         imagePath: imagePath,
         imageUrl: row['image_url'] as String?,
         createdAt: updatedAt,

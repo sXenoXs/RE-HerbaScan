@@ -259,6 +259,7 @@ class _AdminNewPlantWizardState extends State<AdminNewPlantWizard> {
           .toList(),
       preparationMethods: [],
       safetyWarnings: [],
+      references: [],
       imagePath: '',
       imageUrl: null,
       createdAt: DateTime.now(),

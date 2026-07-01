@@ -197,6 +197,11 @@ class PlantDataService {
         'Consult healthcare provider before use if taking other medications',
         'Not for prolonged use (>2 weeks) without medical supervision',
       ],
+      references: [
+        'Department of Health. (1997). Traditional and Alternative Medicine Act (TAMA) of 1997 (Republic Act No. 8423). Republic of the Philippines. https://pitahc.gov.ph/republic-act-no-8423/',
+        'Quisumbing, E. A. (1978). Medicinal plants of the Philippines. Katha Publishing Co., Inc. https://catalog.hathitrust.org/Record/001490216',
+        'Galvez Tan, J. Z., & Sia, I. C. (2014). The best 100 Philippine medicinal plants. Health Futures Foundation, Inc. https://books.google.com.ph/books/about/The_Best_100_Philippine_Medicinal_Plants.html?id=zXkCjwEACAAJ',
+      ],
       imagePath: 'assets/images/lagundi.jpg',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
@@ -286,6 +291,11 @@ class PlantDataService {
         'Not for patients with severe kidney disease without medical supervision',
         'May interact with diuretic medications',
         'Discontinue use 2 weeks before scheduled surgery',
+      ],
+      references: [
+        'Department of Health. (1997). Traditional and Alternative Medicine Act (TAMA) of 1997 (Republic Act No. 8423). Republic of the Philippines. https://pitahc.gov.ph/republic-act-no-8423/',
+        'Quisumbing, E. A. (1978). Medicinal plants of the Philippines. Katha Publishing Co., Inc. https://catalog.hathitrust.org/Record/001490216',
+        'Galvez Tan, J. Z., & Sia, I. C. (2014). The best 100 Philippine medicinal plants. Health Futures Foundation, Inc. https://books.google.com.ph/books/about/The_Best_100_Philippine_Medicinal_Plants.html?id=zXkCjwEACAAJ',
       ],
       imagePath: 'assets/images/sambong.jpg',
       createdAt: DateTime.now(),
@@ -401,6 +411,11 @@ class PlantDataService {
         'Test on small area before full application',
         'Keep out of reach of children',
         'Not for use on eyes or mucous membranes',
+      ],
+      references: [
+        'Department of Health. (1997). Traditional and Alternative Medicine Act (TAMA) of 1997 (Republic Act No. 8423). Republic of the Philippines. https://pitahc.gov.ph/republic-act-no-8423/',
+        'Quisumbing, E. A. (1978). Medicinal plants of the Philippines. Katha Publishing Co., Inc. https://catalog.hathitrust.org/Record/001490216',
+        'Galvez Tan, J. Z., & Sia, I. C. (2014). The best 100 Philippine medicinal plants. Health Futures Foundation, Inc. https://books.google.com.ph/books/about/The_Best_100_Philippine_Medicinal_Plants.html?id=zXkCjwEACAAJ',
       ],
       imagePath: 'assets/images/akapulko.jpg',
       createdAt: DateTime.now(),
@@ -523,6 +538,11 @@ class PlantDataService {
         'Regular medical monitoring required when used for diabetes',
         'May affect fertility - consult physician if planning pregnancy',
       ],
+      references: [
+        'Department of Health. (1997). Traditional and Alternative Medicine Act (TAMA) of 1997 (Republic Act No. 8423). Republic of the Philippines. https://pitahc.gov.ph/republic-act-no-8423/',
+        'Quisumbing, E. A. (1978). Medicinal plants of the Philippines. Katha Publishing Co., Inc. https://catalog.hathitrust.org/Record/001490216',
+        'Galvez Tan, J. Z., & Sia, I. C. (2014). The best 100 Philippine medicinal plants. Health Futures Foundation, Inc. https://books.google.com.ph/books/about/The_Best_100_Philippine_Medicinal_Plants.html?id=zXkCjwEACAAJ',
+      ],
       imagePath: 'assets/images/ampalaya.jpg',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
@@ -640,6 +660,11 @@ class PlantDataService {
         'Pregnant and breastfeeding women should use with caution',
         'May interact with blood-thinning medications',
         'Consult healthcare provider before use if on medications',
+      ],
+      references: [
+        'Department of Health. (1997). Traditional and Alternative Medicine Act (TAMA) of 1997 (Republic Act No. 8423). Republic of the Philippines. https://pitahc.gov.ph/republic-act-no-8423/',
+        'World Health Organization. (1999). WHO monographs on selected medicinal plants (Vol. 1). World Health Organization. https://apps.who.int/iris/handle/10665/42052',
+        'Quisumbing, E. A. (1978). Medicinal plants of the Philippines. Katha Publishing Co., Inc. https://catalog.hathitrust.org/Record/001490216',
       ],
       imagePath: 'assets/images/bawang.jpg',
       createdAt: DateTime.now(),
@@ -769,6 +794,11 @@ class PlantDataService {
         'Seek medical attention if severe side effects occur',
         'Follow dosage carefully - overdose can be dangerous',
       ],
+      references: [
+        'Department of Health. (1997). Traditional and Alternative Medicine Act (TAMA) of 1997 (Republic Act No. 8423). Republic of the Philippines. https://pitahc.gov.ph/republic-act-no-8423/',
+        'Quisumbing, E. A. (1978). Medicinal plants of the Philippines. Katha Publishing Co., Inc. https://catalog.hathitrust.org/Record/001490216',
+        'Galvez Tan, J. Z., & Sia, I. C. (2014). The best 100 Philippine medicinal plants. Health Futures Foundation, Inc. https://books.google.com.ph/books/about/The_Best_100_Philippine_Medicinal_Plants.html?id=zXkCjwEACAAJ',
+      ],
       imagePath: 'assets/images/niyog_niyogan.jpg',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
@@ -885,6 +915,11 @@ class PlantDataService {
         'Seek medical attention if symptoms persist or worsen',
         'Safe for children in appropriate dosages',
       ],
+      references: [
+        'Department of Health. (1997). Traditional and Alternative Medicine Act (TAMA) of 1997 (Republic Act No. 8423). Republic of the Philippines. https://pitahc.gov.ph/republic-act-no-8423/',
+        'Quisumbing, E. A. (1978). Medicinal plants of the Philippines. Katha Publishing Co., Inc. https://catalog.hathitrust.org/Record/001490216',
+        'Galvez Tan, J. Z., & Sia, I. C. (2014). The best 100 Philippine medicinal plants. Health Futures Foundation, Inc. https://books.google.com.ph/books/about/The_Best_100_Philippine_Medicinal_Plants.html?id=zXkCjwEACAAJ',
+      ],
       imagePath: 'assets/images/tsaang_gubat.jpg',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
@@ -986,6 +1021,11 @@ class PlantDataService {
         'Ensure plants are collected from clean, unpolluted areas',
         'Wash thoroughly to remove dirt and potential contaminants',
         'No known serious side effects at recommended dosages',
+      ],
+      references: [
+        'Department of Health. (1997). Traditional and Alternative Medicine Act (TAMA) of 1997 (Republic Act No. 8423). Republic of the Philippines. https://pitahc.gov.ph/republic-act-no-8423/',
+        'Quisumbing, E. A. (1978). Medicinal plants of the Philippines. Katha Publishing Co., Inc. https://catalog.hathitrust.org/Record/001490216',
+        'Galvez Tan, J. Z., & Sia, I. C. (2014). The best 100 Philippine medicinal plants. Health Futures Foundation, Inc. https://books.google.com.ph/books/about/The_Best_100_Philippine_Medicinal_Plants.html?id=zXkCjwEACAAJ',
       ],
       imagePath: 'assets/images/ulasimang_bato.jpg',
       createdAt: DateTime.now(),
@@ -1119,6 +1159,11 @@ class PlantDataService {
         'Not a substitute for medical treatment',
         'Seek medical attention if symptoms persist or worsen',
       ],
+      references: [
+        'Department of Health. (1997). Traditional and Alternative Medicine Act (TAMA) of 1997 (Republic Act No. 8423). Republic of the Philippines. https://pitahc.gov.ph/republic-act-no-8423/',
+        'Quisumbing, E. A. (1978). Medicinal plants of the Philippines. Katha Publishing Co., Inc. https://catalog.hathitrust.org/Record/001490216',
+        'Galvez Tan, J. Z., & Sia, I. C. (2014). The best 100 Philippine medicinal plants. Health Futures Foundation, Inc. https://books.google.com.ph/books/about/The_Best_100_Philippine_Medicinal_Plants.html?id=zXkCjwEACAAJ',
+      ],
       imagePath: 'assets/images/yerba_buena.jpg',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
@@ -1233,6 +1278,11 @@ class PlantDataService {
         'Fresh fruits are nutritious and generally safe for consumption',
         'Ensure leaves used are free from pesticides',
       ],
+      references: [
+        'Department of Health. (1997). Traditional and Alternative Medicine Act (TAMA) of 1997 (Republic Act No. 8423). Republic of the Philippines. https://pitahc.gov.ph/republic-act-no-8423/',
+        'Quisumbing, E. A. (1978). Medicinal plants of the Philippines. Katha Publishing Co., Inc. https://catalog.hathitrust.org/Record/001490216',
+        'Galvez Tan, J. Z., & Sia, I. C. (2014). The best 100 Philippine medicinal plants. Health Futures Foundation, Inc. https://books.google.com.ph/books/about/The_Best_100_Philippine_Medicinal_Plants.html?id=zXkCjwEACAAJ',
+      ],
       imagePath: 'assets/images/bayabas.jpg',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
@@ -1325,6 +1375,11 @@ class PlantDataService {
         'Avoid contact with eyes - milky sap may cause irritation',
         'Long-term use not recommended without medical supervision',
         'May cause mild stomach upset in some individuals',
+      ],
+      references: [
+        'Galvez Tan, J. Z., & Sia, I. C. (2014). The best 100 Philippine medicinal plants. Health Futures Foundation, Inc. https://books.google.com.ph/books/about/The_Best_100_Philippine_Medicinal_Plants.html?id=zXkCjwEACAAJ',
+        'Philippine Council for Health Research and Development, & Philippine Institute of Traditional and Alternative Health Care. (2015). Philippine traditional knowledge digital library on health. http://www.tkdlph.com',
+        'Quisumbing, E. A. (1978). Medicinal plants of the Philippines. Katha Publishing Co., Inc. https://catalog.hathitrust.org/Record/001490216'
       ],
       imagePath: 'assets/images/tawa_tawa.jpg',
       createdAt: DateTime.now(),
@@ -1445,6 +1500,11 @@ class PlantDataService {
         'Very high nutritional value makes it excellent for regular consumption',
         'Ensure leaves are from clean, pesticide-free sources',
       ],
+      references: [
+        'Galvez Tan, J. Z., & Sia, I. C. (2014). The best 100 Philippine medicinal plants. Health Futures Foundation, Inc. https://books.google.com.ph/books/about/The_Best_100_Philippine_Medicinal_Plants.html?id=zXkCjwEACAAJ',
+        'Quisumbing, E. A. (1978). Medicinal plants of the Philippines. Katha Publishing Co., Inc. https://catalog.hathitrust.org/Record/001490216',
+        'Philippine Council for Health Research and Development, & Philippine Institute of Traditional and Alternative Health Care. (2015). Philippine traditional knowledge digital library on health. http://www.tkdlph.com',
+      ],
       imagePath: 'assets/images/malunggay.jpg',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
@@ -1531,6 +1591,10 @@ class PlantDataService {
         'Diabetics should monitor blood sugar - may lower glucose levels',
         'May slow blood clotting - discontinue 2 weeks before surgery',
       ],
+      references: [
+        'Quisumbing, E. A. (1978). Medicinal plants of the Philippines. Katha Publishing Co., Inc. https://catalog.hathitrust.org/Record/001490216',
+        'Philippine Council for Health Research and Development, & Philippine Institute of Traditional and Alternative Health Care. (2015). Philippine traditional knowledge digital library on health. http://www.tkdlph.com',
+      ],
       imagePath: 'assets/images/oregano.jpg',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
@@ -1616,6 +1680,11 @@ class PlantDataService {
         'May worsen gallbladder problems',
         'Discontinue 2 weeks before surgery',
         'Consult physician if on medications, as it may interact',
+      ],
+      references: [
+        'World Health Organization. (1999). WHO monographs on selected medicinal plants (Vol. 1). World Health Organization. https://apps.who.int/iris/handle/10665/42052',
+        'Quisumbing, E. A. (1978). Medicinal plants of the Philippines. Katha Publishing Co., Inc. https://catalog.hathitrust.org/Record/001490216',
+        'Galvez Tan, J. Z., & Sia, I. C. (2014). The best 100 Philippine medicinal plants. Health Futures Foundation, Inc. https://books.google.com.ph/books/about/The_Best_100_Philippine_Medicinal_Plants.html?id=zXkCjwEACAAJ',
       ],
       imagePath: 'assets/images/luya.jpg',
       createdAt: DateTime.now(),
@@ -1711,6 +1780,10 @@ class PlantDataService {
         'Topical use: test for allergies before full application',
         'Keep out of reach of children for internal use',
       ],
+      references: [
+        'World Health Organization. (1999). WHO monographs on selected medicinal plants (Vol. 1). World Health Organization. https://apps.who.int/iris/handle/10665/42052',
+        'Quisumbing, E. A. (1978). Medicinal plants of the Philippines. Katha Publishing Co., Inc. https://catalog.hathitrust.org/Record/001490216',
+      ],
       imagePath: 'assets/images/aloe_vera.jpg',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
@@ -1786,6 +1859,10 @@ class PlantDataService {
         'Concurrent use with diabetes medications requires supervision to avoid hypoglycemia',
         'Consult doctor for kidney disorders',
       ],
+      references: [
+        'Galvez Tan, J. Z., & Sia, I. C. (2014). The best 100 Philippine medicinal plants. Health Futures Foundation, Inc. https://books.google.com.ph/books/about/The_Best_100_Philippine_Medicinal_Plants.html?id=zXkCjwEACAAJ',
+        'Quisumbing, E. A. (1978). Medicinal plants of the Philippines. Katha Publishing Co., Inc. https://catalog.hathitrust.org/Record/001490216',
+      ],
       imagePath: 'assets/images/banaba.jpg',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
@@ -1857,6 +1934,10 @@ class PlantDataService {
         'Highly acidic; avoid undiluted juice if hyperacidity or gastric ulcers',
         'Application on skin plus sun exposure can cause skin darkening or burns',
       ],
+      references: [
+        'Quisumbing, E. A. (1978). Medicinal plants of the Philippines. Katha Publishing Co., Inc. https://catalog.hathitrust.org/Record/001490216',
+        'Philippine Council for Health Research and Development, & Philippine Institute of Traditional and Alternative Health Care. (2015). Philippine traditional knowledge digital library on health. http://www.tkdlph.com',
+      ],
       imagePath: 'assets/images/calamansi.jpg',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
@@ -1926,6 +2007,10 @@ class PlantDataService {
         'Generally safe for external use',
         'Caution with internal consumption during pregnancy',
       ],
+      references: [
+        'Quisumbing, E. A. (1978). Medicinal plants of the Philippines. Katha Publishing Co., Inc. https://catalog.hathitrust.org/Record/001490216',
+        'Philippine Council for Health Research and Development, & Philippine Institute of Traditional and Alternative Health Care. (2015). Philippine traditional knowledge digital library on health. http://www.tkdlph.com',
+      ],
       imagePath: 'assets/images/gumamela.jpg',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
@@ -1983,6 +2068,10 @@ class PlantDataService {
         'Fruit is healthy and safe',
         'Long-term excessive consumption of leaves or seeds linked to neurotoxicity',
         'Use leaves sparingly; do not consume regularly',
+      ],
+      references: [
+        'Galvez Tan, J. Z., & Sia, I. C. (2014). The best 100 Philippine medicinal plants. Health Futures Foundation, Inc. https://books.google.com.ph/books/about/The_Best_100_Philippine_Medicinal_Plants.html?id=zXkCjwEACAAJ',
+        'Quisumbing, E. A. (1978). Medicinal plants of the Philippines. Katha Publishing Co., Inc. https://catalog.hathitrust.org/Record/001490216',
       ],
       imagePath: 'assets/images/guyabano.jpg',
       createdAt: DateTime.now(),
@@ -2046,6 +2135,10 @@ class PlantDataService {
       safetyWarnings: [
         'External use only. Leaves and bark are toxic to humans if ingested.',
         'Do not consume.',
+      ],
+      references: [
+        'Quisumbing, E. A. (1978). Medicinal plants of the Philippines. Katha Publishing Co., Inc. https://catalog.hathitrust.org/Record/001490216',
+        'Philippine Council for Health Research and Development, & Philippine Institute of Traditional and Alternative Health Care. (2015). Philippine traditional knowledge digital library on health. http://www.tkdlph.com',
       ],
       imagePath: 'assets/images/kakawate.jpg',
       createdAt: DateTime.now(),
@@ -2116,6 +2209,10 @@ class PlantDataService {
         'High oxalate content. Excessive consumption of fruit or juice can cause acute kidney injury.',
         'People with kidney issues should avoid.',
       ],
+      references: [
+        'Quisumbing, E. A. (1978). Medicinal plants of the Philippines. Katha Publishing Co., Inc. https://catalog.hathitrust.org/Record/001490216',
+        'Philippine Council for Health Research and Development, & Philippine Institute of Traditional and Alternative Health Care. (2015). Philippine traditional knowledge digital library on health. http://www.tkdlph.com',
+      ],
       imagePath: 'assets/images/kamias.jpg',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
@@ -2185,6 +2282,10 @@ class PlantDataService {
       safetyWarnings: [
         'Leaves and roots are nutritious and generally safe',
         'Ensure leaves are cooked or washed thoroughly to remove soil contaminants',
+      ],
+      references: [
+        'Quisumbing, E. A. (1978). Medicinal plants of the Philippines. Katha Publishing Co., Inc. https://catalog.hathitrust.org/Record/001490216',
+        'Philippine Council for Health Research and Development, & Philippine Institute of Traditional and Alternative Health Care. (2015). Philippine traditional knowledge digital library on health. http://www.tkdlph.com',
       ],
       imagePath: 'assets/images/kamote.jpg',
       createdAt: DateTime.now(),
@@ -2261,6 +2362,10 @@ class PlantDataService {
         'TOXIC IF RAW. Contains cyanogenic glycosides which release cyanide if eaten raw or improperly prepared.',
         'Never eat the leaves or roots raw. Always peel and cook thoroughly.',
       ],
+      references: [
+        'Quisumbing, E. A. (1978). Medicinal plants of the Philippines. Katha Publishing Co., Inc. https://catalog.hathitrust.org/Record/001490216',
+        'Philippine Council for Health Research and Development, & Philippine Institute of Traditional and Alternative Health Care. (2015). Philippine traditional knowledge digital library on health. http://www.tkdlph.com'
+      ],
       imagePath: 'assets/images/kamoteng_kahoy.jpg',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
@@ -2327,6 +2432,10 @@ class PlantDataService {
       ],
       safetyWarnings: [
         'Fruit is safe. Sap from tree or stem can cause contact dermatitis (itchy rash) in sensitive individuals.',
+      ],
+      references: [
+        'Quisumbing, E. A. (1978). Medicinal plants of the Philippines. Katha Publishing Co., Inc. https://catalog.hathitrust.org/Record/001490216',
+        'Philippine Council for Health Research and Development, & Philippine Institute of Traditional and Alternative Health Care. (2015). Philippine traditional knowledge digital library on health. http://www.tkdlph.com',
       ],
       imagePath: 'assets/images/mango.jpg',
       createdAt: DateTime.now(),
@@ -2396,6 +2505,10 @@ class PlantDataService {
         'Generally safe for external application.',
         'Not typically used for internal consumption in the Philippines.',
       ],
+      references: [
+        'Quisumbing, E. A. (1978). Medicinal plants of the Philippines. Katha Publishing Co., Inc. https://catalog.hathitrust.org/Record/001490216',
+        'Philippine Council for Health Research and Development, & Philippine Institute of Traditional and Alternative Health Care. (2015). Philippine traditional knowledge digital library on health. http://www.tkdlph.com',
+      ],
       imagePath: 'assets/images/mayana.jpg',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
@@ -2464,6 +2577,10 @@ class PlantDataService {
       safetyWarnings: [
         'Drug interaction warning: Pomelo contains furanocoumarins which can interact dangerously with many medications (statins, blood pressure). Consult a doctor if on maintenance medication.',
       ],
+      references: [
+        'Quisumbing, E. A. (1978). Medicinal plants of the Philippines. Katha Publishing Co., Inc. https://catalog.hathitrust.org/Record/001490216',
+        'Philippine Council for Health Research and Development, & Philippine Institute of Traditional and Alternative Health Care. (2015). Philippine traditional knowledge digital library on health. http://www.tkdlph.com',
+      ],
       imagePath: 'assets/images/pomelo.jpg',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
@@ -2530,6 +2647,10 @@ class PlantDataService {
       safetyWarnings: [
         'Safe and highly nutritious. Rich in vitamins and minerals.',
       ],
+      references: [
+        'Quisumbing, E. A. (1978). Medicinal plants of the Philippines. Katha Publishing Co., Inc. https://catalog.hathitrust.org/Record/001490216',
+        'Philippine Council for Health Research and Development, & Philippine Institute of Traditional and Alternative Health Care. (2015). Philippine traditional knowledge digital library on health. http://www.tkdlph.com',
+      ],
       imagePath: 'assets/images/saluyot.jpg',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
@@ -2589,6 +2710,10 @@ class PlantDataService {
       ],
       safetyWarnings: [
         'Use with caution. While popularly used for hepatitis B and stones, self-medication for serious liver/kidney issues is risky. Consult a doctor.',
+      ],
+      references: [
+        'Quisumbing, E. A. (1978). Medicinal plants of the Philippines. Katha Publishing Co., Inc. https://catalog.hathitrust.org/Record/001490216',
+        'Philippine Council for Health Research and Development, & Philippine Institute of Traditional and Alternative Health Care. (2015). Philippine traditional knowledge digital library on health. http://www.tkdlph.com',
       ],
       imagePath: 'assets/images/sampa_sampalukan.jpg',
       createdAt: DateTime.now(),
@@ -2657,6 +2782,10 @@ class PlantDataService {
       safetyWarnings: [
         'Generally safe. High doses of pulp are a strong laxative.',
         'Acidity can be harsh on teeth enamel if consumed excessively.',
+      ],
+      references: [
+        'Quisumbing, E. A. (1978). Medicinal plants of the Philippines. Katha Publishing Co., Inc. https://catalog.hathitrust.org/Record/001490216',
+        'Philippine Council for Health Research and Development, & Philippine Institute of Traditional and Alternative Health Care. (2015). Philippine traditional knowledge digital library on health. http://www.tkdlph.com',
       ],
       imagePath: 'assets/images/sampalok.jpg',
       createdAt: DateTime.now(),
@@ -2737,6 +2866,10 @@ class PlantDataService {
         'Irritant. Wash hands immediately after handling.',
         'Avoid contact with eyes and sensitive membranes.',
         'Internal excess can cause gastritis.',
+      ],
+      references: [
+        'Quisumbing, E. A. (1978). Medicinal plants of the Philippines. Katha Publishing Co., Inc. https://catalog.hathitrust.org/Record/001490216',
+        'Philippine Council for Health Research and Development, & Philippine Institute of Traditional and Alternative Health Care. (2015). Philippine traditional knowledge digital library on health. http://www.tkdlph.com',
       ],
       imagePath: 'assets/images/siling_labuyo.jpg',
       createdAt: DateTime.now(),
